@@ -1,0 +1,65 @@
+---
+layout: post
+title: "My Review of the New Facebook Login Review Process"
+date: 2014-07-05 22:40:42 -0400
+comments: true
+categories: [facebook, ios]
+---
+
+In somewhat under-the-radar news, Facebook announced at their F8 conference in late April 2014 that there would be several changes to the way that Facebook Login works for apps. I say under-the-radar because I saw very few reactions on the interwebs. I'll attribute this to these changes taking effect immediately only for new apps and all existing apps having a full calendar year from the announcement in order to comply.
+
+## Facebook Login Changes Summary
+
+A quick summary: all developer apps that use Facebook Login must go through an App Store-style approval process to gain access to the majority of a Facebook user's data. Access to this data is provided through a granular permission system. Any app can request access to a user's primary email address, public profile (name, age range, gender, profile picture), and friends of the user that also use your app.
+
+Notice I said "request access" because the other side of the changes announced at F8 include the ability for a user to only provide a subset of the permissions that are requested by the app. For example, an app could ask for the ability to use your photos and see your likes, and you can decide that your photos are private and deny the app access to those while still allowing your likes to be used.
+
+There's actually two layers to the permissions. The first is the Facebook Review Team granting your app permission *to ask* users for certain permissions. The second is each user actually granting each permission you've requested.
+
+I've spent a nice chunk of the last two months dealing with these changes and the Facebook iOS SDK in general my day job. It's a non-trivial change to the way we use Facebook data, and it's imperative to the service we provide to have access to a user's data.
+
+## My Sideproject
+
+I'm a heavy Facebook Groups user. I have a couple groups I share with subsets of my closest friends from back in Chicago. We use them as a way to passively keep in touch with one another, plan events (when I'm back in town), share links, etc. I haven't met that many others that use Facebook Groups in this fashion, and adding Facebook Groups to the Timehop app would probably not be worth the team's effort. 
+
+To scratch my own itch, I started a side project that displays my Facebook Group data like Timehop does: it shows all the posts from this day in history going back several years. I created the Facebook app for it a few weeks after F8, and at this point didn't realize that the `user_groups` permission I needed was now on heavy lockdown. I also didn't realize that since I was creating a new app I was immediately subject to the strict review from the Facebook Review Team.
+
+I finished the app, jumped through all the hoops of adding short descriptions, long descriptions, explanations for permissions, contact info, support URLs, a privacy policy, uploading screen shots, and even compiling a special simulator build so that the Facebook review team could verify the permissions I was using before my app was live on the App Store.
+
+## The Review Process
+
+Let me point out that Facebook pegs review times for apps with normal permission requests at **seven business days**. That means that if you're creating a new app, you're waiting an average of two weeks for your app to go live on the App Store. And that's only if the review process goes smoothly for Apple *and* Facebook. For certain special permissions, Facebook quotes the review time for your app at **14 business days**. That brand new Facebook connected app that your start up is eagerly looking to launch? Better set up those marketing materials for next month. Three weeks in the Facebook queues and another week in the Apple queues. A full month of biting your fingernails and sitting on your haunches, hoping for approval.
+
+`user_groups`, the only permission I need, is one of the extra special permissions. And to my dismay, just as I was preparing my newly finished app for submission, I discovered this annotation in the new Facebook permissions docs: "This permission is reserved for apps that replicate the Facebook client on platforms that don’t have a native client." Uh oh.
+
+Another sidebar: I went to the Facebook Login Event in New York in June. There was an hour long presentation about all the changes and how awesome they were for users. At the conclusion, the lead product manager stressed that there would be an open dialogue about the review process. He talked about how they were excited to hear about all the ways that apps use permissions that they hadn't even thought of yet. About how all existing apps should go through the review process as early as possible so there wasn't a mad rush in April 2015 before the review requirement for existing apps goes into effect. About how this was going to be a positive change for both users and developers.
+
+## First Submission
+
+I submitted my side project app, spending extra time on describing why I needed the `user_groups` permission and explaining in several different places that the user data would be downloaded directly to the user's device and never leave that device. It would never be uploaded to any servers. It would never be shared. And there was a big red button in the settings menu to delete it at any time.
+
+The review came back with two standardized message prompts: "We couldn't open the simulator build you submitted" and "Your user_groups permission has been rejected because you aren't building an app on an unsupported platform." Damn. Well, maybe they rejected the permission because I followed their one-size-fits-all directions on using the `xcodebuild` command line tool and the arguments didn't work for me and they couldn't open my app.
+
+I found their special permissions-related contact email address and submitted a plea for my app. Rephrasing a lot of what I had stated before about why my app needed those permissions and why it was safe for users. No response.
+
+## Second Submission
+
+I recompiled my app using a different set of build flags and triple checked that it worked this time. I packaged everything up again and resubmitted, hoping my tag-along email and working build would help sway the decision this time.
+
+Rejected again with the same message.
+
+## Going Forward
+
+Some of this was my fault. I didn't scour the docs after F8 to notice the change in permissions. I also didn't finish the app and realize the precarious position I was in until after the Facebook Login Event, where I at least could have talked to a real human being about my issue.
+
+I'm obviously a little rustled. I'm planning on open sourcing my app anyway (it uses a lot of MVVM and ReactiveCocoa goodies that should be interesting to those looking to learn more about them), and adding Tumblr support, and maybe some other services in the future.
+
+## Some Thoughts
+
+From an outsider's perspective, Facebook obviously knows the powerful position they're in. They'd like to protect their data at all costs, even if they have to create an entire review team to do so.
+
+And at the same time, they're actively trying to draw developers to the platform with programs like [FBStart](https://developers.facebook.com/blog/post/2014/05/14/fbstart-accepting-applications). If you're a brand new start up, are all those free services worth the time your app is going to spend in the review queue instead of in the hands of your users? Is it going to be worth it when after months of development, Facebook decides they no longer want your type of app to exist? Mac and iOS developers have complained for years now about the opaque App Store review process. Is it worth it to have another third party with any number of conflicting motivations standing in the way of your app going live?
+
+As a developer, I wish there was a way for Facebook to accommodate good user experiences without being hostile to developers. I'm not some scumbag anonymous developer asking for every permission that exists to use for nefarious purposes. I've just a guy with a fun side project that I want to get in some peoples' hands. Is there some way that I could prove that to Facebook? Should I *have* to prove that to Facebook?
+
+I'm hoping for some kind of resolution to this problem. But either way, side projects are supposed to be learning experiences, and I definitely learned some good lessons with this one.
