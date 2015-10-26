@@ -6,7 +6,7 @@ permalink: /portfolio/
 
 ## Apps
 
-#### TinyKittens TV - [appstore]()
+#### TinyKittens TV - [appstore]() | [source](https://github.com/twocentstudios/tinykittenstv)
 
 A tvOS app for streaming live feeds from [tinykittens.com](http://tinykittens.com).
 
@@ -14,7 +14,7 @@ A tvOS app for streaming live feeds from [tinykittens.com](http://tinykittens.co
 
 I worked on the [Timehop](http://timehop.com) iOS app from April 2013 through August 2015.
 
-#### Vinylogue - [landing page](http://twocentstudios.com/apps/vinylogue) | [appstore](http://itunes.apple.com/us/app/vinylogue-for-last.fm/id617471119?ls=1&mt=8)
+#### Vinylogue - [landing page](http://twocentstudios.com/apps/vinylogue) | [appstore](http://itunes.apple.com/us/app/vinylogue-for-last.fm/id617471119?ls=1&mt=8) | [source](https://github.com/twocentstudios/vinylogue)
 
 An iPhone app for your [last.fm](http://last.fm) listening history.
 
