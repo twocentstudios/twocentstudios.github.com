@@ -14,7 +14,7 @@ A tvOS app for streaming live feeds from [tinykittens.com](http://tinykittens.co
 
 I worked on the [Timehop](http://timehop.com) iOS app from April 2013 through August 2015.
 
-#### Vinylogue - [landing page](http://twocentstudios.com/apps/vinylogue) | [appstore](http://itunes.apple.com/us/app/vinylogue-for-last.fm/id617471119?ls=1&mt=8) | [source](https://github.com/twocentstudios/vinylogue)
+#### Vinylogue - [landing page](/apps/vinylogue) | [appstore](http://itunes.apple.com/us/app/vinylogue-for-last.fm/id617471119?ls=1&mt=8) | [source](https://github.com/twocentstudios/vinylogue)
 
 An iPhone app for your [last.fm](http://last.fm) listening history.
 
@@ -26,7 +26,7 @@ An iPhone app showing the past activity of Facebook Groups.
 
 An iPhone app for clients of [Robert James Insurance](http://www.robertjamesinsurance.com/).
 
-#### BrightBus: Champaign-Urbana - [landing page](http://twocentstudios.com/apps/brightbuscu) | [appstore](http://itunes.apple.com/us/app/brightbus-champaign-urbana/id363274580?mt=8)
+#### BrightBus: Champaign-Urbana - [landing page](/apps/brightbuscu) | [appstore](http://itunes.apple.com/us/app/brightbus-champaign-urbana/id363274580?mt=8)
 
 An iPhone app for viewing bus arrival times in Champaign and Urbana, Illinois.
 
@@ -38,7 +38,7 @@ A general information app for [Klein Tools](http://kleintools.com). No longer av
 
 An iPhone app for viewing bus arrival times at The Ohio State University. No longer available.
 
-#### AppleCart - [post](http://twocentstudios.com/2012/09/18/applecart-my-first-production-rails-app/) | [source](https://github.com/twocentstudios/applecart)
+#### AppleCart - [post](/2012/09/18/applecart-my-first-production-rails-app/) | [source](https://github.com/twocentstudios/applecart)
 
 A custom online shopping cart for an American Cancer Society fundraiser. No longer available.
 
