@@ -121,7 +121,7 @@ Let's start with a simple example that will quickly spiral out of control. Imagi
 
 The view is pretty simple.
 
-{% codeblock lang:objc %}
+{% highlight objc %}
 	@class HOPProfileViewModel
 	
 	@interface HOPProfileView : UIView
@@ -161,7 +161,7 @@ The view is pretty simple.
 	- (void)layoutSubviews { /* ... */ }
 	
 	@end
-{% endcodeblock %}
+{% endhighlight %}
 	
 A few things going on here:
 
@@ -188,7 +188,7 @@ In short, we've separated the data manipulation stage from the presentation.
 
 Now let's tackle the view model. The interface should look pretty familiar.
 
-{% codeblock lang:objc %}
+{% highlight objc %}
 	@class HOPUser;
 	
 	@interface HOPProfileViewModel : NSObject
@@ -201,13 +201,13 @@ Now let's tackle the view model. The interface should look pretty familiar.
 	- (instancetype)initWithUser:(HOPUser *)user;
 	
 	@end
-{% endcodeblock %}
+{% endhighlight %}
 	
 Notice all these properties are readonly. The view is free to observe all these properties and call `execute` on the `RACCommand`. The view model obscures all its internal operations and provides a limited window into its state to its observers (its view).
 
 There's a designated initializer that accepts a `HOPUser` model object. For now, assume that another view model created this `HOPProfileViewModel` with a model object before it was bound to its view (I'll come back this as my most glaring questions about MVVM).
 
-{% codeblock lang:objc %}
+{% highlight objc %}
 	@interface HOPProfileViewModel ()
 		
 	@property (nonatomic, strong) UIImage *avatarImage;
@@ -259,7 +259,7 @@ There's a designated initializer that accepts a `HOPUser` model object. For now,
 	}
 	
 	@end
-{% endcodeblock %}
+{% endhighlight %}
 
 Alright, there's a lot more going on in this view model than there was the view. And that's a good thing. There's some slightly advanced ReactiveCocoa, but don't get hung up on it. The goal is to understand the relationship between the view, view model, and controllers.
 
@@ -281,7 +281,7 @@ There was a lot to digest in that example. Things to notice:
 
 I have more questions than answers when it comes to the controller layer. I'll present the header files for the two classes we used above and we'll go from there.
 
-{% codeblock lang:objc %}
+{% highlight objc %}
 	@interface HOPImageController : NSObject
 	
 	// The shared instance of this class.
@@ -310,7 +310,7 @@ I have more questions than answers when it comes to the controller layer. I'll p
 	- (RACSignal *)fetchUserWithUserId:(NSNumber *)userId;
 	
 	@end
-{% endcodeblock %}
+{% endhighlight %}
 	
 ### Questions
 

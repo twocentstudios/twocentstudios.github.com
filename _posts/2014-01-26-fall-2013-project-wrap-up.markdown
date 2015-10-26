@@ -80,7 +80,9 @@ In the current version it's actually next to impossible to get a match. I though
 
 One interesting part of this project for me was trying AutoLayout for the first time in a real project. Granted, I'm not using it raw via IB or code. I decided to use the wrapper library [UIView-Autolayout](https://github.com/smileyborg/UIView-AutoLayout). As a taster, here's some of the layout code:
 
-{% codeblock in updateViewConstraints lang:objc %}
+> in updateViewConstraints
+
+{% highlight objc %}
 
   const CGFloat bottomLabelOffset = 10.0f;
   const CGFloat bottomInterLabelOffset = 2.0f;
@@ -89,7 +91,7 @@ One interesting part of this project for me was trying AutoLayout for the first 
   [self.matchesLeftTopLabel autoPinEdge:ALEdgeLeft toEdge:ALEdgeLeft ofView:self.matchesLeftTopLabel.superview withOffset:bottomLabelOffset];
   [self.matchesLeftTopLabel autoPinEdge:ALEdgeBottom toEdge:ALEdgeTop ofView:self.matchesLeftBottomLabel withOffset:-bottomInterLabelOffset];
 
-{% endcodeblock %}
+{% endhighlight %}
 
 It's actually somewhat similar in API to [POViewFrameBuilder](https://github.com/podio/ios-view-frame-builder) which I use often at work. But I remember getting hung up a couple times. It works, but at this point I'm still a little skeptical of what AutoLayout buys you.
 
@@ -139,7 +141,9 @@ As far as implementation, I simply schedule a random amount of animations at ran
 
 Here's a small onslaught of the view controller code:
 
-{% codeblock TCSTimeStopDemoViewController.m lang:objc %}
+> TCSTimeStopDemoViewController.m
+
+{% highlight objc %}
 
 - (void)btnTouchDown:(UIButton *)btn {
   self.progressView.frame = self.view.bounds;
@@ -222,7 +226,7 @@ Here's a small onslaught of the view controller code:
   [self.viewMakers removeAllObjects];
 }
 
-{% endcodeblock %}
+{% endhighlight %}
 
 Pretty hacky, but much more elegant thanks to ReactiveCocoa. If you've ever worked with raw NSTimers, you understand how ugly that API is.
 
@@ -250,7 +254,9 @@ With just my very rough episode page wireframe, I started development. I decided
 
 I always start out by making a markdown doc with my app's models and routes, as well as solutions to any gotchas I think I'll run into later. I've removed a bunch of the models so this post doesn't stretch on forever.
 
-{% codeblock planning.md lang:ruby %}
+> planning.md
+
+{% highlight ruby %}
 
 ### Program
 
@@ -279,7 +285,7 @@ GET /dashboard => shows all rooms for a user
 GET /room/:id => shows a room
 POST /room/:id/timestamp => creates timestamp and comment objects
 
-{% endcodeblock %}
+{% endhighlight %}
 
 From here, I'll add my standard gem set. Then write my initial database migrations. Then generate models and controllers.
 
