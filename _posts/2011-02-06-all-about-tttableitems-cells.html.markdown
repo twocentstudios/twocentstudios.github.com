@@ -49,6 +49,7 @@ Cells are a little different than Items in the Three20 world. TTTableViewCells s
 In the Three20 built-in cells, the textLabels are usually used, but not the imageView. I recommend doing the same.
 
 Start by making instance variables for each view element you need. Labels and imageViews are the most common, but any view will do. Next, override the initWithStyle initializer.
+
 ```
  // TCExampleCell
 - (id)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString*)identifier {
@@ -69,9 +70,11 @@ Start by making instance variables for each view element you need. Labels and im
 	return self;
 }
 ```
+
 Quick aside: be wary of setting built-in textLabel properties in the initWithStyle method if you're subclassing high-level cells such as TTTableImageItemCell, as these properties are changed in setObject. I spent several hours trying to track this down...
 
 setObject is the method where you'll load your cell with data from the item.
+
 ```
 - (void)setObject:(id)object {
   if (_item != object) {
@@ -87,6 +90,7 @@ setObject is the method where you'll load your cell with data from the item.
 ```
 
 Before we get knee-deep in layout, go ahead and create initializers for your other views.
+
 ```
 - (UILabel*)suffixLabel {
   if (!_suffixLabel) {
@@ -101,6 +105,7 @@ Before we get knee-deep in layout, go ahead and create initializers for your oth
 ```
 
 Now for the hard part. Maybe. If you're using fixed height cells, it will be as easy as setting the frames of your views and going from there. In this case, your TTTableViewController will have the following in the initializer method:
+
 ```
 self.tableView.rowHeight = TTSTYLEVAR(tExampleCellRowHeight);     // CGFloat
 self.variableHeightRows = NO;
@@ -120,6 +125,7 @@ First, you'll need to calculate the maximum width of your text labels. Normally 
 `  CGFloat maxWidth = tableView.width - (imageWidth + kTableCellHPadding*2 + kTableCellMargin*2);`
 
 Add your vertical margins, then calculate what the label sizes will be using the NSString method sizeWithFont:
+
 ```
 CGSize firstNameSize = [item.firstName sizeWithFont:TTSTYLEVAR(firstNameFont)
                                constrainedToSize:CGSizeMake(maxWidth, CGFLOAT_MAX)
@@ -130,6 +136,7 @@ totalHeight += firstNameSize.height
 Once you've calculated the total height, return it and get ready to do it again.
 
 In layout subviews, you'll do the same thing, only this time set the frames of all your views. Calculate the maxWidth again. Use maxWidth in sizeWithFont for each your views. Consult the TTTableImageItemCell source for a good (yet complicated) example of how to do this. This is also the place to set the styles of our cell backgrounds.
+
 ```
 	[(TTView*)self.backgroundView setStyle:TTSTYLEVAR(tCellBackStyle)];
 	[(TTView*)self.selectedBackgroundView setStyle:TTSTYLEVAR(tCellBackStyleSelected)];
@@ -140,6 +147,7 @@ Don't forget to implement prepareForReuse. Here you'll want to remove the conten
 <h2>Connecting the Item and Cell</h2>
 
 The last thing we need to do is connect the cell and the item. This is actually pretty easy. In your datasource, override the cellClassForObject method:
+
 ```
 - (Class)tableView:(UITableView *)tableView cellClassForObject:(id)object {
     if([object isKindOfClass:[TCExampleItem class]])
