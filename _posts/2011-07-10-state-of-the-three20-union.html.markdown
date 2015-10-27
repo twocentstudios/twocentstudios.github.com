@@ -8,9 +8,6 @@ tags:
 status: publish
 type: post
 published: true
-meta: 
-  _edit_last: "1"
-  sfw_comment_form_password: C53lbKypWsCf
 ---
 I've been sitting on this topic for a little while now, and feel like I should finally weigh in on where the Three20 framework is at this point.
 <h2>Where I Started</h2>

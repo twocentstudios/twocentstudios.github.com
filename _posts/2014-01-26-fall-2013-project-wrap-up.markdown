@@ -84,12 +84,12 @@ One interesting part of this project for me was trying AutoLayout for the first 
 
 {% highlight objc %}
 
-  const CGFloat bottomLabelOffset = 10.0f;
-  const CGFloat bottomInterLabelOffset = 2.0f;
-  [self.matchesLeftBottomLabel autoPinEdge:ALEdgeBottom toEdge:ALEdgeBottom ofView:self.matchesLeftBottomLabel.superview withOffset:-bottomLabelOffset];
-  [self.matchesLeftBottomLabel autoPinEdge:ALEdgeLeft toEdge:ALEdgeLeft ofView:self.matchesLeftBottomLabel.superview withOffset:bottomLabelOffset];
-  [self.matchesLeftTopLabel autoPinEdge:ALEdgeLeft toEdge:ALEdgeLeft ofView:self.matchesLeftTopLabel.superview withOffset:bottomLabelOffset];
-  [self.matchesLeftTopLabel autoPinEdge:ALEdgeBottom toEdge:ALEdgeTop ofView:self.matchesLeftBottomLabel withOffset:-bottomInterLabelOffset];
+const CGFloat bottomLabelOffset = 10.0f;
+const CGFloat bottomInterLabelOffset = 2.0f;
+[self.matchesLeftBottomLabel autoPinEdge:ALEdgeBottom toEdge:ALEdgeBottom ofView:self.matchesLeftBottomLabel.superview withOffset:-bottomLabelOffset];
+[self.matchesLeftBottomLabel autoPinEdge:ALEdgeLeft toEdge:ALEdgeLeft ofView:self.matchesLeftBottomLabel.superview withOffset:bottomLabelOffset];
+[self.matchesLeftTopLabel autoPinEdge:ALEdgeLeft toEdge:ALEdgeLeft ofView:self.matchesLeftTopLabel.superview withOffset:bottomLabelOffset];
+[self.matchesLeftTopLabel autoPinEdge:ALEdgeBottom toEdge:ALEdgeTop ofView:self.matchesLeftBottomLabel withOffset:-bottomInterLabelOffset];
 
 {% endhighlight %}
 

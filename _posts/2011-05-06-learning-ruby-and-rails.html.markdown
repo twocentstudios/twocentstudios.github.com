@@ -10,9 +10,6 @@ tags:
 status: publish
 type: post
 published: true
-meta: 
-  _edit_last: "1"
-  sfw_comment_form_password: P8dBzh2yTWwo
 ---
 Last October, a couple things came together at the same time which prompted to want to learn Rails.
 <h2>Starting Out</h2>

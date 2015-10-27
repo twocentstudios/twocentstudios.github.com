@@ -6,9 +6,6 @@ tags:
 status: publish
 type: post
 published: true
-meta: 
-  _edit_last: "1"
-  sfw_comment_form_password: cY4OtNtbggVw
 ---
 How do you go about learning a new programming language or tool?
 

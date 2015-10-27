@@ -66,7 +66,7 @@ I mentioned earlier that I found out there was another Objective-C API wrapper a
 
 ## Wrap Up
 
-Overall, this was a good exercise for me. This is my first real authored open source project. Going in with a goal of open sourcing this kept me honest in my documentation and helped me cut less corners than I would have if it was just a means to an end of getting another app done. Plus, it forced me to learn some more about git and github, and authentication, and the ASIHTTPRequest library, and JSONKit, and API design in itself. I tried to follow some of Matt Gemmell's advice in (API Design)[http://mattgemmell.com/2012/05/24/api-design/], and did my best to think about the design from an outside-in perspective.
+Overall, this was a good exercise for me. This is my first real authored open source project. Going in with a goal of open sourcing this kept me honest in my documentation and helped me cut less corners than I would have if it was just a means to an end of getting another app done. Plus, it forced me to learn some more about git and github, and authentication, and the ASIHTTPRequest library, and JSONKit, and API design in itself. I tried to follow some of Matt Gemmell's advice in [API Design](http://mattgemmell.com/2012/05/24/api-design/), and did my best to think about the design from an outside-in perspective.
 
 I'd still like to tie up those loose ends with formatting, refactoring, and even stuff like ARC and OS X support. I was also planning on doing an example project. Hopefully my README and test fixtures are clear enough for end users to follow.
 

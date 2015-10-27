@@ -9,10 +9,6 @@ tags:
 status: publish
 type: post
 published: true
-meta: 
-  _edit_last: "1"
-  _syntaxhighlighter_encoded: "1"
-  sfw_comment_form_password: JUvSwODnZYUo
 ---
 <i>Note: this is adapted from my post on the Three20 forums <a href="http://forums.three20.info/discussion/98/tttableviewcontroller-didreceivememorywarning">here</a> and was relevant for at least v1.0.5.</i>
 

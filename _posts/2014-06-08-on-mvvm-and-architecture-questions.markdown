@@ -46,8 +46,10 @@ This is where I'll start asking questions and positing solutions for how to arch
 
 MVVM is often introduced in this [simple diagram](https://github.com/ReactiveCocoa/ReactiveViewModel#model-view-viewmodel):
 
-	View => View Model => Model
-	     <-            <-
+{% highlight text %}
+View => View Model => Model
+     <-            <-
+{% endhighlight %}
 
 Where `=>` represents some combination of ownership, strong references, direct observation, and events. `<-` represents the flow of data (but not direct references, weak or strong).
 
@@ -90,16 +92,20 @@ I've introduced the rules of each role in order to clarify the separation of con
 
 Let's make a more detailed version of that MVVM diagram for Cocoa specifically.
 
-	View ========> View Model ========> Controller ========> Data Store
-	  |                |                    |
-	View           View Model           Controller
+{% highlight text %}
+View ========> View Model ========> Controller ========> Data Store
+  |                |                    |
+View           View Model           Controller
+{% endhighlight %}
 
 To clarify, `===>` represents an ownership as stated above. `|` also represents an ownership of the bottom object by the top object. A view could spawn one or more subviews, present other view controllers, and also bind to a view model. Similarly, a view model could keep a collection of view models for its owning view to distribute to that view's subviews. That view model can also have a controller and connect controllers to its sub-view models.
 
 Secondly, here is the flow of objects between the roles.
 
-	View <-------- View Model <-------- Controller <-------- Data Store
-	    (view model)        (model object)        (raw model)
+{% highlight text %}
+View <-------- View Model <-------- Controller <-------- Data Store
+    (view model)        (model object)        (raw model)
+{% endhighlight %}
 
 Notice from the first chart that all relationships are unidirectional. Thus there is only direct coupling at one interface and in one direction. It's now possible to replace our view layer with a testing apparatus and test the interface between the view and view model directly. It's also possible to test the interface between the view model and controller layer.
 
@@ -122,47 +128,47 @@ Let's start with a simple example that will quickly spiral out of control. Imagi
 The view is pretty simple.
 
 {% highlight objc %}
-	@class HOPProfileViewModel
-	
-	@interface HOPProfileView : UIView
-	
-	@property (nonatomic, strong) HOPProfileViewModel *viewModel;
-	
-	@end
-	
-	@inteface ProfileView ()
-	
-	@property (nonatomic, strong) UIImageView *avatarView;
-	@property (nonatomic, strong) UILabel *nameLabel;
-	@property (nonatomic, strong) UILabel *friendCountLabel;
-	@property (nonatomic, strong) UIButton *refreshButton;
-	
-	@end
-	
-	@implementation ProfileView
-	
-	- (instancetype)initWithFrame:(CGRect)frame {
-		self = [super initWithFrame:frame];
-		if (!self) return nil;
-		
-		_avatarView = [[UIImageView alloc] init];
-		[self addSubview:_avatarView];
-		
-		// ... create and add the other views as subviews
-		
-		RAC(self.avatarView, image) = RACObserve(self, viewModel.avatarImage);
-		RAC(self.nameLabel, text) = RACObserve(self, viewModel.nameString);
-		RAC(self.friendCountLabel, text) = RACObserve(self, viewModel.friendCountString);
-		RAC(self.refreshButton, rac_command) = RACObserve(self, viewModel.refreshCommand); 
-		
-		return self;
-	}
-	
-	- (void)layoutSubviews { /* ... */ }
-	
-	@end
+@class HOPProfileViewModel
+
+@interface HOPProfileView : UIView
+
+@property (nonatomic, strong) HOPProfileViewModel *viewModel;
+
+@end
+
+@inteface ProfileView ()
+
+@property (nonatomic, strong) UIImageView *avatarView;
+@property (nonatomic, strong) UILabel *nameLabel;
+@property (nonatomic, strong) UILabel *friendCountLabel;
+@property (nonatomic, strong) UIButton *refreshButton;
+
+@end
+
+@implementation ProfileView
+
+- (instancetype)initWithFrame:(CGRect)frame {
+    self = [super initWithFrame:frame];
+    if (!self) return nil;
+    
+    _avatarView = [[UIImageView alloc] init];
+    [self addSubview:_avatarView];
+    
+    // ... create and add the other views as subviews
+    
+    RAC(self.avatarView, image) = RACObserve(self, viewModel.avatarImage);
+    RAC(self.nameLabel, text) = RACObserve(self, viewModel.nameString);
+    RAC(self.friendCountLabel, text) = RACObserve(self, viewModel.friendCountString);
+    RAC(self.refreshButton, rac_command) = RACObserve(self, viewModel.refreshCommand); 
+    
+    return self;
+}
+
+- (void)layoutSubviews { /* ... */ }
+
+@end
 {% endhighlight %}
-	
+    
 A few things going on here:
 
 * The view is not bound to a view model for its entire lifecycle. This case is more rare. Most views should be bound to a particular view model for their entire lifecycle. Less mutability reduces view complexity greatly. You would normally require the view model be passed into the receiver on `init`. However, in this case we're allowing the view model to be swapped out during this view's life, and we therefore must reconfigure its data properly. You'd typically see this pattern in reusable views such as `UITableViewCell`s.
@@ -170,9 +176,9 @@ A few things going on here:
 * The ReactiveCocoa will ensure `self.avatarView.image` is set with the current image in the `self.viewModel.avatarImage` property. It will ensure this even if the `viewModel` object itself changes during this view's lifecycle. If our view was initialized with a view model, we could write `RAC(self.avatarView, image) = RACObserve(self.viewModel, avatarImage)` instead and only the `avatarImage` property will be observed.
 * The label properties work the same way as the imageView's.
 * `RACCommand` is a somewhat magical object that transparently manages state between an action and its asynchronous results. The important part to notice here is that the view model owns and configures the `RACCommand` object in question. Behind the scenes, the `rac_command` helper category on `UIButton` performs three tasks (heavily simplified):
-	* Calls `-[execute:]` on the view model's `RACCommand` on the touchUpInside action.
-	* Disables itself while the `RACCommand` is executing.
-	* Re-enables itself when the `RACCommand` finishes executing.
+    * Calls `-[execute:]` on the view model's `RACCommand` on the touchUpInside action.
+    * Disables itself while the `RACCommand` is executing.
+    * Re-enables itself when the `RACCommand` finishes executing.
 * Imagine that there are standard `layoutSubviews` and `sizeThatFits:` methods.
 
 You may be asking what this buys us so far over the typical pattern of passing in a model object to our view via a setter like `-[setData:(HOPUser *)]`.
@@ -189,76 +195,76 @@ In short, we've separated the data manipulation stage from the presentation.
 Now let's tackle the view model. The interface should look pretty familiar.
 
 {% highlight objc %}
-	@class HOPUser;
-	
-	@interface HOPProfileViewModel : NSObject
-	
-	@property (nonatomic, strong, readonly) UIImage *avatarImage;
-	@property (nonatomic, copy, readonly) NSString *nameString;
-	@property (nonatomic, copy, readonly) NSString *friendCountString;
-	@property (nonatomic, strong, readonly) RACCommand *refreshCommand;
-	
-	- (instancetype)initWithUser:(HOPUser *)user;
-	
-	@end
+@class HOPUser;
+
+@interface HOPProfileViewModel : NSObject
+
+@property (nonatomic, strong, readonly) UIImage *avatarImage;
+@property (nonatomic, copy, readonly) NSString *nameString;
+@property (nonatomic, copy, readonly) NSString *friendCountString;
+@property (nonatomic, strong, readonly) RACCommand *refreshCommand;
+
+- (instancetype)initWithUser:(HOPUser *)user;
+
+@end
 {% endhighlight %}
-	
+    
 Notice all these properties are readonly. The view is free to observe all these properties and call `execute` on the `RACCommand`. The view model obscures all its internal operations and provides a limited window into its state to its observers (its view).
 
 There's a designated initializer that accepts a `HOPUser` model object. For now, assume that another view model created this `HOPProfileViewModel` with a model object before it was bound to its view (I'll come back this as my most glaring questions about MVVM).
 
 {% highlight objc %}
-	@interface HOPProfileViewModel ()
-		
-	@property (nonatomic, strong) UIImage *avatarImage;
-	@property (nonatomic, copy) NSString *nameString;
-	@property (nonatomic, copy) NSString *friendCountString;
-	@property (nonatomic, strong) RACCommand *refreshCommand;
-	
-	@end
-	
-	@implementation HOPProfileViewModel
-	
-	- (instancetype)initWithUser:(HOPUser *)user {
-		self = [super init]
-		if (!self) return nil;
-				
-		RAC(self, avatarImage) = 
-			[[[[[RACObserve(self, user.avatarURL)
-				ignore:nil]
-				flattenMap:(RACSignal *)^(NSURL *avatarURL) {
-					return [[HOPImageController sharedController] imageSignalForURL:avatarURL];
-				}]
-				startWith:[UIImage imageNamed:@"avatar-placeholder"]]
-				deliverOn:[RACScheduler mainThreadScheduler]];
-		
-		RAC(self, nameString) = 
-			[[RACObserve(self, user.name)
-				ignore:nil]
-				map:(NSString *)^(NSString *name) {
-					return [name uppercaseString];
-				}];
-		
-		RAC(self, friendCountString) = 
-			[[RACObserve(self, user.friendCount)
-				ignore:nil]
-				map:(NSString *)^(NSNumber *friendCount) {
-					return [NSString stringWithFormat:@"This user has %@ friends", friendCount];
-				}];
-				
-		@weakify(self);
-		_refreshCommand = [[RACCommand alloc] initWithSignalBlock:(RACSignal *)^(id _) {
-			@strongify(self);
-			return [[HOPNetworkController sharedController] fetchUserWithId:self.user.userId];
-		}
-		
-		RAC(self, user) = 
-			[[[_refreshCommand executionSignals] 
-				switchToLatest] 
-				startWith:user];
-	}
-	
-	@end
+@interface HOPProfileViewModel ()
+    
+@property (nonatomic, strong) UIImage *avatarImage;
+@property (nonatomic, copy) NSString *nameString;
+@property (nonatomic, copy) NSString *friendCountString;
+@property (nonatomic, strong) RACCommand *refreshCommand;
+
+@end
+
+@implementation HOPProfileViewModel
+
+- (instancetype)initWithUser:(HOPUser *)user {
+    self = [super init]
+    if (!self) return nil;
+            
+    RAC(self, avatarImage) = 
+        [[[[[RACObserve(self, user.avatarURL)
+            ignore:nil]
+            flattenMap:(RACSignal *)^(NSURL *avatarURL) {
+                return [[HOPImageController sharedController] imageSignalForURL:avatarURL];
+            }]
+            startWith:[UIImage imageNamed:@"avatar-placeholder"]]
+            deliverOn:[RACScheduler mainThreadScheduler]];
+    
+    RAC(self, nameString) = 
+        [[RACObserve(self, user.name)
+            ignore:nil]
+            map:(NSString *)^(NSString *name) {
+                return [name uppercaseString];
+            }];
+    
+    RAC(self, friendCountString) = 
+        [[RACObserve(self, user.friendCount)
+            ignore:nil]
+            map:(NSString *)^(NSNumber *friendCount) {
+                return [NSString stringWithFormat:@"This user has %@ friends", friendCount];
+            }];
+            
+    @weakify(self);
+    _refreshCommand = [[RACCommand alloc] initWithSignalBlock:(RACSignal *)^(id _) {
+        @strongify(self);
+        return [[HOPNetworkController sharedController] fetchUserWithId:self.user.userId];
+    }
+    
+    RAC(self, user) = 
+        [[[_refreshCommand executionSignals] 
+            switchToLatest] 
+            startWith:user];
+}
+
+@end
 {% endhighlight %}
 
 Alright, there's a lot more going on in this view model than there was the view. And that's a good thing. There's some slightly advanced ReactiveCocoa, but don't get hung up on it. The goal is to understand the relationship between the view, view model, and controllers.
@@ -282,36 +288,36 @@ There was a lot to digest in that example. Things to notice:
 I have more questions than answers when it comes to the controller layer. I'll present the header files for the two classes we used above and we'll go from there.
 
 {% highlight objc %}
-	@interface HOPImageController : NSObject
-	
-	// The shared instance of this class.
-	// Inside it has three functions:
-	// * It maintains a separate network client for fetching raw image data.
-	// * It maintains a key/value store of imageURLs and images on disk.
-	// * It adds images from the network to the cache.
-	+ (instancetype)sharedController;
-	
-	// The returned signal sends an image from the cache if available,
-	// then an image from the network, then completes.
-	// The signal sends an error if there was a network error.
-	- (RACSignal *)imageSignalForURL:(NSURL *)URL;
-	
-	@end
-	
-	
-	@interface HOPNetworkController : NSObject
-	
-	// The shared instance of this class.
-	// Inside it manages a network session.
-	+ (instancetype)sharedController;
-	
-	// The returned signal sends a HOPUser, then completes.
-	// The signal sends an error if there was a network error.
-	- (RACSignal *)fetchUserWithUserId:(NSNumber *)userId;
-	
-	@end
+@interface HOPImageController : NSObject
+
+// The shared instance of this class.
+// Inside it has three functions:
+// * It maintains a separate network client for fetching raw image data.
+// * It maintains a key/value store of imageURLs and images on disk.
+// * It adds images from the network to the cache.
++ (instancetype)sharedController;
+
+// The returned signal sends an image from the cache if available,
+// then an image from the network, then completes.
+// The signal sends an error if there was a network error.
+- (RACSignal *)imageSignalForURL:(NSURL *)URL;
+
+@end
+
+
+@interface HOPNetworkController : NSObject
+
+// The shared instance of this class.
+// Inside it manages a network session.
++ (instancetype)sharedController;
+
+// The returned signal sends a HOPUser, then completes.
+// The signal sends an error if there was a network error.
+- (RACSignal *)fetchUserWithUserId:(NSNumber *)userId;
+
+@end
 {% endhighlight %}
-	
+    
 ### Questions
 
 I tried to include some non-trivial aspects to this view/view model/controller set up, but at the end of the day this set of objects has to exist in a much broader application.

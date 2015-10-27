@@ -43,6 +43,7 @@ The latter problem is solved by making another API request to [user.getWeeklyCha
 > user.getWeeklyChartList
 
 {% highlight js %}
+{
     "chart": [
         {
             "from": "1108296002",
@@ -54,6 +55,7 @@ The latter problem is solved by making another API request to [user.getWeeklyCha
         },
         …
     ]
+}
 {% endhighlight %}
 
 Two API calls so far to get most of our data. Not bad. So to document our information flow:
@@ -185,25 +187,25 @@ I followed the GitHub client RAC example as a template for my client. The initia
 > (TCSLastFMAPIClient.h)
 
 {% highlight objc %}
-    #import "AFHTTPClient.h"
-    
-    @class RACSignal;
-    @class WeeklyChart;
-    @class WeeklyAlbumChart;
-    
-    @interface TCSLastFMAPIClient : AFHTTPClient
-    
-    @property (nonatomic, readonly, copy) NSString *userName;
-    
-    + (TCSLastFMAPIClient *)clientForUserName:(NSString *)userName;
-    
-    // returns a single NSArray of WeeklyChart objects
-    - (RACSignal *)fetchWeeklyChartList;
-    
-    // returns a single NSArray of WeeklyAlbumChart objects
-    - (RACSignal *)fetchWeeklyAlbumChartForChart:(WeeklyChart *)chart;
-    
-    @end
+#import "AFHTTPClient.h"
+
+@class RACSignal;
+@class WeeklyChart;
+@class WeeklyAlbumChart;
+
+@interface TCSLastFMAPIClient : AFHTTPClient
+
+@property (nonatomic, readonly, copy) NSString *userName;
+
++ (TCSLastFMAPIClient *)clientForUserName:(NSString *)userName;
+
+// returns a single NSArray of WeeklyChart objects
+- (RACSignal *)fetchWeeklyChartList;
+
+// returns a single NSArray of WeeklyAlbumChart objects
+- (RACSignal *)fetchWeeklyAlbumChartForChart:(WeeklyChart *)chart;
+
+@end
 {% endhighlight %}
 
 A few things to notice:
@@ -225,58 +227,58 @@ Feel free to read the [full implementation](https://github.com/twocentstudios/vi
 > (TCSLastFMAPIClient.m)
 
 {% highlight objc %}
-    // This is our request assembler/responder. 
-    // It sits closest to the network stack in the code we'll write.
-    - (RACSignal *)enqueueRequestWithMethod:(NSString *)method path:(NSString *)path parameters:(NSDictionary *)parameters {
+// This is our request assembler/responder. 
+// It sits closest to the network stack in the code we'll write.
+- (RACSignal *)enqueueRequestWithMethod:(NSString *)method path:(NSString *)path parameters:(NSDictionary *)parameters {
+
+    // An RACSubject is an RACSignal subclass that can 
+    // be manually controlled. It's used to bridge the 
+    // block callback structure of the AFHTTPRequestOperation to RAC.
+    RACReplaySubject *subject = [RACReplaySubject subject];
     
-        // An RACSubject is an RACSignal subclass that can 
-        // be manually controlled. It's used to bridge the 
-        // block callback structure of the AFHTTPRequestOperation to RAC.
-        RACReplaySubject *subject = [RACReplaySubject subject];
+    NSMutableURLRequest *request = [self requestWithMethod:method path:path parameters:parameters];
+    // Network caching is such a fickle thing in iOS that I don't really rely on this to do anything
+    request.cachePolicy = NSURLRequestReturnCacheDataElseLoad;
+  
+    // We assemble our operation callbacks here
+    AFHTTPRequestOperation *operation = [self HTTPRequestOperationWithRequest:request success:^(AFHTTPRequestOperation *operation, id responseObject) {
+    
+      // Last.fm returns error codes in the JSON data,
+      // so it makes sense to handle that on this level.
+      // Our endpoint methods should only care about good responses.
+      NSNumber *errorCode = [responseObject objectForKey:@"error"];
+      if (errorCode){
+        // Make a new error object with the message we get
+        // from the JSON data.
+        NSError *error = [NSError errorWithDomain:@"com.twocentstudios.vinylogue" code:[errorCode integerValue] userInfo:@{ NSLocalizedDescriptionKey: [responseObject objectForKey:@"message"] }];
         
-        NSMutableURLRequest *request = [self requestWithMethod:method path:path parameters:parameters];
-        // Network caching is such a fickle thing in iOS that I don't really rely on this to do anything
-        request.cachePolicy = NSURLRequestReturnCacheDataElseLoad;
-      
-        // We assemble our operation callbacks here
-        AFHTTPRequestOperation *operation = [self HTTPRequestOperationWithRequest:request success:^(AFHTTPRequestOperation *operation, id responseObject) {
+        // Subscribers will "subscribeError:" to this signal
+        // to receive and handle the error. It also completes the request
+        // (subscribeComplete: won't be called).
+        [subject sendError:error];
+      }else{
+        // If last.fm doesn't give us an error, go ahead and send
+        // the response object along to the subscriber.
+        [subject sendNext:responseObject];
         
-          // Last.fm returns error codes in the JSON data,
-          // so it makes sense to handle that on this level.
-          // Our endpoint methods should only care about good responses.
-          NSNumber *errorCode = [responseObject objectForKey:@"error"];
-          if (errorCode){
-            // Make a new error object with the message we get
-            // from the JSON data.
-            NSError *error = [NSError errorWithDomain:@"com.twocentstudios.vinylogue" code:[errorCode integerValue] userInfo:@{ NSLocalizedDescriptionKey: [responseObject objectForKey:@"message"] }];
-            
-            // Subscribers will "subscribeError:" to this signal
-            // to receive and handle the error. It also completes the request
-            // (subscribeComplete: won't be called).
-            [subject sendError:error];
-          }else{
-            // If last.fm doesn't give us an error, go ahead and send
-            // the response object along to the subscriber.
-            [subject sendNext:responseObject];
-            
-            // There's not going to be any more data, so this
-            // RACSignal is complete.
-            [subject sendCompleted];
-          }
-        } failure:^(AFHTTPRequestOperation *operation, NSError *error) {
-            // A network error is handled similarly to a Last.fm error.
-            [subject sendError:error];
-        }];
-      
-        [self enqueueHTTPRequestOperation:operation];
-        
-        // RAC can be used for threading.
-        // In this case, we want our "sendNext:" calls to be
-        // processed by the API endpoint functions on a 
-        // background thread. That way, the UI doesn't hang
-        // while we're moving data from JSON -> new objects.
-        return [subject deliverOn:[RACScheduler scheduler]];
-    }
+        // There's not going to be any more data, so this
+        // RACSignal is complete.
+        [subject sendCompleted];
+      }
+    } failure:^(AFHTTPRequestOperation *operation, NSError *error) {
+        // A network error is handled similarly to a Last.fm error.
+        [subject sendError:error];
+    }];
+  
+    [self enqueueHTTPRequestOperation:operation];
+    
+    // RAC can be used for threading.
+    // In this case, we want our "sendNext:" calls to be
+    // processed by the API endpoint functions on a 
+    // background thread. That way, the UI doesn't hang
+    // while we're moving data from JSON -> new objects.
+    return [subject deliverOn:[RACScheduler scheduler]];
+}
 {% endhighlight %}
 
 So that's our first taste of RAC in action. RACSubjects are a little different than vanilla RACSignals, but again, they're very useful in bridging standard Foundation to RAC.
@@ -288,55 +290,54 @@ We're now at the point where an endpoint function can specify a URL and HTTP met
 > (TCSLastFMAPIClient.m)
 
 {% highlight objc %}
-    // A public API endpoint function exposed in our interface
-    - (RACSignal *)fetchWeeklyChartList{
-        
-      // First, assemble a parameters dictionary to give to our enqueue method.
-      NSDictionary *params = @{@"method": @"user.getweeklychartlist",
-                               @"user": self.userName,
-                               @"api_key": kTCSLastFMAPIKeyString,
-                               @"format": @"json"};
-                               
-      // This is one big method chain we're returning.
-      // The first step is to get the proper request signal
-      // from the enqueue method.
-      return [[[self enqueueRequestWithMethod:@"GET" path:@"" parameters:params]
-                
-                // Then we hijack the signal's response and run it 
-                // through some processing first.
-                //
-                // The "map:" blocks below are called with any
-                // objects sent through the signal's "sendNext" call.
-                // In this example, that object happens to be the
-                // responseObject, which is an NSDictionary created
-                // from a JSON file received from Last.fm.
-                // 
-                // The first processing we'll do is 
-                // pull the object array from its shell.
-                // I'm using an NSDictionary category to define a 
-                // "arrayForKey" method that always returns an array,
-                // even if there's only one object present in the
-                // original dictionary.
-               map:^id(NSDictionary *responseObject) {
-                 return [[responseObject objectForKey:@"weeklychartlist"] arrayForKey:@"chart"];
-                 
-               // Next, we're going to iterate through the array
-               // and replace dictionaries with WeeklyChart objects.
-               // We use the "rac_sequence" method to turn an array
-               // into an RACSequence, then use the map function to
-               // do the replacement. Finally, we request a standard 
-               // array object from the RACSequence object.
-               }] map:^id(NSArray *chartList) {
-                 return [[chartList.rac_sequence map:^id(NSDictionary *chartDictionary) {
-                   WeeklyChart *chart = [[WeeklyChart alloc] init];
-                   chart.from = [NSDate dateWithTimeIntervalSince1970:[[chartDictionary objectForKey:@"from"] doubleValue]];
-                   chart.to = [NSDate dateWithTimeIntervalSince1970:[[chartDictionary objectForKey:@"to"] doubleValue]];
-                   return chart;
-                 }] array];
-               }];
-      
-    }
-
+// A public API endpoint function exposed in our interface
+- (RACSignal *)fetchWeeklyChartList{
+    
+  // First, assemble a parameters dictionary to give to our enqueue method.
+  NSDictionary *params = @{@"method": @"user.getweeklychartlist",
+                           @"user": self.userName,
+                           @"api_key": kTCSLastFMAPIKeyString,
+                           @"format": @"json"};
+                           
+  // This is one big method chain we're returning.
+  // The first step is to get the proper request signal
+  // from the enqueue method.
+  return [[[self enqueueRequestWithMethod:@"GET" path:@"" parameters:params]
+            
+            // Then we hijack the signal's response and run it 
+            // through some processing first.
+            //
+            // The "map:" blocks below are called with any
+            // objects sent through the signal's "sendNext" call.
+            // In this example, that object happens to be the
+            // responseObject, which is an NSDictionary created
+            // from a JSON file received from Last.fm.
+            // 
+            // The first processing we'll do is 
+            // pull the object array from its shell.
+            // I'm using an NSDictionary category to define a 
+            // "arrayForKey" method that always returns an array,
+            // even if there's only one object present in the
+            // original dictionary.
+           map:^id(NSDictionary *responseObject) {
+             return [[responseObject objectForKey:@"weeklychartlist"] arrayForKey:@"chart"];
+             
+           // Next, we're going to iterate through the array
+           // and replace dictionaries with WeeklyChart objects.
+           // We use the "rac_sequence" method to turn an array
+           // into an RACSequence, then use the map function to
+           // do the replacement. Finally, we request a standard 
+           // array object from the RACSequence object.
+           }] map:^id(NSArray *chartList) {
+             return [[chartList.rac_sequence map:^id(NSDictionary *chartDictionary) {
+               WeeklyChart *chart = [[WeeklyChart alloc] init];
+               chart.from = [NSDate dateWithTimeIntervalSince1970:[[chartDictionary objectForKey:@"from"] doubleValue]];
+               chart.to = [NSDate dateWithTimeIntervalSince1970:[[chartDictionary objectForKey:@"to"] doubleValue]];
+               return chart;
+             }] array];
+           }];
+  
+}
 {% endhighlight %}
 
 So it might look a little hairy, but it's essentially just a few processing steps chained together and all in once place.
@@ -370,11 +371,11 @@ The interface for this controller is pretty simple. Just one designated initiali
 > (TCSWeeklyAlbumChartViewController.h)
 
 {% highlight objc %}
-    @interface TCSWeeklyAlbumChartViewController : UIViewController <UITableViewDataSource, UITableViewDelegate>
-    
-    - (id)initWithUserName:(NSString *)userName playCountFilter:(NSUInteger)playCountFilter;
-    
-    @end
+@interface TCSWeeklyAlbumChartViewController : UIViewController <UITableViewDataSource, UITableViewDelegate>
+
+- (id)initWithUserName:(NSString *)userName playCountFilter:(NSUInteger)playCountFilter;
+
+@end
 {% endhighlight %}
 
 Our controller needs to know which user it should display data for. It also needs to know which albums will be filtered based on play count. This controller will also handle all delegate and datasource duties from within. As a side note, I sometimes separate table datasources and delegates out to be their own classes. For this particular controller, things haven't gotten so complex that I've needed to refactor them out.
@@ -390,18 +391,18 @@ Let's start with the views.
 > (TCSWeeklyAlbumChartViewController.m)
 
 {% highlight objc %}
-    @interface TCSWeeklyAlbumChartViewController ()
-    
-    // Views
-    @property (nonatomic, strong) TCSSlideSelectView *slideSelectView;
-    @property (nonatomic, strong) UITableView *tableView;
-    @property (nonatomic, strong) UIView *emptyView;
-    @property (nonatomic, strong) UIView *errorView;
-    @property (nonatomic, strong) UIImageView *loadingImageView;
-    
-    ...
-    
-    @end
+@interface TCSWeeklyAlbumChartViewController ()
+
+// Views
+@property (nonatomic, strong) TCSSlideSelectView *slideSelectView;
+@property (nonatomic, strong) UITableView *tableView;
+@property (nonatomic, strong) UIView *emptyView;
+@property (nonatomic, strong) UIView *errorView;
+@property (nonatomic, strong) UIImageView *loadingImageView;
+
+...
+
+@end
 {% endhighlight %}
 
 The slideSelectView is the special view we use to move to past and future years. It sits on above the tableView and does not scroll.
@@ -415,30 +416,30 @@ The emptyView, errorView, and loadingImageView are used to show state to the use
 > (TCSWeeklyAlbumChartViewController.m)
 
 {% highlight objc %}
-    @interface TCSWeeklyAlbumChartViewController ()
+@interface TCSWeeklyAlbumChartViewController ()
 
-    ...
-    
-    // Datasources
-    @property (atomic, copy) NSString *userName;
-    @property (nonatomic) NSUInteger playCountFilter;
-    @property (atomic, strong) TCSLastFMAPIClient *lastFMClient;
-    
-    @property (atomic, strong) NSArray *weeklyCharts; // list of to:from: dates we can request charts for
-    @property (atomic, strong) NSArray *rawAlbumChartsForWeek; // unfiltered charts
-    @property (atomic, strong) NSArray *albumChartsForWeek; // filtered charts to display
-    
-    @property (atomic, strong) NSCalendar *calendar; // convenience reference
-    @property (atomic, strong) NSDate *now;
-    @property (atomic, strong) NSDate *displayingDate;
-    @property (atomic) NSUInteger displayingYearsAgo;
-    @property (atomic, strong) WeeklyChart *displayingWeeklyChart;
-    @property (atomic, strong) NSDate *earliestScrobbleDate;
-    @property (atomic, strong) NSDate *latestScrobbleDate;
-    
-    ...
-    
-    @end
+...
+
+// Datasources
+@property (atomic, copy) NSString *userName;
+@property (nonatomic) NSUInteger playCountFilter;
+@property (atomic, strong) TCSLastFMAPIClient *lastFMClient;
+
+@property (atomic, strong) NSArray *weeklyCharts; // list of to:from: dates we can request charts for
+@property (atomic, strong) NSArray *rawAlbumChartsForWeek; // unfiltered charts
+@property (atomic, strong) NSArray *albumChartsForWeek; // filtered charts to display
+
+@property (atomic, strong) NSCalendar *calendar; // convenience reference
+@property (atomic, strong) NSDate *now;
+@property (atomic, strong) NSDate *displayingDate;
+@property (atomic) NSUInteger displayingYearsAgo;
+@property (atomic, strong) WeeklyChart *displayingWeeklyChart;
+@property (atomic, strong) NSDate *earliestScrobbleDate;
+@property (atomic, strong) NSDate *latestScrobbleDate;
+
+...
+
+@end
 {% endhighlight %}
     
 From a general overview, we're storing all the data we need to display, including some intermediate states. Why keep the intermediate state? We'll respond to changes in those intermediates and make the chain of events more malleable. Some variables will be observed by views. Some variables will be observed by RAC processing code to produce new values for other variables. As you'll see in a moment, we can completely separate our view and data code by using intermediate state variables instead of relying on linear processes.
@@ -459,19 +460,19 @@ We store a lastFMClient instance to call on as our source of external data.
 > (TCSWeeklyAlbumChartViewController.m)
 
 {% highlight objc %}
-    @interface TCSWeeklyAlbumChartViewController ()
+@interface TCSWeeklyAlbumChartViewController ()
 
-    ...
-    
-    // Controller state
-    @property (atomic) BOOL canMoveForwardOneYear;
-    @property (atomic) BOOL canMoveBackOneYear;
-    @property (atomic) BOOL showingError;
-    @property (atomic) NSString *showingErrorMessage;
-    @property (atomic) BOOL showingEmpty;
-    @property (atomic) BOOL showingLoading;
-    
-    @end
+// ...
+
+// Controller state
+@property (atomic) BOOL canMoveForwardOneYear;
+@property (atomic) BOOL canMoveBackOneYear;
+@property (atomic) BOOL showingError;
+@property (atomic) NSString *showingErrorMessage;
+@property (atomic) BOOL showingEmpty;
+@property (atomic) BOOL showingLoading;
+
+@end
 {% endhighlight %}
     
 We have some additional controller state variables set up. I have to admit that I'm not sure my implementation of empty/error views is the best. There was plenty of experimentation, and I ran into some trouble with threading. It works, but will eventually require a refactor.
@@ -513,39 +514,39 @@ All view attributes are defined in the view getters section. I've taken up this 
 > (TCSWeeklyAlbumChartViewController.m)
 
 {% highlight objc %}
-    // This custom view does most of its own configuration
-    - (TCSSlideSelectView *)slideSelectView{
-      if (!_slideSelectView){
-        _slideSelectView = [[TCSSlideSelectView alloc] init];
-      }
-      return _slideSelectView;
+// This custom view does most of its own configuration
+- (TCSSlideSelectView *)slideSelectView{
+  if (!_slideSelectView){
+    _slideSelectView = [[TCSSlideSelectView alloc] init];
+  }
+  return _slideSelectView;
+}
+
+// The tableview is also pretty vanilla. I'm using a custom
+// inner shadow view (although it's still not quite perfect).
+- (UITableView *)tableView{
+  if (!_tableView){
+    _tableView = [[UITableView alloc] initWithFrame:CGRectZero style:UITableViewStylePlain];
+    _tableView.separatorStyle = UITableViewCellSeparatorStyleNone;
+    _tableView.backgroundView = [[TCSInnerShadowView alloc] initWithColor:WHITE_SUBTLE shadowColor:GRAYCOLOR(210) shadowRadius:3.0f];
+  }
+  return _tableView;
+}
+
+// Spinning record animation. It uses 12 images in a standard UIImageView.
+- (UIImageView *)loadingImageView{
+  if (!_loadingImageView){
+    _loadingImageView = [[UIImageView alloc] initWithFrame:CGRectMake(0, 0, 40, 40)];
+    NSMutableArray *animationImages = [NSMutableArray arrayWithCapacity:12];
+    for (int i = 1; i < 13; i++){
+      [animationImages addObject:[UIImage imageNamed:[NSString stringWithFormat:@"loading%02i", i]]];
     }
-    
-    // The tableview is also pretty vanilla. I'm using a custom
-    // inner shadow view (although it's still not quite perfect).
-    - (UITableView *)tableView{
-      if (!_tableView){
-        _tableView = [[UITableView alloc] initWithFrame:CGRectZero style:UITableViewStylePlain];
-        _tableView.separatorStyle = UITableViewCellSeparatorStyleNone;
-        _tableView.backgroundView = [[TCSInnerShadowView alloc] initWithColor:WHITE_SUBTLE shadowColor:GRAYCOLOR(210) shadowRadius:3.0f];
-      }
-      return _tableView;
-    }
-    
-    // Spinning record animation. It uses 12 images in a standard UIImageView.
-    - (UIImageView *)loadingImageView{
-      if (!_loadingImageView){
-        _loadingImageView = [[UIImageView alloc] initWithFrame:CGRectMake(0, 0, 40, 40)];
-        NSMutableArray *animationImages = [NSMutableArray arrayWithCapacity:12];
-        for (int i = 1; i < 13; i++){
-          [animationImages addObject:[UIImage imageNamed:[NSString stringWithFormat:@"loading%02i", i]]];
-        }
-        [_loadingImageView setAnimationImages:animationImages];
-        _loadingImageView.animationDuration = 0.5f; // trial and error
-        _loadingImageView.animationRepeatCount = 0; // repeat forever
-      }
-      return _loadingImageView;
-    }
+    [_loadingImageView setAnimationImages:animationImages];
+    _loadingImageView.animationDuration = 0.5f; // trial and error
+    _loadingImageView.animationRepeatCount = 0; // repeat forever
+  }
+  return _loadingImageView;
+}
 {% endhighlight %}
     
 #### viewDidLoad & RAC setup
@@ -555,16 +556,16 @@ Now for the fun stuff. The majority of the controller's functionality is set up 
 > (TCSWeeklyAlbumChartViewController.m)
 
 {% highlight objc %}
-    - (void)viewDidLoad{
-      [super viewDidLoad];
-      
-      [self setUpViewSignals];
-      [self setUpDataSignals];
-      
-      // these assignments trigger the controller to begin its actions
-      self.now = [NSDate date];
-      self.displayingYearsAgo = 1;
-    }
+- (void)viewDidLoad{
+  [super viewDidLoad];
+  
+  [self setUpViewSignals];
+  [self setUpDataSignals];
+  
+  // these assignments trigger the controller to begin its actions
+  self.now = [NSDate date];
+  self.displayingYearsAgo = 1;
+}
 {% endhighlight %}
 
 I'm going to start with the view signals to stress that as long as we know the exact meaning of our state variables, we can set up our views to react to them without knowing when or where they will be changed.
@@ -590,34 +591,34 @@ Let's dive right into our first view signal to get a feel for it. I've separated
 > (TCSWeeklyAlbumChartViewController.m)
 
 {% highlight objc %}
-    // Subscribing to all the signals that deal with views and UI
-    - (void)setUpViewSignals{
-      @weakify(self);
-      
-      // SlideSelectView: Top Label
-      // Depends on: userName
-      RACSignal *userNameSignal = RACAbleWithStart(self.userName);
-      
-      // View changes must happen on the main thread
-      [userNameSignal deliverOn:[RACScheduler mainThreadScheduler]];
-      
-      // Change views based on the value of userName
-      [userNameSignal subscribeNext:^(NSString *userName) {
-        @strongify(self);
-        if (userName){
-          self.slideSelectView.topLabel.text = [NSString stringWithFormat:@"%@", userName];
-          self.showingError = NO;
-        }else{
-          self.slideSelectView.topLabel.text = @"No last.fm user";
-          self.showingErrorMessage = @"No last.fm user!";
-          self.showingError = YES;
-        }
-        [self.slideSelectView setNeedsLayout];
-      }]; 
-      
-      …
-    
+// Subscribing to all the signals that deal with views and UI
+- (void)setUpViewSignals{
+  @weakify(self);
+  
+  // SlideSelectView: Top Label
+  // Depends on: userName
+  RACSignal *userNameSignal = RACAbleWithStart(self.userName);
+  
+  // View changes must happen on the main thread
+  [userNameSignal deliverOn:[RACScheduler mainThreadScheduler]];
+  
+  // Change views based on the value of userName
+  [userNameSignal subscribeNext:^(NSString *userName) {
+    @strongify(self);
+    if (userName){
+      self.slideSelectView.topLabel.text = [NSString stringWithFormat:@"%@", userName];
+      self.showingError = NO;
+    }else{
+      self.slideSelectView.topLabel.text = @"No last.fm user";
+      self.showingErrorMessage = @"No last.fm user!";
+      self.showingError = YES;
     }
+    [self.slideSelectView setNeedsLayout];
+  }]; 
+  
+  …
+
+}
 {% endhighlight %}
 
 Let's deconstruct this. `RACAbleWithStart(self.userName)` creates an `RACSignal`. Again, an `RACSignal` can send `next` (with a value) and `error` or `complete` messages to its subscribers.
@@ -639,41 +640,41 @@ Alright, so one signal down. Let's look at another common pattern: combining mul
 > (TCSWeeklyAlbumChartViewController.m)
 
 {% highlight objc %}
-    - (void)setUpViewSignals{
-        @weakify(self);
+- (void)setUpViewSignals{
+    @weakify(self);
+
+    …
     
-        …
-        
-        // SlideSelectView: Bottom Label, Left Label, Right Label
-        // Depend on: displayingDate, earliestScrobbleDate, latestScrobbleDate
-        RACSignal *combinedSignal = [RACSignal combineLatest:@[ RACAbleWithStart(self.displayingDate), RACAbleWithStart(self.earliestScrobbleDate), RACAbleWithStart(self.latestScrobbleDate)] ];
-        
-        // Do it on the main thread
-        [combinedSignal deliverOn:[RACScheduler mainThreadScheduler]];
-        
-        // Actions to perform when changing any of the three signals
-        [combinedSignal subscribeNext:^(RACTuple *dates) {
-             NSDate *displayingDate = dates.first;
-             NSDate *earliestScrobbleDate = dates.second;
-             NSDate *latestScrobbleDate = dates.third;
-            @strongify(self);
-            if (displayingDate){
-              // Set the displaying date label
-              
-              // Calculate and set canMoveBackOneYear and canMoveForwardOneYear
-              
-              // Only show the left and right labels/arrows 
-              // if there's data there to jump to.
-              
-            }else{
-              // There's no displaying date, so set all labels to nil
-            }
-            
-         }];
+    // SlideSelectView: Bottom Label, Left Label, Right Label
+    // Depend on: displayingDate, earliestScrobbleDate, latestScrobbleDate
+    RACSignal *combinedSignal = [RACSignal combineLatest:@[ RACAbleWithStart(self.displayingDate), RACAbleWithStart(self.earliestScrobbleDate), RACAbleWithStart(self.latestScrobbleDate)] ];
+    
+    // Do it on the main thread
+    [combinedSignal deliverOn:[RACScheduler mainThreadScheduler]];
+    
+    // Actions to perform when changing any of the three signals
+    [combinedSignal subscribeNext:^(RACTuple *dates) {
+         NSDate *displayingDate = dates.first;
+         NSDate *earliestScrobbleDate = dates.second;
+         NSDate *latestScrobbleDate = dates.third;
+        @strongify(self);
+        if (displayingDate){
+          // Set the displaying date label
           
-        …
+          // Calculate and set canMoveBackOneYear and canMoveForwardOneYear
+          
+          // Only show the left and right labels/arrows 
+          // if there's data there to jump to.
+          
+        }else{
+          // There's no displaying date, so set all labels to nil
+        }
         
-    }
+     }];
+      
+    // …
+    
+}
 {% endhighlight %}
 
 I've separated out the expressions again, and I've replaced a bunch of tedious date calculation code and view updating code with comments in order to focus on what's happening with RAC. You can see everything in the source.
@@ -693,29 +694,29 @@ Let's do one more view-related signal to show how primitive values are handled.
 > (TCSWeeklyAlbumChartViewController.m)
 
 {% highlight objc %}
-    - (void)setUpViewSignals{
-        @weakify(self);
+- (void)setUpViewSignals{
+    @weakify(self);
+
+    // …
     
-        …
-        
-        // Show or hide the loading view
-        [[[RACAble(self.showingLoading) distinctUntilChanged] 
-         deliverOn:[RACScheduler mainThreadScheduler]]
-         subscribeNext:^(NSNumber *showingLoading) {
-          @strongify(self);
-          BOOL isShowingLoading = [showingLoading boolValue];
-          if (isShowingLoading){
-            [self.loadingImageView startAnimating];
-            self.loadingImageView.hidden = NO;
-          }else{
-            [self.loadingImageView stopAnimating];
-            self.loadingImageView.hidden = YES;
-          }
-        }];
-        
-        …
-        
-    }
+    // Show or hide the loading view
+    [[[RACAble(self.showingLoading) distinctUntilChanged] 
+     deliverOn:[RACScheduler mainThreadScheduler]]
+     subscribeNext:^(NSNumber *showingLoading) {
+      @strongify(self);
+      BOOL isShowingLoading = [showingLoading boolValue];
+      if (isShowingLoading){
+        [self.loadingImageView startAnimating];
+        self.loadingImageView.hidden = NO;
+      }else{
+        [self.loadingImageView stopAnimating];
+        self.loadingImageView.hidden = YES;
+      }
+    }];
+    
+    …
+    
+}
 {% endhighlight %}
 
 Here we're observing the `showingLoading` state variable. This variable will presumably be set by the data subscribers when they're about to do something with the network or process data.
@@ -757,23 +758,23 @@ We'll start with the userName observer.
 > (TCSWeeklyAlbumChartViewController.m)
 
 {% highlight objc %}
-    // All the signals that deal with acquiring and reacting to data changes
-    - (void)setUpDataSignals{
-    
-      @weakify(self);
-    
-      // Setting the username triggers loading of the lastFMClient
-      [[RACAbleWithStart(self.userName) filter:^BOOL(id x) {
-        return (x != nil);
-      }] subscribeNext:^(NSString *userName) {
-        NSLog(@"Loading client for %@...", userName);
-        @strongify(self);
-        self.lastFMClient = [TCSLastFMAPIClient clientForUserName:userName];
-      }];
-      
-      …
-      
-    }
+// All the signals that deal with acquiring and reacting to data changes
+- (void)setUpDataSignals{
+
+  @weakify(self);
+
+  // Setting the username triggers loading of the lastFMClient
+  [[RACAbleWithStart(self.userName) filter:^BOOL(id x) {
+    return (x != nil);
+  }] subscribeNext:^(NSString *userName) {
+    NSLog(@"Loading client for %@...", userName);
+    @strongify(self);
+    self.lastFMClient = [TCSLastFMAPIClient clientForUserName:userName];
+  }];
+  
+  // …
+  
+}
 {% endhighlight %}
 
 We've seen the `RACAbleWithStart` pattern. We're going to use `filter:` to act only on non-nil values of `userName`. Filter takes a block with an argument of the same type as is sent in `next:`. In this case, we don't need to cast it directly, we just know it shouldn't be nil. `filter`'s block returns a `BOOL` that indicates whether it should pass the `next` value to subscribers. Returning `YES` passes the value. Returning `NO` blocks it and the `subscribeNext` block will never see it. `filter` is a operation defined by `RACStream` like `map` which we saw earlier.
@@ -783,30 +784,30 @@ Next is another RAC pattern. You can automatically assign a property to the late
 > (TCSWeeklyAlbumChartViewController.m)
 
 {% highlight objc %}
-    - (void)setUpDataSignals{
-    
-      @weakify(self);
-    
-      …
-      
-      // Update the date being displayed based on the current date/time and how many years ago we want to go back
-      RAC(self.displayingDate) = [[[[RACSignal combineLatest:@[ RACAble(self.now), RACAble(self.displayingYearsAgo) ]]
-        deliverOn:[RACScheduler scheduler]]
-        map:^(RACTuple *t){
-          NSDate *now = t.first;
-          NSNumber *displayingYearsAgo = t.second;
-          NSLog(@"Calculating time range for %@ year(s) ago...", displayingYearsAgo);
-          NSDateComponents *components = [[NSDateComponents alloc] init];
-          components.year = -1*[displayingYearsAgo integerValue];
-          return [self.calendar dateByAddingComponents:components toDate:now options:0];
-        }] filter:^BOOL(id x) {
-          NSLog(@"Time range calculated");
-          return (x != nil);
-        }];
-      
-      …
-      
-    }
+- (void)setUpDataSignals{
+
+  @weakify(self);
+
+  // …
+  
+  // Update the date being displayed based on the current date/time and how many years ago we want to go back
+  RAC(self.displayingDate) = [[[[RACSignal combineLatest:@[ RACAble(self.now), RACAble(self.displayingYearsAgo) ]]
+    deliverOn:[RACScheduler scheduler]]
+    map:^(RACTuple *t){
+      NSDate *now = t.first;
+      NSNumber *displayingYearsAgo = t.second;
+      NSLog(@"Calculating time range for %@ year(s) ago...", displayingYearsAgo);
+      NSDateComponents *components = [[NSDateComponents alloc] init];
+      components.year = -1*[displayingYearsAgo integerValue];
+      return [self.calendar dateByAddingComponents:components toDate:now options:0];
+    }] filter:^BOOL(id x) {
+      NSLog(@"Time range calculated");
+      return (x != nil);
+    }];
+  
+  …
+  
+}
 {% endhighlight %}
 
 This one is a little tricky so let's step through it. First thing we're doing is setting up the `RAC(property)` assignment. `self.displayingDate` will be assigned to whatever `next` value comes out of our complicated signal on the other side of the equals sign.
@@ -826,38 +827,38 @@ We'll do one expression in order to show how we use the Last.fm client functions
 > (TCSWeeklyAlbumChartViewController.m)
 
 {% highlight objc %}
-    - (void)setUpDataSignals{
-    
-      @weakify(self);
-    
-      …
-      
-     // When the weeklychart changes (being loaded the first time, 
-     // or the display date changed), fetch the list of albums for that time period.
-     [[[RACAble(self.displayingWeeklyChart) filter:^BOOL(id x) {
-       return (x != nil);
-     }] deliverOn:[RACScheduler scheduler]]
-      subscribeNext:^(WeeklyChart *displayingWeeklyChart) {
-        NSLog(@"Loading album charts for the selected week...");
-        @strongify(self);
-        [[[self.lastFMClient fetchWeeklyAlbumChartForChart:displayingWeeklyChart]
-          deliverOn:[RACScheduler scheduler]]
-         subscribeNext:^(NSArray *albumChartsForWeek) {
-           NSLog(@"Copying raw weekly charts...");
-           @strongify(self);
-           self.rawAlbumChartsForWeek = albumChartsForWeek;
-         } error:^(NSError *error) {
-           @strongify(self);
-           self.albumChartsForWeek = nil;
-           NSLog(@"There was an error fetching the weekly album charts!");
-           self.showingErrorMessage = error.localizedDescription;
-           self.showingError = YES;
-         }];
-      }];
-      
-      …
+- (void)setUpDataSignals{
+
+  @weakify(self);
+
+  …
   
-    }
+ // When the weeklychart changes (being loaded the first time, 
+ // or the display date changed), fetch the list of albums for that time period.
+ [[[RACAble(self.displayingWeeklyChart) filter:^BOOL(id x) {
+   return (x != nil);
+ }] deliverOn:[RACScheduler scheduler]]
+  subscribeNext:^(WeeklyChart *displayingWeeklyChart) {
+    NSLog(@"Loading album charts for the selected week...");
+    @strongify(self);
+    [[[self.lastFMClient fetchWeeklyAlbumChartForChart:displayingWeeklyChart]
+      deliverOn:[RACScheduler scheduler]]
+     subscribeNext:^(NSArray *albumChartsForWeek) {
+       NSLog(@"Copying raw weekly charts...");
+       @strongify(self);
+       self.rawAlbumChartsForWeek = albumChartsForWeek;
+     } error:^(NSError *error) {
+       @strongify(self);
+       self.albumChartsForWeek = nil;
+       NSLog(@"There was an error fetching the weekly album charts!");
+       self.showingErrorMessage = error.localizedDescription;
+       self.showingError = YES;
+     }];
+  }];
+  
+  // …
+
+}
 {% endhighlight %}
 
 Once we have a specific time period to request charts for, we'll get a signal from the client by supplying the displayingWeeklyChart. We have a signal within a signal in this block. As soon as we `subscribeNext` to the signal that was returned from the client, it will request data from the network and do the processing. 
@@ -889,28 +890,28 @@ From our sketch, we can deconstruct the views we need.
 > (TCSSlideSelectView.h)
 
 {% highlight objc %}
-    @interface TCSSlideSelectView : UIView <UIScrollViewDelegate>
-    
-    @property (nonatomic, readonly) UIView *backView;
-    @property (nonatomic, readonly) UIButton *backLeftButton;
-    @property (nonatomic, readonly) UIButton *backRightButton;
-    @property (nonatomic, readonly) UILabel *backLeftLabel;
-    @property (nonatomic, readonly) UILabel *backRightLabel;
-    
-    @property (nonatomic, readonly) UIScrollView *scrollView;
-    
-    @property (nonatomic, readonly) UIView *frontView;
-    @property (nonatomic, readonly) UILabel *topLabel;
-    @property (nonatomic, readonly) UILabel *bottomLabel;
-    
-    // Signals will be fired when the scroll view is dragged past the offset
-    @property (nonatomic) CGFloat pullLeftOffset;
-    @property (nonatomic) CGFloat pullRightOffset;
-    
-    @property (nonatomic, strong) RACCommand *pullLeftCommand;
-    @property (nonatomic, strong) RACCommand *pullRightCommand;
-    
-    @end
+@interface TCSSlideSelectView : UIView <UIScrollViewDelegate>
+
+@property (nonatomic, readonly) UIView *backView;
+@property (nonatomic, readonly) UIButton *backLeftButton;
+@property (nonatomic, readonly) UIButton *backRightButton;
+@property (nonatomic, readonly) UILabel *backLeftLabel;
+@property (nonatomic, readonly) UILabel *backRightLabel;
+
+@property (nonatomic, readonly) UIScrollView *scrollView;
+
+@property (nonatomic, readonly) UIView *frontView;
+@property (nonatomic, readonly) UILabel *topLabel;
+@property (nonatomic, readonly) UILabel *bottomLabel;
+
+// Signals will be fired when the scroll view is dragged past the offset
+@property (nonatomic) CGFloat pullLeftOffset;
+@property (nonatomic) CGFloat pullRightOffset;
+
+@property (nonatomic, strong) RACCommand *pullLeftCommand;
+@property (nonatomic, strong) RACCommand *pullRightCommand;
+
+@end
 {% endhighlight %}
 
 We'll decide up front that this view will be somewhere between a generic and concrete view. A good future exercise would be figuring out how to make this view generic enough to be used by other controllers and apps. We've made it sort of generic by exposing all the subviews as readonly, therefore allowing other objects to change view colors and other properties, but not allowing them to replace views with their own.
@@ -928,13 +929,13 @@ Here's the private interface:
 > (TCSSlideSelectView.m)
 
 {% highlight objc %}
-    @interface TCSSlideSelectView ()
-    
-    @property (nonatomic, strong) UIView *backView;
-    // redefine the rest of the views as strong instead of readonly
-    // ...
-    
-    @end
+@interface TCSSlideSelectView ()
+
+@property (nonatomic, strong) UIView *backView;
+// redefine the rest of the views as strong instead of readonly
+// ...
+
+@end
 {% endhighlight %}
     
 We'll define the view hierarchy and create defaults in `init`.
@@ -942,33 +943,33 @@ We'll define the view hierarchy and create defaults in `init`.
 > (TCSSlideSelectView.m)
 
 {% highlight objc %}
-    - (id)init{
-      self = [super initWithFrame:CGRectZero];
-      if (self) {
-        [self addSubview:self.backView];
-        
-        [self.backView addSubview:self.backLeftLabel];
-        [self.backView addSubview:self.backRightLabel];
-        
-        [self.backView addSubview:self.scrollView];
-        
-        // Buttons technically sit above (but not on) 
-        // the scrollview in order to intercept touches
-        [self.backView addSubview:self.backLeftButton];
-        [self.backView addSubview:self.backRightButton];
-        
-        [self.scrollView addSubview:self.frontView];
-        [self.frontView addSubview:self.topLabel];
-        [self.frontView addSubview:self.bottomLabel];
-        
-        // Set up commands
-        self.pullLeftOffset = 40;
-        self.pullRightOffset = 40;
-        self.pullLeftCommand = [RACCommand command];
-        self.pullRightCommand = [RACCommand command];
-      }
-      return self;
-    }
+- (id)init{
+  self = [super initWithFrame:CGRectZero];
+  if (self) {
+    [self addSubview:self.backView];
+    
+    [self.backView addSubview:self.backLeftLabel];
+    [self.backView addSubview:self.backRightLabel];
+    
+    [self.backView addSubview:self.scrollView];
+    
+    // Buttons technically sit above (but not on) 
+    // the scrollview in order to intercept touches
+    [self.backView addSubview:self.backLeftButton];
+    [self.backView addSubview:self.backRightButton];
+    
+    [self.scrollView addSubview:self.frontView];
+    [self.frontView addSubview:self.topLabel];
+    [self.frontView addSubview:self.bottomLabel];
+    
+    // Set up commands
+    self.pullLeftOffset = 40;
+    self.pullRightOffset = 40;
+    self.pullLeftCommand = [RACCommand command];
+    self.pullRightCommand = [RACCommand command];
+  }
+  return self;
+}
 {% endhighlight %}
     
 Logically, the buttons would be behind the scrollView, but I was having trouble getting taps to get forwarded from the invisible scrollview to the button below it (maybe I should have just made the scrollView narrower?). Instead, the buttons sit above the scrollview and disappear when scrolling begins.
@@ -982,21 +983,21 @@ We'll move on to the more interesting part: using `RACCommand`s to pass messages
 > (TCSSlideSelectView.m)
 
 {% highlight objc %}
-    # pragma mark - UIScrollViewDelegate
-    
-    - (void)scrollViewWillBeginDragging:(UIScrollView *)scrollView{
-      [self showBackButtons:NO];
-    }
-    
-    - (void)scrollViewDidEndDragging:(UIScrollView *)scrollView willDecelerate:(BOOL)decelerate{
-      CGFloat offset = scrollView.contentOffset.x;
-      if (offset <= -self.pullLeftOffset){
-        [self.pullLeftCommand execute:nil];
-      }else if(offset >= self.pullRightOffset){
-        [self.pullRightCommand execute:nil];
-      }
-      [self showBackButtons:YES];
-    }
+# pragma mark - UIScrollViewDelegate
+
+- (void)scrollViewWillBeginDragging:(UIScrollView *)scrollView{
+  [self showBackButtons:NO];
+}
+
+- (void)scrollViewDidEndDragging:(UIScrollView *)scrollView willDecelerate:(BOOL)decelerate{
+  CGFloat offset = scrollView.contentOffset.x;
+  if (offset <= -self.pullLeftOffset){
+    [self.pullLeftCommand execute:nil];
+  }else if(offset >= self.pullRightOffset){
+    [self.pullRightCommand execute:nil];
+  }
+  [self showBackButtons:YES];
+}
 {% endhighlight %}
     
 Like I just mentioned before, we'll hide the buttons when scrolling starts and show them again when scrolling ends.
@@ -1010,15 +1011,15 @@ Before we move back to the controller to show how we handle these messages, here
 > (TCSSlideSelectView.m)
 
 {% highlight objc %}
-    # pragma mark - private
-    
-    - (void)doLeftButton:(UIButton *)button{
-      [self.pullLeftCommand execute:nil];
-    }
-    
-    - (void)doRightButton:(UIButton *)button{
-      [self.pullRightCommand execute:nil];
-    }
+# pragma mark - private
+
+- (void)doLeftButton:(UIButton *)button{
+  [self.pullLeftCommand execute:nil];
+}
+
+- (void)doRightButton:(UIButton *)button{
+  [self.pullRightCommand execute:nil];
+}
 {% endhighlight %}
 
 The buttons trigger the same action as the scrollView.
@@ -1028,13 +1029,13 @@ Another way to interface `UIControl`s with RAC is to use the `RACSignalSupport` 
 > (UIControl+RACSignalSupport.h)
 
 {% highlight objc %}
-    @interface UIControl (RACSignalSupport)
-    
-    // Creates and returns a signal that sends the sender of the control event
-    // whenever one of the control events is triggered.
-    - (RACSignal *)rac_signalForControlEvents:(UIControlEvents)controlEvents;
-    
-    @end
+@interface UIControl (RACSignalSupport)
+
+// Creates and returns a signal that sends the sender of the control event
+// whenever one of the control events is triggered.
+- (RACSignal *)rac_signalForControlEvents:(UIControlEvents)controlEvents;
+
+@end
 {% endhighlight %}
 
 Let's quickly jump back to the `TCSWeeklyAlbumChartViewController` to show how we interface with this custom control.
@@ -1042,25 +1043,25 @@ Let's quickly jump back to the `TCSWeeklyAlbumChartViewController` to show how w
 > (TCSWeeklyAlbumChartViewController.m)
 
 {% highlight objc %}
-    - (void)setUpDataSignals{
+- (void)setUpDataSignals{
 
-      …
-      
-      // Change displayed year by sliding the slideSelectView left or right
-      self.slideSelectView.pullLeftCommand = [RACCommand commandWithCanExecuteSignal:RACAble(self.canMoveBackOneYear)];
-      [self.slideSelectView.pullLeftCommand subscribeNext:^(id x) {
-        @strongify(self);
-        self.displayingYearsAgo += 1;
-      }];
-      self.slideSelectView.pullRightCommand = [RACCommand commandWithCanExecuteSignal:RACAble(self.canMoveForwardOneYear)];
-      [self.slideSelectView.pullRightCommand subscribeNext:^(id x) {
-        @strongify(self);
-        self.displayingYearsAgo -= 1;
-      }];
-      
-      …
-      
-    }
+  // …
+  
+  // Change displayed year by sliding the slideSelectView left or right
+  self.slideSelectView.pullLeftCommand = [RACCommand commandWithCanExecuteSignal:RACAble(self.canMoveBackOneYear)];
+  [self.slideSelectView.pullLeftCommand subscribeNext:^(id x) {
+    @strongify(self);
+    self.displayingYearsAgo += 1;
+  }];
+  self.slideSelectView.pullRightCommand = [RACCommand commandWithCanExecuteSignal:RACAble(self.canMoveForwardOneYear)];
+  [self.slideSelectView.pullRightCommand subscribeNext:^(id x) {
+    @strongify(self);
+    self.displayingYearsAgo -= 1;
+  }];
+  
+  // …
+  
+}
 {% endhighlight %}
     
 We're creating signals (commands) and assigning them to the slideSelectView. The slideSelectView will own these signals, but before the controller hands them over, it will add a special "canExecuteSignal" and then subscription instructions for each.
@@ -1110,15 +1111,15 @@ Now that there's a map for our cell layout, let's implement it.
 > (TCSAlbumArtistPlayCountCell.h)
 
 {% highlight objc %}
-    @interface TCSAlbumArtistPlayCountCell : UITableViewCell
-    
-    @property (nonatomic, strong) WeeklyAlbumChart *object;
-    
-    - (void)refreshImage;
-    
-    + (CGFloat)heightForObject:(id)object atIndexPath:(NSIndexPath *)indexPath tableView:(UITableView *)tableView;
-    
-    @end
+@interface TCSAlbumArtistPlayCountCell : UITableViewCell
+
+@property (nonatomic, strong) WeeklyAlbumChart *object;
+
+- (void)refreshImage;
+
++ (CGFloat)heightForObject:(id)object atIndexPath:(NSIndexPath *)indexPath tableView:(UITableView *)tableView;
+
+@end
 {% endhighlight %}
 
 We'll keep a reference to the model object we're displaying. There's some debate about the best way to implement the model/view relationship. Sometimes I borrow the concept of a "decorator" object from Rails that owns the model object and transforms its values into something displayable. I decided to keep this app simple this time and have the cell assign its own view attributes directly from the model object. If we didn't have a one-to-one relationship between views and model objects, I would definitely reconsider this.
@@ -1134,16 +1135,16 @@ Our private instance variables:
 > (TCSAlbumArtistPlayCountCell.m)
 
 {% highlight objc %}
-    @interface TCSAlbumArtistPlayCountCell ()
-    
-    @property (nonatomic, strong) UILabel *playCountLabel;
-    @property (nonatomic, strong) UILabel *playCountTitleLabel;
-    @property (nonatomic, strong) UILabel *rankLabel;
-    @property (nonatomic, strong) UIView *backView;
-    
-    @property (nonatomic, strong) NSString *imageURLCache;
-    
-    @end
+@interface TCSAlbumArtistPlayCountCell ()
+
+@property (nonatomic, strong) UILabel *playCountLabel;
+@property (nonatomic, strong) UILabel *playCountTitleLabel;
+@property (nonatomic, strong) UILabel *rankLabel;
+@property (nonatomic, strong) UIView *backView;
+
+@property (nonatomic, strong) NSString *imageURLCache;
+
+@end
 {% endhighlight %}
     
 I'm reusing `UITableViewCell`'s `textLabel` and `detailTextLabel` for my artist and album labels, and reusing the `imageView` for the album image. Our cells aren't currently selectable, so the cell only has a normal background view and not a selected one.
@@ -1153,29 +1154,29 @@ I'll come back to that `imageURLCache` string in a moment.
 > (TCSAlbumArtistPlayCountCell.m)
 
 {% highlight objc %}
-    @implementation TCSAlbumArtistPlayCountCell
+@implementation TCSAlbumArtistPlayCountCell
+
+- (id)init{
+  self = [super initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:NSStringFromClass([self class])];
+  if (self) {
+    self.selectionStyle = UITableViewCellSelectionStyleNone;
     
-    - (id)init{
-      self = [super initWithStyle:UITableViewCellStyleSubtitle reuseIdentifier:NSStringFromClass([self class])];
-      if (self) {
-        self.selectionStyle = UITableViewCellSelectionStyleNone;
+    self.backgroundView = self.backView;
         
-        self.backgroundView = self.backView;
-            
-        [self configureTextLabel];
-        [self configureDetailTextLabel];
-        [self configureImageView];
-        [self.contentView addSubview:self.playCountLabel];
-        [self.contentView addSubview:self.playCountTitleLabel];
-        [self.contentView addSubview:self.rankLabel];
-        
-      }
-      return self;
-    }
+    [self configureTextLabel];
+    [self configureDetailTextLabel];
+    [self configureImageView];
+    [self.contentView addSubview:self.playCountLabel];
+    [self.contentView addSubview:self.playCountTitleLabel];
+    [self.contentView addSubview:self.rankLabel];
     
-    … 
-    
-    @end
+  }
+  return self;
+}
+
+// … 
+
+@end
 {% endhighlight %}
 
 I create and/or configure my views in custom getters at the bottom of my implementation file. Nothing too interesting here. Moving on…
@@ -1183,24 +1184,24 @@ I create and/or configure my views in custom getters at the bottom of my impleme
 > (TCSAlbumArtistPlayCountCell.m)
 
 {% highlight objc %}
-    - (void)setObject:(WeeklyAlbumChart *)object {
-      if (_object == object)
-        return;
-      
-      _object = object;
-      self.textLabel.text = [object.artistName uppercaseString];
-      self.detailTextLabel.text = object.albumName;
-      self.playCountLabel.text = [object.playcount stringValue];
-      self.rankLabel.text = [object.rank stringValue];
-      
-      [self refreshImage];
-    
-      if (object.playcountValue == 1){
-        self.playCountTitleLabel.text = NSLocalizedString(@"play", nil);
-      }else{
-        self.playCountTitleLabel.text = NSLocalizedString(@"plays", nil);
-      }
-    }
+- (void)setObject:(WeeklyAlbumChart *)object {
+  if (_object == object)
+    return;
+  
+  _object = object;
+  self.textLabel.text = [object.artistName uppercaseString];
+  self.detailTextLabel.text = object.albumName;
+  self.playCountLabel.text = [object.playcount stringValue];
+  self.rankLabel.text = [object.rank stringValue];
+  
+  [self refreshImage];
+
+  if (object.playcountValue == 1){
+    self.playCountTitleLabel.text = NSLocalizedString(@"play", nil);
+  }else{
+    self.playCountTitleLabel.text = NSLocalizedString(@"plays", nil);
+  }
+}
 {% endhighlight %}
     
 Our custom object setter is in charge of properly assigning model object data to our views. The interesting problem we come across is the albumImage. Let's look at the `refreshImage` instance method:
@@ -1208,18 +1209,18 @@ Our custom object setter is in charge of properly assigning model object data to
 > (TCSAlbumArtistPlayCountCell.m)
 
 {% highlight objc %}
-    - (void)refreshImage{
-      UIImage *placeHolderImage = [UIImage imageNamed:placeholderImage];
-      if (self.imageView.image == nil){
-        self.imageView.image = placeHolderImage;
-      }
-      
-      if(self.object.albumImageURL && ![self.object.albumImageURL isEqualToString:self.imageURLCache]){
-        // prevent setting imageView unnecessarily
-        [self.imageView setImageWithURL:[NSURL URLWithString:self.object.albumImageURL] placeholderImage:placeHolderImage];
-        self.imageURLCache = self.object.albumImageURL;
-      }
-    }
+- (void)refreshImage{
+  UIImage *placeHolderImage = [UIImage imageNamed:placeholderImage];
+  if (self.imageView.image == nil){
+    self.imageView.image = placeHolderImage;
+  }
+  
+  if(self.object.albumImageURL && ![self.object.albumImageURL isEqualToString:self.imageURLCache]){
+    // prevent setting imageView unnecessarily
+    [self.imageView setImageWithURL:[NSURL URLWithString:self.object.albumImageURL] placeholderImage:placeHolderImage];
+    self.imageURLCache = self.object.albumImageURL;
+  }
+}
 {% endhighlight %}
 
 What do we know about the image at this point? When our WeeklyAlbumChart object is originally created, it does not have an album image URLl The Last.fm API does not return that data with the call we're using. If we want that image URL, we have to request it using a separate `album.getInfo` API call. And it may not even exist for a particular album.
@@ -1231,16 +1232,16 @@ Why don't we just request all these image URLs when we originally receive the al
 > (TCSWeeklyAlbumChartViewController.m)
 
 {% highlight objc %}
-    - (void)tableView:(UITableView *)tableView willDisplayCell:(UITableViewCell *)cell forRowAtIndexPath:(NSIndexPath *)indexPath{
-      // If the object doesn't have an album URL yet, request it from the server then refresh the cell
-      TCSAlbumArtistPlayCountCell *albumCell = (TCSAlbumArtistPlayCountCell *)cell;
-      WeeklyAlbumChart *albumChart = [self.albumChartsForWeek objectAtIndex:indexPath.row];
-      if (albumChart.albumImageURL == nil) {
-        [[[self.lastFMClient fetchImageURLForWeeklyAlbumChart:albumChart] deliverOn:[RACScheduler mainThreadScheduler]] subscribeNext:^(NSString *albumImageURL) {
-          [albumCell refreshImage];
-        }];
-      }
-    }
+- (void)tableView:(UITableView *)tableView willDisplayCell:(UITableViewCell *)cell forRowAtIndexPath:(NSIndexPath *)indexPath{
+  // If the object doesn't have an album URL yet, request it from the server then refresh the cell
+  TCSAlbumArtistPlayCountCell *albumCell = (TCSAlbumArtistPlayCountCell *)cell;
+  WeeklyAlbumChart *albumChart = [self.albumChartsForWeek objectAtIndex:indexPath.row];
+  if (albumChart.albumImageURL == nil) {
+    [[[self.lastFMClient fetchImageURLForWeeklyAlbumChart:albumChart] deliverOn:[RACScheduler mainThreadScheduler]] subscribeNext:^(NSString *albumImageURL) {
+      [albumCell refreshImage];
+    }];
+  }
+}
 {% endhighlight %}
     
 In the controller, if the model object does not have an albumImageURL we request it using a new API client method (that returns an `RACSignal` of course). We subscribe, so when it's done we can refresh the cell and load the new image using `AFNetworking`'s `UIImageView` category that loads images asynchronously from a URL.
@@ -1381,50 +1382,50 @@ This example is for editing the userName of a friend by tapping the cell during 
 > (TCSFavoriteUsersViewController.m)
 
 {% highlight objc %}
-    - (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath{
-      [tableView deselectRowAtIndexPath:indexPath animated:YES];
+- (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath{
+  [tableView deselectRowAtIndexPath:indexPath animated:YES];
+
+ // Get the user name for the row using a helper function.
+ // We could get the whole User object, but in this case 
+ // we only need the name.
+  NSString *userName = [self userNameForIndexPath:indexPath];
+
+  // Selecting the cell has different behavior depending on 
+  // whether or not the controller is in edit mode.
+  if (!self.editing){
+  
+    // In non-editing mode, just present a new chart controller.
+    TCSWeeklyAlbumChartViewController *albumChartController = [[TCSWeeklyAlbumChartViewController alloc] initWithUserName:userName playCountFilter:self.playCountFilter];
+    [self.navigationController pushViewController:albumChartController animated:YES];
+  }else{
     
-     // Get the user name for the row using a helper function.
-     // We could get the whole User object, but in this case 
-     // we only need the name.
-      NSString *userName = [self userNameForIndexPath:indexPath];
+    TCSUserNameViewController *userNameController = [[TCSUserNameViewController alloc] initWithUserName:userName headerShowing:NO];
+    @weakify(self);
     
-      // Selecting the cell has different behavior depending on 
-      // whether or not the controller is in edit mode.
-      if (!self.editing){
+    // The userNameController has a signal (analogous to a protocol) that
+    // sends the User object if it has changed.
+    // We subscribe to it in advance, and write our instructions for
+    // processing changes.
+    [[userNameController userSignal] subscribeNext:^(User *user){
+      @strongify(self);
       
-        // In non-editing mode, just present a new chart controller.
-        TCSWeeklyAlbumChartViewController *albumChartController = [[TCSWeeklyAlbumChartViewController alloc] initWithUserName:userName playCountFilter:self.playCountFilter];
-        [self.navigationController pushViewController:albumChartController animated:YES];
+      // Section 0 is for the primary user.
+      // Section 1 is for friends.
+      // Our userStore class takes care of the actual replacement 
+      // and persistence.
+      if (indexPath.section == 0){
+        [self.userStore setUser:user];
       }else{
-        
-        TCSUserNameViewController *userNameController = [[TCSUserNameViewController alloc] initWithUserName:userName headerShowing:NO];
-        @weakify(self);
-        
-        // The userNameController has a signal (analogous to a protocol) that
-        // sends the User object if it has changed.
-        // We subscribe to it in advance, and write our instructions for
-        // processing changes.
-        [[userNameController userSignal] subscribeNext:^(User *user){
-          @strongify(self);
-          
-          // Section 0 is for the primary user.
-          // Section 1 is for friends.
-          // Our userStore class takes care of the actual replacement 
-          // and persistence.
-          if (indexPath.section == 0){
-            [self.userStore setUser:user];
-          }else{
-            [self.userStore replaceFriendAtIndex:indexPath.row withFriend:user];
-          }
-        }completed:^{
-          // The signal completing tells us that we can remove the user name controller.
-          [self.navigationController popViewControllerAnimated:YES];
-        }];
-        
-        [self.navigationController pushViewController:userNameController animated:YES];
+        [self.userStore replaceFriendAtIndex:indexPath.row withFriend:user];
       }
-    }
+    }completed:^{
+      // The signal completing tells us that we can remove the user name controller.
+      [self.navigationController popViewControllerAnimated:YES];
+    }];
+    
+    [self.navigationController pushViewController:userNameController animated:YES];
+  }
+}
 {% endhighlight %}
 
 The child controller has a signal instead of a protocol method. We place what would be the protocol method's contents in the signal subscription block.
@@ -1438,22 +1439,22 @@ We'll use a done button or textField's return button as our confirm button.
 > (TCSUserNameViewController.m)
 
 {% highlight objc %}
-    #pragma mark - private
-    
-    - (void)doDone:(id)sender{
-      self.loading = YES;
-      [[[self.lastFMClient fetchUserForUserName:self.userNameField.text]
-         deliverOn:[RACScheduler mainThreadScheduler]]
-       subscribeNext:^(User *user) {
-        [self.userSignal sendNext:user];
-        [self.userSignal sendCompleted];
-      } error:^(NSError *error) {
-        [[[UIAlertView alloc] initWithTitle:@"Vinylogue" message:[error localizedDescription] delegate:nil cancelButtonTitle:@"OK" otherButtonTitles:nil] show];
-        self.loading = NO;
-      } completed:^{
-        self.loading = NO;
-      }];
-    }
+#pragma mark - private
+
+- (void)doDone:(id)sender{
+  self.loading = YES;
+  [[[self.lastFMClient fetchUserForUserName:self.userNameField.text]
+     deliverOn:[RACScheduler mainThreadScheduler]]
+   subscribeNext:^(User *user) {
+    [self.userSignal sendNext:user];
+    [self.userSignal sendCompleted];
+  } error:^(NSError *error) {
+    [[[UIAlertView alloc] initWithTitle:@"Vinylogue" message:[error localizedDescription] delegate:nil cancelButtonTitle:@"OK" otherButtonTitles:nil] show];
+    self.loading = NO;
+  } completed:^{
+    self.loading = NO;
+  }];
+}
 {% endhighlight %}
 
 I initially implemented this by simply returning whatever userName the user entered in the box without any checking. As an additional feature, I implemented a network call into this step that checks the userName with Last.fm before returning it. The side effect is that the name gets formatted as it was intended.

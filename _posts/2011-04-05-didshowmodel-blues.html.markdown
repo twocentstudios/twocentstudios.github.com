@@ -9,9 +9,6 @@ tags:
 status: publish
 type: post
 published: true
-meta: 
-  _edit_last: "1"
-  sfw_comment_form_password: dxUK7Vn2PARM
 ---
 I'm working with a TTTableViewController right now. Try to stay with me.
 

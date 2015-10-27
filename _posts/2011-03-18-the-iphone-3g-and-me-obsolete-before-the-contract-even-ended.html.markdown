@@ -8,9 +8,6 @@ tags:
 status: publish
 type: post
 published: true
-meta: 
-  _edit_last: "1"
-  sfw_comment_form_password: esHowq8KLcaX
 ---
 I've had a love-hate relationship with my iPhone since iOS4.
 

@@ -8,28 +8,24 @@ tags:
 status: publish
 type: post
 published: true
-meta: 
-  _edit_last: "1"
-  _syntaxhighlighter_encoded: "1"
-  sfw_comment_form_password: ajOiRf9Ju8oV
 ---
 I've probably re-solved this problem at least three times, so time to document it.
 
 Let's say you're dealing with an XML feed response from a webservice. You're using the TTXMLParser extension. Here's an example of what we might get back from a webservice that shows a user's recently read books:
 
 ```
-&lt;response&gt;
-  &lt;book&gt;
-    &lt;title&gt;The Stranger&lt;/title&gt;
-    &lt;author&gt;Albert Camus&lt;/author&gt;
-    &lt;completed&gt;Apr 11&lt;/completed&gt;
-  &lt;/book&gt;
-  &lt;book&gt;
-    &lt;title&gt;Pinball 1973&lt;/title&gt;
-    &lt;author&gt;Haruki Murakami&lt;/author&gt;
-    &lt;completed&gt;Apr 5&lt;/completed&gt;
-  &lt;/book&gt;
-&lt;/response&gt;
+<response>
+  <book>
+    <title>The Stranger</title>
+    <author>Albert Camus</author>
+    <completed>Apr 11</completed>
+  </book>
+  <book>
+    <title>Pinball 1973</title>
+    <author>Haruki Murakami</author>
+    <completed>Apr 5</completed>
+  </book>
+</response>
 ```
 
 The number of books is completely variable. This is the problem we're going to solve below. It could return zero, one, or more book elements.

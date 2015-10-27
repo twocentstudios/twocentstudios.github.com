@@ -73,9 +73,9 @@ I didn't get a chance to get this feature the way I wanted. I had to settle for 
 
 {% caption_img /images/flexible-parts-ss-3.png Fill in trait values, and add more from another chosen type-ahead text box %}
 
-{% caption_img /images/flexible-parts-ss-4.png Viewing a single part. I was planning on having the "global|plier" radio buttons filter their traits and values, but didn't get around to implementing it. %}
+{% caption_img /images/flexible-parts-ss-4.png Viewing a single part. I was planning on having the `global|plier` radio buttons filter their traits and values, but did not get around to implementing it. %}
 
-{% caption_img /images/flexible-parts-ss-5.png All trait groups. Trait groups can keep track of which parts they're attached to. %}
+{% caption_img /images/flexible-parts-ss-5.png All trait groups. Trait groups can keep track of which parts they are attached to. %}
 
 {% caption_img /images/flexible-parts-ss-6.png A single trait group. It shows its linked traits and associated parts. %}
 
