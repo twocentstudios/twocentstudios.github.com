@@ -1,7 +1,7 @@
---- 
+---
 layout: post
 title: TTTabStrip Controlled Multi-table Lazy-loading TTTableViewController
-tags: 
+tags:
 - iOS
 - Three20
 - TTTableViewController
@@ -9,6 +9,7 @@ tags:
 status: publish
 type: post
 published: true
+redirect_from: "/blog/2011/03/13/tttabstrip-controlled-multi-table-lazy-loading-tttableviewcontroller.html"
 ---
 
 Using a single TTTableViewController and a TTTabStrip can sometimes be an appropriate way to avoid drilling down through two tableviews. I'm going to walk through how to do this with a YouTube viewer as an example.

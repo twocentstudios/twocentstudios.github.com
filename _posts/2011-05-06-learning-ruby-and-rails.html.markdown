@@ -1,7 +1,7 @@
---- 
+---
 layout: post
 title: Learning Ruby and Rails
-tags: 
+tags:
 - Commentary
 - learning
 - Rails
@@ -10,6 +10,7 @@ tags:
 status: publish
 type: post
 published: true
+redirect_from: "/blog/2011/05/06/learning-ruby-and-rails.html"
 ---
 Last October, a couple things came together at the same time which prompted to want to learn Rails.
 <h2>Starting Out</h2>

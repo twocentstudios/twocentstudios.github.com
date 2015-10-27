@@ -1,9 +1,10 @@
 ---
 layout: post
-title: "Summer 2012 Project Wrap Up"
+title: Summer 2012 Project Wrap Up
 date: 2012-09-30 07:08
 comments: true
 categories: wrap-up
+redirect_from: "/blog/2012/09/30/summer-2012-project-wrap-up"
 ---
 
 A lot has happened since my last quarterly project wrap-up. I've done a lot of little projects here and there, abandoned a few, and dreamed up a bunch more that I can't wait to start on. Here's a summary of the smaller things that might not have gotten their own posts over the last couple months.

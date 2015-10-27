@@ -1,13 +1,14 @@
---- 
+---
 layout: post
 title: Inset Square with Three20 & TTStyle
-tags: 
+tags:
 - iOS
 - Three20
 - TTStyle
 status: publish
 type: post
 published: true
+redirect_from: "/blog/2011/02/05/inset-square-with-three20-ttstyle.html"
 ---
 
 <a href="http://three20.info">Three20</a> is a pretty fantastic iOS library. One of the features that took me awhile to get a handle on was using TTView and TTStyles. Here, I'll show how to make a fancy square button that looks like this:

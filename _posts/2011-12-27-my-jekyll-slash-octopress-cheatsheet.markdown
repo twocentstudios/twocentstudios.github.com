@@ -1,9 +1,10 @@
 ---
 layout: post
-title: "My Jekyll/Octopress Cheatsheet"
+title: My Jekyll/Octopress Cheatsheet
 date: 2011-12-27 21:26
 comments: true
 categories: 
+redirect_from: "/blog/2011/12/27/my-jekyll-slash-octopress-cheatsheet"
 ---
 
 This is my first Jekyll post. And as such, it seems fitting to cram all these new commands into a cheat sheet post so I can take my time learning them (and I don't have to search through just a few pages of documentation).

@@ -1,10 +1,11 @@
 ---
 layout: post
-title: "How Do We Develop Taste?"
+title: How Do We Develop Taste?
 date: 2012-03-31 17:09
 comments: true
 published: false
 categories: 
+redirect_from: "/blog/2012/03/31/how-do-we-develop-taste"
 ---
 
 This is pretty rambling, almost to the point of no TL;DR even possible. But here goes.

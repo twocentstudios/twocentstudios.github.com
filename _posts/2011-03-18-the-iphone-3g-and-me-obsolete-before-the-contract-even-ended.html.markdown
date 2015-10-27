@@ -1,13 +1,14 @@
---- 
+---
 layout: post
-title: "The iPhone 3G and Me: Obsolete Before the Contract Even Ended"
-tags: 
+title: 'The iPhone 3G and Me: Obsolete Before the Contract Even Ended'
+tags:
 - 3G
 - Commentary
 - iOS
 status: publish
 type: post
 published: true
+redirect_from: "/blog/2011/03/18/the-iphone-3g-and-me-obsolete-before-the-contract-even-ended.html"
 ---
 I've had a love-hate relationship with my iPhone since iOS4.
 

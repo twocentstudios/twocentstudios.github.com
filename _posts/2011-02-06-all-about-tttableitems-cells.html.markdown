@@ -1,7 +1,7 @@
---- 
+---
 layout: post
 title: All About TTTableItems & Cells
-tags: 
+tags:
 - iOS
 - Three20
 - TTTableCell
@@ -9,6 +9,7 @@ tags:
 status: publish
 type: post
 published: true
+redirect_from: "/blog/2011/02/06/all-about-tttableitems-cells.html"
 ---
 
 Another tough thing about <a href="http://three20.info">Three20</a> was wrapping my head around the table system. I disliked it at first, but in retrospect, it's much more organized than using the standard SDK system. I found with even mildly complicated systems, my UITableViewController was turning into a mess of all kinds of delegate code, tablecell code, and etc.

@@ -1,9 +1,10 @@
 ---
 layout: post
-title: "Core Data + iCloud is Kind Of Ridiculous"
+title: Core Data + iCloud is Kind Of Ridiculous
 date: 2012-10-13 19:48
 comments: true
 categories: iOS, Core Data, iCloud
+redirect_from: "/blog/2012/10/13/core-data-plus-icloud-is-kind-of-ridiculous"
 ---
 
 I've spent most of the evening getting reacquainted with Core Data. My goal is to get up to speed enough to use it and iCloud for a simple app idea I want to prototype out. It's turning out to be a little more daunting than I had hoped.

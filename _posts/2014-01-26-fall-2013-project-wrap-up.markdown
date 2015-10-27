@@ -1,9 +1,10 @@
 ---
 layout: post
-title: "Fall 2013 Project Wrap Up"
-date: 2014-01-26 19:43:19 -0500
+title: Fall 2013 Project Wrap Up
+date: 2014-01-26 18:43:19.000000000 -06:00
 comments: true
 categories: wrap-up
+redirect_from: "/blog/2014/01/26/fall-2013-project-wrap-up"
 ---
 
 At the end of every quarter or at least biannually I try to wrap up all the little projects I worked on during that time period that weren't large enough to warrant their own blog post. Here's a short summary of all the little projects I've worked on since I moved to New York to work at Timehop.

@@ -1,10 +1,11 @@
 ---
 layout: post
-title: "How I Wrote Vinylogue for iOS with ReactiveCocoa"
+title: How I Wrote Vinylogue for iOS with ReactiveCocoa
 date: 2013-04-03 12:36
 comments: true
 published: true
-categories: iOS, ReactiveCocoa 
+categories: iOS, ReactiveCocoa
+redirect_from: "/blog/2013/02/27/the-making-of-vinylogue"
 ---
 
 [Vinylogue](http://twocentstudios.com/apps/vinylogue "vinylogue") is a simple app I designed and developed for iOS that shows your last.fm weekly album charts from previous years. This post will detail the process of creating V1.0 of the app from start to almost finish (is an app ever really finished?).

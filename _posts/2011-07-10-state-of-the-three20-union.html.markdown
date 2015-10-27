@@ -1,13 +1,14 @@
---- 
+---
 layout: post
 title: State of the Three20 Union
-tags: 
+tags:
 - Commentary
 - iOS
 - Three20
 status: publish
 type: post
 published: true
+redirect_from: "/blog/2011/07/10/state-of-the-three20-union.html"
 ---
 I've been sitting on this topic for a little while now, and feel like I should finally weigh in on where the Three20 framework is at this point.
 <h2>Where I Started</h2>

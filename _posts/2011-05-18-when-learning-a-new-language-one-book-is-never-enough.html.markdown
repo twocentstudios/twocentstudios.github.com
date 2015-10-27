@@ -1,11 +1,12 @@
---- 
+---
 layout: post
 title: When Learning a New Language, One Book is Never Enough
-tags: 
+tags:
 - Commentary
 status: publish
 type: post
 published: true
+redirect_from: "/blog/2011/05/18/when-learning-a-new-language-one-book-is-never-enough.html"
 ---
 How do you go about learning a new programming language or tool?
 

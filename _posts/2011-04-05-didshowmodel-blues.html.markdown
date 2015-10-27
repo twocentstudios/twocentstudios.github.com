@@ -1,7 +1,7 @@
---- 
+---
 layout: post
 title: didShowModel Blues
-tags: 
+tags:
 - Animation
 - showMenu
 - TTTableViewController
@@ -9,6 +9,7 @@ tags:
 status: publish
 type: post
 published: true
+redirect_from: "/blog/2011/04/05/didshowmodel-blues.html"
 ---
 I'm working with a TTTableViewController right now. Try to stay with me.
 

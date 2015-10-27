@@ -1,7 +1,7 @@
---- 
+---
 layout: post
 title: TTTableViewController & didReceiveMemoryWarning
-tags: 
+tags:
 - didReceiveMemoryWarning
 - iOS
 - TTModelViewController
@@ -9,6 +9,7 @@ tags:
 status: publish
 type: post
 published: true
+redirect_from: "/blog/2011/05/01/tttableviewcontroller-didreceivememorywarning.html"
 ---
 <i>Note: this is adapted from my post on the Three20 forums <a href="http://forums.three20.info/discussion/98/tttableviewcontroller-didreceivememorywarning">here</a> and was relevant for at least v1.0.5.</i>
 

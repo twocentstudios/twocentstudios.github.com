@@ -1,13 +1,14 @@
---- 
+---
 layout: post
 title: TTXMLParser With a Variable Number of Elements
-tags: 
+tags:
 - iOS
 - TTURLRequestModel
 - TTXMLParser
 status: publish
 type: post
 published: true
+redirect_from: "/blog/2011/04/17/ttxmlparser-with-a-variable-number-of-elements.html"
 ---
 I've probably re-solved this problem at least three times, so time to document it.
 

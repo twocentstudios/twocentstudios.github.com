@@ -1,9 +1,10 @@
 ---
 layout: post
-title: "Deconstructing a chirp.io"
+title: Deconstructing a chirp.io
 date: 2012-10-12 15:22
 comments: true
 categories: 
+redirect_from: "/blog/2012/10/12/deconstructing-a-chirp-dot-io"
 ---
 
 #### UPDATE (10/13/12): The kind folks at chirp.io pointed me to their [tech page](http://chirp.io/tech). Read more at the end of the post.

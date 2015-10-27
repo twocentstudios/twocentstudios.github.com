@@ -1,9 +1,10 @@
 ---
 layout: post
-title: "AppleCart: My First Production Rails App"
+title: 'AppleCart: My First Production Rails App'
 date: 2012-09-18 20:20
 comments: true
 categories: rails
+redirect_from: "/blog/2012/09/18/applecart-my-first-production-rails-app"
 ---
 
 I pushed my first production Rails app to Heroku this week. Feels exciting to have a real project launch to solve a real problem after having started working with Rails such a long time ago.

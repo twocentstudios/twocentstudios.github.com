@@ -1,9 +1,12 @@
 ---
 layout: post
-title: "My Review of the New Facebook Login Review Process"
-date: 2014-07-05 22:40:42 -0400
+title: My Review of the New Facebook Login Review Process
+date: 2014-07-05 21:40:42.000000000 -05:00
 comments: true
-categories: [facebook, ios]
+categories:
+- facebook
+- ios
+redirect_from: "/blog/2014/07/05/my-review-of-the-new-facebook-login-review-process"
 ---
 
 In somewhat under-the-radar news, Facebook announced at their F8 conference in late April 2014 that there would be several changes to the way that Facebook Login works for apps. I say under-the-radar because I saw very few reactions on the interwebs. I'll attribute this to these changes taking effect immediately only for new apps and all existing apps having a full calendar year from the announcement in order to comply.

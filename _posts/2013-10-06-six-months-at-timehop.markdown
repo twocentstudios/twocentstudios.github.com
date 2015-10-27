@@ -1,9 +1,10 @@
 ---
 layout: post
-title: "Six Months at Timehop"
+title: Six Months at Timehop
 date: 2013-10-06 20:52
 comments: true
 categories: 
+redirect_from: "/blog/2013/10/06/six-months-at-timehop"
 ---
 
 It was about six months ago I started contracting at [Timehop](http://timehop.com). After six weeks of remote work from Chicago, I decided to move to New York City to join the team full time.
