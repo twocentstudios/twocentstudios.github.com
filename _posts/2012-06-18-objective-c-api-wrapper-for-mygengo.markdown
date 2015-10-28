@@ -4,7 +4,7 @@ title: Objective-C API Wrapper for myGengo
 date: 2012-06-18 20:28
 comments: true
 categories: 
-redirect_from: "/blog/2012/06/18/objective-c-api-wrapper-for-mygengo"
+redirect_from: "/blog/2012/06/18/objective-c-api-wrapper-for-mygengo/"
 ---
 
 Last weekend, I decided to take on what I thought would be a small task and turned into be a moderately small task. I wrote an API wrapper for the myGengo translation web service.

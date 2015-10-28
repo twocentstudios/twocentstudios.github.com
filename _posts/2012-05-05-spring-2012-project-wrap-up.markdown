@@ -4,7 +4,7 @@ title: Spring 2012 Project Wrap Up
 date: 2012-05-05 09:01
 comments: true
 categories: 
-redirect_from: "/blog/2012/05/05/spring-2012-project-wrap-up"
+redirect_from: "/blog/2012/05/05/spring-2012-project-wrap-up/"
 ---
 
 My spring has been a little less busy on the coding front than Winter was (I did a lot more recording than I expected these last few months). In any case, here are a few things I've started.

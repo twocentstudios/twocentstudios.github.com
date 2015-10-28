@@ -4,7 +4,7 @@ title: Simple AJAX Comments with Rails
 date: 2012-11-15 09:50
 comments: true
 categories: rails
-redirect_from: "/blog/2012/11/15/simple-ajax-comments-with-rails"
+redirect_from: "/blog/2012/11/15/simple-ajax-comments-with-rails/"
 ---
 
 > Update 2014-06-08: This post is over two years old now. Although I've heard the below walkthrough works  mostly as expected, I've been away from Rails too long to know the ins and outs of the current version of Rails and all the gems used. So a word of warning: I can't guarantee all of the below will work line-for-line anymore. Feel free to ping me on Twitter if you find any changes.

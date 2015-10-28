@@ -4,7 +4,7 @@ title: Winter 2012 Project Wrap Up
 date: 2012-03-11 16:19
 comments: true
 categories: 
-redirect_from: "/blog/2012/03/11/winter-2012-project-wrap-up"
+redirect_from: "/blog/2012/03/11/winter-2012-project-wrap-up/"
 ---
 
 I've had a few interesting projects this Winter.

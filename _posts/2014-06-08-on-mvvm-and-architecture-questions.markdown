@@ -4,7 +4,7 @@ title: On MVVM, and Architecture Questions
 date: 2014-06-08 15:31:52.000000000 -05:00
 comments: true
 categories: ReactiveCocoa, MVVM
-redirect_from: "/blog/2014/06/08/on-mvvm-and-architecture-questions"
+redirect_from: "/blog/2014/06/08/on-mvvm-and-architecture-questions/"
 ---
 
 > This post is something like a mini-walkthrough/tutorial, but it stops about half way from being complete. The goal is to elicit some discussion about the architecture of iOS apps from those experienced with both MVVM and MVC patterns.

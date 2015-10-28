@@ -5,7 +5,7 @@ date: 2012-05-27 20:47
 comments: true
 published: true
 categories: rails
-redirect_from: "/blog/2012/05/27/flexible-parts-a-part-attributing-prototype-project"
+redirect_from: "/blog/2012/05/27/flexible-parts-a-part-attributing-prototype-project/"
 ---
 
 The company I work for recently started our implementation of Oracle's Agile PDM/PLM system.
