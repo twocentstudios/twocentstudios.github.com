@@ -1,8 +1,8 @@
 source 'https://rubygems.org'
 
-gem 'github-pages'
+gem 'jekyll', '=3.0.0'
 
 group :jekyll_plugins do
-  gem 'jekyll-redirect-from'
-  gem 'rouge'
+  gem 'jekyll-redirect-from', '=0.8.0'
+  gem 'rouge', '~>1.10.1'
 end
