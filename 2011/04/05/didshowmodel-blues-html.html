@@ -6,12 +6,11 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <title>About</title>
-  <meta name="description" content="A coding blog covering iOS, Swift, and other programming topics.
-">
+  <title>didShowModel Blues</title>
+  <meta name="description" content="I’m working with a TTTableViewController right now. Try to stay with me.">
 
   <link rel="stylesheet" href="/css/main.css">
-  <link rel="canonical" href="http://twocentstudios.com/about/">
+  <link rel="canonical" href="http://twocentstudios.com/2011/04/05/didshowmodel-blues-html">
   <link rel="alternate" type="application/rss+xml" title="twocentstudios" href="http://twocentstudios.com/feed.xml" />
 </head>
 
@@ -126,21 +125,24 @@
         <div class="post">
 
   <header class="post-header">
-    <h1 class="post-title">About</h1>
+    <h1 class="post-title">didShowModel Blues</h1>
+    <p class="post-meta">Apr 5, 2011</p>
   </header>
 
-  <article class="page-post-content">
-    <p>Hi, I’m Chris. I’m a software developer originally from Chicago, Illinois.</p>
+  <article class="post-content">
+    <p>I’m working with a TTTableViewController right now. Try to stay with me.</p>
 
-<p>I like designing and developing products, usually for iOS devices, but sometimes for the web.</p>
+<p>TableViewController gets pushed onto the navigation stack, hits the network looking for data, and loads the data. I want to animate the top cell so it looks like it moves a little to the right then bounces back into place. This is supposed to key the user into the fact that there’s more info lurking beneath the top cell layer and that they should swipe to reveal it (a la the showMenu: and hideMenu: pre-rolled functions).</p>
 
-<p>I’m interested in functional programming, app architecture, and UI and UX design.</p>
+<p>My first thought (which always seems to be wrong) was to trigger this in didShowModel in the TTTableViewController. This is supposed to be the moment when all the layout is has been completed, right? To test my theory, if I call showMenu not animated to push all the views right, then call hideMenu animated, it should swoop in just as the cells load.</p>
 
-<p>I’m currently working on a few personal projects while I see some of the world.</p>
+<p>It doesn’t seem to work that way. The behavior I viewed in this situation was instead that the showMenu didn’t have any effect, and then the hideMenu (triggered a second later with a timer) would swipe everything off to the left (instead of bringing it from off-screen back into front and center). After didShowModel completes, is something going on in the TT objects that’s resetting the move I’m doing?</p>
 
-<p>Previously, I worked at <a href="http://timehop.com">Timehop</a> and <a href="http://kleintools.com">Klein Tools</a>. I also worked on my own iOS apps <a href="/apps/vinylogue">Vinylogue</a>, <a href="/apps/brightbuscu">BrightBus</a>, and several other <a href="/portfolio">projects</a>. I have a bachelor’s degree in Electrical Engineering from the <a href="http://www.ece.illinois.edu/">University of Illinois at Urbana-Champaign</a>.</p>
+<p>For now, it seems like the best solution, although a bit hacky, is to set a short timer (0.3 seconds) in the didShowModel that calls back to a function with a CAAnimation group. This gives both the TTTableViewController time to lay out its views and get out of dodge, and also lets the user see the table momentarily before it starts moving. This is essentially the same as setting an animation delay.</p>
 
-<p>You can contact me via <a href="&#109;&#097;&#105;&#108;&#116;&#111;:&#099;&#104;&#114;&#105;&#115;&#064;&#116;&#119;&#111;&#099;&#101;&#110;&#116;&#115;&#116;&#117;&#100;&#105;&#111;&#115;&#046;&#099;&#111;&#109;">email</a> or <a href="http://twitter.com/twocentstudios">twitter</a>. Check out my open source projects on <a href="http://github.com/twocentstudios">github</a>. I wouldn’t bother with <a href="http://www.linkedin.com/pub/christopher-trott/19/b64/1b2">linkedin</a>.</p>
+<p>With that problem out of the way, I have to say that the animation effect is kind of cool, but I feel like it will definitely be fatiguing to users to see this animation every time the table loads. Should it be only for the first five table loads the user ever does? Should it be only for the first table load in every launch? Only for the first couple days after download? I’m thinking option A, but I’ll have to wait until the beta testing to zero in on that answer.</p>
+
+<p>In any case, I’ll have to step through the TTTableViewController code to find out where the layout is getting reset. If anyone else has done this before, let me know in the comments.</p>
 
   </article>
 

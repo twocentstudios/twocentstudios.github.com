@@ -6,12 +6,11 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <title>About</title>
-  <meta name="description" content="A coding blog covering iOS, Swift, and other programming topics.
-">
+  <title>Site Makeover and Jekyll Cheatsheet</title>
+  <meta name="description" content="I took a few days to migrate my blog from Octopress to Jekyll. Octopress is an opinionated fork based on Jekyll so it wasn’t too crazy. There were a couple h...">
 
   <link rel="stylesheet" href="/css/main.css">
-  <link rel="canonical" href="http://twocentstudios.com/about/">
+  <link rel="canonical" href="http://twocentstudios.com/2015/10/27/site-makeover-and-jekyll-cheatsheet">
   <link rel="alternate" type="application/rss+xml" title="twocentstudios" href="http://twocentstudios.com/feed.xml" />
 </head>
 
@@ -126,21 +125,43 @@
         <div class="post">
 
   <header class="post-header">
-    <h1 class="post-title">About</h1>
+    <h1 class="post-title">Site Makeover and Jekyll Cheatsheet</h1>
+    <p class="post-meta">Oct 27, 2015</p>
   </header>
 
-  <article class="page-post-content">
-    <p>Hi, I’m Chris. I’m a software developer originally from Chicago, Illinois.</p>
+  <article class="post-content">
+    <p>I took a few days to migrate my blog from <a href="http://octopress.org/">Octopress</a> to <a href="https://jekyllrb.com/">Jekyll</a>. Octopress is an opinionated fork based on Jekyll so it wasn’t too crazy. There were a couple hangups though, mostly due to the fact that I never bothered to learn how a lot of the magic of Octopress worked.</p>
 
-<p>I like designing and developing products, usually for iOS devices, but sometimes for the web.</p>
+<p>The major changes are:</p>
 
-<p>I’m interested in functional programming, app architecture, and UI and UX design.</p>
+<ul>
+  <li>The blog root is no longer at <code class="highlighter-rouge">/blog</code>. I had to add redirect pages with the jekyll-redirect-from plugin.</li>
+  <li>The root isn’t a single page site like the previous version.</li>
+  <li>I ditched the heavy green background for a cleaner white.</li>
+  <li>I removed the special Octopress syntax highlighting in favor of Jekyll’s default.</li>
+  <li>The only plugin I’ve kept is caption_image_tag, which unfortunately makes it so I can’t have github generate the site for me.</li>
+  <li>I had to write my own simple deploy script to handle pushing the rendered site to the master branch and the source to the source branch on each change.</li>
+  <li>I modified the CSS from the base Jekyll config, bringing over a few styles from the previous blog.</li>
+</ul>
 
-<p>I’m currently working on a few personal projects while I see some of the world.</p>
+<p>I’m hoping getting a streamlined workflow will encourage me to blog about topics both large and small in scope.</p>
 
-<p>Previously, I worked at <a href="http://timehop.com">Timehop</a> and <a href="http://kleintools.com">Klein Tools</a>. I also worked on my own iOS apps <a href="/apps/vinylogue">Vinylogue</a>, <a href="/apps/brightbuscu">BrightBus</a>, and several other <a href="/portfolio">projects</a>. I have a bachelor’s degree in Electrical Engineering from the <a href="http://www.ece.illinois.edu/">University of Illinois at Urbana-Champaign</a>.</p>
+<h3 id="creating-and-deploying">Creating and deploying</h3>
 
-<p>You can contact me via <a href="&#109;&#097;&#105;&#108;&#116;&#111;:&#099;&#104;&#114;&#105;&#115;&#064;&#116;&#119;&#111;&#099;&#101;&#110;&#116;&#115;&#116;&#117;&#100;&#105;&#111;&#115;&#046;&#099;&#111;&#109;">email</a> or <a href="http://twitter.com/twocentstudios">twitter</a>. Check out my open source projects on <a href="http://github.com/twocentstudios">github</a>. I wouldn’t bother with <a href="http://www.linkedin.com/pub/christopher-trott/19/b64/1b2">linkedin</a>.</p>
+<div class="highlighter-rouge"><pre class="highlight"><code>&gt; $ cd twocentstudios
+&gt; $ ./new Why I've Decided To Blog More About Blogging
+&gt; $ git add .
+&gt; $ git commit -m "Add post"
+&gt; $ ./deploy
+</code></pre>
+</div>
+
+<h3 id="jekyll-basics">Jekyll basics</h3>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>&gt; $ jekyll build
+&gt; $ jekyll serve
+</code></pre>
+</div>
 
   </article>
 

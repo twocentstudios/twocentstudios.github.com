@@ -6,12 +6,11 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <title>About</title>
-  <meta name="description" content="A coding blog covering iOS, Swift, and other programming topics.
-">
+  <title>TTTableViewController & didReceiveMemoryWarning</title>
+  <meta name="description" content="Note: this is adapted from my post on the Three20 forums here and was relevant for at least v1.0.5.I was having trouble with a rare situation in which my app...">
 
   <link rel="stylesheet" href="/css/main.css">
-  <link rel="canonical" href="http://twocentstudios.com/about/">
+  <link rel="canonical" href="http://twocentstudios.com/2011/05/01/tttableviewcontroller-didreceivememorywarning-html">
   <link rel="alternate" type="application/rss+xml" title="twocentstudios" href="http://twocentstudios.com/feed.xml" />
 </head>
 
@@ -126,21 +125,54 @@
         <div class="post">
 
   <header class="post-header">
-    <h1 class="post-title">About</h1>
+    <h1 class="post-title">TTTableViewController & didReceiveMemoryWarning</h1>
+    <p class="post-meta">May 1, 2011</p>
   </header>
 
-  <article class="page-post-content">
-    <p>Hi, I’m Chris. I’m a software developer originally from Chicago, Illinois.</p>
+  <article class="post-content">
+    <p><i>Note: this is adapted from my post on the Three20 forums <a href="http://forums.three20.info/discussion/98/tttableviewcontroller-didreceivememorywarning">here</a> and was relevant for at least v1.0.5.</i></p>
 
-<p>I like designing and developing products, usually for iOS devices, but sometimes for the web.</p>
+<p>I was having trouble with a rare situation in which my app with two tabs would randomly mutate its table cells. It was more difficult to track down that this was occurring after a memory warning than it was to fix the actual problem. I was doing a lot of my view loading in init, something I hadn’t fixed from when I had originally started writing this particular app over a year ago.</p>
 
-<p>I’m interested in functional programming, app architecture, and UI and UX design.</p>
+<p>After moving moving the relevant assignments to loadView and viewDidLoad, I was still running into the problem where a memory warning would clear the loadingView, errorView, or emptyView on the tab that wasn’t currently visible.</p>
 
-<p>I’m currently working on a few personal projects while I see some of the world.</p>
+<p><img src="/images/memory-warning_before-after.png" alt="" title="memory-warning_before-after" width="550" height="412" class="size-large wp-image-73" /></p>
 
-<p>Previously, I worked at <a href="http://timehop.com">Timehop</a> and <a href="http://kleintools.com">Klein Tools</a>. I also worked on my own iOS apps <a href="/apps/vinylogue">Vinylogue</a>, <a href="/apps/brightbuscu">BrightBus</a>, and several other <a href="/portfolio">projects</a>. I have a bachelor’s degree in Electrical Engineering from the <a href="http://www.ece.illinois.edu/">University of Illinois at Urbana-Champaign</a>.</p>
+<p>After some backtracing through TTModelViewController and TTTableViewController, I narrowed down the problem to updateViewStates in TTModelViewController. At this line:</p>
 
-<p>You can contact me via <a href="&#109;&#097;&#105;&#108;&#116;&#111;:&#099;&#104;&#114;&#105;&#115;&#064;&#116;&#119;&#111;&#099;&#101;&#110;&#116;&#115;&#116;&#117;&#100;&#105;&#111;&#115;&#046;&#099;&#111;&#109;">email</a> or <a href="http://twitter.com/twocentstudios">twitter</a>. Check out my open source projects on <a href="http://github.com/twocentstudios">github</a>. I wouldn’t bother with <a href="http://www.linkedin.com/pub/christopher-trott/19/b64/1b2">linkedin</a>.</p>
+<div class="highlighter-rouge"><pre class="highlight"><code>if (!_flags.isShowingLoading &amp;amp;&amp;amp; !_flags.isShowingModel &amp;amp;&amp;amp; !_flags.isShowingError) {
+  showEmpty = !_flags.isShowingEmpty;
+  _flags.isShowingEmpty = YES;
+}
+</code></pre>
+</div>
+
+<p>The if statement evaluates to true as expected because the controller is not showing an error, the model, or loading. The problem is in the next line. _flags.isShowingEmpty has not been reset even though it isn’t showing empty anymore due to the clear by didReceiveMemory warning. Therefore, the local variable showEmpty is set to NO, and _flags.isShowingEmpty is set unconditionally to YES even though it isn’t really showing the empty view.</p>
+
+<p>The way to fix this locally is to override didReceiveMemoryWarning in your TTTableViewController subclass.</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>- (void)didReceiveMemoryWarning {
+  [super didReceiveMemoryWarning];
+  [self invalidateModel];
+}
+</code></pre>
+</div>
+
+<p>invalidateModel calls resetViewStates in the model. This will set all the view _flags to NO and the next pass through updateViewStates will trigger the correct action.</p>
+
+<p>The permanent fix in Three20’s TTModelViewController would be:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>- (void)didReceiveMemoryWarning {
+  if (_hasViewAppeared &amp;amp;&amp;amp; !_isViewAppearing) {
+    [super didReceiveMemoryWarning];
+    [self resetViewStates];  // add this line
+    [self refresh];
+  } else {
+    [super didReceiveMemoryWarning];
+  }
+}
+</code></pre>
+</div>
 
   </article>
 

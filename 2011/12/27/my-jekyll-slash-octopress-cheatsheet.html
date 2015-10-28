@@ -6,12 +6,11 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <title>About</title>
-  <meta name="description" content="A coding blog covering iOS, Swift, and other programming topics.
-">
+  <title>My Jekyll/Octopress Cheatsheet</title>
+  <meta name="description" content="This is my first Jekyll post. And as such, it seems fitting to cram all these new commands into a cheat sheet post so I can take my time learning them (and I...">
 
   <link rel="stylesheet" href="/css/main.css">
-  <link rel="canonical" href="http://twocentstudios.com/about/">
+  <link rel="canonical" href="http://twocentstudios.com/2011/12/27/my-jekyll-slash-octopress-cheatsheet">
   <link rel="alternate" type="application/rss+xml" title="twocentstudios" href="http://twocentstudios.com/feed.xml" />
 </head>
 
@@ -126,21 +125,80 @@
         <div class="post">
 
   <header class="post-header">
-    <h1 class="post-title">About</h1>
+    <h1 class="post-title">My Jekyll/Octopress Cheatsheet</h1>
+    <p class="post-meta">Dec 27, 2011</p>
   </header>
 
-  <article class="page-post-content">
-    <p>Hi, I’m Chris. I’m a software developer originally from Chicago, Illinois.</p>
+  <article class="post-content">
+    <p>This is my first Jekyll post. And as such, it seems fitting to cram all these new commands into a cheat sheet post so I can take my time learning them (and I don’t have to search through just a few pages of documentation).</p>
 
-<p>I like designing and developing products, usually for iOS devices, but sometimes for the web.</p>
+<h3 id="pushing-changes-to-the-blog-source">Pushing Changes to the Blog Source</h3>
 
-<p>I’m interested in functional programming, app architecture, and UI and UX design.</p>
+<div class="highlighter-rouge"><pre class="highlight"><code>	cd octopress
+	git add .
+	git commit -m 'modded blog source'
+	git push origin source
+</code></pre>
+</div>
 
-<p>I’m currently working on a few personal projects while I see some of the world.</p>
+<h3 id="creating-new-posts">Creating New Posts</h3>
 
-<p>Previously, I worked at <a href="http://timehop.com">Timehop</a> and <a href="http://kleintools.com">Klein Tools</a>. I also worked on my own iOS apps <a href="/apps/vinylogue">Vinylogue</a>, <a href="/apps/brightbuscu">BrightBus</a>, and several other <a href="/portfolio">projects</a>. I have a bachelor’s degree in Electrical Engineering from the <a href="http://www.ece.illinois.edu/">University of Illinois at Urbana-Champaign</a>.</p>
+<p>New posts are created it in the source/_posts directory.</p>
 
-<p>You can contact me via <a href="&#109;&#097;&#105;&#108;&#116;&#111;:&#099;&#104;&#114;&#105;&#115;&#064;&#116;&#119;&#111;&#099;&#101;&#110;&#116;&#115;&#116;&#117;&#100;&#105;&#111;&#115;&#046;&#099;&#111;&#109;">email</a> or <a href="http://twitter.com/twocentstudios">twitter</a>. Check out my open source projects on <a href="http://github.com/twocentstudios">github</a>. I wouldn’t bother with <a href="http://www.linkedin.com/pub/christopher-trott/19/b64/1b2">linkedin</a>.</p>
+<div class="highlighter-rouge"><pre class="highlight"><code>	rake new_post["title"]
+</code></pre>
+</div>
+
+<h3 id="adding-categories">Adding Categories</h3>
+
+<p>Categories are defined in the yaml header.</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>	# One category
+	categories: one
+
+	# Multiple categories
+	categories: [one, two, three]
+</code></pre>
+</div>
+
+<h3 id="draft-posts">Draft Posts</h3>
+
+<p>Add the following to the yaml header.</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>	published: false
+</code></pre>
+</div>
+
+<h3 id="images">Images</h3>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="w">	</span><span class="p">{</span><span class="err">%</span><span class="w"> </span><span class="err">caption_img</span><span class="w"> </span><span class="err">/images/image_name.jpg</span><span class="w"> </span><span class="err">Caption</span><span class="w"> </span><span class="err">for</span><span class="w"> </span><span class="err">the</span><span class="w"> </span><span class="err">image</span><span class="w"> </span><span class="err">%</span><span class="p">}</span><span class="w">
+</span></code></pre>
+</div>
+
+<h3 id="syntax-highlightling">Syntax Highlightling</h3>
+
+<p>Surround normal code blocks with:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="w">	</span><span class="p">{</span><span class="err">%</span><span class="w"> </span><span class="err">codeblock</span><span class="w"> </span><span class="err">Title</span><span class="w"> </span><span class="err">or</span><span class="w"> </span><span class="err">something</span><span class="w"> </span><span class="err">(FileName.m)</span><span class="w"> </span><span class="err">lang:objc</span><span class="w"> </span><span class="err">%</span><span class="p">}</span><span class="w">
+		</span><span class="err">code</span><span class="w"> </span><span class="err">here</span><span class="w">
+	</span><span class="p">{</span><span class="err">%</span><span class="w"> </span><span class="err">endcodeblock</span><span class="w"> </span><span class="err">%</span><span class="p">}</span><span class="w">
+</span></code></pre>
+</div>
+
+<h3 id="generate--preview">Generate &amp; Preview</h3>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>	rake generate   # Generates posts and pages into the public directory
+	rake watch      # Watches source/ and sass/ for changes and regenerates
+	rake preview    # Watches, and mounts a webserver at http://localhost:4000
+</code></pre>
+</div>
+
+<h3 id="generate--deploy">Generate &amp; Deploy</h3>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>	rake generate
+	rake deploy
+</code></pre>
+</div>
 
   </article>
 
