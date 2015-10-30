@@ -6,9 +6,137 @@
 </description>
     <link>http://twocentstudios.com/</link>
     <atom:link href="http://twocentstudios.com/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Wed, 28 Oct 2015 17:15:51 -0500</pubDate>
-    <lastBuildDate>Wed, 28 Oct 2015 17:15:51 -0500</lastBuildDate>
+    <pubDate>Fri, 30 Oct 2015 13:33:26 -0500</pubDate>
+    <lastBuildDate>Fri, 30 Oct 2015 13:33:26 -0500</lastBuildDate>
     <generator>Jekyll v3.0.0</generator>
+    
+      <item>
+        <title>Fall 2015 Project Wrap Up</title>
+        <description>&lt;p&gt;I’ve been back in Chicago left to my own devices for the past two months now. I’ll be shipping out to Japan in a few weeks for a three month stint doing more of the same. I’ve had plenty of time to dig into a few various development areas I’ve wanted to explore. This is a quick wrap up of what I’ve been up to.&lt;/p&gt;
+
+&lt;h2 id=&quot;music-transfer&quot;&gt;Music Transfer&lt;/h2&gt;
+
+&lt;p&gt;I own a &lt;a href=&quot;https://www.synology.com/en-us/products/DS414j&quot;&gt;Synology DS414j&lt;/a&gt; network attached storage device that’s helped me organize and archive all of my personal data including mp3s, FLAC, music recording files, photos, videos, etc. I’m stuck in a weird position of wanting to take a subset of my mp3 collection on the road with me, while also wanting to add to the collection and have everything available to me. I’m still holding out from participating in streaming services since they don’t always carry some of the smaller indie artists that release on Bandcamp and the like. This left me with a weird problem to solve and a lot of time to do it.&lt;/p&gt;
+
+&lt;p&gt;My first shot at this was writing a shell script to rsync a selection of my music from my NAS to a cache on my laptop and still use iTunes to sync from laptop to iPhone. It’s a pretty simple script, but gave me a chance to dive into bash scripting, something I had previously avoided like the plague.&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;#!/bin/bash&lt;/span&gt;
+&lt;span class=&quot;nb&quot;&gt;set&lt;/span&gt; -e
+
+&lt;span class=&quot;nv&quot;&gt;src_music_root&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;&#39;/Volumes/music&#39;&lt;/span&gt;
+&lt;span class=&quot;nv&quot;&gt;dest_music_root&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;&#39;/Users/ctrott/Music/Cache&#39;&lt;/span&gt;
+&lt;span class=&quot;nv&quot;&gt;folder_list_path&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;&#39;/Users/ctrott/Code/temp/music_transfer/artists.txt&#39;&lt;/span&gt;
+&lt;span class=&quot;nv&quot;&gt;log_path&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;&#39;/Users/ctrott/Code/temp/music_transfer/log.txt&#39;&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;while &lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;read &lt;/span&gt;folder ; &lt;span class=&quot;k&quot;&gt;do
+    &lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$music_root&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$folder&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;
+    rsync -av &lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$src_music_root&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$folder&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$dest_music_root&lt;/span&gt; &amp;gt;&amp;gt; &lt;span class=&quot;nv&quot;&gt;$log_path&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;done&lt;/span&gt; &amp;lt; &lt;span class=&quot;nv&quot;&gt;$folder_list_path&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;I’m still having a hard time getting my head around the seemly first-class path support. I’m used to having distinct types for &lt;code class=&quot;highlighter-rouge&quot;&gt;NSURL&lt;/code&gt; vs &lt;code class=&quot;highlighter-rouge&quot;&gt;NSString&lt;/code&gt;. Trying to concatenate paths from inputs and variables and literals has led to a lot of confusion. The combination of that confusion and the destructive nature of file system mutations leaves me wanting to use something like Rake or raw Ruby instead.&lt;/p&gt;
+
+&lt;p&gt;To that end, I did run through the &lt;a href=&quot;http://cli.learncodethehardway.org/book/&quot;&gt;Command Line Crash Course&lt;/a&gt; from the Learn Code The Hard Way series to pick up a few techniques I didn’t know from before. I don’t think I retained enough of it, so I might have to breeze through it again soon.&lt;/p&gt;
+
+&lt;h2 id=&quot;graphql--react--react-native&quot;&gt;GraphQL / React / React Native&lt;/h2&gt;
+
+&lt;p&gt;I remember hearing about GraphQL at the Facebook Developer Conference last Spring and then seeing the announcement over the Summer. I read through the spec and it looked very thorough. I’m interested in a lot of the new infrastructure concepts and frameworks that Facebook has been developing over the past years (React, React-Native, Flux, GraphQL, etc.). So when I saw an interactive tutorial called &lt;a href=&quot;https://learngraphql.com/&quot;&gt;Learn GraphQL&lt;/a&gt; I decided to work through it.&lt;/p&gt;
+
+&lt;p&gt;I really enjoyed the tutorial and found it to be a nice intro to the capabilities. Unfortunately, I’m still finding the web world a bit opaque and hard to keep up with. I’ve never been particularly enthralled with js, so although I’m enthusiastic about the architecture concepts, I keep hitting stumbling blocks with the ever-changing ES5/ES6/ES7 syntaxes and toolchains that are required to even get started. Not to mention that these technologies are still rapidly evolving.&lt;/p&gt;
+
+&lt;p&gt;I also spent a few days looking at docs and walkthroughs for React and ReactNative. Again, the underlying concepts (immutability, one-way data flow, coalescing state) of those frameworks are like a siren song to me. The progress that’s been made on those frameworks is very respectable. I’d like to dive in and give React and/or React Native a shot, but it’s an opportunity cost cost-benefit analysis of whether I should be working on learning raw Swift and whether I can find a project that works well within React Native’s limitations.&lt;/p&gt;
+
+&lt;h2 id=&quot;apple-tv&quot;&gt;Apple TV&lt;/h2&gt;
+
+&lt;p&gt;For some reason, I was one of the developers chosen to receive a $1 Apple TV after it was announced at the September Apple event. I used an older Apple TV at the Timehop offices quite often and found the UI and UX to be quite a joy to use, so I was especially interested in what sort of apps I’d be able to make.&lt;/p&gt;
+
+&lt;p&gt;I received my Apple TV in the mail a week later, spent an hour or two downloading binaries and getting it set up, then another couple hours downloading Xcode betas and reading docs. I realized in dismay that I was on the vanguard since all my normal dependencies and dependency managers were unable to deal with a new platform right away.&lt;/p&gt;
+
+&lt;h2 id=&quot;constellations&quot;&gt;Constellations&lt;/h2&gt;
+
+&lt;p&gt;One morning I stumbled across &lt;a href=&quot;https://rocket.chat/&quot;&gt;rocket.chat&lt;/a&gt;, and noticed it had a pretty cool background effect of little particles drifting in space and connecting with a line when they got close enough.&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;After I finished implementing it, I found that they used the open source &lt;a href=&quot;https://github.com/VincentGarreau/particles.js/&quot;&gt;particle.js&lt;/a&gt; for the effect.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;I started working on a Swift and SpriteKit implementation for the Apple TV - a trifecta of things I hadn’t worked with before.&lt;/p&gt;
+
+&lt;p&gt;Here’s a quick demo of the “final” result&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/constellations.gif&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;a low-quality demo of constellations&quot; title=&quot;a low-quality demo of constellations&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;a low-quality demo of constellations&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;I took about two days to get a demo going. It was slow going looking up documentation alternately on SpriteKit and Swift, but I felt proud to see the stars bouncing around the screen.&lt;/p&gt;
+
+&lt;p&gt;I ran into two problems, one of which I was able to fix.&lt;/p&gt;
+
+&lt;p&gt;The first problem was that I was rendering stars using &lt;code class=&quot;highlighter-rouge&quot;&gt;SKShapeNode()&lt;/code&gt; with a circular path. I could only get something like 20fps with 30 stars - not nearly enough to fill the screen. A little googling suggested that &lt;code class=&quot;highlighter-rouge&quot;&gt;SKShapeNode()&lt;/code&gt; is extremely performance adverse and causes constant rerendering. I changed my stars to use square &lt;code class=&quot;highlighter-rouge&quot;&gt;SKSpriteNode()&lt;/code&gt;s instead, and the performance issues were more or less resolved.&lt;/p&gt;
+
+&lt;p&gt;The second problem was that using small stars confuses the physics engine when they bounce off the walls at low angles on incidence due to floating point rounding errors. This causes the stars to stick to the walls on contact and congregate in corners. Unfortunately, this seems to be a known issue with SpriteKit (amongst other game engines).&lt;/p&gt;
+
+&lt;p&gt;After I discovered the source to particles.js, I noticed that particles are allowed to leave the screen bounds and are recreated with a different location and direction. If I decided to release this, I’d probably implement it without using physics.&lt;/p&gt;
+
+&lt;p&gt;Since this project was just for fun and doesn’t have much value outside maybe a screensaver, I decided not to bother releasing it.&lt;/p&gt;
+
+&lt;h2 id=&quot;tinykittens-tv&quot;&gt;TinyKittens TV&lt;/h2&gt;
+
+&lt;p&gt;I got in the habit of having animal livestreams on in the background while I wrote code all day at Timehop. I mostly watched the livestream from &lt;a href=&quot;http://tinykittens.com&quot;&gt;TinyKittens&lt;/a&gt;, a non-profit society which rescues and fosters pregnant cats and their kittens before offering them up for adoption. I thought it’d be convenient to have an Apple TV app for selecting between the streams and viewing them.&lt;/p&gt;
+
+&lt;p&gt;I started digging and found the livestream.com API supported the two endpoints I needed and provided a streaming URL compatible with Apple devices.&lt;/p&gt;
+
+&lt;p&gt;With that, I got to work on another app for Apple TV. I first explored writing the app as a TVML app mostly assembled server-side, but was immediately frustrated trying to wrangle XML without a lot of background knowledge of how to do. There were too many possible languages and frameworks and implementations I could have used on the server side, and I realized I would rather learn more Swift and UIKit than I would writing a custom server backend that did the majority of the heavy lifting.&lt;/p&gt;
+
+&lt;p&gt;The dependency chain was still troublesome (and a moving target), so although I wanted to dive into ReactiveCocoa v4, I decided I should start with a quick and dirty version in Swift with no dependencies at all.&lt;/p&gt;
+
+&lt;p&gt;The first version was a massive view controller that did all the fetching and JSON parsing in line. It was also pretty ugly.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/tinykittenstv-01.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;v0 of TinyKittens TV&quot; title=&quot;v0 of TinyKittens TV&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;v0 of TinyKittens TV&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;I used the app for a few days and enjoyed it. The code was so ugly though, and I wanted to use more of Swift’s language features and see what it was like to try to architect an app without the ReactiveCocoa conveniences I was used to. It was a good experience in that it made me appreciate reactive programming that much more.&lt;/p&gt;
+
+&lt;p&gt;It took about as long to refactor the app as it did to write V0. I added the Gloss JSON parsing library after getting CocoaPods set up (with Orta’s &lt;code class=&quot;highlighter-rouge&quot;&gt;cocoapods-expert-difficulty&lt;/code&gt; gem). I wrote my own simple &lt;code class=&quot;highlighter-rouge&quot;&gt;Result&lt;/code&gt; type, wrapped a &lt;code class=&quot;highlighter-rouge&quot;&gt;throws&lt;/code&gt; function (I really dislike Swift 2.0’s &lt;code class=&quot;highlighter-rouge&quot;&gt;throws&lt;/code&gt; syntax), set up some struct models, parsed some JSON, wrote a view model protocol, refactored the interface design to mirror Apple’s focus support (with some really ugly frame layout code), added image assets (including a fun parallax icon), did some testing, and packaged it up for the App Store.&lt;/p&gt;
+
+&lt;p&gt;I got a rejection for an error message not being forthright enough, but I fixed that and resubmitted and was accepted in no time. It sounded like a lot of other developers had a hard time with this initial submission process. I’m sure Apple was being extra picky with the public release.&lt;/p&gt;
+
+&lt;p&gt;The app is pretty simple and I was tempted to add lots more bells and whistles, but I knew that I’d rather ship the V1 at launch than to sit on it while I toiled away with garnishes.&lt;/p&gt;
+
+&lt;p&gt;On a side note, I meant to use storyboards for the interface this time, but I got frustrated with them again and bailed. Someday…&lt;/p&gt;
+
+&lt;p&gt;The Apple TV launches today. The App Store right now only has a front page and a search page and links don’t work, so discoverability isn’t really that great yet. Hopefully I get a few downloads though.&lt;/p&gt;
+
+&lt;p&gt;It was a fun project overall. It’s definitely useful to me. And it was great for getting up to speed with Swift without getting bogged down in a large project. I’ve posted the &lt;a href=&quot;https://github.com/twocentstudios/tinykittenstv&quot;&gt;source&lt;/a&gt; on Github. Below is a screenshot of V1.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/tinykittenstv-02.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;V1 of TinyKittens TV released to the App Store&quot; title=&quot;V1 of TinyKittens TV released to the App Store&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;V1 of TinyKittens TV released to the App Store&lt;/div&gt;&lt;/div&gt;
+
+&lt;h2 id=&quot;function-programming-edx-fp101&quot;&gt;Function Programming EdX FP101&lt;/h2&gt;
+
+&lt;p&gt;ReactiveCocoa was sort of my gateway into functional programming. I’ve tried to dive into Haskell a few times over the last year, but always got tripped up before I could implement anything of consequence.&lt;/p&gt;
+
+&lt;p&gt;I saw that Erik Meijer’s &lt;a href=&quot;https://www.edx.org/course/introduction-functional-programming-delftx-fp101x-0&quot;&gt;EdX course&lt;/a&gt; on functional programming was starting soon, so I decided to sign up and take a few hours out of every week to learn Haskell. I’ve done two weeks so far and am feeling good about it so far.&lt;/p&gt;
+
+&lt;h2 id=&quot;blog-migration&quot;&gt;Blog Migration&lt;/h2&gt;
+
+&lt;p&gt;I spent a couple days migrating from Octopress to Jekyll. See &lt;a href=&quot;/2015/10/27/site-makeover-and-jekyll-cheatsheet&quot;&gt;this post&lt;/a&gt; for the details.&lt;/p&gt;
+
+&lt;h2 id=&quot;songwriting-app&quot;&gt;Songwriting App&lt;/h2&gt;
+
+&lt;p&gt;My friend Sarah and I are both musicians who write music. We’ve been kicking around the idea for over a year now of an app to assist songwriters in organizing demos and lyric sheets better than the Voice Recorder app.&lt;/p&gt;
+
+&lt;p&gt;I went back through some early designs I did in Sketch and made a few adjustments after Sarah and I had the chance to do some brainstorming a few weeks back. Once we agree on the design direction, I’m looking forward to getting started on the project.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/songwritingapp-01.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Some rough Sketch mockups of an app for songwriteres&quot; title=&quot;Some rough Sketch mockups of an app for songwriteres&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Some rough Sketch mockups of an app for songwriteres&lt;/div&gt;&lt;/div&gt;
+
+&lt;h2 id=&quot;wrap-up-wrap-up&quot;&gt;Wrap Up Wrap Up&lt;/h2&gt;
+
+&lt;p&gt;It’s been tough to find the right balance of time spent just exploring what’s out there and spending time diving deep into a project. It definitely feels a bit like a waste when you look up and realize you’ve spent half a day just looking at the documentation for some obscure programming language, and then spent the other half of the day trying to get your environment set up just to run a demo for a framework you’ll never use again. But I’m trying to use this time to keep an open mind about these experiences. There is some serendipity involved when trying to find your next big thing.&lt;/p&gt;
+</description>
+        <pubDate>Fri, 30 Oct 2015 08:30:51 -0500</pubDate>
+        <link>http://twocentstudios.com/2015/10/30/fall-2015-project-wrap-up/</link>
+        <guid isPermaLink="true">http://twocentstudios.com/2015/10/30/fall-2015-project-wrap-up/</guid>
+        
+        
+      </item>
     
       <item>
         <title>Site Makeover and Jekyll Cheatsheet</title>
@@ -46,8 +174,8 @@
 &lt;/div&gt;
 </description>
         <pubDate>Tue, 27 Oct 2015 16:56:36 -0500</pubDate>
-        <link>http://twocentstudios.com/2015/10/27/site-makeover-and-jekyll-cheatsheet</link>
-        <guid isPermaLink="true">http://twocentstudios.com/2015/10/27/site-makeover-and-jekyll-cheatsheet</guid>
+        <link>http://twocentstudios.com/2015/10/27/site-makeover-and-jekyll-cheatsheet/</link>
+        <guid isPermaLink="true">http://twocentstudios.com/2015/10/27/site-makeover-and-jekyll-cheatsheet/</guid>
         
         
       </item>
@@ -113,8 +241,8 @@
 &lt;p&gt;I’m hoping for some kind of resolution to this problem. But either way, side projects are supposed to be learning experiences, and I definitely learned some good lessons with this one.&lt;/p&gt;
 </description>
         <pubDate>Sat, 05 Jul 2014 21:40:42 -0500</pubDate>
-        <link>http://twocentstudios.com/2014/07/05/my-review-of-the-new-facebook-login-review-process</link>
-        <guid isPermaLink="true">http://twocentstudios.com/2014/07/05/my-review-of-the-new-facebook-login-review-process</guid>
+        <link>http://twocentstudios.com/2014/07/05/my-review-of-the-new-facebook-login-review-process/</link>
+        <guid isPermaLink="true">http://twocentstudios.com/2014/07/05/my-review-of-the-new-facebook-login-review-process/</guid>
         
         
         <category>facebook</category>
@@ -504,8 +632,8 @@ View           View Model           Controller&lt;/code&gt;&lt;/pre&gt;&lt;/figu
 &lt;p&gt;I would greatly appreciate any feedback on this post. In particular, I’d really like to flesh out my understanding of MVVM in large architectures that can scale to multiple data sources, hundreds of views, and millions of users all while staying snappy and crash-free.&lt;/p&gt;
 </description>
         <pubDate>Sun, 08 Jun 2014 15:31:52 -0500</pubDate>
-        <link>http://twocentstudios.com/2014/06/08/on-mvvm-and-architecture-questions</link>
-        <guid isPermaLink="true">http://twocentstudios.com/2014/06/08/on-mvvm-and-architecture-questions</guid>
+        <link>http://twocentstudios.com/2014/06/08/on-mvvm-and-architecture-questions/</link>
+        <guid isPermaLink="true">http://twocentstudios.com/2014/06/08/on-mvvm-and-architecture-questions/</guid>
         
         
         <category>ReactiveCocoa,</category>
@@ -910,8 +1038,8 @@ GET /&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;room&lt;/span&gt;&lt;span clas
 
 </description>
         <pubDate>Sun, 26 Jan 2014 18:43:19 -0600</pubDate>
-        <link>http://twocentstudios.com/2014/01/26/fall-2013-project-wrap-up</link>
-        <guid isPermaLink="true">http://twocentstudios.com/2014/01/26/fall-2013-project-wrap-up</guid>
+        <link>http://twocentstudios.com/2014/01/26/fall-2013-project-wrap-up/</link>
+        <guid isPermaLink="true">http://twocentstudios.com/2014/01/26/fall-2013-project-wrap-up/</guid>
         
         
         <category>wrap-up</category>
@@ -933,8 +1061,8 @@ GET /&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;room&lt;/span&gt;&lt;span clas
 &lt;p&gt;It would take me the rest of the year to finish this post if I tried to get anymore specific about all the things I’ve done in the past six months. I think it suffices to say that the adventure has just begun. I’m really excited about what’s ahead.&lt;/p&gt;
 </description>
         <pubDate>Sun, 06 Oct 2013 20:52:00 -0500</pubDate>
-        <link>http://twocentstudios.com/2013/10/06/six-months-at-timehop</link>
-        <guid isPermaLink="true">http://twocentstudios.com/2013/10/06/six-months-at-timehop</guid>
+        <link>http://twocentstudios.com/2013/10/06/six-months-at-timehop/</link>
+        <guid isPermaLink="true">http://twocentstudios.com/2013/10/06/six-months-at-timehop/</guid>
         
         
       </item>
@@ -2483,8 +2611,8 @@ GET /&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;room&lt;/span&gt;&lt;span clas
 &lt;p&gt;Congrats if you made it this far. Although I didn’t exactly hit all my goals for this post, I didn’t think it’d be nearly this long either. I hope this post will add to the discussion about ReactiveCocoa. Ping me on twitter &lt;a href=&quot;http://twocentstudios.com&quot;&gt;@twocentstudios&lt;/a&gt; if you have comments or questions. Or check out the Hacker News &lt;a href=&quot;https://news.ycombinator.com/item?id=5488070&quot;&gt;thread&lt;/a&gt;.&lt;/p&gt;
 </description>
         <pubDate>Wed, 03 Apr 2013 12:36:00 -0500</pubDate>
-        <link>http://twocentstudios.com/2013/04/03/the-making-of-vinylogue</link>
-        <guid isPermaLink="true">http://twocentstudios.com/2013/04/03/the-making-of-vinylogue</guid>
+        <link>http://twocentstudios.com/2013/04/03/the-making-of-vinylogue/</link>
+        <guid isPermaLink="true">http://twocentstudios.com/2013/04/03/the-making-of-vinylogue/</guid>
         
         
         <category>iOS,</category>
@@ -2905,8 +3033,8 @@ GET /&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;room&lt;/span&gt;&lt;span clas
 &lt;p&gt;Discuss this on &lt;a href=&quot;http://news.ycombinator.com/item?id=4798823&quot;&gt;Hacker News&lt;/a&gt;.&lt;/p&gt;
 </description>
         <pubDate>Thu, 15 Nov 2012 09:50:00 -0600</pubDate>
-        <link>http://twocentstudios.com/2012/11/15/simple-ajax-comments-with-rails</link>
-        <guid isPermaLink="true">http://twocentstudios.com/2012/11/15/simple-ajax-comments-with-rails</guid>
+        <link>http://twocentstudios.com/2012/11/15/simple-ajax-comments-with-rails/</link>
+        <guid isPermaLink="true">http://twocentstudios.com/2012/11/15/simple-ajax-comments-with-rails/</guid>
         
         
         <category>rails</category>
@@ -3025,8 +3153,8 @@ GET /&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;room&lt;/span&gt;&lt;span clas
 &lt;p&gt;Now I’m just ranting, so I’ll have to sleep on it like I said and circle back in the morning.&lt;/p&gt;
 </description>
         <pubDate>Sat, 13 Oct 2012 19:48:00 -0500</pubDate>
-        <link>http://twocentstudios.com/2012/10/13/core-data-plus-icloud-is-kind-of-ridiculous</link>
-        <guid isPermaLink="true">http://twocentstudios.com/2012/10/13/core-data-plus-icloud-is-kind-of-ridiculous</guid>
+        <link>http://twocentstudios.com/2012/10/13/core-data-plus-icloud-is-kind-of-ridiculous/</link>
+        <guid isPermaLink="true">http://twocentstudios.com/2012/10/13/core-data-plus-icloud-is-kind-of-ridiculous/</guid>
         
         
         <category>iOS,</category>
@@ -3264,35 +3392,8 @@ diff_freqs = [122, 122, 270, 150, 157,
 
 </description>
         <pubDate>Fri, 12 Oct 2012 15:22:00 -0500</pubDate>
-        <link>http://twocentstudios.com/2012/10/12/deconstructing-a-chirp-dot-io</link>
-        <guid isPermaLink="true">http://twocentstudios.com/2012/10/12/deconstructing-a-chirp-dot-io</guid>
-        
-        
-      </item>
-    
-      <item>
-        <title>TDD, RSpec &amp; Conway&#39;s Game of Life</title>
-        <description>&lt;p&gt;On my continuing quest to do more micro-projects, I decided to begin focusing on TDD today. After doing a little RSpec Googling, I came across &lt;a href=&quot;https://vimeo.com/31403388&quot;&gt;this live coding&lt;/a&gt; video for doing TDD with RSpec on &lt;a href=&quot;http://en.wikipedia.org/wiki/Conway&#39;s_Game_of_Life&quot;&gt;Conway’s Game of Life&lt;/a&gt;, something I hadn’t heard of before.&lt;/p&gt;
-
-&lt;p&gt;After watching about half the video, I realized I was far enough along that I could try it myself. So I took a stab at it doing TDD the whole way. It was actually pretty fun doing a simple OO Ruby project and getting my feet wet with RSpec. I’ve always had this ugly feeling of repeating myself with tests, which is one reason I never could bring myself to write tests upfront for my little Rails projects.&lt;/p&gt;
-
-&lt;p&gt;It turns out (as everyone knows) that testing actually saves the repetition that comes with hand-testing everything in irb. If I had a nickel for every time I sat there banging away at the keyboard constructing objects and relationships in the Rails console just to do a reload and wipe everything out, I’d be rich (and a cliche).&lt;/p&gt;
-
-&lt;p&gt;In any case, it was apparent very quickly that I was really saving myself a lot of headaches by writing tests. The feedback loop was much quicker writing tests first. Fixing bugs and not having to re-establish all of your test setup by hand each time makes it much easier to focus on the bug at hand. And this was just for a three-class micro-project. I can only imagine how much headaches testing saves in large scale Rails projects.&lt;/p&gt;
-
-&lt;p&gt;RSpec was actually a lot more intuitive than I expected. It helped that I found an old cheat sheet to kind of guide my thinking of how my &lt;code class=&quot;highlighter-rouge&quot;&gt;should&lt;/code&gt; statements should be structured. I tried to keep all the best practices in mind while writing my tests, but I’m sure I missed quite a bit on my first run. Looking back, I probably should have had a few more edge case tests especially on the 4 big rules. I’m still getting used to &lt;code class=&quot;highlighter-rouge&quot;&gt;describe&lt;/code&gt;, &lt;code class=&quot;highlighter-rouge&quot;&gt;context&lt;/code&gt;, &lt;code class=&quot;highlighter-rouge&quot;&gt;let&lt;/code&gt;, &lt;code class=&quot;highlighter-rouge&quot;&gt;before&lt;/code&gt;, and all the other structural stuff. It doesn’t help that, from what I’ve seen, there seems to be a personal style to writing tests that varies. It varies in both test structure and amount of testing.&lt;/p&gt;
-
-&lt;p&gt;I also forced myself to get a primer on Ruby Debug (using the debugger gem). It’s a little different than I’m used to with the full IDE and the goodies that Xcode offers, but I’m sure it’ll be another useful tool in the toolbox.&lt;/p&gt;
-
-&lt;p&gt;I wrote a &lt;code class=&quot;highlighter-rouge&quot;&gt;Cell&lt;/code&gt; class and a &lt;code class=&quot;highlighter-rouge&quot;&gt;World&lt;/code&gt; class in what I think was good OO. Then I wrote a &lt;code class=&quot;highlighter-rouge&quot;&gt;Display&lt;/code&gt; class that handles printing the world to the terminal (and even a little animation). I didn’t write tests for that though, it was kind of a just-for-kicks deal.&lt;/p&gt;
-
-&lt;p&gt;Sidebar: this actually reminds me a lot of the big project we did in my C++ class Sophomore year of high school. We spent what seemed like several months writing all these classes to simulate fish. I can’t remember exactly what the rules were, but I remember it being a bit tough to wrap my mind around. I don’t think I really understood the difference between UI code and game logic back then. I didn’t get that STDOUT was all we really needed for the concepts we were learning. I kept wanting to understand the GUI classes when all that was in the curriculum were the comp sci basics.&lt;/p&gt;
-
-&lt;p&gt;I’m not sure if my code is worth posting to github. I’ll keep it off for now and try to leave room for the more important/interesting projects I’ve got planned.&lt;/p&gt;
-</description>
-        <pubDate>Mon, 08 Oct 2012 21:22:00 -0500</pubDate>
-        <link>http://twocentstudios.com/2012/10/08/tdd</link>
-        <guid isPermaLink="true">http://twocentstudios.com/2012/10/08/tdd</guid>
+        <link>http://twocentstudios.com/2012/10/12/deconstructing-a-chirp-dot-io/</link>
+        <guid isPermaLink="true">http://twocentstudios.com/2012/10/12/deconstructing-a-chirp-dot-io/</guid>
         
         
       </item>
