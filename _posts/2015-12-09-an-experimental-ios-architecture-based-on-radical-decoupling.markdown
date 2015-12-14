@@ -16,7 +16,7 @@ The whole project is on [Github](https://github.com/twocentstudios/todostream). 
 
 ## Architecture Overview
 
-I'll call this architecture EventMVVM for the sake of having a name to reference. It uses bits of the MVVM (Model-View-ViewModel) paradigm. It uses ReactiveCocoa as the plumbing for the event stream, but as I'll discuss later many possible tools could be used instead. It is written in Swift, which turns out to be marginally important due to the enums with associated values feature, and its ease of defining and using value types.
+I'll call this architecture EventMVVM for the sake of having a name to reference. It uses bits of the [MVVM](https://en.wikipedia.org/wiki/Model%E2%80%93view%E2%80%93viewmodel) (Model-View-ViewModel) paradigm. It uses [ReactiveCocoa](https://github.com/ReactiveCocoa/ReactiveCocoa) as the plumbing for the event stream, but as I'll discuss later many possible tools could be used instead. It is written in Swift, which turns out to be marginally important due to the enums with associated values feature, and its ease of defining and using value types.
 
 The best way I can explain the architecture is by naming and enumerating the actors involved, defining them, and listing the rules.
 
@@ -29,7 +29,7 @@ The best way I can explain the architecture is by naming and enumerating the act
 
 ### Event
 
-An event is the building block of a message. It's defined as an enum, and each case has up to one associated value (note: it's different from a ReactiveCocoa Event). You can think of it as a strongly-typed `NSNotification`. Each case starts with `Request` or `Response`.
+An event is the building block of a message. It's defined as an enum, and each case has up to one associated value (note: it's different from a ReactiveCocoa Event). You can think of it as a strongly-typed `NSNotification`. Each case starts with `Request` or `Response` out of convention. Below are a few example cases.
 
 {% highlight swift %}
 /// Event.swift
@@ -51,12 +51,12 @@ enum Event {
 {% endhighlight %}
 
 * Model and ViewModel "type" events are both included in the `Event` enum.[^1]
-* `RequestReadTodos` does not have a parameter since this app only has no per-view filtering or sorting that needs to happen.[^2]
+* `RequestReadTodos` does not have a parameter since this app has no per-view filtering or sorting that needs to happen.[^2]
 * We're using a [Result](https://github.com/antitypical/Result) to encapsulate the response value or error.[^3]
 * All enum case associated values are value types which is important in ensuring system integrity. The same Event may be received by many objects on any number of threads.
 
-[^1]: A future expansion to EventMVVM would have a `ModelEvent` and `ViewModel` event, and a typed stream for each. That way, a View objects would only see the ViewModel stream, whereas ViewModelServers (I'll cover this later) would see both ViewModel and Model streams.
-[^2]: In a more complex app, there would need to be a `ReadTodosRequest` struct to encapsulate a sort descriptor and predicate.
+[^1]: A future expansion to EventMVVM could have a `ModelEvent` and `ViewModel` event, and a typed stream for each. That way, a View objects would only see the ViewModel stream, whereas ViewModelServers (I'll cover this later) would see both ViewModel and Model streams.
+[^2]: In a more complex app, there would need to be a `ReadTodosRequest` struct to encapsulate a sort descriptor and predicate. Or better yet, a more thorough TodoListViewModel that contains all this information.
 [^3]: It turns out it would probably be better to embed an optional error parameter within the response itself. Otherwise, it becomes impossible to know which request the error is associated with. We'll kick that problem down the road for now.
 
 ### EventsSignal & EventsObserver
@@ -90,12 +90,14 @@ A server is a long-lived class that contains observers and may send messages. In
 
 Servers represent the "smart" objects in our application. They're the orchestrators. They create and manipulate our ViewModel and Model value types and communicate with other servers by creating Events and attaching values to them.
 
-[^4]: You could certainly combine `ViewModelServer` and `ModelServer` into one `Server`, but MVVM helps us separate our concerns.
-[^5]: One of the biggest open questions I have is if and how Server objects spawn one another. In any decent sized application, it would be unwieldy to have one `ViewModelServer` with hundreds of observers. It may also use too many resources. If we split ViewModelServers per ViewModel type, how would the primary `ViewModelServer` know how to manage the lifecycles of them?
+[^4]: You could certainly combine `ViewModelServer` and `ModelServer` into one `Server` (or just dump everything in the AppDelegate), but MVVM helps us separate our concerns.
+[^5]: One of the biggest open questions I have is if and how Server objects spawn one another. In any decent sized application, it would be unwieldy to have one `ViewModelServer` with hundreds or thousands of observers on one stream. It may also use too many resources. If we split ViewModelServers per ViewModel type, how would the primary `ViewModelServer` know how to manage the lifecycles of them?
 
 ### Model
 
-A Model is a value type containing the base data. As in standard MVVM, it should not contain anything specific to an underlying database. In the example application, I have extensions to serialize the `Todo` model object into a `TodoObject` for our Realm database.
+A Model is a value type containing the base data. As in standard MVVM, it should not contain anything specific to an underlying database.
+
+In the example application, I have extensions to serialize the `Todo` model object into a `TodoObject` for our Realm database.
 
 The Model layer only knows about itself. It doesn't know about ViewModels or Views.
 
@@ -107,13 +109,13 @@ In this interpretation[^6], ViewModels are completely inert and cannot run async
 
 ViewModels don't know about the View layer. They can manipulate other ViewModels and Models.
 
-[^6]: In most of my other work with MVVM, some ViewModels are classes and do the majority of the heavy lifting with regards to asynchronous work and organizing data flow within the app. The reasoning behind this is to make the ViewControllers a bit "dumber" by keeping that logic out of them.
+[^6]: In most of my other work with MVVM, some ViewModels are classes and do the majority of the heavy lifting with regards to asynchronous work and organizing data flow within the app, while some are inert value types. The reasoning behind this is to make the ViewControllers a bit "dumber" by keeping that logic out of them.
 
 ### View
 
 Our View layer is UIKit, including `UIViewController`s and `UIView`s and their subclasses. Although my original intention was to explore the View layer also sending its own events through the event stream, in this simple implementation it would have been overkill and probably more distracting than anything.[^7]
 
-The View layer is only allowed to interact with the ViewModel layer. That means it knows nothing about Models.
+The View layer is only allowed to interact with the View and ViewModel layers. That means it knows nothing about Models.
 
 [^7]: Examples of these types of events would be `ViewControllerDidBecomeActive(UIViewController)` or `ButtonWasTapped(UIButton)`. As you can see, this would break our assumptions of only sending value types through the stream, which requires some more thought. And as I've learned from working with other frameworks, you can jump through a lot of hoops to avoid doing things the way UIKit wants you to do them, and you usually come out the other side worse off.
 
@@ -123,13 +125,13 @@ So now that we've got a basic understanding of all the components of our system,
 
 ### The Spec
 
-What are the features of our Todo list? They end up being analogous to our `Event` cases. (For me, this was probably the coolest part.) From `Event.swift`:
+What are the features of our Todo list? They end up being analogous to our `Event` cases. (For me, this was one of the coolest parts.) From `Event.swift`:
 
 * `RequestTodoViewModels`: we want to be able to see all our todos in the default order with deleted items filtered out.
 * `RequestToggleCompleteTodoViewModel`: we need to be able to mark todos as complete from the list view.
 * `RequestDeleteTodoViewModel`: we'll add the ability to delete them from the list view too.
 * `RequestNewTodoDetailViewModel`: we need to be able to create new todos.
-* `RequestTodoDetailViewModel`: we need to be able to view/edit todos in all their glory.
+* `RequestTodoDetailViewModel`: we need to be able to view/edit a todo in all its glory.
 * `RequestUpdateDetailViewModel`: we need to be able to commit our changes.
 
 Those are all of our requests. They'll all originate from the View layer. Since these are just events/messages we're broadcasting out, there won't necessarily be a direct 1-1 response. This has both positive and negative consequences for us.
@@ -140,7 +142,7 @@ Both `RequestNewTodoDetailViewModel` and `RequestTodoDetailViewModel` (aka new a
 
 Interestingly enough, `RequestUpdateDetailViewModel` must respond from both `ResponseUpdateDetailViewModel` and `ResponseTodoViewModel` since their underlying todo Model changed. We'll explore this scenario in more detail later on.
 
-In order to fill these requests from the View layer, the ViewModelServer will need to make its own requests for Model data. These are more 1-to-1.
+In order to fill these requests from the View layer, the ViewModelServer will need to make its own requests for Model data. These are 1-to-1 request-response.
 
 * `RequestReadTodos` -> `ResponseTodos`
 * `RequestWriteTodo` -> `ResponseTodo`
@@ -149,7 +151,7 @@ We implement deletes by setting a flag on our Todo model. This technique makes i
 
 Here is a very long diagram of how our four main objects send and observe events.
 
-{% caption_img /images/event-mvvm-diagram.png Events get send to and observed by our four primary objects %}
+{% caption_img /images/event-mvvm-diagram.png Events get sent to and observed by our four primary objects %}
 
 ### Setting Up the System
 
@@ -272,14 +274,14 @@ Let's take a look at `Event.ResponseTodoViewModels`.
         }
 {% endhighlight %}
 
-* **#1**: This is an implementation detail of ReactiveCocoa that (kind of[^9]) limits the lifetime of our observer to the lifetime of `self`. In other words, stop processing this observer when the `TodoListViewController` goes away.
+* **#1**: This is an implementation detail of ReactiveCocoa that (kind of[^9]) limits the lifetime of our observer to the lifetime of `self`. In other words, stop processing this observer when this instance of `TodoListViewController` goes away.
 * **#2**: This is where where we filter and unbox the value from the event if necessary. Remember, we're observing the firehose of Events that are sent throughout the app. We only want `Event.ResponseTodoViewModels`, and if so, we want its value passed along. For all the other events that come through, they'll be mapped to `nil` and discarded by the `ignoreNil()` operator.
-* **#3**: This is our error handling. `promoteErrors` is an implementation detail of ReactiveCocoa which turns a signal incapable of erroring into one that can send errors of a certain type. `attemptMap` then unboxes the `Result` object and allows us to use ReactiveCocoa's built in error processing. `flatMapError` is where we have our error side effects, in this case, presenting the error as an alert. If we used `observeError` instead, our observer would die after the first error event which is not what we want.[^11]
+* **#3**: This is our error handling. `promoteErrors` is an implementation detail of ReactiveCocoa which turns a signal incapable of erroring into one that can send errors of a certain type. `attemptMap` then unboxes the `Result` object and allows us to use ReactiveCocoa's built in error processing. `flatMapError` is where we have our error side effects, in this case, presenting the error as an alert. If we used `observeError` instead, our observer would be disposed of after the first error event which is not what we want.[^11]
 * **#4**: Events can be delivered on any thread by the eventsSignal. Therefore, for any thread critical work we need to specify a target scheduler. In this case, our critical work is UI-related, thus we use the `UIScheduler`. Note that only the operators *after* `observeOn` will be executed on the `UIScheduler`.[^12]
 * **#5**: Finally, we have a non-error value from the correct event. We'll use this to completely replace the TodoListViewModel and conditionally reload the table view if any change to the list was actually made.
 
 [^9]: To be accurate, the observer will be triggered to complete when any event is sent and self is no longer alive. For our purposes, this shouldn't be a huge deal. There are other ways to solve this problem, but they require a lot more syntactic baggage.
-[^11]: In retrospect, It may have been clearer to let the `Result` pass all the way through to `observeNext` and handle both success and error cases within the same block.
+[^11]: In retrospect, it may have been clearer to let the `Result` pass all the way through to `observeNext` and handle both success and error cases within the same block.
 [^12]: [`Scheduler`](https://github.com/ReactiveCocoa/ReactiveCocoa/blob/master/ReactiveCocoa/Swift/Scheduler.swift) is a ReactiveCocoa primitive. It's pretty slick.
 
 Keep in mind, this example is actually one of the trickier ones due to the error handling and multiple unwrapping stages.
@@ -303,7 +305,7 @@ We'll use the `UITableViewRowAction` API to send events for marking todos as com
     }
 {% endhighlight %}
 
-Each of these Events are simply modifying a ViewModel. The View layer only cares about changes at the grandularity level of TodoViewModel.
+Each of these Events are simply modifying a ViewModel. The View layer only cares about changes at the granularity level of TodoViewModel.
 
 We want to observe `ResponseTodoViewModel` so that our view is always showing the most accurate todos. We also want to animate changes because that's nice.
 
@@ -346,7 +348,7 @@ final class ViewModelServer {
 
 `ViewModelServer` listens for ViewModel requests and sends ViewModel response Events.
 
-`.RequestTodoViewModels` is pretty simple. It just creates a corresponding request from the model layer.
+`.RequestTodoViewModels` is pretty simple. It just creates a corresponding request from the model layer.[^14]
 
 {% highlight swift %}
     appContext.eventsSignal
@@ -357,6 +359,8 @@ final class ViewModelServer {
 {% endhighlight %}
 
 We're sending this event back to the eventsObserver to dispatch our new Event. Notice we have to dispatch this event on a specific scheduler. If we don't, we'll hit a deadlock. It's a ReactiveCocoa implementation detail and beyond the scope of this post, so for the time being, just notice we have to add that line to any observers that map to new events.
+
+[^14]: If you are unfamiliar to MVVM, you may be wondering why the View layer didn't simply issue a RequestReadTodos Event directly instead of relaying the RequestTodoViewModels Event through the ViewModelServer. It's a welcome layer of indirection to have our View layer be unaware of all matters related to the Model layer. It introduces a predictability for yourself and others on the project that all types of objects and values obey the same set of rules with regards to what they're allowed to do and which other objects they're allowed to talk to. It it certainly overhead, and feels like it in the early stages of a project, but in large projects I've rarely found it to be unwarranted optimization.
 
 #### Event.ResponseTodos
 
@@ -375,11 +379,13 @@ We can now expect a response to the Model event we just sent out.
         .observe(appContext.eventsObserver)
 {% endhighlight %}
 
-We're mapping `Result<[Todo], NSError>` to `Result<[TodoViewModel], NSError>` and sending the result as a new Event. There's a placeholder for where we could map the error from the Model layer to one more suited to show the user.
+We're mapping `Result<[Todo], NSError>` to `Result<[TodoViewModel], NSError>` and sending the result as a new Event. There's a placeholder for where we could map the error from the Model layer to one more suited to show the user.[^15]
+
+[^15]: It was lazy to not include a typed error enum from the Model layer. The transformation pipeline we have set up makes it easy to make our data available in the right representation for the right context.
 
 #### Other ViewModel Events
 
-In the view layer, we saw two events, `RequestToggleCompleteTodoViewModel` and `RequestDeleteTodoViewModel`, could be sent to change individual ViewModels on the fly.
+In the view layer, we saw that two events, `RequestToggleCompleteTodoViewModel` and `RequestDeleteTodoViewModel`, could be sent to change individual ViewModels on the fly.
 
 The map block for delete is:
 
@@ -422,7 +428,7 @@ The `TodoDetailViewController` accepts a `TodoDetailViewModel` that allows the u
 
 * `TodoDetailViewController` will observe it for errors. If there are errors with the validation, it will present the error above the current context.
 * `TodoListViewController` will observe it for non-errors, interpreting that as a sign that the user has finished editing the view model and it should dismiss the `TodoDetailViewController`.
-* `ViewModelServer` will observe a message it itself will be sending because it has to now create an updated Todo Model and send a write todo Event. The response to that will come back through the normal Event stream and be updated transparently by the `TodoListViewController`.
+* `ViewModelServer` will observe a message it itself will be sending because it has to now create an updated todo Model and send a write todo Event. The response to that will come back through the normal Event stream and be updated transparently by the `TodoListViewController`.
 
 #### ResponseUpdateDetailViewModel
 
@@ -465,7 +471,7 @@ I'd consider testing to be straightforward in the ViewModelServer and ModelServe
     }
 {% endhighlight %}
 
-The above tests one observer in ViewModelServer and expects the result Event to be at the boundary between the ViewModelServer and ModelServer.
+The above section tests one observer in ViewModelServer and expects the result Event to be at the boundary between the ViewModelServer and ModelServer.
 
 Integration testing isn't outside the realm of possibility either. Here's an example integration test for the same event that instead waits at the boundary between the View and ViewModelServer layers:
 
@@ -517,6 +523,8 @@ Now that we've seen some of the implementation of a very basic app, let's take a
 * **PRO** It's easier to reason about ownership and lifetime of objects.
 * **CON** Using Result for error handling doesn't quite fit. I need to investigate another hunch I have about how to do it better.[^13]
 * **PRO** Testing is arguably a fairly painless process.
+* **PRO** It would be possible to "playback" a user's entire session by piping the serialized saved output from `eventsSignal` into the `eventsObserver` in a new session.
+* **PRO** Analytics would be very easy to set up as a separate Server-type object that could listen into Events as they are placed onto the stream and transform them and POST them to a server as necessary.
 
 [^13]: Spoiler alert: it's adding an `error` parameter to all models and view models.
 
@@ -525,6 +533,8 @@ Now that we've seen some of the implementation of a very basic app, let's take a
 After I finished building this Todo app, I realized that ReactiveCocoa wasn't necessarily the best tool for implementing EventMVVM. I don't use a lot of its features and there are some quirks because I'm not using it as it was intended to be used.[^10]
 
 I decided to see if I could write my own simple library that was tailored to implementing EventMVVM. It took a day of wrestling with the type system, but I have an alpha that I'm going to try to test out. It's only about 100 lines of code. Unfortunately, it couldn't automate all the things I wanted to so the observing process still has some warts. I'll try to find some time to write something up about the library later.
+
+You can see my progress on [Github](https://github.com/twocentstudios/CircuitMVVM).
 
 [^10]: It could probably be implemented with `NSNotificationCenter` (not that I'd ever try that). Or any of the other Reactive Swift libraries.
 
