@@ -1,0 +1,130 @@
+---
+layout: post
+title: On Learning Japanese
+date: 2016-04-07 00:26:31
+---
+
+> This is a heavily autobiographical (and most likely boring) post. If you've ever done a deep dive into language learning, you may find it interesting.
+
+This past year, I've revitalized my efforts to learn Japanese. In the process, I've learned a lot about how I learn. This post is personal summary of the efforts of my distant past, recent past, and present.
+
+## Distant Past
+
+I started learning Japanese during my Sophomore year in college. The College of Engineering at the University of Illinois at Urbana-Champaign requires three semesters (or the equivalent three years of high school classes) of foreign language study in order to graduate.
+
+My options at the time were to continue with Spanish (I'd taken two uneventful years in high school and absorbed nothing), or start from the beginning with Japanese. After a lot of thought, I chose the harder, but more rewarding path of studying Japanese.
+
+I've always been interested in Japanese culture, all the way back to middle school. As far as the language though, I was starting from scratch.
+
+For 18 months straight, I was in Japanese class for one hour a day, five days a week. My memories of those classes consist of great pain. They were difficult. The homework was brutal. I remember staying up until 4am at least a few times a week copying kanji stroke-by-stroke hundreds of times into scratch notebooks. I remember cutting up notecards and making hundreds of flashcards for words I could barely write or pronounce at the time. I remember cramming for grammar tests five minutes before class started every day.
+
+I struggled. I think I got sympathy B minuses because I put in the effort and worked hard (but probably not smart). I even went so far as to retake (as an auditor) the second level class during the summer between my Sophomore and Junior year.
+
+My struggles came from a few places:
+
+* **Curriculum**: We used the Nakama series books. Which weren't/aren't bad. But they often lacked nuance in explaining word choice and grammar. A lot of the exercises leaned heavily on in-class participation which there wasn't always a lot of time for. And as I've found, it's usually a mistake to learn anything from one source.
+* **Teaching**: My teacher for my first two semesters was super super nice. She was a grad student from Japan studying classical piano at UIUC. Unfortunately, her English wasn't fantastic and her lack of linguistics or teaching experience showed at times. My professor for third semester was a lot more qualified, and I ended up doing a lot better that class.
+* **Technology**: Technically the spaced repetition software Anki was around when I was studying, and I think I remember trying it briefly. I had already done a lot of manual work making flashcards though, and the concept of entering all of my vocab words into a computer program seemed like even more work, and less mobile capable. In the several years since that time, technology has matured significantly.
+* **Divided Attention**: Taking a full load of Engineering classes is no walk in the park. At the time, I could never have a singular focus in learning Japanese, which is something I've found to be important to my success in the years since. There were plenty of occasions that even when my motivation for learning was at its peak, I just didn't have the time or mental energy to give.
+* **Lack of Extracurricular Practice** I'm admittedly not the most outgoing person. I never ended up making any Japanese friends around campus to do language exchange with (until study abroad), so my immersion was localized to my daily hour of Japanese class.
+* **Cram-Exam-Forget Cycle**: Because I was taking these classes for a grade (that would be weighted heavily into my GPA), it was easy to fall into the cram-exam-forget cycle where I could cram all the vocab into my brain the night before, do alright on the exam, then immediately forget it all the next day and still do alright grade-wise. But there was no motivation to keep up vocab and grammar from previous chapters (besides the inevitable studying for finals).
+
+That reads like a long list of excuses, but truly, the real thing holding me back was that I never sat back and pictured myself as a fluent speaker of Japanese. It was easier to tell myself and others, "I'm just not good at learning languages." And honestly, it's a line of thinking I still struggle with.
+
+After my third semester was finished, I was no longer under any obligation to continue my language studies. It was a difficult decision, but I ended up concluding that it'd be for the best for focus those five credit hours on my Engineering studies rather than continue onto a fourth level of Japanese since I wasn't pursuing a double-major.
+
+> As an aside, it's really frustrating how the university/grading system can warp your priorities. It's all too common for short term gains to take precedence over long term learning, and for real internal motivation to be sacrificed for manufactured motivation in the form of a letter on a report card. Formal education can certainly be a double-edged sword at times.
+
+I did, however, make a compromise with myself, and was accepted into a study aboard program for the upcoming Summer. Spending the Summer between my Junior and Senior years in Kanazawa, Japan at Kanazawa Institute of Technology was one of my most memorable experiences of those four years at University.
+
+The experience itself was incredible, but after taking a semester off from language study, my language courses over the six weeks were one-foot-in-one-foot-out. Being there definitely helped, but it was actually demotivating being around other Americans who seemed to be picking up the language at such a rapid pace compared to myself.
+
+I promised my senseis that I would keep studying when I got back to America. I sent a few emails to my new Japanese friends over the next few months, but as time slipped by, it took longer and longer to craft even a few sentences in Japanese. As my Senior year progressed and core classes and final projects loomed, Japanese fell to the wayside.
+
+Towards the end of the year, I applied to Mitsubishi Japan and made it through three interviews before I was rejected. I would have spent three years training in Japan before returning to Chicago. I think it was an Engineering sales job (selling industrial relays or something like that). Not really in my wheelhouse, but the prospect of living in Japan was incentive enough.
+
+My first job out of school was also an Engineering job that wasn't necessarily in my wheelhouse, so a few months in I applied to the JET program. The JET program is a program run by the Japanese government that places native English speakers in assistant teaching roles in schools all around Japan. Teaching English is also not in my wheelhouse, but again, at that point I was still young and really wanted to live in Japan. I was convinced that it would be impossible to improve my Japanese outside of Japan.
+
+I wasn't accepted to the JET program either, so I continued on my Engineering career path and eventually migrated into software development.
+
+Over the following years, I stayed in touch with some of the Japanese friends I met during study abroad. I did some quick Japanese cramming before my two week vacations to Japan in 2011 and 2014 just so I didn't get too lost, but of course nothing ever stuck.
+
+## Recent Past
+
+This brings me to present day. I lived in Sapporo and Nagoya, Japan for three months over this Winter. I spent most of my time working on a (to be open-sourced) Swift iOS app, as well as doing some sightseeing, seeing friends, and eating great food.
+
+Before I left, I was still undecided about how much time I wanted to contribute to learning Japanese. It wasn't until my ride to the airport that I downloaded an app I'd heard about called Memrise and started exploring my options.
+
+Memrise turned out to be a great addition to my routine. On good days, I'd spend about an hour a day reviewing or learning new words before I'd dive into coding.
+
+My first course on Memrise ended up being a JLPT N5 course. JLPT is the national proficiency test. It's used by the Japanese government and some larger companies to assess non-native speakers. It's divided up into five stages of increasing difficulty, N5 being the easiest and N1 being the hardest.
+
+One of the pros of the JLPT curriculum is that since it is so popular, there are a wealth of materials available for it and lots of people who are in the same boat or ahead of me. That translates to less time spent crafting my studying materials and more time learning.
+
+One of the cons is that in only includes bits and pieces of what would be considered "everyday Japanese", and thus works better if your goal is to become fluent rather than simply know how to order dinner and talk about the weather.
+
+So I decided to dip my toe in and do the JLPT N5 course. I'd been previously exposed to around 2/3s of the material through my previous courses which made it much easier to digest. Plus, I was only being tested on the English to Kana and English to Kanji, and therefore only had to "recognize" the Kanji and not necessarily read it.
+
+Even with my fair pace of study, it took me about 9 weeks (the majority of my time there) to finish the course of all 675 words. Granted, I took a week or two off between my move from Sapporo to Nagoya, and I spent more time with friends in Nagoya. But still, I couldn't tell if I was proud of myself or I should have pushed myself twice as hard.
+
+One of the most disappointing parts of the experience was that even after finishing the course, I still was only understanding a word here and there while listening to the conversations of my roommates. I would still clam up and say "I don't understand" when interacting with shop owners. I realized that drilling vocab was in some ways an avoidance of the speaking, listening, and grammar pillars.
+
+Not all was lost though. I was getting much quicker at hammering out messages in Japanese through LINE. And with the combination of the awesome Midori Japanese dictionary for iOS and sparing use of Google Translate, the feedback loop was getting tighter, I was learning quicker, and my confidence was growing.
+
+Upon returning to Chicago after my three months in Japan, I was at another crossroads. Do I push for fluency, maintain my current abilities by reviewing vocab at intervals, or just let it taper off?
+
+It took a week or two, but I sort of fell into the decision going all out into the JLPT N4 course one lazy Sunday afternoon. This time, however, I elected to learn the Kanji readings as well for the 700 words. I set a goal to finish the remainder of the course (about two-thirds of it) in seven days.
+
+For that week, I was on the Memrise website for about eight hours a day with frequent breaks for decompression. My pace was about 50 words and Kanji readings per day, although some days I did 25 and others I did 100.
+
+The experience tested the limits of my memory and the limits of my frustration. Although I was only learning 50 new words a day, in reality, I was just adding to the pile of linguistic debt, because I would have to review those 50 words the next day, and the 50 words from the day before, etc. A few days in and I would wake up to 400 words to review. Reviewing those words would take the entire afternoon and evening, and it would be 11pm before I'd start learning my new set of words.
+
+I finished the remainder of the course in a little under two weeks instead of one. It was a really fascinating experience pushing myself to the limits of my abilities in a significantly different way than programming does. I learned (and am still learning) a lot of meta things about how I learn best, especially when it comes to rote memorization.
+
+A few lessons I've learned. First, starting with mems:
+
+At this point, I still have mixed feelings about mems. Memrise has heavy emphasis on mems in their interface. Mems, or mnumonics, are a memorization technique used as sort of mental scaffolding to connect a new word to something you previously know. The mem assists in the process of learning and forgetting the word until finally, the mem is no longer needed and fades away.
+
+In college, I knew about mems but never used them. I did a lot of writing over and over in a notebook (which doesn't help *at all*).
+
+I was still anti-mems until about half way through my Week of Pain. I quickly realized that when I was blazing through learning my new words for the day (exhausted at 11pm), I was putting them in the shortest of short term memory and simply deferring their learning until the next day. The next day's review was as bad as learning them for the first time.
+
+I found that, during my vocab introduction sessions, when I slowed myself down and spent time crafting a mem for each word, my sessions the next day went about 75% better. It took some extra time recalling my mems before my brain got to the final word, but it made a huge difference having that initial foothold to latch onto. That first review actually felt like a review and not learning for the first time. After this experience, I was (finally) sold on the value of mems.
+
+## Present
+
+So I finished my 700 word JLPT N4 course, did some extra review of the words on the automated Memrise schedule, was feeling pretty good about things, then went on vacation for a week and didn't touch it.
+
+Getting back into it was *painful*. Sitting down and seeing 900 words to review was bad, but going through that first session and not recognizing more than half the words was heartbreaking and demoralizing.
+
+I found myself at another crossroads. Do I continue on to JLPT N3 (which has about 4x as many words and kanji) or should I get back to full time programming?
+
+I wrestled with it, but ended up taking about four days to power through the vocab review anyway. Once I finished and started looking into JLPT N3 courses, I couldn't find the exact type and quality I wanted. If was going to dig into another two month process, I definitely wanted to make sure the curriculum is as polished as possible.
+
+Unfortunately, the more I do outside of SRS/Memrise, the more I realize that sort of one-dimensional studying helps very little in the long run. I have a hard time recognizing words in context, and I have a feeling that doing more rapid-fire vocab SRS isn't the answer.
+
+The other problem is that because I decided to jump straight to vocab and skip learning radicals, kanji meanings, and kanji readings, each vocab word feels very isolated. The effect of learning should be multiplicative instead of additive. I don't necessarily regret doing all the work I've done so far. I've learned a lot about learning and about myself through those intensive studying experiences. And having been exposed to these vocab words at least once will undoubtedly help when I see them again.
+
+Over the last few weeks, I've tentatively decided to try out a different SRS program to see if I can rectify some of these deficiencies. I had come across Wanikani before, but at the time wasn't ready to commit to it. After working with Memrise, I have greater appreciation for Wanikani's benefits. Some of these benefits are: learning radicals first, building to kanji, then building to vocab; starting with easy kanji first and composing them into more complex kanji later (even if the easy kanji represent more complex concepts); learning both the English and Japanese readings; embracing mnemonics (and not having to create my own); getting two full practice sentences with each vocab word; and having a large community going through the exact same curriculum.
+
+That being said, the first couple weeks haven't been all roses. The pace right now is significantly slower than I got used to with Memrise and there's no way to go faster by design. This might be a good thing, I'm not sure if my word retention will be better in the long run. I currently have more time to commit to learning Japanese, so I'd like to spend more time if I can (if my brain can handle it).
+
+The other problem is that Wanikani is very strict with input. Just knowing the concept of something isn't enough. You have to know its exact English phrasing when being tested on kanji -> English. Going from kanji -> English is a new test type for me though, so I may get better at it.
+
+I'm still adjusting to Wanikani's mnemonics. I usually remember the whole story after 2 hours, bits and pieces of it after 1 day, just enough to get the right answer after 2 days, then by the 3rd day, I've forgotten it and can't remember the readings without them. I have a feeling I'll get better at internalizing the stories, but it's going to take more effort on my part.
+
+> As a sidebar, that's the huge paradigm shift with SRS. I've always been taught through 16+ years of school that "the more time you put in, the better you'll do". SRS actually teaches the opposite, that if you study just a little bit at specific times, you'll actually remember *more* than you would if you studied continuously and never allowed yourself to get the edge of forgetting. Sort of the culmination of the "work smart, not hard" mentality. I'm definitely hoping that once I get through a few more levels in Wanikani that I'll be able to prove to myself that the "burned" kanji/vocab (aka the kanji/vocab that I'll allegedly remember forever without needing to study it anymore) will actually be burned forever. So in the mean time, I sit here all anxious waiting for my next review time when my natural instinct is to *keep hitting the books!*
+
+Outside of Wanikani, I've been slowly making my way through some classic Japanese childrens' books. I might punt on those for a while because they're not as useful as I'd hoped they'd be. They're mostly written in hirigana and thus are hard to parse. Plus, there are a lot of outdated words and phrases.
+
+I might try to dive into NHK Easy News more, but I'm still missing a lot of the necessary vocab. I've read that at around Wanikani level 30 you're at the point where you know enough that reading basic texts isn't as painful anymore (or in other words, you know enough vocab that you can get the gist of a sentence and keep your rhythm while reading). Maybe in the mean time it makes more sense to really hunker down on grammar. Maybe not.
+
+I've been watching some old Digimon Adventure 02 episodes in Japanese. These are good for listening practice, but still above my current level. I can follow along getting bits and pieces of the dialogue, but eventually my brain gets fatigued and I can no longer keep up with the realtime "have I heard this word before?" game I have to play while checking the subtitles.
+
+My final curriculum addition has been to start reading the non-fiction book *Moonwalking With Einstein* by Joshua Foer, a book about memorization told through personal anecdotes. I'm hoping to pick up a few tips and tricks, or at least get an interesting read out of it.
+
+## Future
+
+I'd like to write more about my successes and failures as my studies progress. Wish me luck.
+
+If you've gone through a similar journey or are just starting one, I'd love to chat about it. Feel free to contact me on Twitter [@twocentstudios](https://twitter.com/twocentstudios).
