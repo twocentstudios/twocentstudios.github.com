@@ -45,17 +45,17 @@ At their core, Messages Extensions:
 
 ### User Interface Points
 
-Message Extensions have three basic interface points for Message.app users:
+Message Extensions have three basic interface points for Messages.app users:
 
-**Message summary display**: all users running iOS 10+ and macOS Sierra+ will see a template view of an message created by an extension regardless of whether they have that specific extension installed. Users on previous versions will only receive the message's summary text and URL as two separate messages, but only if the URL has an http/https scheme.
+**Message summary display**: all users running iOS 10+ and macOS Sierra+ will see a template view of a message created by an extension regardless of whether they have that specific extension installed. Users on previous versions will only receive the message's summary text and URL as two separate messages, but only if the URL has an http/https scheme.
 
 {% caption_img /images/messages-layout-template.png MSMessageTemplateLayout (courtesy of WWDC). %}
 
-**Message creation**: the initial creation of a message occurs in the compact view of your extension. By tapping the App Store logo to the left of the message text field, the keyboard is replaced by a paging scroll view containing all the installed Messages Extensions. Extensions in compact mode have a keyboard-sized viewport to display anything content they wish. Users have the option to tap the disclosure button on the right side of the screen at any time to expand this view to full screen or recollapse it later.
+**Message creation**: the initial creation of a message occurs in the compact view of your extension. By tapping the App Store logo to the left of the message text field, the keyboard is replaced by a paging scroll view containing all the installed Messages Extensions. Extensions in compact mode have a keyboard-sized viewport to display any content they wish. Users have the option to tap the disclosure button on the right side of the screen at any time to expand this view to full screen or recollapse it later.
 
 {% caption_img /images/messages-collapsed-view-small.png The collapsed view of our example extension. %}
 
-**Message viewing & modification**: for users who have your extension installed, tapping an existing message sent by another user or one they created will launch your extension into an expanded (full screen) view port. Your extension receives the contents of the tapped message in order to configure itself for display and/or editing. For users that do not have your extension installed, a web browser will be opened with the message's URL.
+**Message viewing & modification**: for users who have your extension installed, tapping an existing message sent by another user or one they created will launch your extension into an expanded (full screen) viewport. Your extension receives the contents of the tapped message in order to configure itself for display and/or editing. For users that do not have your extension installed, a web browser will be opened with the message's URL.
 
 {% caption_img /images/messages-expanded-view-small.png One state of the expanded view of our example extension. %}
 
@@ -182,7 +182,7 @@ enum Pair {
 }
 ```
 
-Our `Translation` type will have a question and an answer. We have a two types of answer though, so we'll make another enum (`TranslationAnswer`) for that.
+Our `Translation` type will have a question and an answer. We have two types of answer though, so we'll make another enum (`TranslationAnswer`) for that.
 
 ```swift
 struct Translation {
@@ -281,7 +281,7 @@ enum ViewAction {
 
 #### MSMessageTemplateLayout & MessageTemplateLayout
 
-`MSMessageTemplateLayout` is Message.app's generic view format for inline messages. It serves the same purpose of our ViewState. (`MSMessageTemplateLayout` is the sole subclass of the `MSMessageLayout` base class, which could allow Apple to provide other message layouts in the future.)
+`MSMessageTemplateLayout` is Messages.app's generic view format for inline messages. It serves the same purpose of our ViewState. (`MSMessageTemplateLayout` is the sole subclass of the `MSMessageLayout` base class, which could allow Apple to provide other message layouts in the future.)
 
 ```swift
 // Messages.framework
@@ -366,7 +366,7 @@ override func willBecomeActive(with conversation: MSConversation) {
 
 ### Exit Point
 
-The exit point of an Messages Extension in the general case will be a call to `MSConversation.insert` followed by `MyMessagesAppViewController.dismiss` and can be called from any part of your extension. This inserts a message (that your extension has just finished crafting) into the Message.app's main text field allowing the user to (optionally) tap the send button.
+The exit point of an Messages Extension in the general case will be a call to `MSConversation.insert` followed by `MyMessagesAppViewController.dismiss` and can be called from any part of your extension. This inserts a message (that your extension has just finished crafting) into the Messages.app's main text field allowing the user to (optionally) tap the send button.
 
 In our case, we're channeling all user actions into the delegate method:
 
@@ -439,7 +439,7 @@ While your extension is active, it's possible that one of the conversation's oth
 
 If you need to take direct action based on the user attempting to send or deciding not to send your message after it's been inserted into the conversation, override your view controller's `didStartSending` and/or `didCancelSending` functions. These would presumably called after you've called `dismiss` after the defacto exit point I described earlier.
 
-Notice that `didStartSending` is called on an *attempt* to send, i.e. when the user taps the Message.app's send button. Apple doesn't guarantee the message will be delivered to the other participants. This could create a few opportunities for edge cases you should be aware of. For example, if the message service goes down and you've `POST`ed resource state changes to your server successfully in `didStartSending`, other participants may see outdated information in their message's MSMessageTemplateLayout that represents that resource on your server. Rare, but still something to think about that synchronizing state using `MSMessage`s will not always be perfect.
+Notice that `didStartSending` is called on an *attempt* to send, i.e. when the user taps the Messages.app's send button. Apple doesn't guarantee the message will be delivered to the other participants. This could create a few opportunities for edge cases you should be aware of. For example, if the message service goes down and you've `POST`ed resource state changes to your server successfully in `didStartSending`, other participants may see outdated information in their message's MSMessageTemplateLayout that represents that resource on your server. Rare, but still something to think about that synchronizing state using `MSMessage`s will not always be perfect.
 
 ### Wrap Up
 
@@ -595,3 +595,5 @@ I've given an overview of Messages Extensions. We then walked through an example
 I'm excited to see what kinds of Messages Extensions are available at launch come this Fall.
 
 I'll do my best to keep this post updated as subsequent betas are shipped. Feel free to ping me [@twocentstudios](https://twitter.com/twocentstudios) on Twitter if you have questions or comments.
+
+*Thanks to Evan Coleman for reading drafts of this post.*
