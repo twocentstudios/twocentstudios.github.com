@@ -6,11 +6,9 @@ date: 2016-06-25 01:39:29
 
 Apple announced Messages Extensions as part of iOS 10 allowing third-party apps to integrate directly with the iMessage platform. This integration follows Facebook Messenger and pretty much every other major messaging platform in the US and abroad.
 
-In this post I'll be walking through Messages Extensions and provide a simple example extension to illustrate the key features. Sticker packs are pretty straightforward, so I won't be covering those.
+In this post I'll present an overview of Messages Extensions, walk through a simple example extension to illustrate some key features, and finally explore some advanced features of Messages.framework. Some of this information is gleaned directly from the WWDC talk and some is from poking around in the beta. Hopefully this will save you some time in having to kick the tires yourself. Sticker packs are pretty straightforward, so I won't be covering those.
 
 I recommend watching the WWDC talk [iMessage Apps and Stickers Part 2](https://developer.apple.com/videos/play/wwdc2016/224/) and reviewing the code for [IceCreamBuilder](https://developer.apple.com/library/prerelease/content/samplecode/IceCreamBuilder), the Apple endorsed example for this topic. I consider that talk the primary source of information on Messages.framework. Here's a link to the [Messages.framework](https://developer.apple.com/reference/messages) docs.
-
-In this post I'll present an overview of Messages Extensions, walk through an example extension that uses some of the available features, and finally explore some advanced features of Messages.framework. Some of this information is gleaned directly from the WWDC talk and some is from poking around in the beta. Hopefully this will save you some time in having to kick the tires yourself.
 
 Note: This post was originally written for iOS 10 beta1.
 
@@ -18,13 +16,13 @@ Note: This post was originally written for iOS 10 beta1.
 
 ### App Extension
 
-Messages Extensions are follow the App Extension target format introduced in iOS 8. Other examples include Today Extensions, custom keyboards, and Share Extensions. As an App Extension, it is bound by special rules outlineed in the [App Extension Programming Guide](https://developer.apple.com/library/ios/documentation/General/Conceptual/ExtensibilityPG/ExtensionOverview.html#//apple_ref/doc/uid/TP40014214-CH2-SW2)
+Messages Extensions follow the App Extension target format introduced in iOS 8. Other examples include Today Extensions, custom keyboards, and Share Extensions. As an App Extension, it is bound by special rules outlineed in the [App Extension Programming Guide](https://developer.apple.com/library/ios/documentation/General/Conceptual/ExtensibilityPG/ExtensionOverview.html#//apple_ref/doc/uid/TP40014214-CH2-SW2)
 
 ### Backwards Compatibility
 
 Messages Extensions allow the creation and modification of a standardized encapsulated model/view pair `MSMessage`. Two of the main design points Apple needed to address in their implementation of Messages Extension were:
 
-1. User A creates a custom message using an extension. What happens if User B receiving a specially created message does not have the extension installed that was used to create the message.
+1. User A creates a custom message using an extension. What happens if User B receiving a specially created message does not have the extension installed that was used to create the message?
 2. User A creates a custom message using an extension. What happens if User B is on a previous version of iOS?
 
 The answer to these was:
@@ -36,8 +34,10 @@ The answer to these was:
 
 At their core, Messages Extensions:
 
-* provide the specification of a model and template view model (an `MSMessage` instance).
+* provide the specification of a model and template view model (contained within an `MSMessage` instance).
 * provide a rich interface to view, create, and manipulate these models (an `MSMessagesAppViewController` subclass).
+
+Defining these bits further:
 
 * The **model** is a URL (`MSMessage.url`). It is arguably designed to be very interoperable in the case that all parties do not have an extension installed.
 * The **template view model** is a special framework-provided template object (`MSMessageTemplateLayout`). It is minimally configurable and designed to be a summary view of your content.
@@ -47,7 +47,7 @@ At their core, Messages Extensions:
 
 Message Extensions have three basic interface points for Messages.app users:
 
-**Message summary display**: all users running iOS 10+ and macOS Sierra+ will see a template view of a message created by an extension regardless of whether they have that specific extension installed. Users on previous versions will only receive the message's summary text and URL as two separate messages, but only if the URL has an http/https scheme.
+**Message summary display**: all users running iOS 10+ and macOS Sierra+ will see a template view of a message created by an extension regardless of whether or not they have that specific extension installed. Users on previous versions will only receive the message's summary text and URL as two separate messages, but only if the URL has an http/https scheme.
 
 {% caption_img /images/messages-layout-template.png MSMessageTemplateLayout (courtesy of WWDC). %}
 
@@ -55,7 +55,7 @@ Message Extensions have three basic interface points for Messages.app users:
 
 {% caption_img /images/messages-collapsed-view-small.png The collapsed view of our example extension. %}
 
-**Message viewing & modification**: for users who have your extension installed, tapping an existing message sent by another user or one they created will launch your extension into an expanded (full screen) viewport. Your extension receives the contents of the tapped message in order to configure itself for display and/or editing. For users that do not have your extension installed, a web browser will be opened with the message's URL.
+**Message viewing & modification**: for users who have your extension installed, tapping an existing message sent by another user or one they created will launch your extension into an expanded (full screen) viewport. Your extension receives the contents of the tapped message in order to configure itself for display and/or editing. For users that do not have your extension installed, a web browser will be opened with the message's URL (on compatible OS versions assuming an http/https schema).
 
 {% caption_img /images/messages-expanded-view-small.png One state of the expanded view of our example extension. %}
 
@@ -81,7 +81,7 @@ If you're creating an extension to an existing webservice, you have the ability 
 https://example.com/items/742932
 ```
 
-Apple recommends this approach in the WWDC session (albeit somewhat casually, simply mentioning "the cloud"), specifically mentioning the avoidance of race conditions.
+Apple recommends this approach in the WWDC session (albeit somewhat casually, simply referencing "the cloud"), specifically mentioning the avoidance of race conditions.
 
 Keep security in mind though. If your app is creating harmless, ephemeral resources, it may be acceptable to use the participant UUIDs provided by `MSConversation` as security tokens. These would not work for long term resources, as reinstalling your extension will regenerate the local participant UUID. You could also use `NSUserDefaults` to share your service's auth token for the user logged into your primary app. This technique is beyond the scope of this post, but see the [App Extension Programming Guide](https://developer.apple.com/library/ios/documentation/General/Conceptual/ExtensibilityPG/ExtensionScenarios.html#//apple_ref/doc/uid/TP40014214-CH21-SW1) for more information.
 
@@ -131,8 +131,9 @@ Defining some of our terms:
 * **URL**: Data is stored in the `url` parameter of an `MSMessage`. Everything we need to restore the state of our message must be contained in the `url` string.
 * **Model**: This is our domain model, an enum we'll call `Pair` (referring to a question/answer pair) that contains `Translation` or `Correction` structs. All value types.
 * **ViewState**: Another enum that describes each possible state our view can be in. It can be converted directly from any Pair.
-* **View**: Our extension only has one `UIView` which is configured directly from a `ViewState` value. It communicates actions to its delegate.
-* **MSMessageTemplateLayout**: This is basically another ViewState/ViewModel object provided by Apple and configured by us.
+* **View**: Our extension only has one `UIView` which is configured directly from a `ViewState` value.
+* **ViewAction**: The View communicates well specified actions to its delegate.
+* **MSMessageTemplateLayout**: This is basically another ViewState/ViewModel object provided by Messages.Framework and configured by us.
 
 Below is the entire transformation flow:
 
@@ -153,10 +154,10 @@ MSConversation
 Broken down:
 
 * `MSConversation -> MSMessage -> URL`: We'll access the `url` property on the `MSMessage` instance on the `MSConversation` instance provided by Messages. `conversation.selectedMessage.url` if you will.
-* `URL -> Model`: Our Model's properties will have been previously encoded (by us) into `URLQueryItem`s. We'll need a function to decode it.
+* `URL -> Model`: Our Model's properties will have been previously encoded (by us) into `URLQueryItem`s. We'll need a function to decode them.
 * `Model -> ViewState`: Any Model value must be able to be shown to the user.
 * `ViewState -> View`: Setting the `viewState` property on our view will configure the view by adding data to text fields, showing/hiding subviews, and changing labels.
-* `View -> ViewAction`: We'll encode button taps and text field data into an enum of actions and pass it to its delegate. Our View won't have to know anything about how to transform these actions into a new Model or ViewState.
+* `View -> ViewAction`: We'll encode button taps and text field data into an enum of actions and pass the enum to the View's delegate. Our View won't have to know anything about how to transform these actions into a new Model or ViewState.
 * `ViewAction + Model -> Model`: We need to combine an action with the old model to create a new model that includes the user's changes.
 * `Model -> URL + MSMessageTemplateLayout`: Finally, we need to convert our model back to the the fields required to configure a new message.
 * `URL + MSMessageTemplateLayout -> MSMessage + MSSession -> MSConversation`: We'll configure a new message, attaching an `MSSession` provided by Messages, then call `insertMessage` on the conversation.
@@ -167,7 +168,11 @@ We'll go into some of these transformations in more detail later on.
 
 ### Data Models
 
-We're going to support both a correction type and a translation type. They're pretty similar, just a field for a question and a field for an answer. However, the correction type might already be correct, so there needs to be a state for that. Also, the corrector might not know what the requester is asking and thus can't correct it. For the translation type, the translator may not know how to translate the request so there should also be a state for that.
+We're going to support both a correction type and a translation type. They're pretty similar, just a field for a question and a field for an answer. However:
+
+* The correction type might already be correct, so there needs to be a state for that. 
+* The corrector might not know what the requester is asking and thus can't correct it. 
+* For the translation type, the translator may not know how to translate the request so there should also be a state for that.
 
 #### Domain Model
 
@@ -211,11 +216,13 @@ enum CorrectionAnswer: RawRepresentable {
 }
 ```
 
+> Another valid interpretation would have been to condense `Correction` and `CorrectionAnswer` into a single enum instead of using nullable properties. We're doing some of this transformation work in the `ViewState` instead.
+
 #### Messages Framework Model
 
 In order to do the `URL -> Model` and `Model -> URL` transformations, we'll need to devise an encoding scheme for our Model. There are a number of ways to do this, but we'll go with the simplest method.
 
-* `Pair` (our top level enum) will encode its case as a `type` param.
+* `Pair` (our top level enum) will encode its case as a `type` param. (e.g. `type=translation` or `type=correction`).
 * `TransformationAnswer` and `CorrectionAnswer` will be conformed to the `RawRepresentable` protocol and converted to a single string field.
 * `Pair`, `Transformation`, `Correction` will expose a `queryItems` property for the `Model -> URL` transformation. They will expose a custom nilable initializer receiving an array of `[URLQueryItem]`.
 
@@ -281,7 +288,7 @@ enum ViewAction {
 
 #### MSMessageTemplateLayout & MessageTemplateLayout
 
-`MSMessageTemplateLayout` is Messages.app's generic view format for inline messages. It serves the same purpose of our ViewState. (`MSMessageTemplateLayout` is the sole subclass of the `MSMessageLayout` base class, which could allow Apple to provide other message layouts in the future.)
+`MSMessageTemplateLayout` is Messages.app's generic view format for inline messages. It serves the same purpose of our ViewState. (`MSMessageTemplateLayout` is currently the sole subclass of the `MSMessageLayout` base class, which could allow Apple to provide other message layouts in the future.)
 
 ```swift
 // Messages.framework
@@ -297,6 +304,8 @@ public class MSMessageTemplateLayout : MSMessageLayout {
 }
 ```
 
+> I'm a little disappointed that the text is `String` and not `AttributedString`, but I can see why Apple might want to keep customization to a minimum up front.
+
 We'll only be using the caption and subcaptions so we'll make a helper struct to decouple our implementation from Messages. It's a bit pedantic to do so, but oh well.
 
 ```swift
@@ -308,7 +317,7 @@ struct MessageTemplateLayout {
 }
 ```
 
-Although we could do the transformation as `Pair ->  MessageTemplateLayout`, I think it actually makes our lives easier to convert from `ViewState ->  MessageTemplateLayout` instead.
+Although we could do the transformation as `Pair ->  MessageTemplateLayout`, I think it makes our lives easier to convert from `ViewState ->  MessageTemplateLayout` instead.
 
 ### View
 
@@ -328,6 +337,8 @@ protocol MessagesViewDelegate: NSObjectProtocol {
 
 The relevant code is [here](https://github.com/twocentstudios/Messages-Translator-Extension/blob/master/MessagesExtension/MessagesView.swift).
 
+Another valid implementation would be to use two or more `UIViewController` subclasses and the UIViewController containment APIs.
+
 ### Controller
 
 `MessagesViewController` is our `MSMessagesAppViewController` subclass. It will be responsible for performing most of the data transformations, holding state through the extension's lifecycle, and handling other calls from Messages.app.
@@ -335,7 +346,7 @@ The relevant code is [here](https://github.com/twocentstudios/Messages-Translato
 Our controller has two instance variables:
 
 * `@IBOutlet weak var messagesView: MessagesView!`: our only view.
-* `var pair: Pair?`: the current model. We need to hold onto this temporarily while we're waiting for user input in order to do the `ViewAction + Pair -> Pair` transformation. This value may also change if we're performing a `ViewAction` that is not intended to produce a message but only alter the `ViewState` directly (e.g. `ViewState.promptNew -> ViewState.translationNew`).
+* `var pair: Pair?`: the current model. We need to hold onto this temporarily while we're waiting for user input in order to do the `ViewAction + Pair -> Pair` transformation. This value may also change if we're performing a `ViewAction` that is not intended to produce an `MSMessage` but only alter the `ViewState` directly (e.g. `ViewState.promptNew -> ViewState.translationNew`).
 
 ### Entry Point
 
@@ -437,9 +448,9 @@ While your extension is active, it's possible that one of the conversation's oth
 
 #### didStartSending & didCancelSending
 
-If you need to take direct action based on the user attempting to send or deciding not to send your message after it's been inserted into the conversation, override your view controller's `didStartSending` and/or `didCancelSending` functions. These would presumably called after you've called `dismiss` after the defacto exit point I described earlier.
+If you need to take direct action based on the user attempting to send or deciding not to send your message after it's been inserted into the conversation, override your view controller's `didStartSending` and/or `didCancelSending` functions. These would presumably be called after you've called `dismiss` inside the defacto exit point I described earlier.
 
-Notice that `didStartSending` is called on an *attempt* to send, i.e. when the user taps the Messages.app's send button. Apple doesn't guarantee the message will be delivered to the other participants. This could create a few opportunities for edge cases you should be aware of. For example, if the message service goes down and you've `POST`ed resource state changes to your server successfully in `didStartSending`, other participants may see outdated information in their message's MSMessageTemplateLayout that represents that resource on your server. Rare, but still something to think about that synchronizing state using `MSMessage`s will not always be perfect.
+Notice that `didStartSending` is called on an *attempt* to send, i.e. when the user taps the Messages.app's send button. Apple doesn't guarantee the message will be delivered to the other participants. This could create a few opportunities for edge cases you should be aware of. For example, if the message service goes down and you've `POST`ed resource state changes to your server successfully in `didStartSending`, other participants may see outdated information in their message's `MSMessageTemplateLayout` that represents that resource on your server. Rare, but still something to think about that synchronizing state using `MSMessage`s will not always be perfect.
 
 ### Wrap Up
 
@@ -459,11 +470,11 @@ Your text fields or anything that requires a keyboard will also be disabled sinc
 
 When your extension is launched by a user tapping an existing message, the view controller is automatically launched into expanded mode by Messages.app.
 
-You can also request that your app be expanded after it has started in compact mode. In my tests on the simulator, my request to expand my extension was accepted about 0.3 seconds after `viewDidAppear`, the final callback we get from the view system (I set a timer). Those numbers may change, but the takeaway is that you can't *immediately* expand your extension with no user interaction having taken place.
+You can also request that your app be expanded after it has started in compact mode. In my tests on the simulator, my request to expand my extension was accepted no earlier than 0.3 seconds after `viewDidAppear`, the final callback we get from the view system (I set a timer). Those numbers may change, but the takeaway is that you can't *immediately* expand your extension with no user interaction having taken place.
 
 ### Saved Screenshots
 
-Similar to how suspended apps are snapshotted by iOS before moving to the background, the same is done with Messages Extensions to give them the appearance of quick activation. It kills and revives extensions quite aggressively too. In the beta, this has led to some funky looking intermediate view states.
+Similar to how suspended apps are snapshotted by iOS before moving to the background, the same is done with Messages Extensions to give them the appearance of quick activation. Messages.app kills and revives extensions quite aggressively too. In the beta, this has led to some funky looking intermediate view states.
 
 {% caption_img /images/messages-startup-artifacts-small.png IceCreamBuilder looking a little stretched out. %}
 
@@ -487,13 +498,13 @@ The second "view" of a message if you will is the `accessibilityLabel` property.
 
 #### Session
 
-We ran into `MSSession` briefly in the sample app. The `MSSession` is an identifier you can use to link messages together. Messages.app will replace the contents of any previous message with the same session. When preparing an `MSMessage` for the user, if the message represents a resource that already exists, you should initialize the `MSMessage` with the `MSSession`. Otherwise, use the designated initializer `MSSession()` to create a new one.
+We ran into `MSSession` briefly in the sample app. The `MSSession` is an identifier you can use to link messages together. Messages.app will replace the contents of any previous message with the same session. When preparing an `MSMessage` for the user, if the message represents a resource that already exists, you should initialize the `MSMessage` with the previous `MSMessage`'s `MSSession`. Otherwise, use the designated initializer `MSSession()` to create a new one.
 
 #### App Icon
 
 Your extension's icon will appear in the top left corner of any message created by your extension.
 
-In our example extension, you'll notice that since we don't send an image or video, our app icon covers up part of the caption. Hopefully that's something that will be fixed before launch.
+In our example extension, you'll notice that since we don't send an image or video, our app icon covers up part of the caption. Hopefully that's something that will be fixed by Apple before launch.
 
 #### NSCoding
 
@@ -501,7 +512,7 @@ In our example extension, you'll notice that since we don't send an image or vid
 
 #### Participants
 
-Due to privacy concerns, the identity of a conversation's participants is obscured through the use of UUIDs.
+Due to privacy concerns, the identities of a conversation's participants are obscured through the use of UUIDs.
 
 * You can identify a message's sender from `MSMessage.senderParticipantIdentifier`.
 * You can identify the local user from `MSConversation.localParticipantIdentifier`.
@@ -514,8 +525,8 @@ You can insert these UUIDs directly into user-facing strings and messages will r
 For example:
 
 ```swift
-let uuid = message.localParticipantIdentifer
-let message = "My name is \(uuid)."
+let uuid = conversation.localParticipantIdentifer
+let message = "My name is \(uuid.uuidString)."
 conversation.insertText(message)
 ```
 
@@ -576,12 +587,12 @@ Create `MSSticker` by passing in a `fileURL` and `localizedDescription` of the s
 
 #### MSStickerView
 
-The drop in `UIView` subclass for stickers is `MSStickerView`. Initialize it with an `MSSticker` or set the `sticker` property later.
+The drop-in `UIView` subclass for stickers is `MSStickerView`. Initialize it with an `MSSticker` or set the `sticker` property later.
 
 This class provides drag and drop behavior for pulling stickers from the collapsed view of an extension into the main conversation. It also provides outlets for inspecting and controlling animation of GIFs:
 
 ```swift
-// MSStickerView.swift
+// MSStickerView.swift (abridged)
 public var animationDuration: TimeInterval { get }
 public func startAnimating()
 public func stopAnimating()
@@ -592,7 +603,7 @@ public func isAnimating() -> Bool
 
 I've given an overview of Messages Extensions. We then walked through an example extension that uses some of the available features of Messages.framework. Finally, we covered a few advanced features.
 
-I'm excited to see what kinds of Messages Extensions are available at launch come this Fall.
+I'm excited to see what kinds of Messages Extensions are available at iOS 10 launch come this Fall.
 
 I'll do my best to keep this post updated as subsequent betas are shipped. Feel free to ping me [@twocentstudios](https://twitter.com/twocentstudios) on Twitter if you have questions or comments.
 
