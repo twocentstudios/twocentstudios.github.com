@@ -178,17 +178,17 @@
 
 <h3 id="user-interface-points">User Interface Points</h3>
 
-<p>Message Extensions have three basic interface points for Message.app users:</p>
+<p>Message Extensions have three basic interface points for Messages.app users:</p>
 
-<p><strong>Message summary display</strong>: all users running iOS 10+ and macOS Sierra+ will see a template view of an message created by an extension regardless of whether they have that specific extension installed. Users on previous versions will only receive the message’s summary text and URL as two separate messages, but only if the URL has an http/https scheme.</p>
+<p><strong>Message summary display</strong>: all users running iOS 10+ and macOS Sierra+ will see a template view of a message created by an extension regardless of whether they have that specific extension installed. Users on previous versions will only receive the message’s summary text and URL as two separate messages, but only if the URL has an http/https scheme.</p>
 
 <div class="caption-wrapper"><img class="caption" src="/images/messages-layout-template.png" width="" height="" alt="MSMessageTemplateLayout (courtesy of WWDC)." title="MSMessageTemplateLayout (courtesy of WWDC)." /><div class="caption-text">MSMessageTemplateLayout (courtesy of WWDC).</div></div>
 
-<p><strong>Message creation</strong>: the initial creation of a message occurs in the compact view of your extension. By tapping the App Store logo to the left of the message text field, the keyboard is replaced by a paging scroll view containing all the installed Messages Extensions. Extensions in compact mode have a keyboard-sized viewport to display anything content they wish. Users have the option to tap the disclosure button on the right side of the screen at any time to expand this view to full screen or recollapse it later.</p>
+<p><strong>Message creation</strong>: the initial creation of a message occurs in the compact view of your extension. By tapping the App Store logo to the left of the message text field, the keyboard is replaced by a paging scroll view containing all the installed Messages Extensions. Extensions in compact mode have a keyboard-sized viewport to display any content they wish. Users have the option to tap the disclosure button on the right side of the screen at any time to expand this view to full screen or recollapse it later.</p>
 
 <div class="caption-wrapper"><img class="caption" src="/images/messages-collapsed-view-small.png" width="" height="" alt="The collapsed view of our example extension." title="The collapsed view of our example extension." /><div class="caption-text">The collapsed view of our example extension.</div></div>
 
-<p><strong>Message viewing &amp; modification</strong>: for users who have your extension installed, tapping an existing message sent by another user or one they created will launch your extension into an expanded (full screen) view port. Your extension receives the contents of the tapped message in order to configure itself for display and/or editing. For users that do not have your extension installed, a web browser will be opened with the message’s URL.</p>
+<p><strong>Message viewing &amp; modification</strong>: for users who have your extension installed, tapping an existing message sent by another user or one they created will launch your extension into an expanded (full screen) viewport. Your extension receives the contents of the tapped message in order to configure itself for display and/or editing. For users that do not have your extension installed, a web browser will be opened with the message’s URL.</p>
 
 <div class="caption-wrapper"><img class="caption" src="/images/messages-expanded-view-small.png" width="" height="" alt="One state of the expanded view of our example extension." title="One state of the expanded view of our example extension." /><div class="caption-text">One state of the expanded view of our example extension.</div></div>
 
@@ -323,7 +323,7 @@ MSConversation
 </code></pre>
 </div>
 
-<p>Our <code class="highlighter-rouge">Translation</code> type will have a question and an answer. We have a two types of answer though, so we’ll make another enum (<code class="highlighter-rouge">TranslationAnswer</code>) for that.</p>
+<p>Our <code class="highlighter-rouge">Translation</code> type will have a question and an answer. We have two types of answer though, so we’ll make another enum (<code class="highlighter-rouge">TranslationAnswer</code>) for that.</p>
 
 <div class="highlighter-rouge"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">Translation</span> <span class="p">{</span>
     <span class="k">var</span> <span class="nv">question</span><span class="p">:</span> <span class="kt">String</span><span class="p">?</span>
@@ -426,7 +426,7 @@ MSConversation
 
 <h4 id="msmessagetemplatelayout--messagetemplatelayout">MSMessageTemplateLayout &amp; MessageTemplateLayout</h4>
 
-<p><code class="highlighter-rouge">MSMessageTemplateLayout</code> is Message.app’s generic view format for inline messages. It serves the same purpose of our ViewState. (<code class="highlighter-rouge">MSMessageTemplateLayout</code> is the sole subclass of the <code class="highlighter-rouge">MSMessageLayout</code> base class, which could allow Apple to provide other message layouts in the future.)</p>
+<p><code class="highlighter-rouge">MSMessageTemplateLayout</code> is Messages.app’s generic view format for inline messages. It serves the same purpose of our ViewState. (<code class="highlighter-rouge">MSMessageTemplateLayout</code> is the sole subclass of the <code class="highlighter-rouge">MSMessageLayout</code> base class, which could allow Apple to provide other message layouts in the future.)</p>
 
 <div class="highlighter-rouge"><pre class="highlight"><code><span class="c1">// Messages.framework</span>
 <span class="kd">public</span> <span class="kd">class</span> <span class="kt">MSMessageTemplateLayout</span> <span class="p">:</span> <span class="kt">MSMessageLayout</span> <span class="p">{</span>
@@ -515,7 +515,7 @@ MSConversation
 
 <h3 id="exit-point">Exit Point</h3>
 
-<p>The exit point of an Messages Extension in the general case will be a call to <code class="highlighter-rouge">MSConversation.insert</code> followed by <code class="highlighter-rouge">MyMessagesAppViewController.dismiss</code> and can be called from any part of your extension. This inserts a message (that your extension has just finished crafting) into the Message.app’s main text field allowing the user to (optionally) tap the send button.</p>
+<p>The exit point of an Messages Extension in the general case will be a call to <code class="highlighter-rouge">MSConversation.insert</code> followed by <code class="highlighter-rouge">MyMessagesAppViewController.dismiss</code> and can be called from any part of your extension. This inserts a message (that your extension has just finished crafting) into the Messages.app’s main text field allowing the user to (optionally) tap the send button.</p>
 
 <p>In our case, we’re channeling all user actions into the delegate method:</p>
 
@@ -588,7 +588,7 @@ MSConversation
 
 <p>If you need to take direct action based on the user attempting to send or deciding not to send your message after it’s been inserted into the conversation, override your view controller’s <code class="highlighter-rouge">didStartSending</code> and/or <code class="highlighter-rouge">didCancelSending</code> functions. These would presumably called after you’ve called <code class="highlighter-rouge">dismiss</code> after the defacto exit point I described earlier.</p>
 
-<p>Notice that <code class="highlighter-rouge">didStartSending</code> is called on an <em>attempt</em> to send, i.e. when the user taps the Message.app’s send button. Apple doesn’t guarantee the message will be delivered to the other participants. This could create a few opportunities for edge cases you should be aware of. For example, if the message service goes down and you’ve <code class="highlighter-rouge">POST</code>ed resource state changes to your server successfully in <code class="highlighter-rouge">didStartSending</code>, other participants may see outdated information in their message’s MSMessageTemplateLayout that represents that resource on your server. Rare, but still something to think about that synchronizing state using <code class="highlighter-rouge">MSMessage</code>s will not always be perfect.</p>
+<p>Notice that <code class="highlighter-rouge">didStartSending</code> is called on an <em>attempt</em> to send, i.e. when the user taps the Messages.app’s send button. Apple doesn’t guarantee the message will be delivered to the other participants. This could create a few opportunities for edge cases you should be aware of. For example, if the message service goes down and you’ve <code class="highlighter-rouge">POST</code>ed resource state changes to your server successfully in <code class="highlighter-rouge">didStartSending</code>, other participants may see outdated information in their message’s MSMessageTemplateLayout that represents that resource on your server. Rare, but still something to think about that synchronizing state using <code class="highlighter-rouge">MSMessage</code>s will not always be perfect.</p>
 
 <h3 id="wrap-up">Wrap Up</h3>
 
@@ -752,6 +752,8 @@ Messages iPad Pro: 74x55pt @2x</p>
 <p>I’m excited to see what kinds of Messages Extensions are available at launch come this Fall.</p>
 
 <p>I’ll do my best to keep this post updated as subsequent betas are shipped. Feel free to ping me <a href="https://twitter.com/twocentstudios">@twocentstudios</a> on Twitter if you have questions or comments.</p>
+
+<p><em>Thanks to Evan Coleman for reading drafts of this post.</em></p>
 
   </article>
 
