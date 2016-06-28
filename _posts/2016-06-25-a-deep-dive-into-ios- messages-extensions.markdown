@@ -16,11 +16,11 @@ Note: This post was originally written for iOS 10 beta1.
 
 ### App Extension
 
-Messages Extensions follow the App Extension target format introduced in iOS 8. Other examples include Today Extensions, custom keyboards, and Share Extensions. As an App Extension, it is bound by special rules outlineed in the [App Extension Programming Guide](https://developer.apple.com/library/ios/documentation/General/Conceptual/ExtensibilityPG/ExtensionOverview.html#//apple_ref/doc/uid/TP40014214-CH2-SW2)
+Messages Extensions follow the App Extension target format introduced in iOS 8. Other examples include Today Extensions, custom keyboards, and Share Extensions. As an App Extension, it is bound by special rules outlined in the [App Extension Programming Guide](https://developer.apple.com/library/ios/documentation/General/Conceptual/ExtensibilityPG/ExtensionOverview.html#//apple_ref/doc/uid/TP40014214-CH2-SW2)
 
 ### Backwards Compatibility
 
-Messages Extensions allow the creation and modification of a standardized encapsulated model/view pair `MSMessage`. Two of the main design points Apple needed to address in their implementation of Messages Extension were:
+Messages Extensions allow the creation and modification of a standardized encapsulated model/view pair `MSMessage`. Two of the main design points Apple needed to address in their implementation of Messages Extensions were:
 
 1. User A creates a custom message using an extension. What happens if User B receiving a specially created message does not have the extension installed that was used to create the message?
 2. User A creates a custom message using an extension. What happens if User B is on a previous version of iOS?
