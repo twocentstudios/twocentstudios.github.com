@@ -678,13 +678,13 @@ MSConversation
 
 <p>These three properties should be enough for your extension to determine at any given time whether a message was sent by the current user.</p>
 
-<p>You can insert these UUIDs directly into user-facing strings and messages will replace them with the contact’s actual name before showing them to the user.</p>
+<p>You can insert these UUIDs directly into user-facing strings within <code class="highlighter-rouge">MSMessageTemplateLayout()</code> prefixed with a <code class="highlighter-rouge">$</code> and Messages.app will replace them with the contact’s actual name before showing them to the user. However on the iOS Simulator and iOS 10 beta1 I haven’t be able to reproduce the intended behavior. It still shows up as the raw UUID string in Messages (thanks to <a href="https://twitter.com/zachsimone">@zachsimone</a> for the heads up).</p>
 
 <p>For example:</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="k">let</span> <span class="nv">uuid</span> <span class="o">=</span> <span class="n">conversation</span><span class="o">.</span><span class="n">localParticipantIdentifer</span>
-<span class="k">let</span> <span class="nv">message</span> <span class="o">=</span> <span class="s">"My name is </span><span class="se">\(</span><span class="n">uuid</span><span class="o">.</span><span class="n">uuidString</span><span class="se">)</span><span class="s">."</span>
-<span class="n">conversation</span><span class="o">.</span><span class="nf">insertText</span><span class="p">(</span><span class="n">message</span><span class="p">)</span>
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="k">let</span> <span class="nv">layout</span> <span class="o">=</span> <span class="kt">MSMessageTemplateLayout</span><span class="p">()</span>
+<span class="n">layout</span><span class="o">.</span><span class="n">caption</span> <span class="o">=</span> <span class="s">"My name is $</span><span class="se">\(</span><span class="n">conversation</span><span class="o">.</span><span class="n">localParticipantIdentifer</span><span class="o">.</span><span class="n">uuidString</span><span class="se">)</span><span class="s">."</span>
+<span class="n">conversation</span><span class="o">.</span><span class="nf">insert</span><span class="p">(</span><span class="n">message</span><span class="p">,</span> <span class="nv">localizedChangeDescription</span><span class="p">:</span> <span class="kc">nil</span><span class="p">)</span>
 </code></pre>
 </div>
 
