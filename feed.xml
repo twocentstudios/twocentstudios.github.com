@@ -6,8 +6,8 @@
 </description>
     <link>http://twocentstudios.com/</link>
     <atom:link href="http://twocentstudios.com/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Wed, 29 Jun 2016 15:39:38 -0500</pubDate>
-    <lastBuildDate>Wed, 29 Jun 2016 15:39:38 -0500</lastBuildDate>
+    <pubDate>Wed, 29 Jun 2016 15:55:17 -0500</pubDate>
+    <lastBuildDate>Wed, 29 Jun 2016 15:55:17 -0500</lastBuildDate>
     <generator>Jekyll v3.0.0</generator>
     
       <item>
@@ -490,6 +490,8 @@ MSConversation
 
 &lt;p&gt;Notice that &lt;code class=&quot;highlighter-rouge&quot;&gt;didStartSending&lt;/code&gt; is called on an &lt;em&gt;attempt&lt;/em&gt; to send, i.e. when the user taps the Messages.app’s send button. Apple doesn’t guarantee the message will be delivered to the other participants. This could create a few opportunities for edge cases you should be aware of. For example, if the message service goes down and you’ve &lt;code class=&quot;highlighter-rouge&quot;&gt;POST&lt;/code&gt;ed resource state changes to your server successfully in &lt;code class=&quot;highlighter-rouge&quot;&gt;didStartSending&lt;/code&gt;, other participants may see outdated information in their message’s &lt;code class=&quot;highlighter-rouge&quot;&gt;MSMessageTemplateLayout&lt;/code&gt; that represents that resource on your server. Rare, but still something to think about that synchronizing state using &lt;code class=&quot;highlighter-rouge&quot;&gt;MSMessage&lt;/code&gt;s will not always be perfect.&lt;/p&gt;
 
+&lt;p&gt;Note that there also may be an issue with these two delegate methods with iOS 10 beta1 as well, possibly on the simulator but not real devices.&lt;/p&gt;
+
 &lt;h3 id=&quot;wrap-up&quot;&gt;Wrap Up&lt;/h3&gt;
 
 &lt;p&gt;We’ve finished the basic walkthrough of our example Messages Extension. We haven’t used all that Messages.framework is capable of, so we’ll now take a look at some advanced features.&lt;/p&gt;
@@ -644,6 +646,20 @@ Messages iPad Pro: 74x55pt @2x&lt;/p&gt;
 &lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;isAnimating&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Bool&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;
 &lt;/div&gt;
+
+&lt;h2 id=&quot;things-you-cant-do&quot;&gt;Things You Can’t Do&lt;/h2&gt;
+
+&lt;p&gt;I’ve seen a few questions already on the developer forums about what can and can’t be done. I’ll document a few of those here and may add more in the future.&lt;/p&gt;
+
+&lt;h3 id=&quot;sending-messages-without-user-interaction&quot;&gt;Sending Messages Without User Interaction&lt;/h3&gt;
+
+&lt;p&gt;You cannot send a message directly on behalf of the user. That means you cannot skip the part where your messages is deposited into the Messages.app text box and the user taps the send button. Apple wants to make sure that the user has the final say on what is said on their behalf.&lt;/p&gt;
+
+&lt;h3 id=&quot;accessing-text-or-messages-not-created-by-your-app&quot;&gt;Accessing Text Or Messages Not Created By Your App&lt;/h3&gt;
+
+&lt;p&gt;You cannot access any information that was not created specifically by your extension. That means you cannot access the content of Message.app’s text field directly. You cannot access any other messages in the conversation history.&lt;/p&gt;
+
+&lt;p&gt;Any text input you require must be entered by the user into a text field you’ve created in the expanded mode of your extension.&lt;/p&gt;
 
 &lt;h2 id=&quot;wrap-up-1&quot;&gt;Wrap Up&lt;/h2&gt;
 
