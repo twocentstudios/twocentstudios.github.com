@@ -520,14 +520,14 @@ Due to privacy concerns, the identities of a conversation's participants are obs
 
 These three properties should be enough for your extension to determine at any given time whether a message was sent by the current user.
 
-You can insert these UUIDs directly into user-facing strings and messages will replace them with the contact's actual name before showing them to the user.
+You can insert these UUIDs directly into user-facing strings within `MSMessageTemplateLayout()` prefixed with a `$` and Messages.app will replace them with the contact's actual name before showing them to the user. However on the iOS Simulator and iOS 10 beta1 I haven't be able to reproduce the intended behavior. It still shows up as the raw UUID string in Messages (thanks to [@zachsimone](https://twitter.com/zachsimone) for the heads up).
 
 For example:
 
 ```swift
-let uuid = conversation.localParticipantIdentifer
-let message = "My name is \(uuid.uuidString)."
-conversation.insertText(message)
+let layout = MSMessageTemplateLayout()
+layout.caption = "My name is $\(conversation.localParticipantIdentifer.uuidString)."
+conversation.insert(message, localizedChangeDescription: nil)
 ```
 
 #### MSMessageTemplateLayout Attributes
