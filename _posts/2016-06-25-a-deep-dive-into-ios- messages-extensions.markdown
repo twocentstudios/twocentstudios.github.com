@@ -452,6 +452,8 @@ If you need to take direct action based on the user attempting to send or decidi
 
 Notice that `didStartSending` is called on an *attempt* to send, i.e. when the user taps the Messages.app's send button. Apple doesn't guarantee the message will be delivered to the other participants. This could create a few opportunities for edge cases you should be aware of. For example, if the message service goes down and you've `POST`ed resource state changes to your server successfully in `didStartSending`, other participants may see outdated information in their message's `MSMessageTemplateLayout` that represents that resource on your server. Rare, but still something to think about that synchronizing state using `MSMessage`s will not always be perfect.
 
+Note that there also may be an issue with these two delegate methods with iOS 10 beta1 as well, possibly on the simulator but not real devices.
+
 ### Wrap Up
 
 We've finished the basic walkthrough of our example Messages Extension. We haven't used all that Messages.framework is capable of, so we'll now take a look at some advanced features.
@@ -598,6 +600,20 @@ public func startAnimating()
 public func stopAnimating()
 public func isAnimating() -> Bool
 ```
+
+## Things You Can't Do
+
+I've seen a few questions already on the developer forums about what can and can't be done. I'll document a few of those here and may add more in the future.
+
+### Sending Messages Without User Interaction
+
+You cannot send a message directly on behalf of the user. That means you cannot skip the part where your messages is deposited into the Messages.app text box and the user taps the send button. Apple wants to make sure that the user has the final say on what is said on their behalf.
+
+### Accessing Text Or Messages Not Created By Your App
+
+You cannot access any information that was not created specifically by your extension. That means you cannot access the content of Message.app's text field directly. You cannot access any other messages in the conversation history.
+
+Any text input you require must be entered by the user into a text field you've created in the expanded mode of your extension.
 
 ## Wrap Up
 
