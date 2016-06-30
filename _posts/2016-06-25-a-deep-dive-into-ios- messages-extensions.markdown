@@ -547,7 +547,7 @@ A couple quick notes on `MSMessageTemplateLayout`'s attributes.
 * `subcaption` is limited to 1 line and no trailing ellipsis is added.
 * `trailingCaption`/`trailingSubcaption` seem to mirror the behavior of their `caption`/`subcaption` counterparts.
 
-{% caption_img /images/messages-template-layout-test-small.png Various configurations of MSMessageTemplateLayout. %}
+{% caption_img /images/messages-template-layout-test-large.png Various configurations of MSMessageTemplateLayout. %}
 
 #### URLs
 
