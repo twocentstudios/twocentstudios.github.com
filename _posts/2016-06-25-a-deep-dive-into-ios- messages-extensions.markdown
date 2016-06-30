@@ -607,11 +607,11 @@ I've seen a few questions already on the developer forums about what can and can
 
 ### Sending Messages Without User Interaction
 
-You cannot send a message directly on behalf of the user. That means you cannot skip the part where your messages is deposited into the Messages.app text box and the user taps the send button. Apple wants to make sure that the user has the final say on what is said on their behalf.
+You cannot send a message directly on behalf of the user. That means you cannot skip the part where your newly minted message is deposited into the Messages.app text field and the user taps the send button. Apple wants to make sure that the user has the final say on what is sent on their behalf.
 
 ### Accessing Text Or Messages Not Created By Your App
 
-You cannot access any information that was not created specifically by your extension. That means you cannot access the content of Message.app's text field directly. You cannot access any other messages in the conversation history.
+You cannot access any information that was not created specifically by your extension. That means you cannot access the contents of Message.app's text field directly. You cannot access any other messages in the conversation history.
 
 Any text input you require must be entered by the user into a text field you've created in the expanded mode of your extension.
 
