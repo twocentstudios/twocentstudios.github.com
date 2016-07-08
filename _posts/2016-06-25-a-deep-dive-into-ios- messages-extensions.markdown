@@ -10,7 +10,7 @@ In this post I'll present an overview of Messages Extensions, walk through a sim
 
 I recommend watching the WWDC talk [iMessage Apps and Stickers Part 2](https://developer.apple.com/videos/play/wwdc2016/224/) and reviewing the code for [IceCreamBuilder](https://developer.apple.com/library/prerelease/content/samplecode/IceCreamBuilder), the Apple endorsed example for this topic. I consider that talk the primary source of information on Messages.framework. Here's a link to the [Messages.framework](https://developer.apple.com/reference/messages) docs.
 
-Note: This post was originally written for iOS 10 beta1.
+Note: This post was originally written for iOS 10 beta1. It was partially updated for beta2 on 7/7/2016.
 
 ## Overview
 
@@ -105,8 +105,8 @@ Not only are we going to build an interface for corrections, but since the conce
 
 Here's an example correction request flow in our extension ([View the screen capture 5.3MB](/images/messages-correction.mov)):
 
-> Chris: [correction request] 週末、東京で行きましたか。
-> Miu: [correction] 週末、東京に行きましたか。
+> Chris: [correction request] 週末、東京**で**行きましたか。
+> Miu: [correction] 週末、東京**に**行きましたか。
 > Miu: [continuing conversation] はい、東京に行きました！
 
 {% caption_img /images/messages-correction-flow-small.png The correction flow of our example app. %}
@@ -440,7 +440,7 @@ We've now looked at the most common lifecycle of `input -> user action -> output
 
 #### willSelect & didSelect
 
-If your extension is already active when the user taps one of your extension's messages, the extension doesn't have to launch and therefore won't call our view controller's `willBecomeActive` & `didBecomeActive` as we were expecting. Instead, it will call `willSelect` & `didSelect`, so we also need to set the `Pair` and `ViewState` from this entry point too. Unfortunately, at iOS 10 beta1, `willSelect` & `didSelect` don't seem to be implemented. I'm expecting this to be fixed in the next beta as it was mentioned in the WWDC talk. The workaround is to place this behavior in `willTransition`.
+If your extension is already active when the user taps one of your extension's messages, the extension doesn't have to launch and therefore won't call our view controller's `willBecomeActive` & `didBecomeActive` as we were expecting. Instead, it will call `willSelect` & `didSelect`, so we also need to set the `Pair` and `ViewState` from this entry point too. Unfortunately, at iOS 10 beta1, `willSelect` & `didSelect` don't seem to be implemented. This was confirmed as a known issue in beta2. The workaround is to place this behavior in `willTransition`.
 
 #### didReceive
 
@@ -484,11 +484,15 @@ Similar to how suspended apps are snapshotted by iOS before moving to the backgr
 
 Messages.app was added to the iOS simulator on iOS 10 to assist in debugging extensions. On every cold launch, Messages.app in the simulator is seeded with two conversation threads that are tied together. You can send messages from messagesuser1@simulated.icloud.com by tapping on the first thread and from messagesuser2@simulated.icloud.com by tapping on the second thread.
 
-You can clear the message history by force quitting Messages.app. It's also cleared any time you recompile and attach the debugger.
+You can clear the message history by force quitting Messages.app. It's also cleared any time you recompile and attach the debugger. According to the release notes this may not be the behavior intended by Apple though.
 
 I had some trouble using the macOS hardware keyboard with my extension's text fields in the beta.
 
 {% caption_img /images/messages-simulator-home-small.png Messages.app in the iOS Simulator. %}
+
+### Landscape Support
+
+Apple [requires](https://forums.developer.apple.com/thread/50524) that Messages Extensions support both landscape and portrait as there is no way to prevent the normal autorotation behavior of Messages.app.
 
 ### MSMessage
 
@@ -522,7 +526,7 @@ Due to privacy concerns, the identities of a conversation's participants are obs
 
 These three properties should be enough for your extension to determine at any given time whether a message was sent by the current user.
 
-You can insert these UUIDs directly into user-facing strings within `MSMessageTemplateLayout()` prefixed with a `$` and Messages.app will replace them with the contact's actual name before showing them to the user. However on the iOS Simulator and iOS 10 beta1 I haven't be able to reproduce the intended behavior. It still shows up as the raw UUID string in Messages (thanks to [@zachsimone](https://twitter.com/zachsimone) for the heads up).
+You can insert these UUIDs directly into user-facing strings within `MSMessageTemplateLayout()` prefixed with a `$` and Messages.app will replace them with the contact's actual name before showing them to the user. However on the iOS Simulator and iOS 10 beta1 I haven't be able to reproduce the intended behavior. It still shows up as the raw UUID string in Messages (thanks to [@zachsimone](https://twitter.com/zachsimone) for the heads up). *Update 7/7/16: Fixed in beta2.*
 
 For example:
 
@@ -559,6 +563,10 @@ As previously mentioned, the URL you attach to an `MSMessage` will be available 
 If your app does not have a default web presence that can render these links in a web browser, you may want to have the base URL point to a sort of 404 explanation page. Something like "Hey, you received a link created with MyApp. Open it on an iOS 10+ device to get started." You can still encode parameters in the query string this way.
 
 Another gotcha is that only http/https scheme URLs will be sent to other platforms. If your message doesn't lose any context without a URL, you can use this to your advantage and not worry about implementing the 404 page.
+
+#### Expiring
+
+You can set your messages to expire by default by setting `shouldExpire` on the `MSMessage` instance. This behavior is the same as other Messages.app expiring messages and can be overridden by the recipient.
 
 ### Icon Template Sizes
 
@@ -614,6 +622,14 @@ You cannot send a message directly on behalf of the user. That means you cannot 
 You cannot access any information that was not created specifically by your extension. That means you cannot access the contents of Message.app's text field directly. You cannot access any other messages in the conversation history.
 
 Any text input you require must be entered by the user into a text field you've created in the expanded mode of your extension.
+
+## Known Issues
+
+I've mentioned a few of the known issues in the text above. Here are a few more I'll add to as they're reported and resolved.
+
+### Changes to insertMessage
+
+The function signature of `MSConversation.insertMessage` has changed (beta1 -> beta2) for an unknown reason. The `localizedChangeDescription` parameter was removed. There is currently no way that I can determine to create a change description. The documentation is also out of line with the function itself.
 
 ## Wrap Up
 
