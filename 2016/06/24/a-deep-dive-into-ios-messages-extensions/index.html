@@ -136,7 +136,7 @@
 
 <p>I recommend watching the WWDC talk <a href="https://developer.apple.com/videos/play/wwdc2016/224/">iMessage Apps and Stickers Part 2</a> and reviewing the code for <a href="https://developer.apple.com/library/prerelease/content/samplecode/IceCreamBuilder">IceCreamBuilder</a>, the Apple endorsed example for this topic. I consider that talk the primary source of information on Messages.framework. Here’s a link to the <a href="https://developer.apple.com/reference/messages">Messages.framework</a> docs.</p>
 
-<p>Note: This post was originally written for iOS 10 beta1.</p>
+<p>Note: This post was originally written for iOS 10 beta1. It was partially updated for beta2 on 7/7/2016.</p>
 
 <h2 id="overview">Overview</h2>
 
@@ -240,8 +240,8 @@
 <p>Here’s an example correction request flow in our extension (<a href="/images/messages-correction.mov">View the screen capture 5.3MB</a>):</p>
 
 <blockquote>
-  <p>Chris: [correction request] 週末、東京で行きましたか。<br />
-Miu: [correction] 週末、東京に行きましたか。<br />
+  <p>Chris: [correction request] 週末、東京<strong>で</strong>行きましたか。<br />
+Miu: [correction] 週末、東京<strong>に</strong>行きましたか。<br />
 Miu: [continuing conversation] はい、東京に行きました！</p>
 </blockquote>
 
@@ -596,7 +596,7 @@ MSConversation
 
 <h4 id="willselect--didselect">willSelect &amp; didSelect</h4>
 
-<p>If your extension is already active when the user taps one of your extension’s messages, the extension doesn’t have to launch and therefore won’t call our view controller’s <code class="highlighter-rouge">willBecomeActive</code> &amp; <code class="highlighter-rouge">didBecomeActive</code> as we were expecting. Instead, it will call <code class="highlighter-rouge">willSelect</code> &amp; <code class="highlighter-rouge">didSelect</code>, so we also need to set the <code class="highlighter-rouge">Pair</code> and <code class="highlighter-rouge">ViewState</code> from this entry point too. Unfortunately, at iOS 10 beta1, <code class="highlighter-rouge">willSelect</code> &amp; <code class="highlighter-rouge">didSelect</code> don’t seem to be implemented. I’m expecting this to be fixed in the next beta as it was mentioned in the WWDC talk. The workaround is to place this behavior in <code class="highlighter-rouge">willTransition</code>.</p>
+<p>If your extension is already active when the user taps one of your extension’s messages, the extension doesn’t have to launch and therefore won’t call our view controller’s <code class="highlighter-rouge">willBecomeActive</code> &amp; <code class="highlighter-rouge">didBecomeActive</code> as we were expecting. Instead, it will call <code class="highlighter-rouge">willSelect</code> &amp; <code class="highlighter-rouge">didSelect</code>, so we also need to set the <code class="highlighter-rouge">Pair</code> and <code class="highlighter-rouge">ViewState</code> from this entry point too. Unfortunately, at iOS 10 beta1, <code class="highlighter-rouge">willSelect</code> &amp; <code class="highlighter-rouge">didSelect</code> don’t seem to be implemented. This was confirmed as a known issue in beta2. The workaround is to place this behavior in <code class="highlighter-rouge">willTransition</code>.</p>
 
 <h4 id="didreceive">didReceive</h4>
 
@@ -640,11 +640,15 @@ MSConversation
 
 <p>Messages.app was added to the iOS simulator on iOS 10 to assist in debugging extensions. On every cold launch, Messages.app in the simulator is seeded with two conversation threads that are tied together. You can send messages from messagesuser1@simulated.icloud.com by tapping on the first thread and from messagesuser2@simulated.icloud.com by tapping on the second thread.</p>
 
-<p>You can clear the message history by force quitting Messages.app. It’s also cleared any time you recompile and attach the debugger.</p>
+<p>You can clear the message history by force quitting Messages.app. It’s also cleared any time you recompile and attach the debugger. According to the release notes this may not be the behavior intended by Apple though.</p>
 
 <p>I had some trouble using the macOS hardware keyboard with my extension’s text fields in the beta.</p>
 
 <div class="caption-wrapper"><img class="caption" src="/images/messages-simulator-home-small.png" width="" height="" alt="Messages.app in the iOS Simulator." title="Messages.app in the iOS Simulator." /><div class="caption-text">Messages.app in the iOS Simulator.</div></div>
+
+<h3 id="landscape-support">Landscape Support</h3>
+
+<p>Apple <a href="https://forums.developer.apple.com/thread/50524">requires</a> that Messages Extensions support both landscape and portrait as there is no way to prevent the normal autorotation behavior of Messages.app.</p>
 
 <h3 id="msmessage">MSMessage</h3>
 
@@ -680,7 +684,7 @@ MSConversation
 
 <p>These three properties should be enough for your extension to determine at any given time whether a message was sent by the current user.</p>
 
-<p>You can insert these UUIDs directly into user-facing strings within <code class="highlighter-rouge">MSMessageTemplateLayout()</code> prefixed with a <code class="highlighter-rouge">$</code> and Messages.app will replace them with the contact’s actual name before showing them to the user. However on the iOS Simulator and iOS 10 beta1 I haven’t be able to reproduce the intended behavior. It still shows up as the raw UUID string in Messages (thanks to <a href="https://twitter.com/zachsimone">@zachsimone</a> for the heads up).</p>
+<p>You can insert these UUIDs directly into user-facing strings within <code class="highlighter-rouge">MSMessageTemplateLayout()</code> prefixed with a <code class="highlighter-rouge">$</code> and Messages.app will replace them with the contact’s actual name before showing them to the user. However on the iOS Simulator and iOS 10 beta1 I haven’t be able to reproduce the intended behavior. It still shows up as the raw UUID string in Messages (thanks to <a href="https://twitter.com/zachsimone">@zachsimone</a> for the heads up). <em>Update 7/7/16: Fixed in beta2.</em></p>
 
 <p>For example:</p>
 
@@ -721,6 +725,10 @@ MSConversation
 <p>If your app does not have a default web presence that can render these links in a web browser, you may want to have the base URL point to a sort of 404 explanation page. Something like “Hey, you received a link created with MyApp. Open it on an iOS 10+ device to get started.” You can still encode parameters in the query string this way.</p>
 
 <p>Another gotcha is that only http/https scheme URLs will be sent to other platforms. If your message doesn’t lose any context without a URL, you can use this to your advantage and not worry about implementing the 404 page.</p>
+
+<h4 id="expiring">Expiring</h4>
+
+<p>You can set your messages to expire by default by setting <code class="highlighter-rouge">shouldExpire</code> on the <code class="highlighter-rouge">MSMessage</code> instance. This behavior is the same as other Messages.app expiring messages and can be overridden by the recipient.</p>
 
 <h3 id="icon-template-sizes">Icon Template Sizes</h3>
 
@@ -778,6 +786,14 @@ Messages iPad Pro: 74x55pt @2x</p>
 <p>You cannot access any information that was not created specifically by your extension. That means you cannot access the contents of Message.app’s text field directly. You cannot access any other messages in the conversation history.</p>
 
 <p>Any text input you require must be entered by the user into a text field you’ve created in the expanded mode of your extension.</p>
+
+<h2 id="known-issues">Known Issues</h2>
+
+<p>I’ve mentioned a few of the known issues in the text above. Here are a few more I’ll add to as they’re reported and resolved.</p>
+
+<h3 id="changes-to-insertmessage">Changes to insertMessage</h3>
+
+<p>The function signature of <code class="highlighter-rouge">MSConversation.insertMessage</code> has changed (beta1 -&gt; beta2) for an unknown reason. The <code class="highlighter-rouge">localizedChangeDescription</code> parameter was removed. There is currently no way that I can determine to create a change description. The documentation is also out of line with the function itself.</p>
 
 <h2 id="wrap-up-1">Wrap Up</h2>
 

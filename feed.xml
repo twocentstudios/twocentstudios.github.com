@@ -6,8 +6,8 @@
 </description>
     <link>http://twocentstudios.com/</link>
     <atom:link href="http://twocentstudios.com/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Wed, 29 Jun 2016 19:18:23 -0500</pubDate>
-    <lastBuildDate>Wed, 29 Jun 2016 19:18:23 -0500</lastBuildDate>
+    <pubDate>Thu, 07 Jul 2016 19:48:08 -0500</pubDate>
+    <lastBuildDate>Thu, 07 Jul 2016 19:48:08 -0500</lastBuildDate>
     <generator>Jekyll v3.0.0</generator>
     
       <item>
@@ -18,7 +18,7 @@
 
 &lt;p&gt;I recommend watching the WWDC talk &lt;a href=&quot;https://developer.apple.com/videos/play/wwdc2016/224/&quot;&gt;iMessage Apps and Stickers Part 2&lt;/a&gt; and reviewing the code for &lt;a href=&quot;https://developer.apple.com/library/prerelease/content/samplecode/IceCreamBuilder&quot;&gt;IceCreamBuilder&lt;/a&gt;, the Apple endorsed example for this topic. I consider that talk the primary source of information on Messages.framework. Here’s a link to the &lt;a href=&quot;https://developer.apple.com/reference/messages&quot;&gt;Messages.framework&lt;/a&gt; docs.&lt;/p&gt;
 
-&lt;p&gt;Note: This post was originally written for iOS 10 beta1.&lt;/p&gt;
+&lt;p&gt;Note: This post was originally written for iOS 10 beta1. It was partially updated for beta2 on 7/7/2016.&lt;/p&gt;
 
 &lt;h2 id=&quot;overview&quot;&gt;Overview&lt;/h2&gt;
 
@@ -122,8 +122,8 @@
 &lt;p&gt;Here’s an example correction request flow in our extension (&lt;a href=&quot;/images/messages-correction.mov&quot;&gt;View the screen capture 5.3MB&lt;/a&gt;):&lt;/p&gt;
 
 &lt;blockquote&gt;
-  &lt;p&gt;Chris: [correction request] 週末、東京で行きましたか。&lt;br /&gt;
-Miu: [correction] 週末、東京に行きましたか。&lt;br /&gt;
+  &lt;p&gt;Chris: [correction request] 週末、東京&lt;strong&gt;で&lt;/strong&gt;行きましたか。&lt;br /&gt;
+Miu: [correction] 週末、東京&lt;strong&gt;に&lt;/strong&gt;行きましたか。&lt;br /&gt;
 Miu: [continuing conversation] はい、東京に行きました！&lt;/p&gt;
 &lt;/blockquote&gt;
 
@@ -478,7 +478,7 @@ MSConversation
 
 &lt;h4 id=&quot;willselect--didselect&quot;&gt;willSelect &amp;amp; didSelect&lt;/h4&gt;
 
-&lt;p&gt;If your extension is already active when the user taps one of your extension’s messages, the extension doesn’t have to launch and therefore won’t call our view controller’s &lt;code class=&quot;highlighter-rouge&quot;&gt;willBecomeActive&lt;/code&gt; &amp;amp; &lt;code class=&quot;highlighter-rouge&quot;&gt;didBecomeActive&lt;/code&gt; as we were expecting. Instead, it will call &lt;code class=&quot;highlighter-rouge&quot;&gt;willSelect&lt;/code&gt; &amp;amp; &lt;code class=&quot;highlighter-rouge&quot;&gt;didSelect&lt;/code&gt;, so we also need to set the &lt;code class=&quot;highlighter-rouge&quot;&gt;Pair&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;ViewState&lt;/code&gt; from this entry point too. Unfortunately, at iOS 10 beta1, &lt;code class=&quot;highlighter-rouge&quot;&gt;willSelect&lt;/code&gt; &amp;amp; &lt;code class=&quot;highlighter-rouge&quot;&gt;didSelect&lt;/code&gt; don’t seem to be implemented. I’m expecting this to be fixed in the next beta as it was mentioned in the WWDC talk. The workaround is to place this behavior in &lt;code class=&quot;highlighter-rouge&quot;&gt;willTransition&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;If your extension is already active when the user taps one of your extension’s messages, the extension doesn’t have to launch and therefore won’t call our view controller’s &lt;code class=&quot;highlighter-rouge&quot;&gt;willBecomeActive&lt;/code&gt; &amp;amp; &lt;code class=&quot;highlighter-rouge&quot;&gt;didBecomeActive&lt;/code&gt; as we were expecting. Instead, it will call &lt;code class=&quot;highlighter-rouge&quot;&gt;willSelect&lt;/code&gt; &amp;amp; &lt;code class=&quot;highlighter-rouge&quot;&gt;didSelect&lt;/code&gt;, so we also need to set the &lt;code class=&quot;highlighter-rouge&quot;&gt;Pair&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;ViewState&lt;/code&gt; from this entry point too. Unfortunately, at iOS 10 beta1, &lt;code class=&quot;highlighter-rouge&quot;&gt;willSelect&lt;/code&gt; &amp;amp; &lt;code class=&quot;highlighter-rouge&quot;&gt;didSelect&lt;/code&gt; don’t seem to be implemented. This was confirmed as a known issue in beta2. The workaround is to place this behavior in &lt;code class=&quot;highlighter-rouge&quot;&gt;willTransition&lt;/code&gt;.&lt;/p&gt;
 
 &lt;h4 id=&quot;didreceive&quot;&gt;didReceive&lt;/h4&gt;
 
@@ -522,11 +522,15 @@ MSConversation
 
 &lt;p&gt;Messages.app was added to the iOS simulator on iOS 10 to assist in debugging extensions. On every cold launch, Messages.app in the simulator is seeded with two conversation threads that are tied together. You can send messages from messagesuser1@simulated.icloud.com by tapping on the first thread and from messagesuser2@simulated.icloud.com by tapping on the second thread.&lt;/p&gt;
 
-&lt;p&gt;You can clear the message history by force quitting Messages.app. It’s also cleared any time you recompile and attach the debugger.&lt;/p&gt;
+&lt;p&gt;You can clear the message history by force quitting Messages.app. It’s also cleared any time you recompile and attach the debugger. According to the release notes this may not be the behavior intended by Apple though.&lt;/p&gt;
 
 &lt;p&gt;I had some trouble using the macOS hardware keyboard with my extension’s text fields in the beta.&lt;/p&gt;
 
 &lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/messages-simulator-home-small.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Messages.app in the iOS Simulator.&quot; title=&quot;Messages.app in the iOS Simulator.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Messages.app in the iOS Simulator.&lt;/div&gt;&lt;/div&gt;
+
+&lt;h3 id=&quot;landscape-support&quot;&gt;Landscape Support&lt;/h3&gt;
+
+&lt;p&gt;Apple &lt;a href=&quot;https://forums.developer.apple.com/thread/50524&quot;&gt;requires&lt;/a&gt; that Messages Extensions support both landscape and portrait as there is no way to prevent the normal autorotation behavior of Messages.app.&lt;/p&gt;
 
 &lt;h3 id=&quot;msmessage&quot;&gt;MSMessage&lt;/h3&gt;
 
@@ -562,7 +566,7 @@ MSConversation
 
 &lt;p&gt;These three properties should be enough for your extension to determine at any given time whether a message was sent by the current user.&lt;/p&gt;
 
-&lt;p&gt;You can insert these UUIDs directly into user-facing strings within &lt;code class=&quot;highlighter-rouge&quot;&gt;MSMessageTemplateLayout()&lt;/code&gt; prefixed with a &lt;code class=&quot;highlighter-rouge&quot;&gt;$&lt;/code&gt; and Messages.app will replace them with the contact’s actual name before showing them to the user. However on the iOS Simulator and iOS 10 beta1 I haven’t be able to reproduce the intended behavior. It still shows up as the raw UUID string in Messages (thanks to &lt;a href=&quot;https://twitter.com/zachsimone&quot;&gt;@zachsimone&lt;/a&gt; for the heads up).&lt;/p&gt;
+&lt;p&gt;You can insert these UUIDs directly into user-facing strings within &lt;code class=&quot;highlighter-rouge&quot;&gt;MSMessageTemplateLayout()&lt;/code&gt; prefixed with a &lt;code class=&quot;highlighter-rouge&quot;&gt;$&lt;/code&gt; and Messages.app will replace them with the contact’s actual name before showing them to the user. However on the iOS Simulator and iOS 10 beta1 I haven’t be able to reproduce the intended behavior. It still shows up as the raw UUID string in Messages (thanks to &lt;a href=&quot;https://twitter.com/zachsimone&quot;&gt;@zachsimone&lt;/a&gt; for the heads up). &lt;em&gt;Update 7/7/16: Fixed in beta2.&lt;/em&gt;&lt;/p&gt;
 
 &lt;p&gt;For example:&lt;/p&gt;
 
@@ -603,6 +607,10 @@ MSConversation
 &lt;p&gt;If your app does not have a default web presence that can render these links in a web browser, you may want to have the base URL point to a sort of 404 explanation page. Something like “Hey, you received a link created with MyApp. Open it on an iOS 10+ device to get started.” You can still encode parameters in the query string this way.&lt;/p&gt;
 
 &lt;p&gt;Another gotcha is that only http/https scheme URLs will be sent to other platforms. If your message doesn’t lose any context without a URL, you can use this to your advantage and not worry about implementing the 404 page.&lt;/p&gt;
+
+&lt;h4 id=&quot;expiring&quot;&gt;Expiring&lt;/h4&gt;
+
+&lt;p&gt;You can set your messages to expire by default by setting &lt;code class=&quot;highlighter-rouge&quot;&gt;shouldExpire&lt;/code&gt; on the &lt;code class=&quot;highlighter-rouge&quot;&gt;MSMessage&lt;/code&gt; instance. This behavior is the same as other Messages.app expiring messages and can be overridden by the recipient.&lt;/p&gt;
 
 &lt;h3 id=&quot;icon-template-sizes&quot;&gt;Icon Template Sizes&lt;/h3&gt;
 
@@ -660,6 +668,14 @@ Messages iPad Pro: 74x55pt @2x&lt;/p&gt;
 &lt;p&gt;You cannot access any information that was not created specifically by your extension. That means you cannot access the contents of Message.app’s text field directly. You cannot access any other messages in the conversation history.&lt;/p&gt;
 
 &lt;p&gt;Any text input you require must be entered by the user into a text field you’ve created in the expanded mode of your extension.&lt;/p&gt;
+
+&lt;h2 id=&quot;known-issues&quot;&gt;Known Issues&lt;/h2&gt;
+
+&lt;p&gt;I’ve mentioned a few of the known issues in the text above. Here are a few more I’ll add to as they’re reported and resolved.&lt;/p&gt;
+
+&lt;h3 id=&quot;changes-to-insertmessage&quot;&gt;Changes to insertMessage&lt;/h3&gt;
+
+&lt;p&gt;The function signature of &lt;code class=&quot;highlighter-rouge&quot;&gt;MSConversation.insertMessage&lt;/code&gt; has changed (beta1 -&amp;gt; beta2) for an unknown reason. The &lt;code class=&quot;highlighter-rouge&quot;&gt;localizedChangeDescription&lt;/code&gt; parameter was removed. There is currently no way that I can determine to create a change description. The documentation is also out of line with the function itself.&lt;/p&gt;
 
 &lt;h2 id=&quot;wrap-up-1&quot;&gt;Wrap Up&lt;/h2&gt;
 
