@@ -1,7 +1,7 @@
 ---
 layout: post
 title: Transforming Images Into Music
-date: 2016-10-10 17:42:43
+date: 2016-10-10 8:42:43
 ---
 
 Although I usually don't specifically about ongoing projects, I've decided to write up a non-technical summary of my current project so that future technical posts will have some context.
@@ -68,7 +68,7 @@ Each of these steps uses a different set of technologies and frameworks.
 
 ### UI
 
-At the time of this writing, I haven't tackled any of the UI yet. The most I've done is pop up a `UIImagePickerController` to facilitate my own tranform plugin development.
+At the time of this writing, I haven't tackled any of the UI yet. The most I've done is pop up a `UIImagePickerController` to facilitate my own transform plugin development.
 
 My goal for a shippable UI is pretty simple. An image picker that allows easy sampling of different images from the camera roll. Once the user selects the image, a video is produced for sharing that contains the song playing over the image. Alternately, since they'll be available anyway, the user can choose to export the mp3 or MIDI file.
 
