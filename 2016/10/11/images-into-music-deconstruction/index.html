@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>Images Into Music: Deconstruction</title>
+  <meta name="description" content="This post discusses deconstructors, the first module of the turning-an-image-into-an-original-piece-of-music project I outlined in this post. Skim that post ...">
+
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="canonical" href="http://twocentstudios.com/2016/10/11/images-into-music-deconstruction/">
+  <link rel="alternate" type="application/rss+xml" title="twocentstudios" href="http://twocentstudios.com/feed.xml" />
+</head>
+
+
+  <body>
+
+    <header class="site-header">
+
+  <div class="wrapper">
+
+    <a class="site-title" href="/">twocentstudios</a>
+
+    <nav class="site-nav">
+      <a href="#" class="menu-icon">
+        <svg viewBox="0 0 18 15">
+          <path fill="#424242" d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.031C17.335,0,18,0.665,18,1.484L18,1.484z"/>
+          <path fill="#424242" d="M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0c0-0.82,0.665-1.484,1.484-1.484 h15.031C17.335,6.031,18,6.696,18,7.516L18,7.516z"/>
+          <path fill="#424242" d="M18,13.516C18,14.335,17.335,15,16.516,15H1.484C0.665,15,0,14.335,0,13.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.031C17.335,12.031,18,12.696,18,13.516L18,13.516z"/>
+        </svg>
+      </a>
+
+      <div class="trigger">
+        
+          
+          <a class="page-link" href="/about/">About</a>
+          
+        
+          
+          <a class="page-link" href="/blog/">Blog</a>
+          
+        
+          
+        
+          
+        
+          
+          <a class="page-link" href="/portfolio/">Portfolio</a>
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      </div>
+    </nav>
+
+  </div>
+
+</header>
+
+
+    <div class="page-content">
+      <div class="wrapper">
+        <div class="post">
+
+  <header class="post-header">
+    <h1 class="post-title">Images Into Music: Deconstruction</h1>
+    <p class="post-meta">Oct 11, 2016</p>
+  </header>
+
+  <article class="post-content">
+    <p>This post discusses <em>deconstructors</em>, the first module of the turning-an-image-into-an-original-piece-of-music project I outlined in <a href="http://twocentstudios.com/2016/10/10/transforming-images-into-music/">this post</a>. Skim that post first to understand the goal of the project.</p>
+
+<h2 id="what-is-deconstruction">What is deconstruction?</h2>
+
+<p>I’m defining deconstruction as the process of turning raw image data into various streams of pseudo-random numbers. We can later use these numbers in our Transformation step. We’ll  feed these numbers into a decision engine in order to generate music in a musical grammar.</p>
+
+<h2 id="why-do-deconstruction">Why do deconstruction?</h2>
+
+<p>Our goal for this module is to get a variety of deterministic data we can feed into our decision engine in the next module. Imagine a painter’s palette with each stream of data as a color on the palette that we can use to create our painting.</p>
+
+<p>We can consider the lossless canonical form of image data as a bitmap of red, green, and blue numbers in a particular range. Or we could losslessly convert this data into a different colorspace to give us more information about the humanistic qualities of the colors, for example, how vivid the colors are. But there is also value in viewing this data in a lossy form, compressed, like into an average, or otherwise irreversibly mixed together.</p>
+
+<h2 id="types">Types</h2>
+
+<p>Let’s take a quick tour through the types we’ll use in this module.</p>
+
+<h3 id="normalized">Normalized</h3>
+
+<p>Since most of our image data representations are bounded, and we know those bounds ahead of time, we can “normalize” this data to any scale we wish. Normalization is a bit of a loaded term, but in our case we’ll define it as a percentage inclusive of the minimum and maximum values:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="c1">// Expresses a percentage 0...1 inclusive</span>
+<span class="kd">typealias</span> <span class="kt">Normalized</span> <span class="o">=</span> <span class="kt">Double</span>
+</code></pre>
+</div>
+
+<h3 id="input-types">Input types</h3>
+
+<p>In the Cocoa world, our inputs will be <code class="highlighter-rouge">UIImage</code> or <code class="highlighter-rouge">NSImage</code>. We can further genericize by using <code class="highlighter-rouge">CGImage</code> as our common system image container, which if necessary can be converted back to a <code class="highlighter-rouge">UIImage</code> or converted to a <code class="highlighter-rouge">CIImage</code> for use in the Core Image framework.</p>
+
+<h3 id="colors">Colors</h3>
+
+<p>Color spaces can be represented by one or more sets of normalized numbers. We’ll need to create structs for each.</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">RGB</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">red</span><span class="p">:</span> <span class="kt">Normalized</span>
+    <span class="k">let</span> <span class="nv">green</span><span class="p">:</span> <span class="kt">Normalized</span>
+    <span class="k">let</span> <span class="nv">blue</span><span class="p">:</span> <span class="kt">Normalized</span>
+<span class="p">}</span>
+
+<span class="kd">struct</span> <span class="kt">HSV</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">hue</span><span class="p">:</span> <span class="kt">Normalized</span>
+    <span class="k">let</span> <span class="nv">saturation</span><span class="p">:</span> <span class="kt">Normalized</span>
+    <span class="k">let</span> <span class="nv">value</span><span class="p">:</span> <span class="kt">Normalized</span>
+<span class="p">}</span>
+
+<span class="kd">struct</span> <span class="kt">Gray</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">gray</span><span class="p">:</span> <span class="kt">Normalized</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p>Other color spaces could be added later. For now we’ll stick to the above popular three.</p>
+
+<p>Looking ahead, it’s probably a good idea to conform these to a protocol so we don’t have to write the same algorithm for each color space later.</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="kd">protocol</span> <span class="kt">ComponentRepresentable</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">components</span><span class="p">:</span> <span class="p">[</span><span class="kt">Normalized</span><span class="p">]</span> <span class="p">{</span> <span class="k">get</span> <span class="p">}</span>
+    
+    <span class="nf">init</span><span class="p">(</span><span class="nv">components</span><span class="p">:</span> <span class="p">[</span><span class="kt">Normalized</span><span class="p">])</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<h3 id="image-data">Image data</h3>
+
+<p>Our desired output will mostly be normalized numbers. <code class="highlighter-rouge">CGImage</code> isn’t particularly easy to pull these numbers out every time, so we’ll use a struct to store the raw color data instead.</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">ImageData</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">rowCount</span><span class="p">:</span> <span class="kt">Int</span>
+    <span class="k">let</span> <span class="nv">colCount</span><span class="p">:</span> <span class="kt">Int</span>
+    <span class="k">let</span> <span class="nv">rgbValues</span><span class="p">:</span> <span class="p">[</span><span class="kt">RGB</span><span class="p">]</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p>Note <code class="highlighter-rouge">colCount</code> can be calculated lazily from <code class="highlighter-rouge">rowCount</code> and <code class="highlighter-rouge">rgbValues.count</code>.</p>
+
+<p><code class="highlighter-rouge">RGB</code> was arbitrarily chosen as the canonical color space. Other colorspaces can be converted to through <code class="highlighter-rouge">UIColor</code>. Another valid implementation would be to use <code class="highlighter-rouge">CGColor</code> as the canonical colorspace representation and convert to others from there.</p>
+
+<h3 id="to-image-data">To image data</h3>
+
+<p>Our first transformation will be from <code class="highlighter-rouge">CGImage</code> to <code class="highlighter-rouge">ImageData</code>. Our function has the signature:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="kd">extension</span> <span class="kt">CGImage</span> <span class="p">{</span>
+    <span class="kd">func</span> <span class="nf">imageData</span><span class="p">()</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">ImageData</span> <span class="p">{</span> <span class="p">}</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p>However, we might need to preprocess the image to normalize its size.</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="kd">extension</span> <span class="kt">CGImage</span> <span class="p">{</span>
+    <span class="kd">func</span> <span class="nf">resize</span><span class="p">(</span><span class="n">_</span> <span class="nv">size</span><span class="p">:</span> <span class="kt">CGSize</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">CGImage</span> <span class="p">{</span> <span class="p">}</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<h2 id="deconstructor-examples">Deconstructor examples</h2>
+
+<p>Now that we have an easily parseable format, we can write a some deconstructors. I’ll selectively provide some code examples and some function signatures.</p>
+
+<h3 id="basic-color-space">Basic color space</h3>
+
+<p>Let’s allow movement to some other color spaces.</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="kd">extension</span> <span class="kt">ImageData</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">hsvValues</span><span class="p">:</span> <span class="p">[</span><span class="kt">HSV</span><span class="p">]</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="n">rgbValues</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="kt">HSV</span><span class="p">(</span><span class="nv">rgb</span><span class="p">:</span> <span class="nv">$0</span><span class="p">)</span> <span class="p">}</span>
+    <span class="p">}</span>
+    
+    <span class="k">var</span> <span class="nv">grayValues</span><span class="p">:</span> <span class="p">[</span><span class="kt">Gray</span><span class="p">]</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="n">rgbValues</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="kt">Gray</span><span class="p">(</span><span class="nv">rgb</span><span class="p">:</span> <span class="nv">$0</span><span class="p">)</span> <span class="p">}</span>
+    <span class="p">}</span>
+    
+    <span class="k">var</span> <span class="nv">blackWhiteValues</span><span class="p">:</span> <span class="p">[</span><span class="kt">Gray</span><span class="p">]</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="n">grayValues</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="kt">Gray</span><span class="p">(</span><span class="nv">gray</span><span class="p">:</span> <span class="nf">round</span><span class="p">(</span><span class="nv">$0</span><span class="o">.</span><span class="n">gray</span><span class="p">))</span> <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<h3 id="rows-and-columns">Rows and columns</h3>
+
+<p>Let’s allow transformation to rows or columns as an array of arrays.</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="kd">extension</span> <span class="kt">ImageData</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">rgbRows</span><span class="p">:</span> <span class="p">[[</span><span class="kt">RGB</span><span class="p">]]</span> <span class="p">{</span> <span class="p">}</span>
+    <span class="k">var</span> <span class="nv">rgbCols</span><span class="p">:</span> <span class="p">[[</span><span class="kt">RGB</span><span class="p">]]</span> <span class="p">{</span> <span class="p">}</span>
+    <span class="k">var</span> <span class="nv">hsvRows</span><span class="p">:</span> <span class="p">[[</span><span class="kt">HSV</span><span class="p">]]</span> <span class="p">{</span> <span class="p">}</span>
+    <span class="k">var</span> <span class="nv">hsvCols</span><span class="p">:</span> <span class="p">[[</span><span class="kt">HSV</span><span class="p">]]</span> <span class="p">{</span> <span class="p">}</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<h3 id="averages">Averages</h3>
+
+<p>Our most basic lossy data deconstruction is averages. We can average an entire image down to one value.</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="kd">extension</span> <span class="kt">ImageData</span> <span class="p">{</span>
+    <span class="kd">func</span> <span class="nf">averageHSV</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">HSV</span> <span class="p">{</span> <span class="p">}</span>
+    <span class="kd">func</span> <span class="nf">averageRGB</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">RGB</span> <span class="p">{</span> <span class="p">}</span>
+    <span class="kd">func</span> <span class="nf">averageGray</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">Gray</span> <span class="p">{</span> <span class="p">}</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p>Or we can get larger groups of data by averaging rows or columns.</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="kd">extension</span> <span class="kt">ImageData</span> <span class="p">{</span>
+    <span class="kd">func</span> <span class="nf">rowAverageHSVs</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">HSV</span><span class="p">]</span> <span class="p">{</span> <span class="p">}</span>
+    <span class="kd">func</span> <span class="nf">rowAverageRGBs</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">RGB</span><span class="p">]</span> <span class="p">{</span> <span class="p">}</span>
+    <span class="kd">func</span> <span class="nf">colAverageHSVs</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">HSV</span><span class="p">]</span> <span class="p">{</span> <span class="p">}</span>
+    <span class="kd">func</span> <span class="nf">colAverageRGBs</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">RGB</span><span class="p">]</span> <span class="p">{</span> <span class="p">}</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<h3 id="representative-colors">Representative Colors</h3>
+
+<p>Representative colors refers to the set of colors that appear most often in an image and therefore “represent” it best. It’s an interesting field on its own and I’m currently using the thoroughly researched <a href="https://github.com/indragiek/DominantColor">DominantColor</a> library. DominantColor uses k-means clustering to produce an array of around a dozen or so colors.</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="kd">extension</span> <span class="kt">CGImage</span> <span class="p">{</span>
+    <span class="kd">func</span> <span class="nf">representativeHSVs</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">HSV</span><span class="p">]</span> <span class="p">{</span> <span class="p">}</span>
+    <span class="kd">func</span> <span class="nf">representativeRGBs</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">RGB</span><span class="p">]</span> <span class="p">{</span> <span class="p">}</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<h3 id="faces">Faces</h3>
+
+<p>A less random deconstructor is the faces deconstructor. It can provide us both the number of faces in an image and the percentage of the photo’s area covered by faces.</p>
+
+<p>I’ve written in detail about the algorithm in <a href="TODO">this post</a>.</p>
+
+<p>Note this this deconstructor uses Core Image, and works best when used on the original resolution of the image.</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code><span class="kd">extension</span> <span class="kt">CIImage</span> <span class="p">{</span>
+    <span class="kd">func</span> <span class="nf">faceCount</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">Int</span> <span class="p">{</span> <span class="p">}</span>
+    <span class="kd">func</span> <span class="nf">areaOfFaces</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">Normalized</span> <span class="p">{</span> <span class="p">}</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<h3 id="more">More</h3>
+
+<p>I’ve already written a few other deconstructors including derivatives and image edges, but in theory your imagination is the limit on how this raw data can be processed. Future transformers (the module that ultimately uses our deconstructed data) can be based on future deconstructors.</p>
+
+<h2 id="why-not-write-custom-core-image-transforms">Why not write custom Core Image transforms?</h2>
+
+<p>Although Core Image is a very well supported framework on both iOS and macOS, there are a few reasons it doesn’t work well for this project.</p>
+
+<p>Most importantly, Core Image expects all functions to be of the form <code class="highlighter-rouge">CIImage -&gt; [String: Any] -&gt; CIImage</code>. Or in other words, an input image, an arbitrary input dictionary of keys and values, and an output image. We usually want our output to be normalized numbers, sometimes grouped. It’s more convenient for us to work in the numbers world rather than the image world.</p>
+
+<p>Next, part of the reason for Core Image’s existence is its “recipe” architecture, which assumes you’re composing several transforms, then using the framework to efficiently apply all of these transforms at once to get your final image. In our case, we’ll be using multiple transforms (aka deconstructors) in parallel, and thus would be sacrificing the benefits of the framework.</p>
+
+<p>Lastly, the <code class="highlighter-rouge">[String: Any]</code> input unnecessarily loses a lot of type information. One of the primary disadvantages of using Core Image in general is the amount of time spent in the documentation looking for the available parameter names and hoping you don’t make any typos. The (sometimes) numerical bounds of the prebaked transforms aren’t usually provided, and require lots of guess and check. I personally wouldn’t want to move more of the API into static documentation than I absolutely have to.</p>
+
+<h2 id="performance-implications">Performance implications</h2>
+
+<p>Each deconstructor used in a transform incurs a performance penalty. Image processing is a notoriously processor and memory intensive field. There are many tradeoffs to consider when writing and using these deconstructors, and it’s still too early in the project to determine what the maximum input image size can be that will produce a listenable piece of music in an acceptable amount of time for the user.</p>
+
+<p>In early tests, 50x50 pixels produces an image in maybe a second or two on an iPhone 6 with a handful of simple deconstructors used.</p>
+
+<p>Deconstructors themselves can be rewritten for performance ad infinitum, considering the constantly evolving performance attributes of the Swift language itself, structs vs classes, the theoretical limits of the algorithms, and usage of hardware acceleration through the Accelerate framework. Therefore, strategically I won’t be optimizing each deconstructor until the UX specifications for maximum time limits are better understood.</p>
+
+<h2 id="what-can-we-do-with-all-this-data">What can we do with all this data?</h2>
+
+<p>In a future post, I’ll talk about the transformer module and how we’ll actually go about using this pseudo-random data to make decisions in a composition.</p>
+
+  </article>
+
+</div>
+
+      </div>
+    </div>
+
+    <footer class="site-footer">
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">twocentstudios</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col  footer-col-1">
+        <ul class="contact-list">
+          <li><a href="mailto:chris@twocentstudios.com">chris@twocentstudios.com</a></li>
+          
+          <li>
+            <a href="https://github.com/twocentstudios">
+              <span class="icon  icon--github">
+                <svg viewBox="0 0 16 16">
+                  <path fill="#828282" d="M7.999,0.431c-4.285,0-7.76,3.474-7.76,7.761 c0,3.428,2.223,6.337,5.307,7.363c0.388,0.071,0.53-0.168,0.53-0.374c0-0.184-0.007-0.672-0.01-1.32 c-2.159,0.469-2.614-1.04-2.614-1.04c-0.353-0.896-0.862-1.135-0.862-1.135c-0.705-0.481,0.053-0.472,0.053-0.472 c0.779,0.055,1.189,0.8,1.189,0.8c0.692,1.186,1.816,0.843,2.258,0.645c0.071-0.502,0.271-0.843,0.493-1.037 C4.86,11.425,3.049,10.76,3.049,7.786c0-0.847,0.302-1.54,0.799-2.082C3.768,5.507,3.501,4.718,3.924,3.65 c0,0,0.652-0.209,2.134,0.796C6.677,4.273,7.34,4.187,8,4.184c0.659,0.003,1.323,0.089,1.943,0.261 c1.482-1.004,2.132-0.796,2.132-0.796c0.423,1.068,0.157,1.857,0.077,2.054c0.497,0.542,0.798,1.235,0.798,2.082 c0,2.981-1.814,3.637-3.543,3.829c0.279,0.24,0.527,0.713,0.527,1.437c0,1.037-0.01,1.874-0.01,2.129 c0,0.208,0.14,0.449,0.534,0.373c3.081-1.028,5.302-3.935,5.302-7.362C15.76,3.906,12.285,0.431,7.999,0.431z"/>
+                </svg>
+              </span>
+
+              <span class="username">twocentstudios</span>
+            </a>
+          </li>
+          
+
+          
+          <li>
+            <a href="https://twitter.com/twocentstudios">
+              <span class="icon  icon--twitter">
+                <svg viewBox="0 0 16 16">
+                  <path fill="#828282" d="M15.969,3.058c-0.586,0.26-1.217,0.436-1.878,0.515c0.675-0.405,1.194-1.045,1.438-1.809
+                  c-0.632,0.375-1.332,0.647-2.076,0.793c-0.596-0.636-1.446-1.033-2.387-1.033c-1.806,0-3.27,1.464-3.27,3.27 c0,0.256,0.029,0.506,0.085,0.745C5.163,5.404,2.753,4.102,1.14,2.124C0.859,2.607,0.698,3.168,0.698,3.767 c0,1.134,0.577,2.135,1.455,2.722C1.616,6.472,1.112,6.325,0.671,6.08c0,0.014,0,0.027,0,0.041c0,1.584,1.127,2.906,2.623,3.206 C3.02,9.402,2.731,9.442,2.433,9.442c-0.211,0-0.416-0.021-0.615-0.059c0.416,1.299,1.624,2.245,3.055,2.271 c-1.119,0.877-2.529,1.4-4.061,1.4c-0.264,0-0.524-0.015-0.78-0.046c1.447,0.928,3.166,1.469,5.013,1.469 c6.015,0,9.304-4.983,9.304-9.304c0-0.142-0.003-0.283-0.009-0.423C14.976,4.29,15.531,3.714,15.969,3.058z"/>
+                </svg>
+              </span>
+
+              <span class="username">twocentstudios</span>
+            </a>
+          </li>
+          
+        </ul>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+
+
+  </body>
+
+  
+  <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-10207350-4']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+      var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+      ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+  </script>
+
+
+
+</html>
