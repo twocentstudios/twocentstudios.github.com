@@ -1,6 +1,6 @@
 ---
 layout: post
-title: "Image Into Music: Transformation"
+title: "Images Into Music: Transformation"
 date: 2016-10-12 06:19:33
 ---
 
