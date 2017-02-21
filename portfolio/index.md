@@ -6,7 +6,11 @@ permalink: /portfolio/
 
 ## Apps
 
-#### TinyKittens TV - [appstore]() | [source](https://github.com/twocentstudios/tinykittenstv)
+#### Photo/Phono - [appstore](https://itunes.apple.com/us/app/photo-phono/id1202606014?mt=8)
+
+An iPhone app that turns your photos into original musical compositions.
+
+#### TinyKittens TV - [appstore](https://itunes.apple.com/us/app/tinykittens-rescue-kitten-tv/id1052349833?mt=8) | [source](https://github.com/twocentstudios/tinykittenstv)
 
 A tvOS app for streaming live feeds from [tinykittens.com](http://tinykittens.com).
 
@@ -22,13 +26,13 @@ An iPhone app for your [last.fm](http://last.fm) listening history.
 
 An iPhone app showing the past activity of Facebook Groups.
 
-#### Robert James: On The Road - [appstore](https://itunes.apple.com/us/app/robert-james-on-the-road/id795304884)
-
-An iPhone app for clients of [Robert James Insurance](http://www.robertjamesinsurance.com/).
-
 #### BrightBus: Champaign-Urbana - [landing page](/apps/brightbuscu) | [appstore](http://itunes.apple.com/us/app/brightbus-champaign-urbana/id363274580?mt=8)
 
 An iPhone app for viewing bus arrival times in Champaign and Urbana, Illinois.
+
+#### Robert James: On The Road - *decommissioned*
+
+An iPhone app for clients of [Robert James Insurance](http://www.robertjamesinsurance.com/).
 
 #### Klein Tools - *decommissioned*
 

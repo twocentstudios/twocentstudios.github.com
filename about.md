@@ -10,7 +10,7 @@ I like designing and developing products, usually for iOS devices, but sometimes
 
 I'm interested in functional programming, app architecture, and UI and UX design.
 
-I'm currently working on a few personal projects while I see some of the world.
+My most recent app is a research project called [Phono/Photo](https://itunes.apple.com/us/app/photo-phono/id1202606014?mt=8). It turns your photos into original music compositions.
 
 Previously, I worked at [Timehop](http://timehop.com) and [Klein Tools](http://kleintools.com). I also worked on my own iOS apps [Vinylogue](/apps/vinylogue), [BrightBus](/apps/brightbuscu), and several other [projects](/portfolio). I have a bachelor's degree in Electrical Engineering from the [University of Illinois at Urbana-Champaign](http://www.ece.illinois.edu/).
 
