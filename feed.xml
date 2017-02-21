@@ -6,9 +6,320 @@
 </description>
     <link>http://twocentstudios.com/</link>
     <atom:link href="http://twocentstudios.com/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Sun, 23 Oct 2016 22:01:10 -0500</pubDate>
-    <lastBuildDate>Sun, 23 Oct 2016 22:01:10 -0500</lastBuildDate>
+    <pubDate>Tue, 21 Feb 2017 00:56:22 -0600</pubDate>
+    <lastBuildDate>Tue, 21 Feb 2017 00:56:22 -0600</lastBuildDate>
     <generator>Jekyll v3.0.0</generator>
+    
+      <item>
+        <title>Bouncing MIDI to Audio on iOS</title>
+        <description>&lt;p&gt;This post shows one way to create an audio file from MIDI data and a soundfont (.sf2) file on iOS. It targets iOS 10.2 and Swift 3.0.1.&lt;/p&gt;
+
+&lt;p&gt;I’ll first go into some background about the problem. Then I’ll detail the solution with some code in Swift. If you’re only interested in the solution, please skip to that section.&lt;/p&gt;
+
+&lt;h2 id=&quot;background&quot;&gt;Background&lt;/h2&gt;
+
+&lt;p&gt;iOS and macOS have an extensive set of audio/visual frameworks, both low level and high level.&lt;/p&gt;
+
+&lt;p&gt;In my app Phono/Photo, there are two tasks (amongst a few others) that focus on MIDI.&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Play MIDI data from the speaker.&lt;/li&gt;
+  &lt;li&gt;Transform MIDI data into a suitable wave format for the purposes of playback outside the app.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;You might think these tasks would be similar, but, as of iOS 10, it turns out the former is trivial and the latter is a bit more complicated.&lt;/p&gt;
+
+&lt;h3 id=&quot;playing-midi-data-from-the-speaker&quot;&gt;Playing MIDI Data from the Speaker&lt;/h3&gt;
+
+&lt;p&gt;In iOS 8, Apple began adding some higher level components to AVFoundation that both wrap their lower level AudioToolbox relatives and provide solutions to common tasks.&lt;/p&gt;
+
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;AVMIDIPlayer&lt;/code&gt; was added in iOS 8, and solves MIDI playback elegantly.&lt;/p&gt;
+
+&lt;p&gt;You can load MIDI from a file or from raw Data, provide a URL for a soundbank file, then control playback with a few straightforward methods. All the underlying components used to sequence the MIDI and synthesize it are encapsulated within.&lt;/p&gt;
+
+&lt;p&gt;In order to gain access to the output bus tap that contains the raw audio data, we’ll essentially need to recreate &lt;code class=&quot;highlighter-rouge&quot;&gt;AVMIDIPlayer&lt;/code&gt; using some other framework components.&lt;/p&gt;
+
+&lt;h3 id=&quot;strategy-and-limitations&quot;&gt;Strategy and Limitations&lt;/h3&gt;
+
+&lt;p&gt;Our strategy will be to set up a chain of components to:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Sequence the MIDI (send each MIDI event at the correct time).&lt;/li&gt;
+  &lt;li&gt;Map a MIDI event to an audio file from the soundbank.&lt;/li&gt;
+  &lt;li&gt;Record the audio that’s produced.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;Observing the output of this process limits us to real time processing speed. In other words, if the MIDI file is 60 seconds, it’ll take 60 seconds to produce the output audio file.&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;One strategy I haven’t tried would be to pitch shift the MIDI up one octave, play it back at 2x, record it at 88.2kHz, then downsample to 44.1kHz. &lt;code class=&quot;highlighter-rouge&quot;&gt;AVAudioSession&lt;/code&gt; presumably can’t go past 48kHz though.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;h3 id=&quot;components-well-need&quot;&gt;Components We’ll Need&lt;/h3&gt;
+
+&lt;p&gt;We need to set up an &lt;code class=&quot;highlighter-rouge&quot;&gt;AVAudioEngine&lt;/code&gt; with a few nodes. Conceptually, the chain will look something like this:&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;                                     Output Tap
+                                         |                      
+AVAudioSequencer -&amp;gt; AVAudioUnitMIDISynth -&amp;gt; AVAudioMixerNode -&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;Technically, the &lt;code class=&quot;highlighter-rouge&quot;&gt;AVAudioSequencer&lt;/code&gt; is connected directly to the &lt;code class=&quot;highlighter-rouge&quot;&gt;AVAudioEngine&lt;/code&gt;. And the &lt;code class=&quot;highlighter-rouge&quot;&gt;AVAudioMixerNode&lt;/code&gt; is managed by the &lt;code class=&quot;highlighter-rouge&quot;&gt;AVAudioEngine&lt;/code&gt; too.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;AVAudioSequencer&lt;/code&gt; provides a modern interface to &lt;code class=&quot;highlighter-rouge&quot;&gt;MusicSequence&lt;/code&gt; from the &lt;code class=&quot;highlighter-rouge&quot;&gt;AudioToolbox&lt;/code&gt; framework.&lt;/p&gt;
+
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;AVAudioUnitMIDISynth&lt;/code&gt; is an &lt;code class=&quot;highlighter-rouge&quot;&gt;AVAudioUnit&lt;/code&gt; we’ll have to create ourselves by subclassing &lt;code class=&quot;highlighter-rouge&quot;&gt;AVAudioUnitMIDIInstrument&lt;/code&gt;. The reason we can’t use Apple’s provided &lt;code class=&quot;highlighter-rouge&quot;&gt;AVAudioUnitSampler&lt;/code&gt; (also a subclass of &lt;code class=&quot;highlighter-rouge&quot;&gt;AVAudioUnitMIDIInstrument&lt;/code&gt;) is because our MIDI file is multi-timbral: it uses multiple instrument presets from the soundfont and plays notes simultaneously.&lt;/p&gt;
+
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;AVAudioMixerNode&lt;/code&gt; is the output of the &lt;code class=&quot;highlighter-rouge&quot;&gt;AVAudioEngine&lt;/code&gt;, capable of combining multiple input nodes. In our case, we only need one.&lt;/p&gt;
+
+&lt;p&gt;I decided I don’t want the user to hear the export progress, so the file output tap will go at the output of the &lt;code class=&quot;highlighter-rouge&quot;&gt;AVAudioUnitMIDISynth&lt;/code&gt; and the output of the &lt;code class=&quot;highlighter-rouge&quot;&gt;AVAudioMixerNode&lt;/code&gt; will be muted.&lt;/p&gt;
+
+&lt;p&gt;Now that we have a general diagram of how these components will fit together, let’s get started on the implementation.&lt;/p&gt;
+
+&lt;h2 id=&quot;implementation&quot;&gt;Implementation&lt;/h2&gt;
+
+&lt;p&gt;The following targets Swift 3.0.1 and iOS 10.&lt;/p&gt;
+
+&lt;p&gt;First let’s create &lt;code class=&quot;highlighter-rouge&quot;&gt;AVAudioUnitMIDISynth&lt;/code&gt;.&lt;/p&gt;
+
+&lt;h3 id=&quot;avaudiounitmidisynth&quot;&gt;AVAudioUnitMIDISynth&lt;/h3&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;Most of this code is adapted directly from &lt;a href=&quot;http://www.rockhoppertech.com/blog/multi-timbral-avaudiounitmidiinstrument/&quot;&gt;Gene De Lisa’s blog&lt;/a&gt;. He’s prolific in writing about iOS and MIDI topics.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;AVAudioUnitMIDISynth&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;AVAudioUnitMIDIInstrument&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;nf&quot;&gt;init&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;soundBankURL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;URL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;throws&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;description&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;AudioComponentDescription&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
+            &lt;span class=&quot;nv&quot;&gt;componentType&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;kAudioUnitType_MusicDevice&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+            &lt;span class=&quot;nv&quot;&gt;componentSubType&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;kAudioUnitSubType_MIDISynth&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+            &lt;span class=&quot;nv&quot;&gt;componentManufacturer&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;kAudioUnitManufacturer_Apple&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+            &lt;span class=&quot;nv&quot;&gt;componentFlags&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+            &lt;span class=&quot;nv&quot;&gt;componentFlagsMask&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        
+        &lt;span class=&quot;k&quot;&gt;super&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;init&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;audioComponentDescription&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;description&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        
+        &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;bankURL&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;soundBankURL&lt;/span&gt;
+        
+        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;status&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;AudioUnitSetProperty&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;audioUnit&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+            &lt;span class=&quot;kt&quot;&gt;AudioUnitPropertyID&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;kMusicDeviceProperty_SoundBankURL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt;
+            &lt;span class=&quot;kt&quot;&gt;AudioUnitScope&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;kAudioUnitScope_Global&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt;
+            &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+            &lt;span class=&quot;o&quot;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;bankURL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+            &lt;span class=&quot;kt&quot;&gt;UInt32&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;MemoryLayout&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;URL&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;size&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;
+        
+        &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;status&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;!=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;OSStatus&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;noErr&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;throw&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;NSError&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;app&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;status&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    
+    &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;setPreload&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;enabled&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Bool&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;throws&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;guard&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;engine&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;engine&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;else&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;throw&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;NSError&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;app&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;Synth must be connected to an engine.&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;!&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;engine&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;isRunning&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;throw&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;NSError&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;app&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;Engine must be running.&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+        
+        &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;enabledBit&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;enabled&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;?&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;UInt32&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;UInt32&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        
+        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;status&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;AudioUnitSetProperty&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;audioUnit&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+            &lt;span class=&quot;kt&quot;&gt;AudioUnitPropertyID&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;kAUMIDISynthProperty_EnablePreload&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt;
+            &lt;span class=&quot;kt&quot;&gt;AudioUnitScope&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;kAudioUnitScope_Global&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt;
+            &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+            &lt;span class=&quot;o&quot;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;enabledBit&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+            &lt;span class=&quot;kt&quot;&gt;UInt32&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;MemoryLayout&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;UInt32&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;size&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;status&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;!=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;noErr&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;throw&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;NSError&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;app&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;status&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;In &lt;code class=&quot;highlighter-rouge&quot;&gt;init&lt;/code&gt;, we’re telling the AudioUnit that it’s a MIDISynth. Then we’ll set the soundbank that we want it to use.&lt;/p&gt;
+
+&lt;p&gt;The &lt;code class=&quot;highlighter-rouge&quot;&gt;setPreload&lt;/code&gt; function is the critical part that will allow faithful playback of the instruments in the MIDI data. The MIDISynth AudioUnit has a property that allows it to preload instrument banks from the soundfont we provided on initialization. While this flag is set to true, any MIDI events sent to the MIDISynth, instead of being played, will be parsed for their instrument/bank messages and those instruments’ samples will be loaded.&lt;/p&gt;
+
+&lt;p&gt;A caveat is that the MIDISynth must be connected to the &lt;code class=&quot;highlighter-rouge&quot;&gt;AVAudioEngine&lt;/code&gt; which must also be running when the preload message is sent.&lt;/p&gt;
+
+&lt;p&gt;After we’re done sending messages intended for preloading, the MIDISynth should have preload mode disabled, after which it will play any incoming MIDI message normally.&lt;/p&gt;
+
+&lt;h3 id=&quot;midifilebouncer&quot;&gt;MIDIFileBouncer&lt;/h3&gt;
+
+&lt;p&gt;Let’s put it all together in the &lt;code class=&quot;highlighter-rouge&quot;&gt;MIDIFileBouncer&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;Our inputs will be:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;MIDI data&lt;/li&gt;
+  &lt;li&gt;Soundbank URL&lt;/li&gt;
+  &lt;li&gt;The AVAudioSession&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;MIDIFileBouncer&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;fileprivate&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;audioSession&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;AVAudioSession&lt;/span&gt;
+    
+    &lt;span class=&quot;n&quot;&gt;fileprivate&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;engine&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;AVAudioEngine&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;!&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;fileprivate&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;sampler&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;AVAudioUnitMIDISynth&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;!&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;fileprivate&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;sequencer&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;AVAudioSequencer&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;!&lt;/span&gt;
+
+    &lt;span class=&quot;kd&quot;&gt;deinit&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;engine&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;disconnectNodeInput&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;sampler&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;bus&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;engine&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;detach&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;sampler&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;sequencer&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;nil&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;sampler&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;nil&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;engine&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;nil&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    
+    &lt;span class=&quot;nf&quot;&gt;init&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;midiFileData&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Data&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;soundBankURL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;URL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;audioSession&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;AVAudioSession&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;throws&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;audioSession&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;audioSession&lt;/span&gt;
+                
+        &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;engine&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;AVAudioEngine&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;sampler&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;try&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;AVAudioUnitMIDISynth&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;soundBankURL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;soundBankURL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        
+        &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;engine&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;attach&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;sampler&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        
+        &lt;span class=&quot;c1&quot;&gt;// We&#39;ll tap the sampler output directly for recording&lt;/span&gt;
+        &lt;span class=&quot;c1&quot;&gt;// and mute the mixer output so that bouncing is silent to the user.&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;audioFormat&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;AVAudioFormat&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;standardFormatWithSampleRate&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;44100&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;channels&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;mixer&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;engine&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;mainMixerNode&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;mixer&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;outputVolume&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mf&quot;&gt;0.0&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;engine&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;connect&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;sampler&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;to&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;mixer&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;format&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;audioFormat&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        
+        &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;sequencer&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;AVAudioSequencer&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;audioEngine&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;engine&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;try&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;sequencer&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;load&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;from&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;midiFileData&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;options&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[])&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;sequencer&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;prepareToPlay&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;  
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;Regarding the deinit, the reason we’re not declaring the engine, sampler, or sequencer as &lt;code class=&quot;highlighter-rouge&quot;&gt;let&lt;/code&gt; (or non-optional) is because we need to specify their order of deallocation to avoid a crash (&lt;code class=&quot;highlighter-rouge&quot;&gt;audioEngine&lt;/code&gt; is released before &lt;code class=&quot;highlighter-rouge&quot;&gt;sequencer&lt;/code&gt; has finished with it). Please let me know if you know a more elegant way to avoid this crash.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;In &lt;code class=&quot;highlighter-rouge&quot;&gt;init&lt;/code&gt;, we’re going to create an instance of our three required classes: &lt;code class=&quot;highlighter-rouge&quot;&gt;AVAudioEngine&lt;/code&gt;, &lt;code class=&quot;highlighter-rouge&quot;&gt;AVAudioUnitMIDISynth&lt;/code&gt;, and &lt;code class=&quot;highlighter-rouge&quot;&gt;AVAudioSequencer&lt;/code&gt;. Then we’ll wire them together and get the sequencer ready for playback.&lt;/p&gt;
+
+&lt;p&gt;Now onto our bounce function.&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;extension&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;MIDIFileBouncer&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;bounce&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;toFileURL&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;fileURL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;URL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;throws&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;outputNode&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;sampler&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;!&lt;/span&gt;
+        
+        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;sequenceLength&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;sequencer&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tracks&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;map&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;({&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$0&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;lengthInSeconds&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;})&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;max&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;??&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;writeError&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;NSError&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;nil&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;outputFile&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;try&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;AVAudioFile&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;forWriting&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;fileURL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;settings&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;outputNode&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;outputFormat&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;forBus&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;settings&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        
+        &lt;span class=&quot;k&quot;&gt;try&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;audioSession&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;setActive&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kc&quot;&gt;true&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;engine&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;prepare&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;try&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;engine&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;start&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+        
+        &lt;span class=&quot;c1&quot;&gt;// Load the patches by playing the sequence through in preload mode.&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;sequencer&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rate&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mf&quot;&gt;100.0&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;sequencer&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;currentPositionInSeconds&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;sequencer&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;prepareToPlay&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;try&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;sampler&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;setPreload&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;enabled&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;true&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;try&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;sequencer&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;start&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;while&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;sequencer&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;isPlaying&lt;/span&gt;
+            &lt;span class=&quot;o&quot;&gt;&amp;amp;&amp;amp;&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;sequencer&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;currentPositionInSeconds&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;sequenceLength&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+                &lt;span class=&quot;nf&quot;&gt;usleep&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;100000&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;sequencer&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;stop&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+        &lt;span class=&quot;nf&quot;&gt;usleep&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;500000&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// ensure all notes have rung out&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;try&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;sampler&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;setPreload&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;enabled&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;false&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;sequencer&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rate&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mf&quot;&gt;1.0&lt;/span&gt;
+        
+        &lt;span class=&quot;c1&quot;&gt;// Get sequencer ready again.&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;sequencer&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;currentPositionInSeconds&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;sequencer&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;prepareToPlay&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+                
+        &lt;span class=&quot;c1&quot;&gt;// Start recording.&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;outputNode&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;installTap&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;onBus&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;bufferSize&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;4096&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;format&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;outputNode&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;outputFormat&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;forBus&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;buffer&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;AVAudioPCMBuffer&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;time&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;AVAudioTime&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;do&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+                &lt;span class=&quot;k&quot;&gt;try&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;outputFile&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;write&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;from&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;buffer&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+            &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;catch&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+                &lt;span class=&quot;n&quot;&gt;writeError&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;error&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;as&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;NSError&lt;/span&gt;
+            &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+        
+        &lt;span class=&quot;c1&quot;&gt;// Add silence to beginning.&lt;/span&gt;
+        &lt;span class=&quot;nf&quot;&gt;usleep&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;200000&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+
+        &lt;span class=&quot;c1&quot;&gt;// Start playback.&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;try&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;sequencer&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;start&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+        
+        &lt;span class=&quot;c1&quot;&gt;// Continuously check for track finished or error while looping.&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;while&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;sequencer&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;isPlaying&lt;/span&gt;
+            &lt;span class=&quot;o&quot;&gt;&amp;amp;&amp;amp;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;writeError&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;nil&lt;/span&gt;
+            &lt;span class=&quot;o&quot;&gt;&amp;amp;&amp;amp;&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;sequencer&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;currentPositionInSeconds&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;sequenceLength&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;nf&quot;&gt;usleep&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;100000&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+        
+        &lt;span class=&quot;c1&quot;&gt;// Ensure playback is stopped.&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;sequencer&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;stop&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+        
+        &lt;span class=&quot;c1&quot;&gt;// Add silence to end.&lt;/span&gt;
+        &lt;span class=&quot;nf&quot;&gt;usleep&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1000000&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+
+        &lt;span class=&quot;c1&quot;&gt;// Stop recording.&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;outputNode&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;removeTap&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;onBus&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;engine&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;stop&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;try&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;audioSession&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;setActive&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kc&quot;&gt;false&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        
+        &lt;span class=&quot;c1&quot;&gt;// Return error if there was any issue during recording.&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;writeError&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;writeError&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;throw&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;writeError&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;The bounce function is synchronous. &lt;code class=&quot;highlighter-rouge&quot;&gt;AVAudioSequencer&lt;/code&gt; is interesting in that it will play beyond the length of the MIDI track it’s playing. It will play until it’s told to stop or it’s interrupted. We don’t get a callback when the last MIDI event has rung out.&lt;/p&gt;
+
+&lt;p&gt;The most straightforward solution, although not the most efficient or elegant, is to sleep the current thread until either the sequencer has stopped for some external reason or it has played past the length of its last MIDI event. This is also arguably the most robust solution without the knowledge of whether we can observe &lt;code class=&quot;highlighter-rouge&quot;&gt;isPlaying&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;With that disclaimer in place, let’s walk through the code.&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Calculate the sequence length for later use with help from &lt;code class=&quot;highlighter-rouge&quot;&gt;AVMusicTrack&lt;/code&gt;.&lt;/li&gt;
+  &lt;li&gt;Set up an &lt;code class=&quot;highlighter-rouge&quot;&gt;AVAudioFile&lt;/code&gt; to write the output buffers to.&lt;/li&gt;
+  &lt;li&gt;Start up the &lt;code class=&quot;highlighter-rouge&quot;&gt;AVAudioSession&lt;/code&gt; and the &lt;code class=&quot;highlighter-rouge&quot;&gt;AVAudioEngine&lt;/code&gt;.&lt;/li&gt;
+  &lt;li&gt;Play the entire sequence through once with the &lt;code class=&quot;highlighter-rouge&quot;&gt;AVAudioUnitMIDISynth&lt;/code&gt; in preload mode as discussed earlier. However, we can cheat a little bit and play it through at 100x normal speed since it simply needs to see all the events.&lt;/li&gt;
+  &lt;li&gt;Reset everything for the real recording session playback.&lt;/li&gt;
+  &lt;li&gt;Install a tap on the output of &lt;code class=&quot;highlighter-rouge&quot;&gt;AVAudioUnitMIDISynth&lt;/code&gt; and write the output buffers to our &lt;code class=&quot;highlighter-rouge&quot;&gt;AVAudioFile&lt;/code&gt;.&lt;/li&gt;
+  &lt;li&gt;Start playback, wait for it to finish or error, then remove the bus.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;I’ve added a few pauses to ensure there’s adequate gaps of silence between the beginning and end of the file.&lt;/p&gt;
+
+&lt;p&gt;Assuming the function doesn’t throw, a wave file will be written to the URL you provided to the function input as a &lt;code class=&quot;highlighter-rouge&quot;&gt;.caf&lt;/code&gt; file. &lt;code class=&quot;highlighter-rouge&quot;&gt;AVFoundation&lt;/code&gt; has additional facilities available to convert uncompressed audio to other formats.&lt;/p&gt;
+
+&lt;h2 id=&quot;wrap-up&quot;&gt;Wrap Up&lt;/h2&gt;
+
+&lt;p&gt;The majority of this post was gleaned from a few invaluable sources.&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;a href=&quot;http://www.rockhoppertech.com/blog/multi-timbral-avaudiounitmidiinstrument/&quot;&gt;Multi-timbral AVAudioUnitMIDIInstrument&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;http://www.rockhoppertech.com/blog/&quot;&gt;Gene De Lisa’s blog&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://lists.apple.com/archives/coreaudio-api/2016/Jan/msg00023.html&quot;&gt;Apple Mailing List message about MIDISynth preload&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://developer.apple.com/library/content/samplecode/AVAEMixerSample/Introduction/Intro.html#//apple_ref/doc/uid/TP40015134-Intro-DontLinkElementID_2&quot;&gt;Using AVAudioEngine for Playback, Mixing and Recording (AVAEMixerSample)&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Please message me on Twitter &lt;a href=&quot;https://twitter.com/twocentstudios&quot;&gt;@twocentstudios&lt;/a&gt; if you have ideas for improvements.&lt;/p&gt;
+
+&lt;p&gt;Download my app &lt;a href=&quot;https://itunes.apple.com/us/app/photo-phono/id1202606014?mt=8&quot;&gt;Photo/Phono&lt;/a&gt; and share a generated MIDI file to see this code in action.&lt;/p&gt;
+
+</description>
+        <pubDate>Mon, 20 Feb 2017 12:58:18 -0600</pubDate>
+        <link>http://twocentstudios.com/2017/02/20/bouncing-midi-to-audio-on-ios/</link>
+        <guid isPermaLink="true">http://twocentstudios.com/2017/02/20/bouncing-midi-to-audio-on-ios/</guid>
+        
+        
+      </item>
     
       <item>
         <title>Probability Distributions of Image Data</title>
@@ -2485,134 +2796,6 @@ Messages iPad Pro: 74x55pt @2x&lt;/p&gt;
         <pubDate>Tue, 03 Nov 2015 06:19:53 -0600</pubDate>
         <link>http://twocentstudios.com/2015/11/03/timehop-a-retrospective/</link>
         <guid isPermaLink="true">http://twocentstudios.com/2015/11/03/timehop-a-retrospective/</guid>
-        
-        
-      </item>
-    
-      <item>
-        <title>Fall 2015 Project Wrap Up</title>
-        <description>&lt;p&gt;I’ve been back in Chicago left to my own devices for the past two months now. I’ll be shipping out to Japan in a few weeks for a three month stint doing more of the same. I’ve had plenty of time to dig into a few various development areas I’ve wanted to explore. This is a quick wrap up of what I’ve been up to.&lt;/p&gt;
-
-&lt;h2 id=&quot;music-transfer&quot;&gt;Music Transfer&lt;/h2&gt;
-
-&lt;p&gt;I own a &lt;a href=&quot;https://www.synology.com/en-us/products/DS414j&quot;&gt;Synology DS414j&lt;/a&gt; network attached storage device that’s helped me organize and archive all of my personal data including mp3s, FLAC, music recording files, photos, videos, etc. I’m stuck in a weird position of wanting to take a subset of my mp3 collection on the road with me, while also wanting to add to the collection and have everything available to me. I’m still holding out from participating in streaming services since they don’t always carry some of the smaller indie artists that release on Bandcamp and the like. This left me with a weird problem to solve and a lot of time to do it.&lt;/p&gt;
-
-&lt;p&gt;My first shot at this was writing a shell script to rsync a selection of my music from my NAS to a cache on my laptop and still use iTunes to sync from laptop to iPhone. It’s a pretty simple script, but gave me a chance to dive into bash scripting, something I had previously avoided like the plague.&lt;/p&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;#!/bin/bash&lt;/span&gt;
-&lt;span class=&quot;nb&quot;&gt;set&lt;/span&gt; -e
-
-&lt;span class=&quot;nv&quot;&gt;src_music_root&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;&#39;/Volumes/music&#39;&lt;/span&gt;
-&lt;span class=&quot;nv&quot;&gt;dest_music_root&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;&#39;/Users/ctrott/Music/Cache&#39;&lt;/span&gt;
-&lt;span class=&quot;nv&quot;&gt;folder_list_path&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;&#39;/Users/ctrott/Code/temp/music_transfer/artists.txt&#39;&lt;/span&gt;
-&lt;span class=&quot;nv&quot;&gt;log_path&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;&#39;/Users/ctrott/Code/temp/music_transfer/log.txt&#39;&lt;/span&gt;
-
-&lt;span class=&quot;k&quot;&gt;while &lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;read &lt;/span&gt;folder ; &lt;span class=&quot;k&quot;&gt;do
-    &lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$music_root&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$folder&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;
-    rsync -av &lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$src_music_root&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$folder&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$dest_music_root&lt;/span&gt; &amp;gt;&amp;gt; &lt;span class=&quot;nv&quot;&gt;$log_path&lt;/span&gt;
-&lt;span class=&quot;k&quot;&gt;done&lt;/span&gt; &amp;lt; &lt;span class=&quot;nv&quot;&gt;$folder_list_path&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;I’m still having a hard time getting my head around the seemly first-class path support. I’m used to having distinct types for &lt;code class=&quot;highlighter-rouge&quot;&gt;NSURL&lt;/code&gt; vs &lt;code class=&quot;highlighter-rouge&quot;&gt;NSString&lt;/code&gt;. Trying to concatenate paths from inputs and variables and literals has led to a lot of confusion. The combination of that confusion and the destructive nature of file system mutations leaves me wanting to use something like Rake or raw Ruby instead.&lt;/p&gt;
-
-&lt;p&gt;To that end, I did run through the &lt;a href=&quot;http://cli.learncodethehardway.org/book/&quot;&gt;Command Line Crash Course&lt;/a&gt; from the Learn Code The Hard Way series to pick up a few techniques I didn’t know from before. I don’t think I retained enough of it, so I might have to breeze through it again soon.&lt;/p&gt;
-
-&lt;h2 id=&quot;graphql--react--react-native&quot;&gt;GraphQL / React / React Native&lt;/h2&gt;
-
-&lt;p&gt;I remember hearing about GraphQL at the Facebook Developer Conference last Spring and then seeing the announcement over the Summer. I read through the spec and it looked very thorough. I’m interested in a lot of the new infrastructure concepts and frameworks that Facebook has been developing over the past years (React, React-Native, Flux, GraphQL, etc.). So when I saw an interactive tutorial called &lt;a href=&quot;https://learngraphql.com/&quot;&gt;Learn GraphQL&lt;/a&gt; I decided to work through it.&lt;/p&gt;
-
-&lt;p&gt;I really enjoyed the tutorial and found it to be a nice intro to the capabilities. Unfortunately, I’m still finding the web world a bit opaque and hard to keep up with. I’ve never been particularly enthralled with js, so although I’m enthusiastic about the architecture concepts, I keep hitting stumbling blocks with the ever-changing ES5/ES6/ES7 syntaxes and toolchains that are required to even get started. Not to mention that these technologies are still rapidly evolving.&lt;/p&gt;
-
-&lt;p&gt;I also spent a few days looking at docs and walkthroughs for React and ReactNative. Again, the underlying concepts (immutability, one-way data flow, coalescing state) of those frameworks are like a siren song to me. The progress that’s been made on those frameworks is very respectable. I’d like to dive in and give React and/or React Native a shot, but it’s an opportunity cost cost-benefit analysis of whether I should be working on learning raw Swift and whether I can find a project that works well within React Native’s limitations.&lt;/p&gt;
-
-&lt;h2 id=&quot;apple-tv&quot;&gt;Apple TV&lt;/h2&gt;
-
-&lt;p&gt;For some reason, I was one of the developers chosen to receive a $1 Apple TV after it was announced at the September Apple event. I used an older Apple TV at the Timehop offices quite often and found the UI and UX to be quite a joy to use, so I was especially interested in what sort of apps I’d be able to make.&lt;/p&gt;
-
-&lt;p&gt;I received my Apple TV in the mail a week later, spent an hour or two downloading binaries and getting it set up, then another couple hours downloading Xcode betas and reading docs. I realized in dismay that I was on the vanguard since all my normal dependencies and dependency managers were unable to deal with a new platform right away.&lt;/p&gt;
-
-&lt;h2 id=&quot;constellations&quot;&gt;Constellations&lt;/h2&gt;
-
-&lt;p&gt;One morning I stumbled across &lt;a href=&quot;https://rocket.chat/&quot;&gt;rocket.chat&lt;/a&gt;, and noticed it had a pretty cool background effect of little particles drifting in space and connecting with a line when they got close enough.&lt;/p&gt;
-
-&lt;blockquote&gt;
-  &lt;p&gt;After I finished implementing it, I found that they used the open source &lt;a href=&quot;https://github.com/VincentGarreau/particles.js/&quot;&gt;particle.js&lt;/a&gt; for the effect.&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;p&gt;I started working on a Swift and SpriteKit implementation for the Apple TV - a trifecta of things I hadn’t worked with before.&lt;/p&gt;
-
-&lt;p&gt;Here’s a quick demo of the “final” result&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/constellations.gif&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;a low-quality demo of constellations&quot; title=&quot;a low-quality demo of constellations&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;a low-quality demo of constellations&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;I took about two days to get a demo going. It was slow going looking up documentation alternately on SpriteKit and Swift, but I felt proud to see the stars bouncing around the screen.&lt;/p&gt;
-
-&lt;p&gt;I ran into two problems, one of which I was able to fix.&lt;/p&gt;
-
-&lt;p&gt;The first problem was that I was rendering stars using &lt;code class=&quot;highlighter-rouge&quot;&gt;SKShapeNode()&lt;/code&gt; with a circular path. I could only get something like 20fps with 30 stars - not nearly enough to fill the screen. A little googling suggested that &lt;code class=&quot;highlighter-rouge&quot;&gt;SKShapeNode()&lt;/code&gt; is extremely performance adverse and causes constant rerendering. I changed my stars to use square &lt;code class=&quot;highlighter-rouge&quot;&gt;SKSpriteNode()&lt;/code&gt;s instead, and the performance issues were more or less resolved.&lt;/p&gt;
-
-&lt;p&gt;The second problem was that using small stars confuses the physics engine when they bounce off the walls at low angles on incidence due to floating point rounding errors. This causes the stars to stick to the walls on contact and congregate in corners. Unfortunately, this seems to be a known issue with SpriteKit (amongst other game engines).&lt;/p&gt;
-
-&lt;p&gt;After I discovered the source to particles.js, I noticed that particles are allowed to leave the screen bounds and are recreated with a different location and direction. If I decided to release this, I’d probably implement it without using physics.&lt;/p&gt;
-
-&lt;p&gt;Since this project was just for fun and doesn’t have much value outside maybe a screensaver, I decided not to bother releasing it.&lt;/p&gt;
-
-&lt;h2 id=&quot;tinykittens-tv&quot;&gt;TinyKittens TV&lt;/h2&gt;
-
-&lt;p&gt;I got in the habit of having animal livestreams on in the background while I wrote code all day at Timehop. I mostly watched the livestream from &lt;a href=&quot;http://tinykittens.com&quot;&gt;TinyKittens&lt;/a&gt;, a non-profit society which rescues and fosters pregnant cats and their kittens before offering them up for adoption. I thought it’d be convenient to have an Apple TV app for selecting between the streams and viewing them.&lt;/p&gt;
-
-&lt;p&gt;I started digging and found the livestream.com API supported the two endpoints I needed and provided a streaming URL compatible with Apple devices.&lt;/p&gt;
-
-&lt;p&gt;With that, I got to work on another app for Apple TV. I first explored writing the app as a TVML app mostly assembled server-side, but was immediately frustrated trying to wrangle XML without a lot of background knowledge of how to do. There were too many possible languages and frameworks and implementations I could have used on the server side, and I realized I would rather learn more Swift and UIKit than I would writing a custom server backend that did the majority of the heavy lifting.&lt;/p&gt;
-
-&lt;p&gt;The dependency chain was still troublesome (and a moving target), so although I wanted to dive into ReactiveCocoa v4, I decided I should start with a quick and dirty version in Swift with no dependencies at all.&lt;/p&gt;
-
-&lt;p&gt;The first version was a massive view controller that did all the fetching and JSON parsing in line. It was also pretty ugly.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/tinykittenstv-01.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;v0 of TinyKittens TV&quot; title=&quot;v0 of TinyKittens TV&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;v0 of TinyKittens TV&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;I used the app for a few days and enjoyed it. The code was so ugly though, and I wanted to use more of Swift’s language features and see what it was like to try to architect an app without the ReactiveCocoa conveniences I was used to. It was a good experience in that it made me appreciate reactive programming that much more.&lt;/p&gt;
-
-&lt;p&gt;It took about as long to refactor the app as it did to write V0. I added the Gloss JSON parsing library after getting CocoaPods set up (with Orta’s &lt;code class=&quot;highlighter-rouge&quot;&gt;cocoapods-expert-difficulty&lt;/code&gt; gem). I wrote my own simple &lt;code class=&quot;highlighter-rouge&quot;&gt;Result&lt;/code&gt; type, wrapped a &lt;code class=&quot;highlighter-rouge&quot;&gt;throws&lt;/code&gt; function (I really dislike Swift 2.0’s &lt;code class=&quot;highlighter-rouge&quot;&gt;throws&lt;/code&gt; syntax), set up some struct models, parsed some JSON, wrote a view model protocol, refactored the interface design to mirror Apple’s focus support (with some really ugly frame layout code), added image assets (including a fun parallax icon), did some testing, and packaged it up for the App Store.&lt;/p&gt;
-
-&lt;p&gt;I got a rejection for an error message not being forthright enough, but I fixed that and resubmitted and was accepted in no time. It sounded like a lot of other developers had a hard time with this initial submission process. I’m sure Apple was being extra picky with the public release.&lt;/p&gt;
-
-&lt;p&gt;The app is pretty simple and I was tempted to add lots more bells and whistles, but I knew that I’d rather ship the V1 at launch than to sit on it while I toiled away with garnishes.&lt;/p&gt;
-
-&lt;p&gt;On a side note, I meant to use storyboards for the interface this time, but I got frustrated with them again and bailed. Someday…&lt;/p&gt;
-
-&lt;p&gt;The Apple TV launches today. The App Store right now only has a front page and a search page and links don’t work, so discoverability isn’t really that great yet. Hopefully I get a few downloads though.&lt;/p&gt;
-
-&lt;p&gt;It was a fun project overall. It’s definitely useful to me. And it was great for getting up to speed with Swift without getting bogged down in a large project. I’ve posted the &lt;a href=&quot;https://github.com/twocentstudios/tinykittenstv&quot;&gt;source&lt;/a&gt; on Github. Below is a screenshot of V1.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/tinykittenstv-02.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;V1 of TinyKittens TV released to the App Store&quot; title=&quot;V1 of TinyKittens TV released to the App Store&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;V1 of TinyKittens TV released to the App Store&lt;/div&gt;&lt;/div&gt;
-
-&lt;h2 id=&quot;function-programming-edx-fp101&quot;&gt;Function Programming EdX FP101&lt;/h2&gt;
-
-&lt;p&gt;ReactiveCocoa was sort of my gateway into functional programming. I’ve tried to dive into Haskell a few times over the last year, but always got tripped up before I could implement anything of consequence.&lt;/p&gt;
-
-&lt;p&gt;I saw that Erik Meijer’s &lt;a href=&quot;https://www.edx.org/course/introduction-functional-programming-delftx-fp101x-0&quot;&gt;EdX course&lt;/a&gt; on functional programming was starting soon, so I decided to sign up and take a few hours out of every week to learn Haskell. I’ve done two weeks so far and am feeling good about it so far.&lt;/p&gt;
-
-&lt;h2 id=&quot;blog-migration&quot;&gt;Blog Migration&lt;/h2&gt;
-
-&lt;p&gt;I spent a couple days migrating from Octopress to Jekyll. See &lt;a href=&quot;/2015/10/27/site-makeover-and-jekyll-cheatsheet&quot;&gt;this post&lt;/a&gt; for the details.&lt;/p&gt;
-
-&lt;h2 id=&quot;songwriting-app&quot;&gt;Songwriting App&lt;/h2&gt;
-
-&lt;p&gt;My friend Sarah and I are both musicians who write music. We’ve been kicking around the idea for over a year now of an app to assist songwriters in organizing demos and lyric sheets better than the Voice Recorder app.&lt;/p&gt;
-
-&lt;p&gt;I went back through some early designs I did in Sketch and made a few adjustments after Sarah and I had the chance to do some brainstorming a few weeks back. Once we agree on the design direction, I’m looking forward to getting started on the project.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/songwritingapp-01.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Some rough Sketch mockups of an app for songwriteres&quot; title=&quot;Some rough Sketch mockups of an app for songwriteres&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Some rough Sketch mockups of an app for songwriteres&lt;/div&gt;&lt;/div&gt;
-
-&lt;h2 id=&quot;wrap-up-wrap-up&quot;&gt;Wrap Up Wrap Up&lt;/h2&gt;
-
-&lt;p&gt;It’s been tough to find the right balance of time spent just exploring what’s out there and spending time diving deep into a project. It definitely feels a bit like a waste when you look up and realize you’ve spent half a day just looking at the documentation for some obscure programming language, and then spent the other half of the day trying to get your environment set up just to run a demo for a framework you’ll never use again. But I’m trying to use this time to keep an open mind about these experiences. There is some serendipity involved when trying to find your next big thing.&lt;/p&gt;
-</description>
-        <pubDate>Fri, 30 Oct 2015 08:30:51 -0500</pubDate>
-        <link>http://twocentstudios.com/2015/10/30/fall-2015-project-wrap-up/</link>
-        <guid isPermaLink="true">http://twocentstudios.com/2015/10/30/fall-2015-project-wrap-up/</guid>
         
         
       </item>
