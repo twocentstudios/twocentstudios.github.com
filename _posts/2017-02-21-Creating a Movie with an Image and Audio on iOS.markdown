@@ -188,7 +188,7 @@ static func createMovieWithSingleImageAndMusic(image: UIImage, audioFileURL: URL
 }
 ```
 
-I don't like the completion handler nesting, but since it's only one level deep I consider it acceptable in this case. I'd consider a reactive wrapper or `NSOperation`.
+I don't like the completion handler nesting, but since it's only one level deep I consider it acceptable in this case. Using a reactive wrapper or `NSOperation` would be cleaner and allow cancellation too.
 
 Another consideration would be to either allow the caller to provide a output URL for the intermediate video so that it can be cleaned up if necessary or to just perform the cleanup ourselves at the end of the operation after the final video has been created. In my specific situation, I was writing all the files to a temporary directory anyway.
 
@@ -196,6 +196,6 @@ Another consideration would be to either allow the caller to provide a output UR
 
 These functions were adapted from [this Stack Overflow answer](http://stackoverflow.com/questions/5640657/avfoundation-assetwriter-generate-movie-with-images-and-audio). I've cleaned it up and fixed some bugs.
 
-Let me know if you have any improvements. I'm [@twocentstudios]() on Twitter.
+Let me know if you have any improvements. I'm [@twocentstudios](https://twitter.com/twocentstudios) on Twitter.
 
 See this code in the wild in my app [Phono/Photo](https://itunes.apple.com/us/app/photo-phono/id1202606014?mt=8).
