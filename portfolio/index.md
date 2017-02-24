@@ -6,7 +6,7 @@ permalink: /portfolio/
 
 ## Apps
 
-#### Photo/Phono - [appstore](https://itunes.apple.com/us/app/photo-phono/id1202606014?mt=8)
+#### Photo/Phono - [appstore](https://itunes.apple.com/us/app/photo-phono/id1202606014?mt=8) | [post](/2017/02/24/photo-phono-your-photos-as-music/)
 
 An iPhone app that turns your photos into original musical compositions.
 
