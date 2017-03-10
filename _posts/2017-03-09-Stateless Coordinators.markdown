@@ -173,7 +173,7 @@ Let's try something more useful. Now the view controller will accept a static li
 
 {% caption_img /images/stateless_coordinators-02.jpg %}
 
-```
+```swift
 typealias PizzaTopping = String
 
 final class SelectToppingsViewController: UITableViewController {
@@ -543,7 +543,7 @@ The `IONavigationController` is essentially a wrapper for `SettingsViewControlle
 
 As previously mentioned in the view controllers section, we're placing `settingsViewController`'s mapped `outputSignal` on an `outputBusObserver` instead of connecting it directly to maintain safety. We shouldn't assume `settingsViewController.outputSignal` will never complete.
 
-```
+```swift
 // Unsafe
 settingsViewController.outputSignal.map(mapIO).observe(navigationController.outputObserver)
 
