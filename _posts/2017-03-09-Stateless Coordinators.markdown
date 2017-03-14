@@ -6,6 +6,8 @@ date: 2017-03-09 19:09:33
 
 In this post, I'm presenting an experimental iOS architecture I'm calling **Stateless Coordinators**. Consider what I'll present as still a work in progress. Along the way I'll be posing questions and considerations for changes or improvements.
 
+> Update: Soroush suggested "View Controller Factories" would be a more fitting name for this pattern.
+
 > Note: all code in this post targets Swift 3.0.1 and ReactiveSwift 1.1
 
 ## Introduction
