@@ -10,10 +10,6 @@ permalink: /portfolio/
 
 An iPhone app that turns your photos into original musical compositions.
 
-#### TinyKittens TV - [appstore](https://itunes.apple.com/us/app/tinykittens-rescue-kitten-tv/id1052349833?mt=8) | [source](https://github.com/twocentstudios/tinykittenstv)
-
-A tvOS app for streaming live feeds from [tinykittens.com](http://tinykittens.com).
-
 #### Timehop - [appstore](https://itunes.apple.com/us/app/timehop/id569077959?mt=8)
 
 I worked on the [Timehop](http://timehop.com) iOS app from April 2013 through August 2015.
@@ -22,7 +18,11 @@ I worked on the [Timehop](http://timehop.com) iOS app from April 2013 through Au
 
 An iPhone app for your [last.fm](http://last.fm) listening history.
 
-#### Longtail - [source](https://github.com/twocentstudios/longtail)
+#### TinyKittens TV - [appstore](https://itunes.apple.com/us/app/tinykittens-rescue-kitten-tv/id1052349833?mt=8) | [source](https://github.com/twocentstudios/tinykittenstv) - *decommissioned*
+
+A tvOS app for streaming live feeds from [tinykittens.com](http://tinykittens.com). Currently decommissioned due to the source moving streaming services.
+
+#### Longtail Classic - [source](https://github.com/twocentstudios/longtail)
 
 An iPhone app showing the past activity of Facebook Groups.
 
