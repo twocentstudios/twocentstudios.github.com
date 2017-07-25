@@ -2,7 +2,7 @@
 # Author: Brandon Mathis http://brandonmathis.com
 # Description: Easily output images with optional class names and title/alt attributes
 #
-# Syntax {% image [class name(s)] url [title text] %}
+# Syntax {% image [class name(s)] url [w200] [h300] [title text] %}
 #
 # Example:
 # {% caption_img left half http://site.com/images/ninja.png Ninja Attack! %}
@@ -21,15 +21,17 @@ module Jekyll
     @height = ''
 
     def initialize(tag_name, markup, tokens)
-      if markup =~ /(\S.*\s+)?(https?:\/\/|\/)(\S+)(\s+\d+\s+\d+)?(\s+.+)?/i
+      if markup =~ /(\S.*\s+)?(https?:\/\/|\/)(\S+)(\sw\d+)?(\sh\d+)?(\s+.+)?/i
         @class = $1 || 'caption'
         @img = $2 + $3
-        if $5
-          @title = $5.strip
+        if $6
+          @title = $6.strip
         end
-        if $4 =~ /\s*(\d+)\s+(\d+)/
+        if $4 =~ /\s*w(\d+)/
           @width = $1
-          @height = $2
+        end
+        if $5 =~ /\s*h(\d+)/
+          @height = $1
         end
       end
       super
