@@ -6,9 +6,403 @@
 </description>
     <link>http://twocentstudios.com/</link>
     <atom:link href="http://twocentstudios.com/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Thu, 30 Mar 2017 16:57:52 -0500</pubDate>
-    <lastBuildDate>Thu, 30 Mar 2017 16:57:52 -0500</lastBuildDate>
+    <pubDate>Mon, 24 Jul 2017 19:02:15 -0500</pubDate>
+    <lastBuildDate>Mon, 24 Jul 2017 19:02:15 -0500</lastBuildDate>
     <generator>Jekyll v3.0.0</generator>
+    
+      <item>
+        <title>Modeling View State</title>
+        <description>&lt;p&gt;In this post we’ll take a look at techniques to model view state in Swift. The goal of this post is to show how we’d go about translating a mockup like the one we’d receive from a designer and convert it into a set of inert view models that fully describe all possible states of our view, but without referencing &lt;code class=&quot;highlighter-rouge&quot;&gt;UIKit&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;In subsequent posts, we’ll look at techniques to transition from one view state to another, ways to create an interactor to orchestrate this process over time, and finally how to consume this view model in a view controller.&lt;/p&gt;
+
+&lt;h2 id=&quot;background&quot;&gt;Background&lt;/h2&gt;
+
+&lt;p&gt;In many common architectures, the only way to determine the current state of a view is to query individual properties of &lt;code class=&quot;highlighter-rouge&quot;&gt;UIView&lt;/code&gt; subclasses or visually inspect the final rendering of a view snapshot. Transitions between view states are handled on an ad-hoc basis or the previous view state is simply ignored. Testing is either ignored or implemented with complicated UI-based tooling.&lt;/p&gt;
+
+&lt;p&gt;Our goal with this technique is to have a full representation of all view states as a simple data structure in a separate conceptual layer from our UI.&lt;/p&gt;
+
+&lt;p&gt;The pros of this technique:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Easier to manage secondary view states like loading, error, and empty.&lt;/li&gt;
+  &lt;li&gt;Testing is less complicated, and tests run faster.&lt;/li&gt;
+  &lt;li&gt;Modularization: it’s easier to compose interactors and view models.&lt;/li&gt;
+  &lt;li&gt;Fewer bugs related to bad view state.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;The cons of this technique:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Significantly more code.&lt;/li&gt;
+  &lt;li&gt;All edge cases must be handled explicitly.&lt;/li&gt;
+  &lt;li&gt;More upfront planning.&lt;/li&gt;
+  &lt;li&gt;More code must be changed if the design changes.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&quot;example&quot;&gt;Example&lt;/h2&gt;
+
+&lt;p&gt;In order to illustrate this technique, we’ll be working through the user profile screen of a fictional social media app I just threw together. Any mockups you receive will probably look a lot nicer than this one 😉.&lt;/p&gt;
+
+&lt;h2 id=&quot;version-0&quot;&gt;Version 0&lt;/h2&gt;
+
+&lt;p&gt;In this week’s sprint, we’ve been asked to implement a simple user profile screen. It won’t have all the bells and whistles yet. Our product manager has decided to push those to version 2.&lt;/p&gt;
+
+&lt;p&gt;Our designer has sent us an initial mockup:&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/modeling_view_state-01.png&quot; width=&quot;250&quot; height=&quot;&quot; alt=&quot;&quot; title=&quot;&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Without much thought we get started with our implementation.&lt;/p&gt;
+
+&lt;p&gt;Let’s say our models were previously specified by the backend engineers.&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;User&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;id&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Int&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;avatarURL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;URL&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;username&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;friendsCount&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Int&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;location&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;website&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;URL&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Based on the mockup, our view model is pretty straightforward. Just a little transformation for &lt;code class=&quot;highlighter-rouge&quot;&gt;friendsCount&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;website&lt;/code&gt;.&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;// V0&lt;/span&gt;
+&lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;UserViewModel&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;avatarURL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;URL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;username&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;friendsCount&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;NSAttributedString&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;location&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;website&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Note that these properties are all optional. This decision is somewhat of a judgement call, but since the properties we’ll be setting on the &lt;code class=&quot;highlighter-rouge&quot;&gt;UIKit&lt;/code&gt; views are optional, it makes sense that we may want to distinguish between a &lt;code class=&quot;highlighter-rouge&quot;&gt;none&lt;/code&gt; value and an empty value.&lt;/p&gt;
+
+&lt;p&gt;The V0 view model above is generally where most of us would start coding up view controllers. However, we’d soon realize that we’re missing a few view states.&lt;/p&gt;
+
+&lt;h2 id=&quot;version-1&quot;&gt;Version 1&lt;/h2&gt;
+
+&lt;p&gt;We’ve realized that user profile data is loaded asynchronously from the server, so we request a loading state mockup as well. Our designer obliges:&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/modeling_view_state-02.png&quot; width=&quot;250&quot; height=&quot;&quot; alt=&quot;&quot; title=&quot;&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;In this simple case, our designer thinks it’s fine to block the whole screen until the data has been loaded. We could probably optimize this, but we’ll let it go for version 1.&lt;/p&gt;
+
+&lt;p&gt;We also inform our designer that our customers may encounter network errors and we should give them the option to retry loading.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/modeling_view_state-03.png&quot; width=&quot;250&quot; height=&quot;&quot; alt=&quot;&quot; title=&quot;&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Our designer provided a fine looking error state for the profile, but there’s one more state we need. Our profile screen actually has a state before we’ve started our initial load.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/modeling_view_state-04.png&quot; width=&quot;250&quot; height=&quot;&quot; alt=&quot;&quot; title=&quot;&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;And with that last screen, we’ve covered all the cases we need for V1.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/modeling_view_state-05.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;&quot; title=&quot;&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;We can now start modeling the rest of our view state, confident that our users will have a better experience if they have a slow or spotty data connection.&lt;/p&gt;
+
+&lt;p&gt;The responsibility of our view model is to transform model data into a representation that is immediately consumable by objects in the view layer with very little further transformation. In practice, this is more art than science so-to-speak. There are many correct solutions. View model design can still be heavily reliant on the specifics of how we decide to implement the view layer, e.g. using a &lt;code class=&quot;highlighter-rouge&quot;&gt;UITableView&lt;/code&gt; versus using normal &lt;code class=&quot;highlighter-rouge&quot;&gt;UIView&lt;/code&gt;s and a &lt;code class=&quot;highlighter-rouge&quot;&gt;UIScrollView&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;Based on the current mockup, I’m going to implement the view layer without a &lt;code class=&quot;highlighter-rouge&quot;&gt;UITableView&lt;/code&gt; since the identity and location of views is known at compile time. To implement the loading and error states, I’ll add a full screen error view and loading view to the view hierarchy and toggle their hidden states.&lt;/p&gt;
+
+&lt;p&gt;The output properties for our view model will now be the following:&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;// V1 - only outputs&lt;/span&gt;
+&lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;UserViewModel&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;avatarURL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;URL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;username&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;friendsCount&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;NSAttributedString&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;location&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;website&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;
+    
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;isHidden&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Bool&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;LoadingViewModel&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;isHidden&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Bool&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ErrorViewModel&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;message&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;actionTitle&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;
+    
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;isHidden&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Bool&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ProfileViewModel&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;    
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;userViewModel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;UserViewModel&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;loadingViewModel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;LoadingViewModel&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;errorViewModel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ErrorViewModel&lt;/span&gt;    
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Since we’re going to have three distinct subviews (user, loading, and error), we’ll create a separate view model for each. We’ve also added a &lt;code class=&quot;highlighter-rouge&quot;&gt;isHidden&lt;/code&gt; property to &lt;code class=&quot;highlighter-rouge&quot;&gt;UserViewModel&lt;/code&gt; for the &lt;code class=&quot;highlighter-rouge&quot;&gt;initialized&lt;/code&gt; state before &lt;code class=&quot;highlighter-rouge&quot;&gt;loading&lt;/code&gt; begins.&lt;/p&gt;
+
+&lt;p&gt;On every view state change, we can set all the properties on all our views. The view layer won’t need to ensure its states are consistent. That responsibility resides in the view model and can be tested independently.&lt;/p&gt;
+
+&lt;p&gt;Now that we’ve determined the outputs that our views need, let’s go back and figure out the inputs and internal state we need to determine those outputs.&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;// V1 - inputs and outputs&lt;/span&gt;
+&lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;UserViewModel&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;avatarURL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;URL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;username&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;friendsCount&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;NSAttributedString&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;location&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;website&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;
+    
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;isHidden&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Bool&lt;/span&gt;
+    
+    &lt;span class=&quot;nf&quot;&gt;init&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;user&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;User&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;cm&quot;&gt;/* ... */&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ErrorViewModel&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;message&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;actionTitle&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;
+    
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;isHidden&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Bool&lt;/span&gt;
+    
+    &lt;span class=&quot;nf&quot;&gt;init&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;error&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Error&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;cm&quot;&gt;/* ... */&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;LoadingViewModel&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;isHidden&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Bool&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ProfileViewModel&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;enum&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;State&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;initialized&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;loading&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;loaded&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;User&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;failed&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Error&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;state&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;State&lt;/span&gt;
+    
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;userViewModel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;UserViewModel&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;loadingViewModel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;LoadingViewModel&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;errorViewModel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ErrorViewModel&lt;/span&gt;
+    
+    &lt;span class=&quot;nf&quot;&gt;init&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;state&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;State&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;state&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;state&lt;/span&gt;
+        
+        &lt;span class=&quot;k&quot;&gt;switch&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;state&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;initialized&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;userViewModel&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;UserViewModel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;user&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;nil&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;loadingViewModel&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;LoadingViewModel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;isHidden&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;true&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;errorViewModel&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ErrorViewModel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;error&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;nil&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;loading&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;userViewModel&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;UserViewModel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;user&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;nil&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;loadingViewModel&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;LoadingViewModel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;isHidden&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;false&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;errorViewModel&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ErrorViewModel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;error&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;nil&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;loaded&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;user&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;):&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;userViewModel&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;UserViewModel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;user&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;user&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;loadingViewModel&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;LoadingViewModel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;isHidden&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;true&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;errorViewModel&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ErrorViewModel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;error&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;nil&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;failed&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;error&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;):&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;userViewModel&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;UserViewModel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;user&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;nil&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;loadingViewModel&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;LoadingViewModel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;isHidden&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;true&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;errorViewModel&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ErrorViewModel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;error&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;error&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;The three inner view models (&lt;code class=&quot;highlighter-rouge&quot;&gt;UserViewModel&lt;/code&gt;, &lt;code class=&quot;highlighter-rouge&quot;&gt;LoadingViewModel&lt;/code&gt;, &lt;code class=&quot;highlighter-rouge&quot;&gt;ErrorViewModel&lt;/code&gt;) are initialized with an optional model object (I’ve elided their implementations).&lt;/p&gt;
+
+&lt;p&gt;The primary view model (&lt;code class=&quot;highlighter-rouge&quot;&gt;ProfileViewModel&lt;/code&gt;) is initialized with an enum &lt;code class=&quot;highlighter-rouge&quot;&gt;State&lt;/code&gt;, with each case representing one state from our designer’s mockup.&lt;/p&gt;
+
+&lt;p&gt;Within the initializer, we map each state to a fully configured set of outputs. A different object will be responsible for initializing &lt;code class=&quot;highlighter-rouge&quot;&gt;ProfileViewModel&lt;/code&gt; and determining valid state changes.&lt;/p&gt;
+
+&lt;p&gt;With that, we now have a fully specified view model. We’ll also have a very light view controller since all we have to do is assign all relevant properties directly whenever the view state changes. (As previously mentioned, we’ll discuss the rest of the implementation of this system in subsequent posts).&lt;/p&gt;
+
+&lt;h2 id=&quot;version-2&quot;&gt;Version 2&lt;/h2&gt;
+
+&lt;p&gt;Version 1 has been released into the wild and now our product manager wants to add the user’s posts to their profile screen.&lt;/p&gt;
+
+&lt;p&gt;After some planning with design and our backend team, it’s been decided that user profile data and user post data will come from separate API endpoints. Since we’re a relatively new service, we won’t worry about paging yet (I’d like to cover paging in a future blog post).&lt;/p&gt;
+
+&lt;p&gt;Our product manager and designer have also determined that they’d like a prettier loading state for the user attributes. (Our designer has also preemptively mocked up all the required states for us).&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/modeling_view_state-06.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;&quot; title=&quot;&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Let’s enumerate the changes we’ll have to make to the view models:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Since our view now includes an indeterminate amount of posts, we’ll convert our view layer to use a &lt;code class=&quot;highlighter-rouge&quot;&gt;UITableView&lt;/code&gt; or &lt;code class=&quot;highlighter-rouge&quot;&gt;UICollectionView&lt;/code&gt; instead of a static view.&lt;/li&gt;
+  &lt;li&gt;That means we should split up our header view into multiple cells.&lt;/li&gt;
+  &lt;li&gt;We’ll need to make a new shimmering &lt;code class=&quot;highlighter-rouge&quot;&gt;UILabel&lt;/code&gt; class for displaying &lt;code class=&quot;highlighter-rouge&quot;&gt;initialized&lt;/code&gt;, &lt;code class=&quot;highlighter-rouge&quot;&gt;loading&lt;/code&gt;, and &lt;code class=&quot;highlighter-rouge&quot;&gt;loaded&lt;/code&gt; states.&lt;/li&gt;
+  &lt;li&gt;We have two independent view states (profile and posts). We should model these separately and compose them.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Let’s start by creating the smallest building blocks.&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;// V2 - building blocks&lt;/span&gt;
+&lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ErrorViewModel&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;message&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;actionTitle&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;LoadingTextViewModel&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;enum&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;State&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;initialized&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;loading&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;loaded&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;NSAttributedString&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?)&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;state&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;State&lt;/span&gt;
+          
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;isLoading&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Bool&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;text&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;NSAttributedString&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ProfileHeaderViewModel&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;avatarURL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;URL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;username&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;LoadingTextViewModel&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;friendsCount&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;LoadingTextViewModel&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ProfileAttributeViewModel&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;name&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;value&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Post&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;id&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Int&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;date&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Date&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;body&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;PostViewModel&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;date&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;body&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Each of the above will map 1-to-1 with a cell, except for &lt;code class=&quot;highlighter-rouge&quot;&gt;LoadingTextViewModel&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;We can compose the above view models into the view models for profile and posts.&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;// V2 - component view models&lt;/span&gt;
+&lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ProfileViewModel&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;enum&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;State&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;initialized&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;loading&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;loaded&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;User&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;failed&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Error&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    
+    &lt;span class=&quot;kd&quot;&gt;enum&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ViewModelType&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;header&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;ProfileHeaderViewModel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;attribute&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;ProfileAttributeViewModel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;error&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;ErrorViewModel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;state&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;State&lt;/span&gt;
+    
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;viewModels&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;ViewModelType&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
+    
+    &lt;span class=&quot;nf&quot;&gt;init&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;state&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;State&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;cm&quot;&gt;/* ... */&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    
+&lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;PostsViewModel&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;enum&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;State&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;initialized&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;loading&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;loaded&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;([&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;PostViewModel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;])&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;empty&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;failed&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Error&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    
+    &lt;span class=&quot;kd&quot;&gt;enum&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ViewModelType&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;loading&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;post&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;PostViewModel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;empty&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;error&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;ErrorViewModel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;state&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;State&lt;/span&gt;
+    
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;viewModels&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;ViewModelType&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
+    
+    &lt;span class=&quot;nf&quot;&gt;init&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;state&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;State&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;cm&quot;&gt;/* ... */&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Both &lt;code class=&quot;highlighter-rouge&quot;&gt;ProfileViewModel&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;PostsViewModel&lt;/code&gt; are responsible for transforming their input &lt;code class=&quot;highlighter-rouge&quot;&gt;State&lt;/code&gt; into a list of &lt;code class=&quot;highlighter-rouge&quot;&gt;viewModels&lt;/code&gt; corresponding 1-to-1 with cells.&lt;/p&gt;
+
+&lt;p&gt;And finally we can compose these two view models into &lt;code class=&quot;highlighter-rouge&quot;&gt;UserViewModel&lt;/code&gt;.&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;// V2 - screen-level view model&lt;/span&gt;
+&lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;UserViewModel&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;enum&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ViewModelType&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;profileHeader&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;ProfileHeaderViewModel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;profileError&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;ErrorViewModel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;profileAttribute&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;ProfileAttributeViewModel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;contentHeader&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// &quot;Posts&quot;&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;contentLoading&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;contentEmpty&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;contentError&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;ErrorViewModel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;post&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;PostViewModel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;profileViewModel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ProfileViewModel&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;postsViewModel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;PostsViewModel&lt;/span&gt;
+    
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;viewModels&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;ViewModelType&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
+    
+    &lt;span class=&quot;nf&quot;&gt;init&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;profileViewModel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ProfileViewModel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;postsViewModel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;PostsViewModel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;cm&quot;&gt;/* ... */&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;UserViewModel&lt;/code&gt; only needs to map the inner view model types to its own enum &lt;code class=&quot;highlighter-rouge&quot;&gt;UserViewModel.ViewModelType&lt;/code&gt; and concatenate the results into one array.&lt;/p&gt;
+
+&lt;p&gt;The view layer will only need to access &lt;code class=&quot;highlighter-rouge&quot;&gt;viewModels&lt;/code&gt;.&lt;/p&gt;
+
+&lt;h2 id=&quot;conclusion&quot;&gt;Conclusion&lt;/h2&gt;
+
+&lt;p&gt;Modeling view model state is only a small part of designing a robust screen. I’ve elided a lot of the implementation details in this post in order to keep it more concise. I’ll explore the integration of these view models into the rest of the system in subsequent posts.&lt;/p&gt;
+
+&lt;p&gt;Note that I’ve also elided &lt;code class=&quot;highlighter-rouge&quot;&gt;Equatable&lt;/code&gt; implementations for each of these structs. &lt;code class=&quot;highlighter-rouge&quot;&gt;Equatable&lt;/code&gt; conformance is important in doing diffing on the view side since our entire screens view model will change on every update to the composed view models.&lt;/p&gt;
+
+&lt;p&gt;It should now be easier to understand the pros this technique:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;The view controller is now mostly glue code, setting view models on subviews.&lt;/li&gt;
+  &lt;li&gt;Comparing view states when testing (with &lt;code class=&quot;highlighter-rouge&quot;&gt;Equatable&lt;/code&gt; implemented) is as simple as &lt;code class=&quot;highlighter-rouge&quot;&gt;XCTAssertEqual(viewModel, expectedViewModel)&lt;/code&gt;.&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;PostsViewModel&lt;/code&gt;’s logic can be used on other screens. There’s even some breathing room for using different view designs with the same data.&lt;/li&gt;
+  &lt;li&gt;Using explicit enumerable input states for our higher-level view models ensures that no bad view states can occur.&lt;/li&gt;
+  &lt;li&gt;Once view states are explicitly defined, it’s trivial to pass off the work of creating a view layer to another engineer.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;And the cons:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Lots more code to write and maintain, especially when considering manually writing &lt;code class=&quot;highlighter-rouge&quot;&gt;Equatable&lt;/code&gt;.&lt;/li&gt;
+  &lt;li&gt;Some background knowledge about how to implement the view hierarchy in &lt;code class=&quot;highlighter-rouge&quot;&gt;UIKit&lt;/code&gt; needs to be known ahead of time in order to correctly design the view models on the first try.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;I consider the overhead to be worthwhile if your objective is robust code, the design is relatively stable, and testing is part of your culture. Conversely, it might not be worthwhile if your product design is undergoing rapid change, secondary view states are not important to product validation, and a certain quantity of bugs are acceptable.&lt;/p&gt;
+
+&lt;p&gt;Other recommended reading on this topic: &lt;a href=&quot;https://www.swiftbysundell.com/posts/modelling-state-in-swift&quot;&gt;Modelling state in Swift&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;Thanks for reading, and please let me know your thoughts and suggestions. I’m &lt;a href=&quot;https://twitter.com/twocentstudios&quot;&gt;@twocentstudios&lt;/a&gt; on Twitter.&lt;/p&gt;
+</description>
+        <pubDate>Mon, 24 Jul 2017 12:31:40 -0500</pubDate>
+        <link>http://twocentstudios.com/2017/07/24/modeling-view-state/</link>
+        <guid isPermaLink="true">http://twocentstudios.com/2017/07/24/modeling-view-state/</guid>
+        
+        
+      </item>
     
       <item>
         <title>Stateless Coordinators</title>
@@ -2577,690 +2971,6 @@ AVAudioSequencer -&amp;gt; AVAudioUnitMIDISynth -&amp;gt; AVAudioMixerNode -&amp
         <pubDate>Tue, 16 Aug 2016 15:26:22 -0500</pubDate>
         <link>http://twocentstudios.com/2016/08/16/calculating-the-area-of-multiple-intersecting-rectangles-with-swift/</link>
         <guid isPermaLink="true">http://twocentstudios.com/2016/08/16/calculating-the-area-of-multiple-intersecting-rectangles-with-swift/</guid>
-        
-        
-      </item>
-    
-      <item>
-        <title>A Deep Dive Into iOS Messages Extensions</title>
-        <description>&lt;p&gt;Apple announced Messages Extensions as part of iOS 10 allowing third-party apps to integrate directly with the iMessage platform. This integration follows Facebook Messenger and pretty much every other major messaging platform in the US and abroad.&lt;/p&gt;
-
-&lt;p&gt;In this post I’ll present an overview of Messages Extensions, walk through a simple example extension to illustrate some key features, and finally explore some advanced features of Messages.framework. Some of this information is gleaned directly from the WWDC talk and some is from poking around in the beta. Hopefully this will save you some time in having to kick the tires yourself. Sticker packs are pretty straightforward, so I won’t be covering those.&lt;/p&gt;
-
-&lt;p&gt;I recommend watching the WWDC talk &lt;a href=&quot;https://developer.apple.com/videos/play/wwdc2016/224/&quot;&gt;iMessage Apps and Stickers Part 2&lt;/a&gt; and reviewing the code for &lt;a href=&quot;https://developer.apple.com/library/prerelease/content/samplecode/IceCreamBuilder&quot;&gt;IceCreamBuilder&lt;/a&gt;, the Apple endorsed example for this topic. I consider that talk the primary source of information on Messages.framework. Here’s a link to the &lt;a href=&quot;https://developer.apple.com/reference/messages&quot;&gt;Messages.framework&lt;/a&gt; docs.&lt;/p&gt;
-
-&lt;p&gt;Note: This post was originally written for iOS 10 beta1. It was partially updated for beta2 on 7/7/2016.&lt;/p&gt;
-
-&lt;h2 id=&quot;overview&quot;&gt;Overview&lt;/h2&gt;
-
-&lt;h3 id=&quot;app-extension&quot;&gt;App Extension&lt;/h3&gt;
-
-&lt;p&gt;Messages Extensions follow the App Extension target format introduced in iOS 8. Other examples include Today Extensions, custom keyboards, and Share Extensions. As an App Extension, it is bound by special rules outlined in the &lt;a href=&quot;https://developer.apple.com/library/ios/documentation/General/Conceptual/ExtensibilityPG/ExtensionOverview.html#//apple_ref/doc/uid/TP40014214-CH2-SW2&quot;&gt;App Extension Programming Guide&lt;/a&gt;&lt;/p&gt;
-
-&lt;h3 id=&quot;backwards-compatibility&quot;&gt;Backwards Compatibility&lt;/h3&gt;
-
-&lt;p&gt;Messages Extensions allow the creation and modification of a standardized encapsulated model/view pair &lt;code class=&quot;highlighter-rouge&quot;&gt;MSMessage&lt;/code&gt;. Two of the main design points Apple needed to address in their implementation of Messages Extensions were:&lt;/p&gt;
-
-&lt;ol&gt;
-  &lt;li&gt;User A creates a custom message using an extension. What happens if User B receiving a specially created message does not have the extension installed that was used to create the message?&lt;/li&gt;
-  &lt;li&gt;User A creates a custom message using an extension. What happens if User B is on a previous version of iOS?&lt;/li&gt;
-&lt;/ol&gt;
-
-&lt;p&gt;The answer to these was:&lt;/p&gt;
-
-&lt;ol&gt;
-  &lt;li&gt;Use a standardized template layout (view model) preconfigured by the extension that requires no additional third-party code execution to display as intended. Use the principle of progressive enhancement to provide a richer interface for viewing/modifying messages.&lt;/li&gt;
-  &lt;li&gt;Require model data to be encoded as a URL which allows fallback to a web browser.&lt;/li&gt;
-&lt;/ol&gt;
-
-&lt;h3 id=&quot;core-ideas&quot;&gt;Core Ideas&lt;/h3&gt;
-
-&lt;p&gt;At their core, Messages Extensions:&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;provide the specification of a model and template view model (contained within an &lt;code class=&quot;highlighter-rouge&quot;&gt;MSMessage&lt;/code&gt; instance).&lt;/li&gt;
-  &lt;li&gt;provide a rich interface to view, create, and manipulate these models (an &lt;code class=&quot;highlighter-rouge&quot;&gt;MSMessagesAppViewController&lt;/code&gt; subclass).&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;Defining these bits further:&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;The &lt;strong&gt;model&lt;/strong&gt; is a URL (&lt;code class=&quot;highlighter-rouge&quot;&gt;MSMessage.url&lt;/code&gt;). It is arguably designed to be very interoperable in the case that all parties do not have an extension installed.&lt;/li&gt;
-  &lt;li&gt;The &lt;strong&gt;template view model&lt;/strong&gt; is a special framework-provided template object (&lt;code class=&quot;highlighter-rouge&quot;&gt;MSMessageTemplateLayout&lt;/code&gt;). It is minimally configurable and designed to be a summary view of your content.&lt;/li&gt;
-  &lt;li&gt;The &lt;strong&gt;rich interface&lt;/strong&gt; is a fully customizable &lt;code class=&quot;highlighter-rouge&quot;&gt;UIView&lt;/code&gt; (&lt;code class=&quot;highlighter-rouge&quot;&gt;MSMessagesAppViewController&lt;/code&gt;). This custom view can display a more domain appropriate representation of the model and allow creation and modification of the model.&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h3 id=&quot;user-interface-points&quot;&gt;User Interface Points&lt;/h3&gt;
-
-&lt;p&gt;Message Extensions have three basic interface points for Messages.app users:&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;Message summary display&lt;/strong&gt;: all users running iOS 10+ and macOS Sierra+ will see a template view of a message created by an extension regardless of whether or not they have that specific extension installed. Users on previous versions will only receive the message’s summary text and URL as two separate messages, but only if the URL has an http/https scheme.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/messages-layout-template.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;MSMessageTemplateLayout (courtesy of WWDC).&quot; title=&quot;MSMessageTemplateLayout (courtesy of WWDC).&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;MSMessageTemplateLayout (courtesy of WWDC).&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;&lt;strong&gt;Message creation&lt;/strong&gt;: the initial creation of a message occurs in the compact view of your extension. By tapping the App Store logo to the left of the message text field, the keyboard is replaced by a paging scroll view containing all the installed Messages Extensions. Extensions in compact mode have a keyboard-sized viewport to display any content they wish. Users have the option to tap the disclosure button on the right side of the screen at any time to expand this view to full screen or recollapse it later.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/messages-collapsed-view-small.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;The collapsed view of our example extension.&quot; title=&quot;The collapsed view of our example extension.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The collapsed view of our example extension.&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;&lt;strong&gt;Message viewing &amp;amp; modification&lt;/strong&gt;: for users who have your extension installed, tapping an existing message sent by another user or one they created will launch your extension into an expanded (full screen) viewport. Your extension receives the contents of the tapped message in order to configure itself for display and/or editing. For users that do not have your extension installed, a web browser will be opened with the message’s URL (on compatible OS versions assuming an http/https schema).&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/messages-expanded-view-small.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;One state of the expanded view of our example extension.&quot; title=&quot;One state of the expanded view of our example extension.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;One state of the expanded view of our example extension.&lt;/div&gt;&lt;/div&gt;
-
-&lt;h3 id=&quot;model-strategies&quot;&gt;Model Strategies&lt;/h3&gt;
-
-&lt;p&gt;There are two primary strategies for designing your app extension’s model layer. The example extension presented later will be a standalone extension.&lt;/p&gt;
-
-&lt;h4 id=&quot;standalone-extensions&quot;&gt;Standalone Extensions&lt;/h4&gt;
-
-&lt;p&gt;If you’re creating a standalone extension that exists only within the walls of Messages.app, you will have to encode all model data shared between conversation participants in &lt;code class=&quot;highlighter-rouge&quot;&gt;MSMessage&lt;/code&gt;’s &lt;code class=&quot;highlighter-rouge&quot;&gt;url&lt;/code&gt; field. Your extension itself will essentially be stateless or hold state that is only relevant to the current user (e.g. IceCreamBuilder saves the user’s previously created stickers in &lt;code class=&quot;highlighter-rouge&quot;&gt;NSUserDefaults&lt;/code&gt;).&lt;/p&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;?type=translation&amp;amp;question=What%20time%20is%20it?&amp;amp;answer=今何時ですか。
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;Although this strategy is simpler, the downside is that there is more opportunity for human-scale race conditions to occur, especially if the conversation has more than two participants. This scenario is discussed at the end of the WWDC session. For example, if two participants modify the same message at once, the latest message sent will “win” and overwrite the data.&lt;/p&gt;
-
-&lt;h3 id=&quot;webservice-extensions&quot;&gt;Webservice Extensions&lt;/h3&gt;
-
-&lt;p&gt;If you’re creating an extension to an existing webservice, you have the ability to use your servers to share state between participants. Instead of encoding all state into the &lt;code class=&quot;highlighter-rouge&quot;&gt;MSMessage&lt;/code&gt;’s &lt;code class=&quot;highlighter-rouge&quot;&gt;url&lt;/code&gt; field, you could provide a link to a resource and fetch it from the server as necessary via &lt;code class=&quot;highlighter-rouge&quot;&gt;NSURLSession&lt;/code&gt;.&lt;/p&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;https://example.com/items/742932
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;Apple recommends this approach in the WWDC session (albeit somewhat casually, simply referencing “the cloud”), specifically mentioning the avoidance of race conditions.&lt;/p&gt;
-
-&lt;p&gt;Keep security in mind though. If your app is creating harmless, ephemeral resources, it may be acceptable to use the participant UUIDs provided by &lt;code class=&quot;highlighter-rouge&quot;&gt;MSConversation&lt;/code&gt; as security tokens. These would not work for long term resources, as reinstalling your extension will regenerate the local participant UUID. You could also use &lt;code class=&quot;highlighter-rouge&quot;&gt;NSUserDefaults&lt;/code&gt; to share your service’s auth token for the user logged into your primary app. This technique is beyond the scope of this post, but see the &lt;a href=&quot;https://developer.apple.com/library/ios/documentation/General/Conceptual/ExtensibilityPG/ExtensionScenarios.html#//apple_ref/doc/uid/TP40014214-CH21-SW1&quot;&gt;App Extension Programming Guide&lt;/a&gt; for more information.&lt;/p&gt;
-
-&lt;h2 id=&quot;example-extension-walkthrough&quot;&gt;Example Extension Walkthrough&lt;/h2&gt;
-
-&lt;p&gt;That’s enough background for now. Let’s dive into the example extension’s implementation.&lt;/p&gt;
-
-&lt;p&gt;The whole project is on &lt;a href=&quot;https://github.com/twocentstudios/Messages-Translator-Extension&quot;&gt;Github&lt;/a&gt; if you’d like to skip straight to the source.&lt;/p&gt;
-
-&lt;p&gt;I’ll be using iOS 10 beta1, Swift 3 beta, Xcode 8 beta.&lt;/p&gt;
-
-&lt;h3 id=&quot;what-were-building&quot;&gt;What We’re Building&lt;/h3&gt;
-
-&lt;p&gt;I’m currently learning Japanese. When I’m chatting with my Japanese friends (usually in LINE), it can be difficult asking for corrections of my attempts at writing Japanese. Usually my friends can work out my meaning, but don’t bother correcting me since it’s awkward to do so without a dedicated interface. The conversation usually goes off track if I try to ask them to correct me or we just go back to speaking English.&lt;/p&gt;
-
-&lt;p&gt;It would be cool to have collaborative interface for corrections/translations in an iMessage chat, so we’re going to build it! Most of the inspiration comes from the HelloTalk app. HelloTalk provides dedicated messaging platform and tools for language learners. Here’s an example:&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/messages-hello-talk-small.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;The HelloTalk interface for corrections and translations, respectively.&quot; title=&quot;The HelloTalk interface for corrections and translations, respectively.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The HelloTalk interface for corrections and translations, respectively.&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;Not only are we going to build an interface for corrections, but since the concept is similar, we’ll also build an option for asking for translations.&lt;/p&gt;
-
-&lt;p&gt;Here’s an example correction request flow in our extension (&lt;a href=&quot;/images/messages-correction.mov&quot;&gt;View the screen capture 5.3MB&lt;/a&gt;):&lt;/p&gt;
-
-&lt;blockquote&gt;
-  &lt;p&gt;Chris: [correction request] 週末、東京&lt;strong&gt;で&lt;/strong&gt;行きましたか。&lt;br /&gt;
-Miu: [correction] 週末、東京&lt;strong&gt;に&lt;/strong&gt;行きましたか。&lt;br /&gt;
-Miu: [continuing conversation] はい、東京に行きました！&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/messages-correction-flow-small.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;The correction flow of our example app.&quot; title=&quot;The correction flow of our example app.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The correction flow of our example app.&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;Here’s an example translation request flow in our extension:&lt;/p&gt;
-
-&lt;blockquote&gt;
-  &lt;p&gt;Chris: [translation request] Did you go to Tokyo last weekend?&lt;br /&gt;
-Miu: [translation] 週末、東京に行きましたか。&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/messages-translation-flow-small.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;The translation flow of our example app.&quot; title=&quot;The translation flow of our example app.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The translation flow of our example app.&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;Our extension won’t have all the bells and whistles of HelloTalk, but hopefully it will show you the basics of creating your own Messages extension.&lt;/p&gt;
-
-&lt;h3 id=&quot;high-level-data-flow&quot;&gt;High Level Data Flow&lt;/h3&gt;
-
-&lt;p&gt;I like modeling applications as a series of data transformations and side effects. Let’s take a step back and understand how data will flow through our extension.&lt;/p&gt;
-
-&lt;p&gt;The most straightforward flow will be a user tapping on an existing message created by our extension so let’s start there.&lt;/p&gt;
-
-&lt;p&gt;Defining some of our terms:&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;&lt;strong&gt;URL&lt;/strong&gt;: Data is stored in the &lt;code class=&quot;highlighter-rouge&quot;&gt;url&lt;/code&gt; parameter of an &lt;code class=&quot;highlighter-rouge&quot;&gt;MSMessage&lt;/code&gt;. Everything we need to restore the state of our message must be contained in the &lt;code class=&quot;highlighter-rouge&quot;&gt;url&lt;/code&gt; string.&lt;/li&gt;
-  &lt;li&gt;&lt;strong&gt;Model&lt;/strong&gt;: This is our domain model, an enum we’ll call &lt;code class=&quot;highlighter-rouge&quot;&gt;Pair&lt;/code&gt; (referring to a question/answer pair) that contains &lt;code class=&quot;highlighter-rouge&quot;&gt;Translation&lt;/code&gt; or &lt;code class=&quot;highlighter-rouge&quot;&gt;Correction&lt;/code&gt; structs. All value types.&lt;/li&gt;
-  &lt;li&gt;&lt;strong&gt;ViewState&lt;/strong&gt;: Another enum that describes each possible state our view can be in. It can be converted directly from any Pair.&lt;/li&gt;
-  &lt;li&gt;&lt;strong&gt;View&lt;/strong&gt;: Our extension only has one &lt;code class=&quot;highlighter-rouge&quot;&gt;UIView&lt;/code&gt; which is configured directly from a &lt;code class=&quot;highlighter-rouge&quot;&gt;ViewState&lt;/code&gt; value.&lt;/li&gt;
-  &lt;li&gt;&lt;strong&gt;ViewAction&lt;/strong&gt;: The View communicates well specified actions to its delegate.&lt;/li&gt;
-  &lt;li&gt;&lt;strong&gt;MSMessageTemplateLayout&lt;/strong&gt;: This is basically another ViewState/ViewModel object provided by Messages.Framework and configured by us.&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;Below is the entire transformation flow:&lt;/p&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;MSConversation -&amp;gt; 
-MSMessage -&amp;gt; 
-URL -&amp;gt; 
-Model -&amp;gt; 
-ViewState -&amp;gt; 
-View -&amp;gt; 
-ViewAction + Model -&amp;gt; 
-Model -&amp;gt; 
-URL + MSMessageTemplateLayout -&amp;gt; 
-MSMessage + MSSession -&amp;gt; 
-MSConversation
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;Broken down:&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;MSConversation -&amp;gt; MSMessage -&amp;gt; URL&lt;/code&gt;: We’ll access the &lt;code class=&quot;highlighter-rouge&quot;&gt;url&lt;/code&gt; property on the &lt;code class=&quot;highlighter-rouge&quot;&gt;MSMessage&lt;/code&gt; instance on the &lt;code class=&quot;highlighter-rouge&quot;&gt;MSConversation&lt;/code&gt; instance provided by Messages. &lt;code class=&quot;highlighter-rouge&quot;&gt;conversation.selectedMessage.url&lt;/code&gt; if you will.&lt;/li&gt;
-  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;URL -&amp;gt; Model&lt;/code&gt;: Our Model’s properties will have been previously encoded (by us) into &lt;code class=&quot;highlighter-rouge&quot;&gt;URLQueryItem&lt;/code&gt;s. We’ll need a function to decode them.&lt;/li&gt;
-  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;Model -&amp;gt; ViewState&lt;/code&gt;: Any Model value must be able to be shown to the user.&lt;/li&gt;
-  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;ViewState -&amp;gt; View&lt;/code&gt;: Setting the &lt;code class=&quot;highlighter-rouge&quot;&gt;viewState&lt;/code&gt; property on our view will configure the view by adding data to text fields, showing/hiding subviews, and changing labels.&lt;/li&gt;
-  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;View -&amp;gt; ViewAction&lt;/code&gt;: We’ll encode button taps and text field data into an enum of actions and pass the enum to the View’s delegate. Our View won’t have to know anything about how to transform these actions into a new Model or ViewState.&lt;/li&gt;
-  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;ViewAction + Model -&amp;gt; Model&lt;/code&gt;: We need to combine an action with the old model to create a new model that includes the user’s changes.&lt;/li&gt;
-  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;Model -&amp;gt; URL + MSMessageTemplateLayout&lt;/code&gt;: Finally, we need to convert our model back to the the fields required to configure a new message.&lt;/li&gt;
-  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;URL + MSMessageTemplateLayout -&amp;gt; MSMessage + MSSession -&amp;gt; MSConversation&lt;/code&gt;: We’ll configure a new message, attaching an &lt;code class=&quot;highlighter-rouge&quot;&gt;MSSession&lt;/code&gt; provided by Messages, then call &lt;code class=&quot;highlighter-rouge&quot;&gt;insertMessage&lt;/code&gt; on the conversation.&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;That may seem like a lot of transformations, but in reality they’re all simple ~10-20 line pure functions that cover all the possible enum cases.&lt;/p&gt;
-
-&lt;p&gt;We’ll go into some of these transformations in more detail later on.&lt;/p&gt;
-
-&lt;h3 id=&quot;data-models&quot;&gt;Data Models&lt;/h3&gt;
-
-&lt;p&gt;We’re going to support both a correction type and a translation type. They’re pretty similar, just a field for a question and a field for an answer. However:&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;The correction type might already be correct, so there needs to be a state for that.&lt;/li&gt;
-  &lt;li&gt;The corrector might not know what the requester is asking and thus can’t correct it.&lt;/li&gt;
-  &lt;li&gt;For the translation type, the translator may not know how to translate the request so there should also be a state for that.&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h4 id=&quot;domain-model&quot;&gt;Domain Model&lt;/h4&gt;
-
-&lt;p&gt;We’re going to go a little enum crazy because in my opinion that’s one of the coolest features of Swift.&lt;/p&gt;
-
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;Pair&lt;/code&gt; represents a question/answer pair. It can be either a translation or a correction.&lt;/p&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;enum&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Pair&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;translation&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Translation&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;correction&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Correction&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;Our &lt;code class=&quot;highlighter-rouge&quot;&gt;Translation&lt;/code&gt; type will have a question and an answer. We have two types of answer though, so we’ll make another enum (&lt;code class=&quot;highlighter-rouge&quot;&gt;TranslationAnswer&lt;/code&gt;) for that.&lt;/p&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Translation&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;question&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;answer&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;TranslationAnswer&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;    
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-
-&lt;span class=&quot;kd&quot;&gt;enum&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;TranslationAnswer&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;RawRepresentable&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;known&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;unknown&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;The &lt;code class=&quot;highlighter-rouge&quot;&gt;Correction&lt;/code&gt; type looks pretty similar. Just one more &lt;code class=&quot;highlighter-rouge&quot;&gt;CorrectionAnswer&lt;/code&gt; case.&lt;/p&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Correction&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;question&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;answer&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;CorrectionAnswer&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;    
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-
-&lt;span class=&quot;kd&quot;&gt;enum&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;CorrectionAnswer&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;RawRepresentable&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;correct&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;incorrect&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;unknown&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;blockquote&gt;
-  &lt;p&gt;Another valid interpretation would have been to condense &lt;code class=&quot;highlighter-rouge&quot;&gt;Correction&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;CorrectionAnswer&lt;/code&gt; into a single enum instead of using nullable properties. We’re doing some of this transformation work in the &lt;code class=&quot;highlighter-rouge&quot;&gt;ViewState&lt;/code&gt; instead.&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;h4 id=&quot;messages-framework-model&quot;&gt;Messages Framework Model&lt;/h4&gt;
-
-&lt;p&gt;In order to do the &lt;code class=&quot;highlighter-rouge&quot;&gt;URL -&amp;gt; Model&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;Model -&amp;gt; URL&lt;/code&gt; transformations, we’ll need to devise an encoding scheme for our Model. There are a number of ways to do this, but we’ll go with the simplest method.&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;Pair&lt;/code&gt; (our top level enum) will encode its case as a &lt;code class=&quot;highlighter-rouge&quot;&gt;type&lt;/code&gt; param. (e.g. &lt;code class=&quot;highlighter-rouge&quot;&gt;type=translation&lt;/code&gt; or &lt;code class=&quot;highlighter-rouge&quot;&gt;type=correction&lt;/code&gt;).&lt;/li&gt;
-  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;TransformationAnswer&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;CorrectionAnswer&lt;/code&gt; will be conformed to the &lt;code class=&quot;highlighter-rouge&quot;&gt;RawRepresentable&lt;/code&gt; protocol and converted to a single string field.&lt;/li&gt;
-  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;Pair&lt;/code&gt;, &lt;code class=&quot;highlighter-rouge&quot;&gt;Transformation&lt;/code&gt;, &lt;code class=&quot;highlighter-rouge&quot;&gt;Correction&lt;/code&gt; will expose a &lt;code class=&quot;highlighter-rouge&quot;&gt;queryItems&lt;/code&gt; property for the &lt;code class=&quot;highlighter-rouge&quot;&gt;Model -&amp;gt; URL&lt;/code&gt; transformation. They will expose a custom nilable initializer receiving an array of &lt;code class=&quot;highlighter-rouge&quot;&gt;[URLQueryItem]&lt;/code&gt;.&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;At the end of the day, the URL will look something like this:&lt;/p&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;?type=translation&amp;amp;question=What%20time%20is%20it?&amp;amp;answer=今何時ですか。
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;Unfortunately, it’s still pretty boilerplatey. Check out the &lt;a href=&quot;https://github.com/twocentstudios/Messages-Translator-Extension/blob/master/MessagesExtension/URLQueryItem.swift&quot;&gt;source&lt;/a&gt; for the implementation details.&lt;/p&gt;
-
-&lt;p&gt;Other implementations could convert object graphs to a single JSON string first (URL encoded of course) and store this encoded string as a single &lt;code class=&quot;highlighter-rouge&quot;&gt;URLQueryItem&lt;/code&gt;.&lt;/p&gt;
-
-&lt;h3 id=&quot;view-models&quot;&gt;View Models&lt;/h3&gt;
-
-&lt;h4 id=&quot;viewstate&quot;&gt;ViewState&lt;/h4&gt;
-
-&lt;p&gt;We have 10 possible view states.&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;1 introductory state.&lt;/li&gt;
-  &lt;li&gt;2 intermediate steps for each &lt;code class=&quot;highlighter-rouge&quot;&gt;Pair&lt;/code&gt; type.&lt;/li&gt;
-  &lt;li&gt;3 end states for a &lt;code class=&quot;highlighter-rouge&quot;&gt;Translation&lt;/code&gt;.&lt;/li&gt;
-  &lt;li&gt;2 end states for a &lt;code class=&quot;highlighter-rouge&quot;&gt;Correction&lt;/code&gt;.&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;enum&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ViewState&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;promptNew&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;translationNew&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;translationPart&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;question&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;translationCompleteUnknown&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;question&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;translationCompleteKnown&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;question&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;answer&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;correctionNew&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;correctionPart&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;question&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;correctionCompleteIncorrect&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;question&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;answer&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;correctionCompleteUnknown&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;question&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;correctionCompleteCorrect&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;question&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;With any case, we have enough information to completely lay out our interface.&lt;/p&gt;
-
-&lt;p&gt;See the implementation of the &lt;code class=&quot;highlighter-rouge&quot;&gt;Model -&amp;gt; ViewState&lt;/code&gt; transformation &lt;a href=&quot;https://github.com/twocentstudios/Messages-Translator-Extension/blob/master/MessagesExtension/ViewState.swift&quot;&gt;here&lt;/a&gt;.&lt;/p&gt;
-
-&lt;p&gt;Although in this case it would be possible to do a &lt;code class=&quot;highlighter-rouge&quot;&gt;ViewState -&amp;gt; Model&lt;/code&gt; transformation, this type of transformation can be inherently lossy. We’ll use a &lt;code class=&quot;highlighter-rouge&quot;&gt;ViewAction + Model -&amp;gt; Model&lt;/code&gt; transformation instead to process changes.&lt;/p&gt;
-
-&lt;h4 id=&quot;viewaction&quot;&gt;ViewAction&lt;/h4&gt;
-
-&lt;p&gt;As discussed a earlier, we’ll be using another enum to succinctly communicate user actions from the View layer back to the Controller layer. The intention behind this is to keep any domain logic and transformations out of the View layer and present a strict interface between our application’s layers defined by value types.&lt;/p&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;enum&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ViewAction&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;   
-    &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;createNewTranslation&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;createNewCorrection&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;addTranslation&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;question&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;completeTranslationKnown&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;answer&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;completeTranslationUnknown&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;addCorrection&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;question&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;completeCorrectionIncorrect&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;answer&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;completeCorrectionCorrect&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;completeCorrectionUnknown&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;h4 id=&quot;msmessagetemplatelayout--messagetemplatelayout&quot;&gt;MSMessageTemplateLayout &amp;amp; MessageTemplateLayout&lt;/h4&gt;
-
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;MSMessageTemplateLayout&lt;/code&gt; is Messages.app’s generic view format for inline messages. It serves the same purpose of our ViewState. (&lt;code class=&quot;highlighter-rouge&quot;&gt;MSMessageTemplateLayout&lt;/code&gt; is currently the sole subclass of the &lt;code class=&quot;highlighter-rouge&quot;&gt;MSMessageLayout&lt;/code&gt; base class, which could allow Apple to provide other message layouts in the future.)&lt;/p&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;// Messages.framework&lt;/span&gt;
-&lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;MSMessageTemplateLayout&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;MSMessageLayout&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;caption&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;
-    &lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;subcaption&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;
-    &lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;trailingCaption&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;
-    &lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;trailingSubcaption&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;
-    &lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;image&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;UIImage&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;
-    &lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;mediaFileURL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;URL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;
-    &lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;imageTitle&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;
-    &lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;imageSubtitle&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;blockquote&gt;
-  &lt;p&gt;I’m a little disappointed that the text is &lt;code class=&quot;highlighter-rouge&quot;&gt;String&lt;/code&gt; and not &lt;code class=&quot;highlighter-rouge&quot;&gt;AttributedString&lt;/code&gt;, but I can see why Apple might want to keep customization to a minimum up front.&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;p&gt;We’ll only be using the caption and subcaptions so we’ll make a helper struct to decouple our implementation from Messages. It’s a bit pedantic to do so, but oh well.&lt;/p&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;MessageTemplateLayout&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;caption&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;subcaption&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;trailingCaption&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;trailingSubcaption&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;Although we could do the transformation as &lt;code class=&quot;highlighter-rouge&quot;&gt;Pair -&amp;gt;  MessageTemplateLayout&lt;/code&gt;, I think it makes our lives easier to convert from &lt;code class=&quot;highlighter-rouge&quot;&gt;ViewState -&amp;gt;  MessageTemplateLayout&lt;/code&gt; instead.&lt;/p&gt;
-
-&lt;h3 id=&quot;view&quot;&gt;View&lt;/h3&gt;
-
-&lt;p&gt;I usually don’t use Storyboards, but for this occasion I decided to do so.&lt;/p&gt;
-
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;MessagesView&lt;/code&gt; is our custom view. It has a couple text fields, a bunch of labels, and a bunch of buttons. All of these subviews are shared amongst our various &lt;code class=&quot;highlighter-rouge&quot;&gt;ViewState&lt;/code&gt;s and their actions and data are translated back to something our Controller understands.&lt;/p&gt;
-
-&lt;p&gt;There’s a huge function that converts &lt;code class=&quot;highlighter-rouge&quot;&gt;ViewState -&amp;gt; View&lt;/code&gt; by setting label text, hidden attributes, and button titles for each state.&lt;/p&gt;
-
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;@IBAction -&amp;gt; ViewAction&lt;/code&gt; happens in each tap handler before being provided to the view’s delegate.&lt;/p&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;protocol&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;MessagesViewDelegate&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;NSObjectProtocol&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;didAction&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;_&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;view&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;MessagesView&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;action&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ViewAction&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;state&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ViewState&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;The relevant code is &lt;a href=&quot;https://github.com/twocentstudios/Messages-Translator-Extension/blob/master/MessagesExtension/MessagesView.swift&quot;&gt;here&lt;/a&gt;.&lt;/p&gt;
-
-&lt;p&gt;Another valid implementation would be to use two or more &lt;code class=&quot;highlighter-rouge&quot;&gt;UIViewController&lt;/code&gt; subclasses and the UIViewController containment APIs.&lt;/p&gt;
-
-&lt;h3 id=&quot;controller&quot;&gt;Controller&lt;/h3&gt;
-
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;MessagesViewController&lt;/code&gt; is our &lt;code class=&quot;highlighter-rouge&quot;&gt;MSMessagesAppViewController&lt;/code&gt; subclass. It will be responsible for performing most of the data transformations, holding state through the extension’s lifecycle, and handling other calls from Messages.app.&lt;/p&gt;
-
-&lt;p&gt;Our controller has two instance variables:&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;@IBOutlet weak var messagesView: MessagesView!&lt;/code&gt;: our only view.&lt;/li&gt;
-  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;var pair: Pair?&lt;/code&gt;: the current model. We need to hold onto this temporarily while we’re waiting for user input in order to do the &lt;code class=&quot;highlighter-rouge&quot;&gt;ViewAction + Pair -&amp;gt; Pair&lt;/code&gt; transformation. This value may also change if we’re performing a &lt;code class=&quot;highlighter-rouge&quot;&gt;ViewAction&lt;/code&gt; that is not intended to produce an &lt;code class=&quot;highlighter-rouge&quot;&gt;MSMessage&lt;/code&gt; but only alter the &lt;code class=&quot;highlighter-rouge&quot;&gt;ViewState&lt;/code&gt; directly (e.g. &lt;code class=&quot;highlighter-rouge&quot;&gt;ViewState.promptNew -&amp;gt; ViewState.translationNew&lt;/code&gt;).&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h3 id=&quot;entry-point&quot;&gt;Entry Point&lt;/h3&gt;
-
-&lt;p&gt;The entry point of our extension in the general case will be:&lt;/p&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;// MessagesViewController.swift&lt;/span&gt;
-&lt;span class=&quot;k&quot;&gt;override&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;willBecomeActive&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;with&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;conversation&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;MSConversation&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// ... }&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;conversation.selectedMessage == nil&lt;/code&gt;: the user opened our extension in the extension browser and will be creating a new translation or correction.&lt;/li&gt;
-  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;conversation.selectedMessage != nil&lt;/code&gt;: the user has tapped on a translation or correction embedded in an existing message in their timeline.&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;The full implementation with transformations annotated:&lt;/p&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;override&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;willBecomeActive&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;with&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;conversation&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;MSConversation&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;c1&quot;&gt;// MSConversation -&amp;gt; MSMessage -&amp;gt; URL -&amp;gt; Model&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;pair&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Pair&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;conversation&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;conversation&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-    
-    &lt;span class=&quot;c1&quot;&gt;// Model -&amp;gt; ViewState&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;viewState&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ViewState&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;pair&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;pair&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-    
-    &lt;span class=&quot;c1&quot;&gt;// ViewState -&amp;gt; View&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;messagesView&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;viewState&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;viewState&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;h3 id=&quot;exit-point&quot;&gt;Exit Point&lt;/h3&gt;
-
-&lt;p&gt;The exit point of an Messages Extension in the general case will be a call to &lt;code class=&quot;highlighter-rouge&quot;&gt;MSConversation.insert&lt;/code&gt; followed by &lt;code class=&quot;highlighter-rouge&quot;&gt;MyMessagesAppViewController.dismiss&lt;/code&gt; and can be called from any part of your extension. This inserts a message (that your extension has just finished crafting) into the Messages.app’s main text field allowing the user to (optionally) tap the send button.&lt;/p&gt;
-
-&lt;p&gt;In our case, we’re channeling all user actions into the delegate method:&lt;/p&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;didAction&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;_&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;view&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;MessagesView&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;action&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ViewAction&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;state&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ViewState&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// ... }&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;There are a few resulting view states where the behavior of inserting a message and dismissing is not correct. If the user is in the compact view and has decided to start a new translation, they’re not finished interacting with our extension. In this case, we should request an expanded view:&lt;/p&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;// MessagesViewController.swift&lt;/span&gt;
-&lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;requestPresentationStyle&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;expanded&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;Let’s now walk through the entire function.&lt;/p&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;didAction&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;_&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;view&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;MessagesView&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;action&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ViewAction&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;state&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ViewState&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;c1&quot;&gt;// ViewAction + Pair -&amp;gt; Pair&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;newPair&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;action&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;combine&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;withPair&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;pair&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-    
-    &lt;span class=&quot;c1&quot;&gt;// Pair -&amp;gt; ViewState&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;newViewState&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ViewState&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;pair&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;newPair&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-    
-    &lt;span class=&quot;k&quot;&gt;switch&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;newViewState&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;promptNew&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;break&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;translationNew&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;correctionNew&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;requestPresentationStyle&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;expanded&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;default&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;guard&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;conversation&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;activeConversation&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;else&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;fatalError&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;Expected a conversation&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-        
-        &lt;span class=&quot;c1&quot;&gt;// Always replace the selectedMessage by passing its `MSSession`.&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;session&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;conversation&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;selectedMessage&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;session&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;??&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;MSSession&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
-        
-        &lt;span class=&quot;c1&quot;&gt;// Pair -&amp;gt; MSMessage&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;guard&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;message&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;newPair&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;composeMessage&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;session&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;else&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;fatalError&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;Expected a message&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-        
-        &lt;span class=&quot;c1&quot;&gt;// ViewState -&amp;gt; String&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;changeDescription&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;state&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;changeDescription&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
-        
-        &lt;span class=&quot;c1&quot;&gt;// MSMessage + String&lt;/span&gt;
-        &lt;span class=&quot;n&quot;&gt;conversation&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;insert&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;message&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;localizedChangeDescription&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;changeDescription&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// ... }&lt;/span&gt;
-        
-        &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;dismiss&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-    
-    &lt;span class=&quot;c1&quot;&gt;// Set the new Pair and ViewState on our view controller&lt;/span&gt;
-    &lt;span class=&quot;c1&quot;&gt;// for the next run cycle.&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;pair&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;newPair&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;messagesView&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;viewState&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;newViewState&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;As you can see, we’re mostly applying transformations based on the user’s action (&lt;code class=&quot;highlighter-rouge&quot;&gt;ViewAction&lt;/code&gt;), the input pair we saved earlier (&lt;code class=&quot;highlighter-rouge&quot;&gt;self.pair&lt;/code&gt;), and some state saved in the superclass &lt;code class=&quot;highlighter-rouge&quot;&gt;MSMessagesAppViewController&lt;/code&gt; (&lt;code class=&quot;highlighter-rouge&quot;&gt;self.activeConversation.selectedMessage.session&lt;/code&gt;). These transformations produce a new &lt;code class=&quot;highlighter-rouge&quot;&gt;Pair&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;ViewState&lt;/code&gt;, and the side effect of either an inserted &lt;code class=&quot;highlighter-rouge&quot;&gt;MSMessage&lt;/code&gt; in the conversation or a view state change.&lt;/p&gt;
-
-&lt;p&gt;All side effects are located in our class closest to the outside world (the view controller), while other classes and structs define valid transformations. Notice in particular that the view does not change its own state directly from user actions such as button presses.&lt;/p&gt;
-
-&lt;h3 id=&quot;more-complicated-flows&quot;&gt;More Complicated Flows&lt;/h3&gt;
-
-&lt;p&gt;We’ve now looked at the most common lifecycle of &lt;code class=&quot;highlighter-rouge&quot;&gt;input -&amp;gt; user action -&amp;gt; output&lt;/code&gt;. Now let’s look at some other cases.&lt;/p&gt;
-
-&lt;h4 id=&quot;willselect--didselect&quot;&gt;willSelect &amp;amp; didSelect&lt;/h4&gt;
-
-&lt;p&gt;If your extension is already active when the user taps one of your extension’s messages, the extension doesn’t have to launch and therefore won’t call our view controller’s &lt;code class=&quot;highlighter-rouge&quot;&gt;willBecomeActive&lt;/code&gt; &amp;amp; &lt;code class=&quot;highlighter-rouge&quot;&gt;didBecomeActive&lt;/code&gt; as we were expecting. Instead, it will call &lt;code class=&quot;highlighter-rouge&quot;&gt;willSelect&lt;/code&gt; &amp;amp; &lt;code class=&quot;highlighter-rouge&quot;&gt;didSelect&lt;/code&gt;, so we also need to set the &lt;code class=&quot;highlighter-rouge&quot;&gt;Pair&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;ViewState&lt;/code&gt; from this entry point too. Unfortunately, at iOS 10 beta1, &lt;code class=&quot;highlighter-rouge&quot;&gt;willSelect&lt;/code&gt; &amp;amp; &lt;code class=&quot;highlighter-rouge&quot;&gt;didSelect&lt;/code&gt; don’t seem to be implemented. This was confirmed as a known issue in beta2. The workaround is to place this behavior in &lt;code class=&quot;highlighter-rouge&quot;&gt;willTransition&lt;/code&gt;.&lt;/p&gt;
-
-&lt;h4 id=&quot;didreceive&quot;&gt;didReceive&lt;/h4&gt;
-
-&lt;p&gt;While your extension is active, it’s possible that one of the conversation’s other participants will send a message to your extension. The original sender could have updated the message, or a third member of the group could have replied. In either case, you can monitor &lt;code class=&quot;highlighter-rouge&quot;&gt;didRecieve&lt;/code&gt; to react to new messages outside of the &lt;code class=&quot;highlighter-rouge&quot;&gt;input -&amp;gt; user action -&amp;gt; output&lt;/code&gt; cycle presented earlier and optionally alert the local participant that something has changed since they opened your extension.&lt;/p&gt;
-
-&lt;h4 id=&quot;didstartsending--didcancelsending&quot;&gt;didStartSending &amp;amp; didCancelSending&lt;/h4&gt;
-
-&lt;p&gt;If you need to take direct action based on the user attempting to send or deciding not to send your message after it’s been inserted into the conversation, override your view controller’s &lt;code class=&quot;highlighter-rouge&quot;&gt;didStartSending&lt;/code&gt; and/or &lt;code class=&quot;highlighter-rouge&quot;&gt;didCancelSending&lt;/code&gt; functions. These would presumably be called after you’ve called &lt;code class=&quot;highlighter-rouge&quot;&gt;dismiss&lt;/code&gt; inside the defacto exit point I described earlier.&lt;/p&gt;
-
-&lt;p&gt;Notice that &lt;code class=&quot;highlighter-rouge&quot;&gt;didStartSending&lt;/code&gt; is called on an &lt;em&gt;attempt&lt;/em&gt; to send, i.e. when the user taps the Messages.app’s send button. Apple doesn’t guarantee the message will be delivered to the other participants. This could create a few opportunities for edge cases you should be aware of. For example, if the message service goes down and you’ve &lt;code class=&quot;highlighter-rouge&quot;&gt;POST&lt;/code&gt;ed resource state changes to your server successfully in &lt;code class=&quot;highlighter-rouge&quot;&gt;didStartSending&lt;/code&gt;, other participants may see outdated information in their message’s &lt;code class=&quot;highlighter-rouge&quot;&gt;MSMessageTemplateLayout&lt;/code&gt; that represents that resource on your server. Rare, but still something to think about that synchronizing state using &lt;code class=&quot;highlighter-rouge&quot;&gt;MSMessage&lt;/code&gt;s will not always be perfect.&lt;/p&gt;
-
-&lt;p&gt;Note that there also may be an issue with these two delegate methods with iOS 10 beta1 as well, possibly on the simulator but not real devices.&lt;/p&gt;
-
-&lt;h3 id=&quot;wrap-up&quot;&gt;Wrap Up&lt;/h3&gt;
-
-&lt;p&gt;We’ve finished the basic walkthrough of our example Messages Extension. We haven’t used all that Messages.framework is capable of, so we’ll now take a look at some advanced features.&lt;/p&gt;
-
-&lt;h2 id=&quot;more-advanced-features&quot;&gt;More Advanced Features&lt;/h2&gt;
-
-&lt;p&gt;Well, some of these features are advanced. Others I just didn’t have an immediate use for in the example app. In any case…&lt;/p&gt;
-
-&lt;h3 id=&quot;collapsed-view-state&quot;&gt;Collapsed View State&lt;/h3&gt;
-
-&lt;p&gt;When your &lt;code class=&quot;highlighter-rouge&quot;&gt;MSMessagesAppViewController&lt;/code&gt; is in its collapsed state, it won’t have access to horizontal swipe or pan gestures. That’s how users will swipe between different extensions.&lt;/p&gt;
-
-&lt;p&gt;Your text fields or anything that requires a keyboard will also be disabled since the keyboard would otherwise obscure your view.&lt;/p&gt;
-
-&lt;h3 id=&quot;expanding-the-view-state&quot;&gt;Expanding The View State&lt;/h3&gt;
-
-&lt;p&gt;When your extension is launched by a user tapping an existing message, the view controller is automatically launched into expanded mode by Messages.app.&lt;/p&gt;
-
-&lt;p&gt;You can also request that your app be expanded after it has started in compact mode. In my tests on the simulator, my request to expand my extension was accepted no earlier than 0.3 seconds after &lt;code class=&quot;highlighter-rouge&quot;&gt;viewDidAppear&lt;/code&gt;, the final callback we get from the view system (I set a timer). Those numbers may change, but the takeaway is that you can’t &lt;em&gt;immediately&lt;/em&gt; expand your extension with no user interaction having taken place.&lt;/p&gt;
-
-&lt;h3 id=&quot;saved-screenshots&quot;&gt;Saved Screenshots&lt;/h3&gt;
-
-&lt;p&gt;Similar to how suspended apps are snapshotted by iOS before moving to the background, the same is done with Messages Extensions to give them the appearance of quick activation. Messages.app kills and revives extensions quite aggressively too. In the beta, this has led to some funky looking intermediate view states.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/messages-startup-artifacts-small.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;IceCreamBuilder looking a little stretched out.&quot; title=&quot;IceCreamBuilder looking a little stretched out.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;IceCreamBuilder looking a little stretched out.&lt;/div&gt;&lt;/div&gt;
-
-&lt;h3 id=&quot;testing-in-the-simulator&quot;&gt;Testing in the Simulator&lt;/h3&gt;
-
-&lt;p&gt;Messages.app was added to the iOS simulator on iOS 10 to assist in debugging extensions. On every cold launch, Messages.app in the simulator is seeded with two conversation threads that are tied together. You can send messages from messagesuser1@simulated.icloud.com by tapping on the first thread and from messagesuser2@simulated.icloud.com by tapping on the second thread.&lt;/p&gt;
-
-&lt;p&gt;You can clear the message history by force quitting Messages.app. It’s also cleared any time you recompile and attach the debugger. According to the release notes this may not be the behavior intended by Apple though.&lt;/p&gt;
-
-&lt;p&gt;I had some trouble using the macOS hardware keyboard with my extension’s text fields in the beta.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/messages-simulator-home-small.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Messages.app in the iOS Simulator.&quot; title=&quot;Messages.app in the iOS Simulator.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Messages.app in the iOS Simulator.&lt;/div&gt;&lt;/div&gt;
-
-&lt;h3 id=&quot;landscape-support&quot;&gt;Landscape Support&lt;/h3&gt;
-
-&lt;p&gt;Apple &lt;a href=&quot;https://forums.developer.apple.com/thread/50524&quot;&gt;requires&lt;/a&gt; that Messages Extensions support both landscape and portrait as there is no way to prevent the normal autorotation behavior of Messages.app.&lt;/p&gt;
-
-&lt;h3 id=&quot;msmessage&quot;&gt;MSMessage&lt;/h3&gt;
-
-&lt;p&gt;As the unit encapsulating data and view specification, &lt;code class=&quot;highlighter-rouge&quot;&gt;MSMessage&lt;/code&gt; has a few points we should cover.&lt;/p&gt;
-
-&lt;h4 id=&quot;accessibility&quot;&gt;Accessibility&lt;/h4&gt;
-
-&lt;p&gt;The second “view” of a message if you will is the &lt;code class=&quot;highlighter-rouge&quot;&gt;accessibilityLabel&lt;/code&gt; property. You should use this label to specifically spell out any implicit context in the &lt;code class=&quot;highlighter-rouge&quot;&gt;MSMessageTemplateLayout&lt;/code&gt;.&lt;/p&gt;
-
-&lt;h4 id=&quot;session&quot;&gt;Session&lt;/h4&gt;
-
-&lt;p&gt;We ran into &lt;code class=&quot;highlighter-rouge&quot;&gt;MSSession&lt;/code&gt; briefly in the sample app. The &lt;code class=&quot;highlighter-rouge&quot;&gt;MSSession&lt;/code&gt; is an identifier you can use to link messages together. Messages.app will replace the contents of any previous message with the same session. When preparing an &lt;code class=&quot;highlighter-rouge&quot;&gt;MSMessage&lt;/code&gt; for the user, if the message represents a resource that already exists, you should initialize the &lt;code class=&quot;highlighter-rouge&quot;&gt;MSMessage&lt;/code&gt; with the previous &lt;code class=&quot;highlighter-rouge&quot;&gt;MSMessage&lt;/code&gt;’s &lt;code class=&quot;highlighter-rouge&quot;&gt;MSSession&lt;/code&gt;. Otherwise, use the designated initializer &lt;code class=&quot;highlighter-rouge&quot;&gt;MSSession()&lt;/code&gt; to create a new one.&lt;/p&gt;
-
-&lt;h4 id=&quot;app-icon&quot;&gt;App Icon&lt;/h4&gt;
-
-&lt;p&gt;Your extension’s icon will appear in the top left corner of any message created by your extension.&lt;/p&gt;
-
-&lt;p&gt;In our example extension, you’ll notice that since we don’t send an image or video, our app icon covers up part of the caption. Hopefully that’s something that will be fixed by Apple before launch.&lt;/p&gt;
-
-&lt;h4 id=&quot;nscoding&quot;&gt;NSCoding&lt;/h4&gt;
-
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;MSMessage&lt;/code&gt; conforms to both &lt;code class=&quot;highlighter-rouge&quot;&gt;NSSecureCoding&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;NSCopying&lt;/code&gt; making life a bit easier if you wanted to save messages wholesale.&lt;/p&gt;
-
-&lt;h4 id=&quot;participants&quot;&gt;Participants&lt;/h4&gt;
-
-&lt;p&gt;Due to privacy concerns, the identities of a conversation’s participants are obscured through the use of UUIDs.&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;You can identify a message’s sender from &lt;code class=&quot;highlighter-rouge&quot;&gt;MSMessage.senderParticipantIdentifier&lt;/code&gt;.&lt;/li&gt;
-  &lt;li&gt;You can identify the local user from &lt;code class=&quot;highlighter-rouge&quot;&gt;MSConversation.localParticipantIdentifier&lt;/code&gt;.&lt;/li&gt;
-  &lt;li&gt;You can identify all other participants from &lt;code class=&quot;highlighter-rouge&quot;&gt;MSConversation.remoteParticipantIdentifiers&lt;/code&gt;.&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;These three properties should be enough for your extension to determine at any given time whether a message was sent by the current user.&lt;/p&gt;
-
-&lt;p&gt;You can insert these UUIDs directly into user-facing strings within &lt;code class=&quot;highlighter-rouge&quot;&gt;MSMessageTemplateLayout()&lt;/code&gt; prefixed with a &lt;code class=&quot;highlighter-rouge&quot;&gt;$&lt;/code&gt; and Messages.app will replace them with the contact’s actual name before showing them to the user. However on the iOS Simulator and iOS 10 beta1 I haven’t be able to reproduce the intended behavior. It still shows up as the raw UUID string in Messages (thanks to &lt;a href=&quot;https://twitter.com/zachsimone&quot;&gt;@zachsimone&lt;/a&gt; for the heads up). &lt;em&gt;Update 7/7/16: Fixed in beta2.&lt;/em&gt;&lt;/p&gt;
-
-&lt;p&gt;For example:&lt;/p&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;layout&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;MSMessageTemplateLayout&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
-&lt;span class=&quot;n&quot;&gt;layout&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;caption&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;My name is $&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;conversation&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;localParticipantIdentifer&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;uuidString&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;.&quot;&lt;/span&gt;
-&lt;span class=&quot;n&quot;&gt;conversation&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;insert&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;message&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;localizedChangeDescription&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;nil&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;h4 id=&quot;msmessagetemplatelayout-attributes&quot;&gt;MSMessageTemplateLayout Attributes&lt;/h4&gt;
-
-&lt;p&gt;A couple quick notes on &lt;code class=&quot;highlighter-rouge&quot;&gt;MSMessageTemplateLayout&lt;/code&gt;’s attributes.&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;If you include both &lt;code class=&quot;highlighter-rouge&quot;&gt;image&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;mediaFileURL&lt;/code&gt;, &lt;code class=&quot;highlighter-rouge&quot;&gt;mediaFileURL&lt;/code&gt; will be ignored.&lt;/li&gt;
-  &lt;li&gt;Apple recommends your images be 300x300pt @3x, but also says you should experiment with what looks best for your use case.&lt;/li&gt;
-  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;mediaFileURL&lt;/code&gt;/&lt;code class=&quot;highlighter-rouge&quot;&gt;image&lt;/code&gt; can be an PNG, JPEG, GIF, or video.&lt;/li&gt;
-  &lt;li&gt;Media will be compressed before being sent.&lt;/li&gt;
-  &lt;li&gt;You should avoid writing text to an image due to possible compression/scaling artifacts rendering it illegible.&lt;/li&gt;
-  &lt;li&gt;If you don’t include an &lt;code class=&quot;highlighter-rouge&quot;&gt;image&lt;/code&gt; or &lt;code class=&quot;highlighter-rouge&quot;&gt;mediaFileURL&lt;/code&gt; in your template, &lt;code class=&quot;highlighter-rouge&quot;&gt;imageTitle&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;imageSubtitle&lt;/code&gt; will be ignored.&lt;/li&gt;
-  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;caption&lt;/code&gt; is limited to 3 lines with an automatically added trailing ellipsis.&lt;/li&gt;
-  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;subcaption&lt;/code&gt; is not shown unless a caption is present.&lt;/li&gt;
-  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;subcaption&lt;/code&gt; is limited to 1 line and no trailing ellipsis is added.&lt;/li&gt;
-  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;trailingCaption&lt;/code&gt;/&lt;code class=&quot;highlighter-rouge&quot;&gt;trailingSubcaption&lt;/code&gt; seem to mirror the behavior of their &lt;code class=&quot;highlighter-rouge&quot;&gt;caption&lt;/code&gt;/&lt;code class=&quot;highlighter-rouge&quot;&gt;subcaption&lt;/code&gt; counterparts.&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/messages-template-layout-test-large.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Various configurations of MSMessageTemplateLayout.&quot; title=&quot;Various configurations of MSMessageTemplateLayout.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Various configurations of MSMessageTemplateLayout.&lt;/div&gt;&lt;/div&gt;
-
-&lt;h4 id=&quot;urls&quot;&gt;URLs&lt;/h4&gt;
-
-&lt;p&gt;As previously mentioned, the URL you attach to an &lt;code class=&quot;highlighter-rouge&quot;&gt;MSMessage&lt;/code&gt; will be available directly to the user in two cases:&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;The recipient views the message on iOS 9 or earlier.&lt;/li&gt;
-  &lt;li&gt;The recipient views the message on macOS.&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;If your app does not have a default web presence that can render these links in a web browser, you may want to have the base URL point to a sort of 404 explanation page. Something like “Hey, you received a link created with MyApp. Open it on an iOS 10+ device to get started.” You can still encode parameters in the query string this way.&lt;/p&gt;
-
-&lt;p&gt;Another gotcha is that only http/https scheme URLs will be sent to other platforms. If your message doesn’t lose any context without a URL, you can use this to your advantage and not worry about implementing the 404 page.&lt;/p&gt;
-
-&lt;h4 id=&quot;expiring&quot;&gt;Expiring&lt;/h4&gt;
-
-&lt;p&gt;You can set your messages to expire by default by setting &lt;code class=&quot;highlighter-rouge&quot;&gt;shouldExpire&lt;/code&gt; on the &lt;code class=&quot;highlighter-rouge&quot;&gt;MSMessage&lt;/code&gt; instance. This behavior is the same as other Messages.app expiring messages and can be overridden by the recipient.&lt;/p&gt;
-
-&lt;h3 id=&quot;icon-template-sizes&quot;&gt;Icon Template Sizes&lt;/h3&gt;
-
-&lt;p&gt;For reference, here are the listed sizes for Messages App Icons.&lt;/p&gt;
-
-&lt;p&gt;Messages: 27x20pt @1x @2x @3x&lt;br /&gt;
-Messages: 32x24pt @1x @2x @3x&lt;br /&gt;
-Messages App Store: 1024x768pt @1x&lt;br /&gt;
-Messages iPhone: 60x45pt @2x @3x&lt;br /&gt;
-Messages iPad: 67x50pt @1x @2x&lt;br /&gt;
-Messages iPad Pro: 74x55pt @2x&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/messages-app-icon-sizes.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Various configurations of MSMessageTemplateLayout.&quot; title=&quot;Various configurations of MSMessageTemplateLayout.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Various configurations of MSMessageTemplateLayout.&lt;/div&gt;&lt;/div&gt;
-
-&lt;h3 id=&quot;stickers&quot;&gt;Stickers&lt;/h3&gt;
-
-&lt;p&gt;I’ve neglected the sticker classes, but these are worth mentioning as many extensions will be sticker focused. Apple’s IceCreamBuilder example extension uses these classes.&lt;/p&gt;
-
-&lt;h4 id=&quot;mssticker&quot;&gt;MSSticker&lt;/h4&gt;
-
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;MSSticker&lt;/code&gt; is the model class for stickers.&lt;/p&gt;
-
-&lt;p&gt;Create &lt;code class=&quot;highlighter-rouge&quot;&gt;MSSticker&lt;/code&gt; by passing in a &lt;code class=&quot;highlighter-rouge&quot;&gt;fileURL&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;localizedDescription&lt;/code&gt; of the sticker contents. The initializer can throw an &lt;code class=&quot;highlighter-rouge&quot;&gt;NSError&lt;/code&gt;. From the docs:&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;The file must have a maximum size of 500KB.&lt;/li&gt;
-  &lt;li&gt;The file must conform to kUTTypePNG, kUTTypeGIF or kUTTypeJPEG.&lt;/li&gt;
-  &lt;li&gt;The image loaded from the file must be no smaller than 300px X 300px and must be no larger 618px x 618px.&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h4 id=&quot;msstickerview&quot;&gt;MSStickerView&lt;/h4&gt;
-
-&lt;p&gt;The drop-in &lt;code class=&quot;highlighter-rouge&quot;&gt;UIView&lt;/code&gt; subclass for stickers is &lt;code class=&quot;highlighter-rouge&quot;&gt;MSStickerView&lt;/code&gt;. Initialize it with an &lt;code class=&quot;highlighter-rouge&quot;&gt;MSSticker&lt;/code&gt; or set the &lt;code class=&quot;highlighter-rouge&quot;&gt;sticker&lt;/code&gt; property later.&lt;/p&gt;
-
-&lt;p&gt;This class provides drag and drop behavior for pulling stickers from the collapsed view of an extension into the main conversation. It also provides outlets for inspecting and controlling animation of GIFs:&lt;/p&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;// MSStickerView.swift (abridged)&lt;/span&gt;
-&lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;animationDuration&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;TimeInterval&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;get&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;startAnimating&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
-&lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;stopAnimating&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
-&lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;isAnimating&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Bool&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;h2 id=&quot;things-you-cant-do&quot;&gt;Things You Can’t Do&lt;/h2&gt;
-
-&lt;p&gt;I’ve seen a few questions already on the developer forums about what can and can’t be done. I’ll document a few of those here and may add more in the future.&lt;/p&gt;
-
-&lt;h3 id=&quot;sending-messages-without-user-interaction&quot;&gt;Sending Messages Without User Interaction&lt;/h3&gt;
-
-&lt;p&gt;You cannot send a message directly on behalf of the user. That means you cannot skip the part where your newly minted message is deposited into the Messages.app text field and the user taps the send button. Apple wants to make sure that the user has the final say on what is sent on their behalf.&lt;/p&gt;
-
-&lt;h3 id=&quot;accessing-text-or-messages-not-created-by-your-app&quot;&gt;Accessing Text Or Messages Not Created By Your App&lt;/h3&gt;
-
-&lt;p&gt;You cannot access any information that was not created specifically by your extension. That means you cannot access the contents of Message.app’s text field directly. You cannot access any other messages in the conversation history.&lt;/p&gt;
-
-&lt;p&gt;Any text input you require must be entered by the user into a text field you’ve created in the expanded mode of your extension.&lt;/p&gt;
-
-&lt;h2 id=&quot;known-issues&quot;&gt;Known Issues&lt;/h2&gt;
-
-&lt;p&gt;I’ve mentioned a few of the known issues in the text above. Here are a few more I’ll add to as they’re reported and resolved.&lt;/p&gt;
-
-&lt;h3 id=&quot;changes-to-insertmessage&quot;&gt;Changes to insertMessage&lt;/h3&gt;
-
-&lt;p&gt;The function signature of &lt;code class=&quot;highlighter-rouge&quot;&gt;MSConversation.insertMessage&lt;/code&gt; has changed (beta1 -&amp;gt; beta2) for an unknown reason. The &lt;code class=&quot;highlighter-rouge&quot;&gt;localizedChangeDescription&lt;/code&gt; parameter was removed. There is currently no way that I can determine to create a change description. The documentation is also out of line with the function itself.&lt;/p&gt;
-
-&lt;h2 id=&quot;wrap-up-1&quot;&gt;Wrap Up&lt;/h2&gt;
-
-&lt;p&gt;I’ve given an overview of Messages Extensions. We then walked through an example extension that uses some of the available features of Messages.framework. Finally, we covered a few advanced features.&lt;/p&gt;
-
-&lt;p&gt;I’m excited to see what kinds of Messages Extensions are available at iOS 10 launch come this Fall.&lt;/p&gt;
-
-&lt;p&gt;I’ll do my best to keep this post updated as subsequent betas are shipped. Feel free to ping me &lt;a href=&quot;https://twitter.com/twocentstudios&quot;&gt;@twocentstudios&lt;/a&gt; on Twitter if you have questions or comments.&lt;/p&gt;
-
-&lt;p&gt;&lt;em&gt;Thanks to Evan Coleman for reading drafts of this post.&lt;/em&gt;&lt;/p&gt;
-</description>
-        <pubDate>Fri, 24 Jun 2016 20:39:29 -0500</pubDate>
-        <link>http://twocentstudios.com/2016/06/24/a-deep-dive-into-ios-messages-extensions/</link>
-        <guid isPermaLink="true">http://twocentstudios.com/2016/06/24/a-deep-dive-into-ios-messages-extensions/</guid>
         
         
       </item>
