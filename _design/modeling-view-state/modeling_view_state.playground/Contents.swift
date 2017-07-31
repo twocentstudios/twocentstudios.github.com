@@ -150,7 +150,30 @@ struct D2 {
         
         let viewModels: [ViewModelType]
         
-//        init(profileViewModel: ProfileViewModel, postsViewModel: PostsViewModel) { /* ... */ }
+        init(profileViewModel: ProfileViewModel, postsViewModel: PostsViewModel) {
+            self.profileViewModel = profileViewModel
+            self.postsViewModel = postsViewModel
+            
+            var innerViewModels: [ViewModelType] = []
+            
+            // Convert ProfileViewModel.ViewModelType to UserViewModel.ViewModelType
+            let profileInnerViewModels = profileViewModel.viewModels.map(UserViewModel.toViewModels)
+            innerViewModels.append(contentsOf: profileInnerViewModels)
+            
+            // Convert PostsViewModel.ViewModelType to UserViewModel.ViewModelType
+            let postsViewModel = postsViewModel.viewModels.map(UserViewModel.toViewModels)
+            innerViewModels.append(contentsOf: postsViewModel)
+            
+            self.viewModels = innerViewModels
+        }
+        
+        private static func toViewModels(_ viewModels: ProfileViewModel.ViewModelType) -> UserViewModel.ViewModelType {
+            /* ... */
+        }
+        
+        private static func toViewModels(_ viewModels: PostsViewModel.ViewModelType) -> UserViewModel.ViewModelType {
+            /* ... */
+        }
     }
     
     struct ProfileViewModel {

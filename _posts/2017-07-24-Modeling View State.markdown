@@ -341,18 +341,45 @@ struct UserViewModel {
         case post(PostViewModel)
     }
     
+    // Inputs
     let profileViewModel: ProfileViewModel
     let postsViewModel: PostsViewModel
     
+    // Output
     let viewModels: [ViewModelType]
     
-    init(profileViewModel: ProfileViewModel, postsViewModel: PostsViewModel) { /* ... */ }
+    init(profileViewModel: ProfileViewModel, postsViewModel: PostsViewModel) {
+        self.profileViewModel = profileViewModel
+        self.postsViewModel = postsViewModel
+        
+        var innerViewModels: [ViewModelType] = []
+        
+        // Convert ProfileViewModel.ViewModelType to UserViewModel.ViewModelType
+        let profileInnerViewModels = profileViewModel.viewModels.map(UserViewModel.toViewModels)
+        innerViewModels.append(contentsOf: profileInnerViewModels)
+        
+        // Convert PostsViewModel.ViewModelType to UserViewModel.ViewModelType
+        let postsViewModel = postsViewModel.viewModels.map(UserViewModel.toViewModels)
+        innerViewModels.append(contentsOf: postsViewModel)
+        
+        self.viewModels = innerViewModels
+    }
+    
+    private static func toViewModels(_ viewModels: ProfileViewModel.ViewModelType) -> UserViewModel.ViewModelType {
+        /* ... */
+    }
+    
+    private static func toViewModels(_ viewModels: PostsViewModel.ViewModelType) -> UserViewModel.ViewModelType {
+        /* ... */
+    }
 }
 ```
 
-`UserViewModel` only needs to map the inner view model types to its own enum `UserViewModel.ViewModelType` and concatenate the results into one array.
+`UserViewModel` only needs to map the inner view model types to its own enum `UserViewModel.ViewModelType` and concatenate the results into one array. `UserViewModel` has no state of its own. It composes the contents of its view models and exposes its own set of view models to the view layer.
 
 The view layer will only need to access `viewModels`.
+
+We now have the option of using `ProfileViewModel` and `PostsViewModel` alone on other screens, or composing them with other view models into other combinations.
 
 ## Conclusion
 
@@ -378,3 +405,5 @@ I consider the overhead to be worthwhile if your objective is robust code, the d
 Other recommended reading on this topic: [Modelling state in Swift](https://www.swiftbysundell.com/posts/modelling-state-in-swift).
 
 Thanks for reading, and please let me know your thoughts and suggestions. I’m [@twocentstudios](https://twitter.com/twocentstudios) on Twitter.
+
+> Thanks to Evan Coleman and Ernesto Carrion for reading drafts of this post.
