@@ -472,19 +472,46 @@
         <span class="k">case</span> <span class="nf">post</span><span class="p">(</span><span class="kt">PostViewModel</span><span class="p">)</span>
     <span class="p">}</span>
     
+    <span class="c1">// Inputs</span>
     <span class="k">let</span> <span class="nv">profileViewModel</span><span class="p">:</span> <span class="kt">ProfileViewModel</span>
     <span class="k">let</span> <span class="nv">postsViewModel</span><span class="p">:</span> <span class="kt">PostsViewModel</span>
     
+    <span class="c1">// Output</span>
     <span class="k">let</span> <span class="nv">viewModels</span><span class="p">:</span> <span class="p">[</span><span class="kt">ViewModelType</span><span class="p">]</span>
     
-    <span class="nf">init</span><span class="p">(</span><span class="nv">profileViewModel</span><span class="p">:</span> <span class="kt">ProfileViewModel</span><span class="p">,</span> <span class="nv">postsViewModel</span><span class="p">:</span> <span class="kt">PostsViewModel</span><span class="p">)</span> <span class="p">{</span> <span class="cm">/* ... */</span> <span class="p">}</span>
+    <span class="nf">init</span><span class="p">(</span><span class="nv">profileViewModel</span><span class="p">:</span> <span class="kt">ProfileViewModel</span><span class="p">,</span> <span class="nv">postsViewModel</span><span class="p">:</span> <span class="kt">PostsViewModel</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">profileViewModel</span> <span class="o">=</span> <span class="n">profileViewModel</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">postsViewModel</span> <span class="o">=</span> <span class="n">postsViewModel</span>
+        
+        <span class="k">var</span> <span class="nv">innerViewModels</span><span class="p">:</span> <span class="p">[</span><span class="kt">ViewModelType</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        
+        <span class="c1">// Convert ProfileViewModel.ViewModelType to UserViewModel.ViewModelType</span>
+        <span class="k">let</span> <span class="nv">profileInnerViewModels</span> <span class="o">=</span> <span class="n">profileViewModel</span><span class="o">.</span><span class="n">viewModels</span><span class="o">.</span><span class="nf">map</span><span class="p">(</span><span class="kt">UserViewModel</span><span class="o">.</span><span class="n">toViewModels</span><span class="p">)</span>
+        <span class="n">innerViewModels</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="nv">contentsOf</span><span class="p">:</span> <span class="n">profileInnerViewModels</span><span class="p">)</span>
+        
+        <span class="c1">// Convert PostsViewModel.ViewModelType to UserViewModel.ViewModelType</span>
+        <span class="k">let</span> <span class="nv">postsViewModel</span> <span class="o">=</span> <span class="n">postsViewModel</span><span class="o">.</span><span class="n">viewModels</span><span class="o">.</span><span class="nf">map</span><span class="p">(</span><span class="kt">UserViewModel</span><span class="o">.</span><span class="n">toViewModels</span><span class="p">)</span>
+        <span class="n">innerViewModels</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="nv">contentsOf</span><span class="p">:</span> <span class="n">postsViewModel</span><span class="p">)</span>
+        
+        <span class="k">self</span><span class="o">.</span><span class="n">viewModels</span> <span class="o">=</span> <span class="n">innerViewModels</span>
+    <span class="p">}</span>
+    
+    <span class="kd">private</span> <span class="kd">static</span> <span class="kd">func</span> <span class="nf">toViewModels</span><span class="p">(</span><span class="n">_</span> <span class="nv">viewModels</span><span class="p">:</span> <span class="kt">ProfileViewModel</span><span class="o">.</span><span class="kt">ViewModelType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">UserViewModel</span><span class="o">.</span><span class="kt">ViewModelType</span> <span class="p">{</span>
+        <span class="cm">/* ... */</span>
+    <span class="p">}</span>
+    
+    <span class="kd">private</span> <span class="kd">static</span> <span class="kd">func</span> <span class="nf">toViewModels</span><span class="p">(</span><span class="n">_</span> <span class="nv">viewModels</span><span class="p">:</span> <span class="kt">PostsViewModel</span><span class="o">.</span><span class="kt">ViewModelType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">UserViewModel</span><span class="o">.</span><span class="kt">ViewModelType</span> <span class="p">{</span>
+        <span class="cm">/* ... */</span>
+    <span class="p">}</span>
 <span class="p">}</span>
 </code></pre>
 </div>
 
-<p><code class="highlighter-rouge">UserViewModel</code> only needs to map the inner view model types to its own enum <code class="highlighter-rouge">UserViewModel.ViewModelType</code> and concatenate the results into one array.</p>
+<p><code class="highlighter-rouge">UserViewModel</code> only needs to map the inner view model types to its own enum <code class="highlighter-rouge">UserViewModel.ViewModelType</code> and concatenate the results into one array. <code class="highlighter-rouge">UserViewModel</code> has no state of its own. It composes the contents of its view models and exposes its own set of view models to the view layer.</p>
 
 <p>The view layer will only need to access <code class="highlighter-rouge">viewModels</code>.</p>
+
+<p>We now have the option of using <code class="highlighter-rouge">ProfileViewModel</code> and <code class="highlighter-rouge">PostsViewModel</code> alone on other screens, or composing them with other view models into other combinations.</p>
 
 <h2 id="conclusion">Conclusion</h2>
 
@@ -514,6 +541,10 @@
 <p>Other recommended reading on this topic: <a href="https://www.swiftbysundell.com/posts/modelling-state-in-swift">Modelling state in Swift</a>.</p>
 
 <p>Thanks for reading, and please let me know your thoughts and suggestions. I’m <a href="https://twitter.com/twocentstudios">@twocentstudios</a> on Twitter.</p>
+
+<blockquote>
+  <p>Thanks to Evan Coleman and Ernesto Carrion for reading drafts of this post.</p>
+</blockquote>
 
   </article>
 
