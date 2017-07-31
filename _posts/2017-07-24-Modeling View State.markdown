@@ -304,7 +304,6 @@ struct PostsViewModel {
         case initialized
         case loading
         case loaded([PostViewModel])
-        case empty
         case failed(Error)
     }
     
