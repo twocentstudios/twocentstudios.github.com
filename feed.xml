@@ -6,9 +6,380 @@
 </description>
     <link>http://twocentstudios.com/</link>
     <atom:link href="http://twocentstudios.com/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Sun, 30 Jul 2017 22:16:55 -0500</pubDate>
-    <lastBuildDate>Sun, 30 Jul 2017 22:16:55 -0500</lastBuildDate>
+    <pubDate>Sat, 05 Aug 2017 14:50:29 -0500</pubDate>
+    <lastBuildDate>Sat, 05 Aug 2017 14:50:29 -0500</lastBuildDate>
     <generator>Jekyll v3.0.0</generator>
+    
+      <item>
+        <title>Transitioning Between View States Using Reducers</title>
+        <description>&lt;p&gt;In this post we’ll take a look at a technique to model transitions between view states in Swift. We’ll also look at how to model the commands that will initiate view state transitions, and the effects that will be produced by view state transitions.&lt;/p&gt;
+
+&lt;p&gt;In the &lt;a href=&quot;/2017/07/24/modeling-view-state/&quot;&gt;last post&lt;/a&gt; we looked at modeling the view states themselves. We’ll revisit some of that code and build upon it in this post, but I would encourage you to read that post before continuing.&lt;/p&gt;
+
+&lt;p&gt;In subsequent posts, we’ll look at how to use our view models from the previous post and reducers from this post to create a full state machine in what we’ll call an interactor.&lt;/p&gt;
+
+&lt;h2 id=&quot;background&quot;&gt;Background&lt;/h2&gt;
+
+&lt;p&gt;In the last post, we ended up with a user profile screen that encapsulated two separate pieces of information: the user’s profile data and the user’s posts. Each has its own associated view states including &lt;code class=&quot;highlighter-rouge&quot;&gt;initialized&lt;/code&gt;, &lt;code class=&quot;highlighter-rouge&quot;&gt;loading&lt;/code&gt;, &lt;code class=&quot;highlighter-rouge&quot;&gt;loaded&lt;/code&gt;, and &lt;code class=&quot;highlighter-rouge&quot;&gt;failed&lt;/code&gt;.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/modeling_view_state-06.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;&quot; title=&quot;&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;We have some view states, and now we need a way to describe how we’re allowed to transition in between those view states.&lt;/p&gt;
+
+&lt;p&gt;Let’s look at a technique we can use to formalize these view state transitions. We’ll call this technique a &lt;strong&gt;reducer&lt;/strong&gt;. A reducer will:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;List all commands that can &lt;em&gt;change&lt;/em&gt; the view model state (&lt;code class=&quot;highlighter-rouge&quot;&gt;Command&lt;/code&gt;).&lt;/li&gt;
+  &lt;li&gt;List all effects that describe &lt;em&gt;side-effects&lt;/em&gt; of view model state transitions (&lt;code class=&quot;highlighter-rouge&quot;&gt;Effect&lt;/code&gt;).&lt;/li&gt;
+  &lt;li&gt;Determine all valid transitions between view model states (&lt;code class=&quot;highlighter-rouge&quot;&gt;ViewModel.State&lt;/code&gt; &amp;amp; &lt;code class=&quot;highlighter-rouge&quot;&gt;State&lt;/code&gt;).&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;There is lots of prior art on reducers, mostly from the functional programming world (I’ve included several links at the end of this post). In the context of finite state machines they’re called &lt;em&gt;transducers&lt;/em&gt;. We’re going to use &lt;em&gt;reducer&lt;/em&gt; in this post because of the rising popularity of Redux, Elm, ReSwift, etc. The name itself is just a name, and we’ll focus as much as possible on the attributes and the responsibilities of reducers.&lt;/p&gt;
+
+&lt;h2 id=&quot;goals&quot;&gt;Goals&lt;/h2&gt;
+
+&lt;p&gt;In many architectures, transitioning between view states is done on an adhoc basis.&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Often the previous view state is not consulted before transitioning to a view state, the result of which can be invalid view states, confusing transitions, or unwanted side-effects.&lt;/li&gt;
+  &lt;li&gt;Sometimes it’s not even possible to determine a cohesive representation of the view state because it must be derived from the property values of several unrelated &lt;code class=&quot;highlighter-rouge&quot;&gt;UIKit&lt;/code&gt; controls (e.g. &lt;code class=&quot;highlighter-rouge&quot;&gt;UISwitch.isOn&lt;/code&gt;, &lt;code class=&quot;highlighter-rouge&quot;&gt;UILabel.text&lt;/code&gt;, etc.).&lt;/li&gt;
+  &lt;li&gt;The code for making view state transitions is scattered throughout a view controller and mixed in with unrelated static view configuration code.&lt;/li&gt;
+  &lt;li&gt;Updating the model (and any additional overhead) must be done on the main thread, or a complex system of locking must be mixed in with the view code.&lt;/li&gt;
+  &lt;li&gt;There is no way to unit test the logic (or lack thereof) that controls view state transitions, especially because it is mixed in with asynchronous operations.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Our goal is to define a strict interface for a system that will describe valid view state transitions. The inputs and outputs to the system will be value-types and therefore the whole system will be easily testable.&lt;/p&gt;
+
+&lt;p&gt;This system is not necessarily complex. You’ll see in the implementation below that our reducer:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Is one static function.&lt;/li&gt;
+  &lt;li&gt;Works only with value types.&lt;/li&gt;
+  &lt;li&gt;Is synchronous.&lt;/li&gt;
+  &lt;li&gt;Is stateless.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&quot;definitions&quot;&gt;Definitions&lt;/h2&gt;
+
+&lt;p&gt;Before diving into code, let’s run through some new terms that will help us distinguish how data will flow through the reducer.&lt;/p&gt;
+
+&lt;h3 id=&quot;view-model&quot;&gt;View model&lt;/h3&gt;
+
+&lt;p&gt;We went into detail about view models &lt;a href=&quot;/2017/07/24/modeling-view-state/&quot;&gt;in the last post&lt;/a&gt;. The view model is a value type that transforms a view state into some output data that is easily consumable by an object in the view layer. A view model represents a view’s state at one moment in time.&lt;/p&gt;
+
+&lt;h3 id=&quot;command&quot;&gt;Command&lt;/h3&gt;
+
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;Command&lt;/code&gt; lists the valid events that can cause transitions between view states. Alongside the view model and effect, it is one of the inputs of the reducer function.&lt;/p&gt;
+
+&lt;h3 id=&quot;effect&quot;&gt;Effect&lt;/h3&gt;
+
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;Effect&lt;/code&gt; lists the valid side-effects that occur alongside a view state transition. It is primarily used as an output of the reducer, but due mostly to implementation details, it is also provided as an input to the reducer. There may be some rare situation where knowing the last effect would be useful in making a view state transition, but usually it will be ignored as an input.&lt;/p&gt;
+
+&lt;h3 id=&quot;state&quot;&gt;State&lt;/h3&gt;
+
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;State&lt;/code&gt; combines a view model and an optional effect. One input and the output of the reducer are of type State. Note that &lt;code class=&quot;highlighter-rouge&quot;&gt;Reducer.State&lt;/code&gt; is a different concept than &lt;code class=&quot;highlighter-rouge&quot;&gt;ViewModel.State&lt;/code&gt;.&lt;/p&gt;
+
+&lt;h3 id=&quot;reducer&quot;&gt;Reducer&lt;/h3&gt;
+
+&lt;p&gt;The general definition of a reducer is a function that takes a &lt;code class=&quot;highlighter-rouge&quot;&gt;Command&lt;/code&gt; and a &lt;code class=&quot;highlighter-rouge&quot;&gt;State&lt;/code&gt; and produces a new &lt;code class=&quot;highlighter-rouge&quot;&gt;State&lt;/code&gt;.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/transitioning_view_states-01.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;&quot; title=&quot;&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Our reducer’s &lt;code class=&quot;highlighter-rouge&quot;&gt;State&lt;/code&gt; combines both &lt;code class=&quot;highlighter-rouge&quot;&gt;ViewModel&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;Effect&lt;/code&gt;. So it’s better for us to look at the reducer’s inputs and outputs more like this:&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/transitioning_view_states-02.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;&quot; title=&quot;&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;We’ll come back to these diagrams in a moment when we get to the implementation.&lt;/p&gt;
+
+&lt;h2 id=&quot;general-implementation&quot;&gt;General Implementation&lt;/h2&gt;
+
+&lt;p&gt;Another goal of this technique is that it can be used as a template throughout an app. The contents of each view model, effect, and command will be different, but the structure will be the same.&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ViewModelReducer&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;enum&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Command&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; 
+        &lt;span class=&quot;c1&quot;&gt;// cases:&lt;/span&gt;
+        &lt;span class=&quot;c1&quot;&gt;// what events can cause this view model to change? &lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    
+    &lt;span class=&quot;kd&quot;&gt;enum&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Effect&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;  
+        &lt;span class=&quot;c1&quot;&gt;// cases: &lt;/span&gt;
+        &lt;span class=&quot;c1&quot;&gt;// what side-effects occur alongside state changes?&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    
+    &lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;State&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;viewModel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ViewModel&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;effect&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Effect&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    
+    &lt;span class=&quot;kd&quot;&gt;static&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;reduce&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;state&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;State&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;command&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Command&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;State&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;c1&quot;&gt;// Determine a new output State based on each input State &amp;amp; Command combination.&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;The benefit here is that the process of writing new reducers is formalized around designing a well-specified state machine. Once you’ve designed the system, writing the code becomes the easy part.&lt;/p&gt;
+
+&lt;p&gt;Notice that the &lt;code class=&quot;highlighter-rouge&quot;&gt;ViewModelReducer&lt;/code&gt; struct acts as a namespace. It has no properties or initializers. (It might be more syntactically correct for it to be an &lt;code class=&quot;highlighter-rouge&quot;&gt;enum&lt;/code&gt; instead with no cases, but for now we’ll keep it as a struct).&lt;/p&gt;
+
+&lt;h2 id=&quot;profile-implementation&quot;&gt;Profile Implementation&lt;/h2&gt;
+
+&lt;p&gt;Let’s implement the &lt;code class=&quot;highlighter-rouge&quot;&gt;ProfileViewModel&lt;/code&gt;: the top half of the user view.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/modeling_view_state-06.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;&quot; title=&quot;&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;The view model we created last time:&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ProfileViewModel&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;enum&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;State&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;initialized&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;loading&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;loaded&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;User&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;failed&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Error&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    
+    &lt;span class=&quot;kd&quot;&gt;enum&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ViewModelType&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;cm&quot;&gt;/* ... */&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;state&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;State&lt;/span&gt;
+    
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;viewModels&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;ViewModelType&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
+    
+    &lt;span class=&quot;nf&quot;&gt;init&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;state&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;State&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;cm&quot;&gt;/* ... */&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;At the moment, we’re only concerned with the &lt;code class=&quot;highlighter-rouge&quot;&gt;state&lt;/code&gt; part as it’s the input to &lt;code class=&quot;highlighter-rouge&quot;&gt;ProfileViewModel&lt;/code&gt;. The &lt;code class=&quot;highlighter-rouge&quot;&gt;viewModels&lt;/code&gt; property is the output used by the view layer.&lt;/p&gt;
+
+&lt;p&gt;First, we’ll copy/paste the template struct from above.&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;// Skeleton implementation&lt;/span&gt;
+&lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ProfileViewModelReducer&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;enum&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Command&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; 
+        &lt;span class=&quot;c1&quot;&gt;// TODO&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    
+    &lt;span class=&quot;kd&quot;&gt;enum&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Effect&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;  
+        &lt;span class=&quot;c1&quot;&gt;// TODO&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    
+    &lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;State&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;viewModel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ProfileViewModel&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;effect&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Effect&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    
+    &lt;span class=&quot;kd&quot;&gt;static&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;reduce&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;state&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;State&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;command&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Command&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;State&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;c1&quot;&gt;// TODO&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Next, let’s map out the state from &lt;code class=&quot;highlighter-rouge&quot;&gt;ProfileViewModel.State&lt;/code&gt;.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/transitioning_view_states-03.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;&quot; title=&quot;&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Our entry point is &lt;code class=&quot;highlighter-rouge&quot;&gt;Initialized&lt;/code&gt;.&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;Initialized&lt;/code&gt; can only go to &lt;code class=&quot;highlighter-rouge&quot;&gt;Loading&lt;/code&gt;.&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;Loading&lt;/code&gt; can transition to either &lt;code class=&quot;highlighter-rouge&quot;&gt;Loaded&lt;/code&gt; or &lt;code class=&quot;highlighter-rouge&quot;&gt;Failed&lt;/code&gt;.&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;Loaded&lt;/code&gt; or &lt;code class=&quot;highlighter-rouge&quot;&gt;Failed&lt;/code&gt; may transition back through &lt;code class=&quot;highlighter-rouge&quot;&gt;Loading&lt;/code&gt;.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Next, let’s name the commands that will trigger these transitions.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/transitioning_view_states-04.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;&quot; title=&quot;&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;The &lt;code class=&quot;highlighter-rouge&quot;&gt;Load&lt;/code&gt; command can be issued from three states.&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;Loaded&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;Failed&lt;/code&gt; commands are only valid when the current state is &lt;code class=&quot;highlighter-rouge&quot;&gt;Loading&lt;/code&gt;.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Let’s go ahead and add these commands to our implementation.&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;// Added `Command`&lt;/span&gt;
+&lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ProfileViewModelReducer&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;enum&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Command&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; 
+        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;load&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;loaded&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;User&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;failed&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Error&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    
+    &lt;span class=&quot;kd&quot;&gt;enum&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Effect&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;  
+        &lt;span class=&quot;c1&quot;&gt;// TODO&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    
+    &lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;State&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;viewModel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ProfileViewModel&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;effect&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Effect&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    
+    &lt;span class=&quot;kd&quot;&gt;static&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;reduce&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;state&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;State&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;command&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Command&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;State&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;c1&quot;&gt;// TODO&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Effect is next.&lt;/p&gt;
+
+&lt;p&gt;When we receive &lt;code class=&quot;highlighter-rouge&quot;&gt;Command.load&lt;/code&gt;, we want to both change the view state to &lt;code class=&quot;highlighter-rouge&quot;&gt;.loading&lt;/code&gt; &lt;em&gt;and&lt;/em&gt; kick off an asynchronous network request to load the data. Our reducer is synchronous though, so we’ll use the &lt;code class=&quot;highlighter-rouge&quot;&gt;Effect&lt;/code&gt; mechanism to specify exactly what asynchronous operation should be carried out on the reducer’s behalf.&lt;/p&gt;
+
+&lt;p&gt;In this case, it’s enough to simply define &lt;code class=&quot;highlighter-rouge&quot;&gt;Effect.load&lt;/code&gt; with no enum case associated values.&lt;/p&gt;
+
+&lt;p&gt;There’s are no other asynchronous requests we need to make in order to make all the other possible transitions, so the &lt;code class=&quot;highlighter-rouge&quot;&gt;Effect&lt;/code&gt; enum will only have one case this time.&lt;/p&gt;
+
+&lt;p&gt;Below is a diagram of one state transition from &lt;code class=&quot;highlighter-rouge&quot;&gt;.initialized&lt;/code&gt; to &lt;code class=&quot;highlighter-rouge&quot;&gt;.loading&lt;/code&gt;.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/transitioning_view_states-05.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;&quot; title=&quot;&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;And our updated reducer code:&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;// Added `Effect`&lt;/span&gt;
+&lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ProfileViewModelReducer&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;enum&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Command&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; 
+        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;load&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;loaded&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;User&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;failed&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Error&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    
+    &lt;span class=&quot;kd&quot;&gt;enum&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Effect&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;  
+        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;load&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    
+    &lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;State&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;viewModel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ProfileViewModel&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;effect&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Effect&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    
+    &lt;span class=&quot;kd&quot;&gt;static&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;reduce&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;state&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;State&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;command&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Command&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;State&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;c1&quot;&gt;// TODO&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;We’re finally ready to implement the &lt;code class=&quot;highlighter-rouge&quot;&gt;reduce&lt;/code&gt; function.&lt;/p&gt;
+
+&lt;p&gt;In the &lt;code class=&quot;highlighter-rouge&quot;&gt;reduce&lt;/code&gt; function we’ll see that Swift’s enums really shine. &lt;code class=&quot;highlighter-rouge&quot;&gt;switch&lt;/code&gt;ing over &lt;code class=&quot;highlighter-rouge&quot;&gt;ViewModel.State&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;Command&lt;/code&gt; allows the compiler to help us out and ensure we’ve covered all possible combinations (however, if you’re in a rush, you can always specify the known states and use a &lt;code class=&quot;highlighter-rouge&quot;&gt;default&lt;/code&gt; case to cover the rest).&lt;/p&gt;
+
+&lt;p&gt;It’s possible to &lt;code class=&quot;highlighter-rouge&quot;&gt;switch&lt;/code&gt; through the cases as &lt;code class=&quot;highlighter-rouge&quot;&gt;Command&lt;/code&gt; then &lt;code class=&quot;highlighter-rouge&quot;&gt;ViewModel.State&lt;/code&gt; or the reverse &lt;code class=&quot;highlighter-rouge&quot;&gt;ViewModel.State&lt;/code&gt; then &lt;code class=&quot;highlighter-rouge&quot;&gt;Command&lt;/code&gt;. At the moment I prefer the former (and have written it below as such), but the latter may be easier to read after some time away from the code.&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;static&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;reduce&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;state&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;State&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;command&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Command&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;State&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+
+    &lt;span class=&quot;c1&quot;&gt;// Unpack the arguments (we intentionally don&#39;t use `Effect` as an input).&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;viewModel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ProfileViewModel&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;state&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;viewModel&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Effect&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;state&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;effect&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;viewModelState&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ProfileViewModel&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;State&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;viewModel&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;state&lt;/span&gt;
+    
+    &lt;span class=&quot;c1&quot;&gt;// Create a convenience output `State` for invalid transitions.&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;noChange&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;State&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;viewModel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;viewModel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;effect&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;nil&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    
+    &lt;span class=&quot;c1&quot;&gt;// Switch over `command` then `viewModelState`.&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;switch&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;command&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;viewModelState&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        
+    &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;load&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;initialized&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt;
+         &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;load&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;loaded&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt;
+         &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;load&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;failed&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;):&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;State&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;viewModel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ProfileViewModel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;state&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;loading&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;effect&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;load&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        
+    &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;load&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;loading&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;):&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;noChange&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// ignore `.load` command if we&#39;re already in a loading state.&lt;/span&gt;
+        
+    &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;loaded&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;user&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;loading&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;):&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;State&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;viewModel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ProfileViewModel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;state&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;loaded&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;user&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)),&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;effect&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;nil&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        
+    &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;loaded&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;):&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;noChange&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// `.loaded` command can not be handled from any other view state besides `.loading`.&lt;/span&gt;
+        
+    &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;failed&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;error&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;loading&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;):&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;State&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;viewModel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ProfileViewModel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;state&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;failed&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;error&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)),&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;effect&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;nil&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        
+    &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;failed&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;):&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;noChange&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// `.failed` command can not be handled from any other view state besides `.loading`.&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;In the above implementation:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;We covered all combinations of the 3 &lt;code class=&quot;highlighter-rouge&quot;&gt;Command&lt;/code&gt;s and 4 &lt;code class=&quot;highlighter-rouge&quot;&gt;ViewModel.State&lt;/code&gt;s.&lt;/li&gt;
+  &lt;li&gt;Invalid transitions are handled by not changing the view model and performing no side-effects (&lt;code class=&quot;highlighter-rouge&quot;&gt;noChange&lt;/code&gt;). You may also consider adding &lt;code class=&quot;highlighter-rouge&quot;&gt;assertionFailure&lt;/code&gt;s to catch these attempted transitions during development if you believe they should never happen.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;ProfileViewModelReducer&lt;/code&gt; is fully implemented and can be used in a dedicated interactor which will complete the state machine.&lt;/p&gt;
+
+&lt;p&gt;The above combination of &lt;code class=&quot;highlighter-rouge&quot;&gt;Command&lt;/code&gt;s and &lt;code class=&quot;highlighter-rouge&quot;&gt;ViewModel.State&lt;/code&gt;s is quite common and covers a lot of cases in every day iOS development. However, you’ll find plenty of subtle differences when implementing different screens. I’d like to cover some more complicated cases in an advanced post in the future.&lt;/p&gt;
+
+&lt;h2 id=&quot;why-use-effect&quot;&gt;Why use Effect?&lt;/h2&gt;
+
+&lt;p&gt;You may be wondering why we need &lt;code class=&quot;highlighter-rouge&quot;&gt;Effect&lt;/code&gt; at all. Why not just derive side-effects directly from the view model’s state?&lt;/p&gt;
+
+&lt;p&gt;It’s sometimes possible to use view model directly, but in my experience mixing &lt;a href=&quot;https://en.wikipedia.org/wiki/Idempotence#Computer_science_meaning&quot;&gt;idempotent&lt;/a&gt; state changes with non-idempotent side-effects ends up being more complex than treating them separately.&lt;/p&gt;
+
+&lt;p&gt;In the example above, let’s say we decide to kick off a network operation if the view model state becomes &lt;code class=&quot;highlighter-rouge&quot;&gt;loading&lt;/code&gt; (this operation happens outside of the reducer). If a &lt;code class=&quot;highlighter-rouge&quot;&gt;Command.load&lt;/code&gt; is processed by the reducer once, then again, the output state will become &lt;code class=&quot;highlighter-rouge&quot;&gt;loading&lt;/code&gt; then remain &lt;code class=&quot;highlighter-rouge&quot;&gt;loading&lt;/code&gt;. With our simple logic, we will kick off two network requests. Is that what we want in all cases? Probably not.&lt;/p&gt;
+
+&lt;p&gt;In order to solve this problem, we would have to introduce more state checking in the code that kicks off the network operation. We’re now comparing the old state to the new state, but we’re already doing that inside the reducer! We’re now spreading business logic outside the reducer when our goal was the opposite.&lt;/p&gt;
+
+&lt;p&gt;The reducer is the best place to determine the next state &lt;em&gt;and&lt;/em&gt; any side-effects that occur based on state changes.&lt;/p&gt;
+
+&lt;h2 id=&quot;separating-request-and-response&quot;&gt;Separating Request and Response&lt;/h2&gt;
+
+&lt;p&gt;It may be a little difficult to understand how the asynchronous network request fits into this reducer, especially after seeing that the reducer itself is synchronous. The short answer is that we’ll see in the next post about interactors.&lt;/p&gt;
+
+&lt;p&gt;But to give a brief preview, the way we’ll handle asynchronous operations is by separating the request from its response. In the eyes of the reducer, the network request is just another &lt;code class=&quot;highlighter-rouge&quot;&gt;Effect&lt;/code&gt;. In the eyes of the reducer, the response to that network request is just another &lt;code class=&quot;highlighter-rouge&quot;&gt;Command&lt;/code&gt; that will potentially change the view state &lt;em&gt;depending on when that &lt;code class=&quot;highlighter-rouge&quot;&gt;Command&lt;/code&gt; is received&lt;/em&gt;. Anything could have happened to the view state while the asynchronous request was being made. Any situation like this will be handled in the same way: as just another input at some point in time.&lt;/p&gt;
+
+&lt;p&gt;In a simple view model like our example, it may seem like overkill to split the request and response. But think about a recent occasion when you’ve had to change some state based on multiple asynchronous requests triggered from multiple places in your view controller. How easy was it to make these changes in a performant and thread-safe manner? How sure were you that you had handled all the edge cases? How easy was it to test? How easy would it be to change this code based on new requirements?&lt;/p&gt;
+
+&lt;h2 id=&quot;pros-and-cons-of-reducers&quot;&gt;Pros and Cons of Reducers&lt;/h2&gt;
+
+&lt;h3 id=&quot;pros&quot;&gt;Pros&lt;/h3&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;strong&gt;Testing&lt;/strong&gt; - Using value types as input/output messages to a stateless static function makes this logic trivial to test. It’s so trivial you’ll think you’ve done something wrong. You can write a test for each valid transition in complete isolation.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Modifying code&lt;/strong&gt; - Adding new inputs or new view states is difficult, but in a good way. The Swift compiler will guide you through the process by ensuring you’ve still handled all possible combinations of commands and view states. Your tests will ensure you haven’t broken any existing transitions.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Reading code&lt;/strong&gt; - Your view state transition code is easy to find: it’s in the reducer. It’s keyed by command and view state. You don’t have to hunt through a 1000 line view controller to determine which of several possible functions could be changing your view state.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Modeling state, transitions, and effects&lt;/strong&gt; - Modeling each of these concerns separately allows us to give each the proper consideration and do so in isolation.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Templated problem solving&lt;/strong&gt; - I really love having a template I can follow to solve problems step by step. I can only fit so much in my head at once. Starting from modeling all states of a view then moving on to all the ways that view state can be changed allows me to focus on one problem at a time and be confident that there are no edge cases I haven’t handled. The Swift compiler always has my back.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;cons&quot;&gt;Cons&lt;/h3&gt;
+
+&lt;p&gt;Similar to our last post:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;strong&gt;More code&lt;/strong&gt; - There is lots more code to maintain. To be clear though, all of the conditions handled by this new code are either implicitly handled or completely disregarded in most other architectures.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;One big switch&lt;/strong&gt; - Some programmers consider switch statements, especially long ones, to be a code smell. I’d like to hear more opinions about whether a switch statement in this context is frowned upon and why.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Exponentially increasing transition cases&lt;/strong&gt; - As more commands and more view states are added, the number of possible transitions that must be handled by your reducer can start to become overwhelming. When you feel overwhelmed, it may be a sign that your view model can be split into two and nested in a parent view model.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Difficult to understand&lt;/strong&gt; - I believe that with the right surrounding documentation (hopefully this blog post), this technique is conceptually simple, especially to programmers with some background in functional programming. However, I can imagine that dropping a developer into this code may be a confusing and frustrating endeavor.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&quot;conclusion&quot;&gt;Conclusion&lt;/h2&gt;
+
+&lt;p&gt;In this post, we discussed using reducers as a single location to describe view state transitions and any side-effects based on those transitions.&lt;/p&gt;
+
+&lt;p&gt;We looked at a reusable skeleton implementation for a reducer and its four parts: &lt;code class=&quot;highlighter-rouge&quot;&gt;Command&lt;/code&gt;, &lt;code class=&quot;highlighter-rouge&quot;&gt;ViewModel&lt;/code&gt;, &lt;code class=&quot;highlighter-rouge&quot;&gt;Effect&lt;/code&gt;, and &lt;code class=&quot;highlighter-rouge&quot;&gt;State&lt;/code&gt;. We looked at the reducer function itself and the way we can use &lt;code class=&quot;highlighter-rouge&quot;&gt;switch&lt;/code&gt; to handle all transitions (both valid and invalid) of the state machine.&lt;/p&gt;
+
+&lt;h3 id=&quot;further-reading&quot;&gt;Further reading&lt;/h3&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;a href=&quot;https://www.cocoawithlove.com/blog/statements-messages-reducers.html&quot;&gt;Cocoa with Love: Statements, messages, and reducers&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;http://chris.eidhof.nl/post/reducers/&quot;&gt;Chris Eidhof: Reducers&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://en.wikipedia.org/wiki/Finite-state_machine&quot;&gt;Wikipedia: Finite State Machine&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://github.com/ReSwift/ReSwift&quot;&gt;ReSwift&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://github.com/reactjs/redux&quot;&gt;Redux&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Thanks for reading this post, and please let me know your thoughts and suggestions. I’m &lt;a href=&quot;https://twitter.com/twocentstudios&quot;&gt;@twocentstudios&lt;/a&gt; on Twitter.&lt;/p&gt;
+</description>
+        <pubDate>Wed, 02 Aug 2017 17:40:30 -0500</pubDate>
+        <link>http://twocentstudios.com/2017/08/02/transitioning-between-view-states-using-reducers/</link>
+        <guid isPermaLink="true">http://twocentstudios.com/2017/08/02/transitioning-between-view-states-using-reducers/</guid>
+        
+        
+      </item>
     
       <item>
         <title>Modeling View State</title>
@@ -2678,329 +3049,6 @@ AVAudioSequencer -&amp;gt; AVAudioUnitMIDISynth -&amp;gt; AVAudioMixerNode -&amp
         <pubDate>Mon, 10 Oct 2016 03:42:43 -0500</pubDate>
         <link>http://twocentstudios.com/2016/10/10/transforming-images-into-music/</link>
         <guid isPermaLink="true">http://twocentstudios.com/2016/10/10/transforming-images-into-music/</guid>
-        
-        
-      </item>
-    
-      <item>
-        <title>Calculating the Area of Multiple Intersecting Rectangles with Swift</title>
-        <description>&lt;p&gt;A piece of palate data I’m creating in my image to music generating app is the total ratio of the area faces in an image i.e. &lt;code class=&quot;highlighter-rouge&quot;&gt;totalAreaOfFaces / totalAreaOfPhoto&lt;/code&gt;.&lt;/p&gt;
-
-&lt;p&gt;This turns out to be a lot like a classic programming algorithms interview question. Jump to &lt;em&gt;Implementation&lt;/em&gt; if you want the TL;DR.&lt;/p&gt;
-
-&lt;blockquote&gt;
-  &lt;p&gt;The code in this post targets iOS 9.3 and Swift 2.2.&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;h2 id=&quot;naive-solution&quot;&gt;Naive Solution&lt;/h2&gt;
-
-&lt;p&gt;At first, this seems like a trivial problem. Apple provides us with a facial recognition algorithm in the CoreImage framework. This algorithm takes a &lt;code class=&quot;highlighter-rouge&quot;&gt;CIImage&lt;/code&gt; as input and returns &lt;code class=&quot;highlighter-rouge&quot;&gt;[CIFaceFeatures]&lt;/code&gt; each of which contains a &lt;code class=&quot;highlighter-rouge&quot;&gt;bounds&lt;/code&gt; property. Take the area of each bounds and add them together then divide by the area of the image and we’re done.&lt;/p&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;/// WRONG - naive implementation&lt;/span&gt;
-&lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;ratioOfFaces&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;image&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;CIImage&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;CGFloat&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;context&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;CIContext&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;options&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;nil&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;detector&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;CIDetector&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;ofType&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;CIDetectorTypeFace&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;context&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;context&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;options&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;CIDetectorAccuracy&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;CIDetectorAccuracyHigh&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;])&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;features&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;detector&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;featuresInImage&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;image&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;options&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;nil&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;faceArea&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;features&lt;/span&gt;
-        &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;map&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$0&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;bounds&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-        &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;map&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$0&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;width&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$0&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;height&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-        &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;reduce&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;combine&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;photoArea&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;image&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;extent&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;width&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;image&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;extent&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;height&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;ratio&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;faceArea&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;/&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;photoArea&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;clampedRatio&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;min&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ratio&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;clampedRatio&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;The above implementation is fine if we assume that no face rects will intersect. Unfortunately, face rects &lt;em&gt;can&lt;/em&gt; intersect. You can see this in the below image provided in the &lt;a href=&quot;https://developer.apple.com/library/mac/documentation/GraphicsImaging/Conceptual/CoreImaging/ci_detect_faces/ci_detect_faces.html#//apple_ref/doc/uid/TP30001185-CH8-SW1&quot;&gt;CoreImage documentation&lt;/a&gt;.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/rectangles-apple_face_detection.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;CoreImage Face Detection, note the overlapping rectangles (courtesy of Apple).&quot; title=&quot;CoreImage Face Detection, note the overlapping rectangles (courtesy of Apple).&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;CoreImage Face Detection, note the overlapping rectangles (courtesy of Apple).&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;With the naive algorithm above, it’s possible for the output ratio to be greater than 1. For my purposes, it would be perfectly reasonable to use the above algorithm and clamp the output to 1, especially since an image that would produce a result greater than 1 would be very rare. There would have to be two or more faces that covered the entire area of the photo. However, I decided to see how complicated it would be to calculate the true combined area of an array of &lt;em&gt;n&lt;/em&gt; overlapping rectangles.&lt;/p&gt;
-
-&lt;h2 id=&quot;subtracting-the-intersections&quot;&gt;Subtracting the Intersections&lt;/h2&gt;
-
-&lt;p&gt;Before Googling, my first attempt at an algorithm went like this:&lt;/p&gt;
-
-&lt;ol&gt;
-  &lt;li&gt;Add up the areas of each rectangle in the input array.&lt;/li&gt;
-  &lt;li&gt;Exhaustively pair each rectangle in the input array with every other rectangle.&lt;/li&gt;
-  &lt;li&gt;Calculate the intersection rectangle between each pair.&lt;/li&gt;
-  &lt;li&gt;Subtract the intersecting rectangles from the total from (1).&lt;/li&gt;
-&lt;/ol&gt;
-
-&lt;p&gt;This algorithm works if you can guarantee that only two (or an even number) rectangles can intersect. However, when three (or an odd number) rectangles intersect, the intersecting rectangle must be added back. It follows the &lt;a href=&quot;https://en.wikipedia.org/wiki/Inclusion%E2%80%93exclusion_principle&quot;&gt;inclusion-exclusion principle&lt;/a&gt;.&lt;/p&gt;
-
-&lt;p&gt;In visual form (thanks, &lt;em&gt;Numbers&lt;/em&gt;):&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/rectangles-two_rectangles.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Two overlapping rectangles.&quot; title=&quot;Two overlapping rectangles.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Two overlapping rectangles.&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;3*3 + 3*3 - 3*1 = 15&lt;/code&gt;&lt;br /&gt;
-&lt;code class=&quot;highlighter-rouge&quot;&gt;green + red - (green &amp;amp;&amp;amp; red)&lt;/code&gt;&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/rectangles-three_rectangles.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Three overlapping rectangles.&quot; title=&quot;Three overlapping rectangles.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Three overlapping rectangles.&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;(3*3 + 3*3 + 3*3) - (3*1 + 2*1 + 2*1) + (1*1) = 21&lt;/code&gt;&lt;br /&gt;
-&lt;code class=&quot;highlighter-rouge&quot;&gt;(green + red + black) - (green &amp;amp;&amp;amp; red + green &amp;amp;&amp;amp; black + red &amp;amp;&amp;amp; black) + (green &amp;amp;&amp;amp; red &amp;amp;&amp;amp; black)&lt;/code&gt;&lt;/p&gt;
-
-&lt;p&gt;Notice the alternating + and -. Feel free to count them and see. If you don’t add back the &lt;code class=&quot;highlighter-rouge&quot;&gt;1*1&lt;/code&gt; area covered by all three rectangles, your answer will be one short.&lt;/p&gt;
-
-&lt;p&gt;We’ve got to take it a step further.&lt;/p&gt;
-
-&lt;h2 id=&quot;separating-in-one-dimension&quot;&gt;Separating in One Dimension&lt;/h2&gt;
-
-&lt;p&gt;More Googling led me to &lt;a href=&quot;http://codercareer.blogspot.com/2011/12/no-27-area-of-rectangles.html&quot;&gt;this&lt;/a&gt; algorithm. The pseudocode is as follows:&lt;/p&gt;
-
-&lt;ol&gt;
-  &lt;li&gt;Determine and sort the unique X values (minX and maxX) for all rectangles in the array.&lt;/li&gt;
-  &lt;li&gt;Split all rectangles whose area falls within X values from (1).&lt;/li&gt;
-  &lt;li&gt;Merge all rectangles (on the Y axis) that have the same minX (and maxX).&lt;/li&gt;
-  &lt;li&gt;Calculate the area of each rectangle from (3) and add them up.&lt;/li&gt;
-&lt;/ol&gt;
-
-&lt;p&gt;Or in pictures:&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/rectangles-algo1.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Step 0: Randomly generated overlapping rectangles.&quot; title=&quot;Step 0: Randomly generated overlapping rectangles.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Step 0: Randomly generated overlapping rectangles.&lt;/div&gt;&lt;/div&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/rectangles-algo2.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Step 1: Finding all the X coordinates.&quot; title=&quot;Step 1: Finding all the X coordinates.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Step 1: Finding all the X coordinates.&lt;/div&gt;&lt;/div&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/rectangles-algo3.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Step 2: Splitting all rects on X coordinates.&quot; title=&quot;Step 2: Splitting all rects on X coordinates.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Step 2: Splitting all rects on X coordinates.&lt;/div&gt;&lt;/div&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/rectangles-algo4.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Step 3: Combining rects on the Y boundaries.&quot; title=&quot;Step 3: Combining rects on the Y boundaries.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Step 3: Combining rects on the Y boundaries.&lt;/div&gt;&lt;/div&gt;
-
-&lt;h2 id=&quot;implementation&quot;&gt;Implementation&lt;/h2&gt;
-
-&lt;p&gt;We have five discreet steps and two helper functions to implement.&lt;/p&gt;
-
-&lt;blockquote&gt;
-  &lt;p&gt;Note: I’m pretty fast and loose with mixing functional and imperatives bits.&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;h3 id=&quot;target-performance&quot;&gt;Target Performance&lt;/h3&gt;
-
-&lt;p&gt;Before we start, it’s best to pick a performance target for our use case so we don’t fall into the trap of preoptimizing. My best guess is that the 95 percentile case will have less than 5 faces detected in a photo. It’s possible, but very unlikely we’d have anywhere near say 1000 faces. Therefore, we don’t have to optimize performance very much. I’m going to target the algorithm on 5 faces taking less than 0.05 seconds.&lt;/p&gt;
-
-&lt;h3 id=&quot;high-level-function&quot;&gt;High Level Function&lt;/h3&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;areaOfRects&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;rects&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;CGRect&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;])&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;CGFloat&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;nonZeroRects&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;rects&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;filter&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$0&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;area&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;!=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;xDividers&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;uniqueSortedXDividers&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;nonZeroRects&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;splitRects&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;rectsSplitAtXDividers&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;nonZeroRects&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;xDividers&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;xDividers&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;combinedRects&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;combinedRectsOnY&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;splitRects&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;xDividers&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;xDividers&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;area&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;combinedRects&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;reduce&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;acc&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;rect&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;CGFloat&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;acc&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;rect&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;area&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;area&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;The first step we have to add to the algorithm is to sanitize our input rect array for any zero area rectangles.&lt;/p&gt;
-
-&lt;p&gt;The middle three steps correspond to steps 1, 2, and 3 presented above.&lt;/p&gt;
-
-&lt;p&gt;The last step is to add up areas of all of our non intersecting rects to determine the final area.&lt;/p&gt;
-
-&lt;h3 id=&quot;helper-functions&quot;&gt;Helper Functions&lt;/h3&gt;
-
-&lt;h4 id=&quot;area&quot;&gt;area&lt;/h4&gt;
-
-&lt;p&gt;Area is pretty straightforward.&lt;/p&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;extension&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;CGRect&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;area&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;CGFloat&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;width&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;height&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;    
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;h4 id=&quot;splitatx&quot;&gt;splitAtX&lt;/h4&gt;
-
-&lt;p&gt;We’ll also need a function to split any rect at an X value.&lt;/p&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;/// Split self into two rects at X. Otherwise, return self.&lt;/span&gt;
-&lt;span class=&quot;kd&quot;&gt;extension&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;CGRect&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;splitAtX&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;x&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;CGFloat&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;CGRect&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;x&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;minX&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;||&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;x&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;maxX&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-            &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
-        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;rect1&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;CGRect&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
-            &lt;span class=&quot;nv&quot;&gt;x&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;minX&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
-            &lt;span class=&quot;nv&quot;&gt;y&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;minY&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
-            &lt;span class=&quot;nv&quot;&gt;width&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;x&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;minX&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
-            &lt;span class=&quot;nv&quot;&gt;height&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;height&lt;/span&gt;
-        &lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;rect2&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;CGRect&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
-            &lt;span class=&quot;nv&quot;&gt;x&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;x&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
-            &lt;span class=&quot;nv&quot;&gt;y&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;minY&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
-            &lt;span class=&quot;nv&quot;&gt;width&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;maxX&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;x&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
-            &lt;span class=&quot;nv&quot;&gt;height&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;height&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rect1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;rect2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;    
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;CGRect&lt;/code&gt; already has a function &lt;code class=&quot;highlighter-rouge&quot;&gt;CGRectDivide&lt;/code&gt;, but since we have to do specific bounds checking anyway, I found it easier just to write my own.&lt;/p&gt;
-
-&lt;h4 id=&quot;cgrectunion&quot;&gt;CGRectUnion&lt;/h4&gt;
-
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;CGRectUnion(rect1, rect2)&lt;/code&gt; finds the smallest rectangle that contains &lt;code class=&quot;highlighter-rouge&quot;&gt;rect1&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;rect2&lt;/code&gt;.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/rectangles-union.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;The union of two rectangles outlined in red.&quot; title=&quot;The union of two rectangles outlined in red.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The union of two rectangles outlined in red.&lt;/div&gt;&lt;/div&gt;
-
-&lt;h4 id=&quot;cgrectintersection--cgrectintersectsrect&quot;&gt;CGRectIntersection &amp;amp; CGRectIntersectsRect&lt;/h4&gt;
-
-&lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;CGRectIntersection(rect1, rect2)&lt;/code&gt; finds a rectangle shared by both &lt;code class=&quot;highlighter-rouge&quot;&gt;rect1&lt;/code&gt; and &lt;code class=&quot;highlighter-rouge&quot;&gt;rect2&lt;/code&gt; or &lt;code class=&quot;highlighter-rouge&quot;&gt;CGRectNull&lt;/code&gt; if they do not intersect. It has a boolean cousin called &lt;code class=&quot;highlighter-rouge&quot;&gt;CGRectIntersectsRect&lt;/code&gt;.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/rectangles-intersection.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;The intersection of two rectangles filled in blue.&quot; title=&quot;The intersection of two rectangles filled in blue.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The intersection of two rectangles filled in blue.&lt;/div&gt;&lt;/div&gt;
-
-&lt;h3 id=&quot;uniquesortedxdividers&quot;&gt;uniqueSortedXDividers&lt;/h3&gt;
-
-&lt;p&gt;Four transformations: take minX and maxX, flatten them back into one array, create a set to unique them, then sort min to max.&lt;/p&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;/// Collect and unique all X coordinates.&lt;/span&gt;
-&lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;uniqueSortedXDividers&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;rects&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;CGRect&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;])&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;CGFloat&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;xDividers&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;rects&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;map&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$0&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;minX&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$0&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;maxX&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;flatten&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;xDividersUniqueSorted&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Array&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Set&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;xDividers&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;sort&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;xDividersUniqueSorted&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;h3 id=&quot;rectssplitatxdividers&quot;&gt;rectsSplitAtXDividers&lt;/h3&gt;
-
-&lt;p&gt;For the outer loop, loop through each X value. For the inner loop, loop through each rect, split it if necessary, and return it to the array.&lt;/p&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;/// Split all rects at X coordinates.&lt;/span&gt;
-&lt;span class=&quot;c1&quot;&gt;/// Precondition: all rects must have non-zero area.&lt;/span&gt;
-&lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;rectsSplitAtXDividers&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;rects&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;CGRect&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;],&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;xDividers&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;CGFloat&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;])&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;CGRect&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;r&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;rects&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;precondition&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;r&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;area&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;dividedRects&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;CGRect&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;rects&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;xDivider&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;xDividers&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;running&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;CGRect&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[]&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;rect&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;dividedRects&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-            &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;dividedInputRects&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;rect&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;splitAtX&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;xDivider&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-            &lt;span class=&quot;n&quot;&gt;running&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;appendContentsOf&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;dividedInputRects&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-        &lt;span class=&quot;n&quot;&gt;dividedRects&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;running&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;dividedRects&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;h3 id=&quot;combinerectsony&quot;&gt;combineRectsOnY&lt;/h3&gt;
-
-&lt;p&gt;By splitting the rects on the X axis, we can now guarantee that:&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;no rects will overlap on the X axis.&lt;/li&gt;
-  &lt;li&gt;all rects with the same minX will also have the same width.&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;Rects can still overlap on the Y axis though. We must now combine any rects that overlap.&lt;/p&gt;
-
-&lt;p&gt;Our outer loop is again on the X boundaries. The inner loop occurs only on the rects that lie on that X boundary, so we’re essentially touching each rect only once.&lt;/p&gt;
-
-&lt;p&gt;We have several conditions to handle for each X boundary.&lt;/p&gt;
-
-&lt;ol&gt;
-  &lt;li&gt;There are no rects that lie on the X boundary.&lt;/li&gt;
-  &lt;li&gt;There is one rect that lies on the X boundary.&lt;/li&gt;
-  &lt;li&gt;There are two intersecting rects that lie on the X boundary.&lt;/li&gt;
-  &lt;li&gt;There are two non-intersecting rects that lie on the X boundary.&lt;/li&gt;
-  &lt;li&gt;With more than two rects, any combination of 3 and 4.&lt;/li&gt;
-&lt;/ol&gt;
-
-&lt;p&gt;Sorting rects by ascending Y value allows us to compare adjacent rects for intersection without skipping over any.&lt;/p&gt;
-
-&lt;p&gt;Within the &lt;code class=&quot;highlighter-rouge&quot;&gt;sortedRects&lt;/code&gt; loop, we compare each rect to its preceding neighbor, combine them with &lt;code class=&quot;highlighter-rouge&quot;&gt;CGRectUnion&lt;/code&gt; if they intersect, or add the previous rect to the output array if it does not intersect.&lt;/p&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;/// For each set of rects at an X boundary,&lt;/span&gt;
-&lt;span class=&quot;c1&quot;&gt;/// combine the intersecting rects.&lt;/span&gt;
-&lt;span class=&quot;c1&quot;&gt;///&lt;/span&gt;
-&lt;span class=&quot;c1&quot;&gt;/// Precondition: all rects on the same X boundary must&lt;/span&gt;
-&lt;span class=&quot;c1&quot;&gt;/// be equal in width.&lt;/span&gt;
-&lt;span class=&quot;kd&quot;&gt;static&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;combinedRectsOnY&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;rects&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;CGRect&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;],&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;xDividers&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;CGFloat&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;])&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;CGRect&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;combinedRects&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;CGRect&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[]&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;xDivider&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;xDividers&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;xFilteredRects&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;rects&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;filter&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$0&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;minX&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;xDivider&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;sortedRects&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;xFilteredRects&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;sort&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$0&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;minY&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$1&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;minY&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;guard&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;first&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;sortedRects&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;first&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;last&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;sortedRects&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;last&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;else&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;continue&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;first&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;last&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-            &lt;span class=&quot;n&quot;&gt;combinedRects&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;append&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;first&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-            &lt;span class=&quot;k&quot;&gt;continue&lt;/span&gt;
-        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;prev&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;first&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;rect&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;sortedRects&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-            &lt;span class=&quot;nf&quot;&gt;assert&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rect&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;width&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;prev&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;width&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-            &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;CGRectIntersectsRect&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rect&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;prev&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-                &lt;span class=&quot;n&quot;&gt;prev&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;CGRectUnion&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rect&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;prev&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-            &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;else&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-                &lt;span class=&quot;n&quot;&gt;combinedRects&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;append&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;prev&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-                &lt;span class=&quot;n&quot;&gt;prev&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;rect&lt;/span&gt;
-            &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-        &lt;span class=&quot;n&quot;&gt;combinedRects&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;append&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;prev&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;combinedRects&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;blockquote&gt;
-  &lt;p&gt;An alternate implementation of this step could instead divide all rects on the Y boundaries (similar to the second step of our algorithm), then discard any rects that are the same.&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;h2 id=&quot;using-our-function&quot;&gt;Using Our Function&lt;/h2&gt;
-
-&lt;p&gt;Now that we can more accurately calculate the area of our face rectangles, here is the final implementation of our original problem.&lt;/p&gt;
-
-&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;ratioOfFaces&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;image&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;CIImage&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;CGFloat&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;context&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;CIContext&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;options&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;nil&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;detector&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;CIDetector&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;ofType&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;CIDetectorTypeFace&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;context&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;context&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;options&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;CIDetectorAccuracy&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;CIDetectorAccuracyHigh&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;])&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;features&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;detector&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;featuresInImage&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;image&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;options&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;nil&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;faceRects&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;features&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;map&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$0&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;bounds&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;faceArea&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;areaOfRects&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;faceRects&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// our algorithm&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;photoArea&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;image&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;extent&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;width&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;image&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;extent&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;height&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;ratio&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;faceArea&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;/&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;photoArea&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ratio&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;h2 id=&quot;other-algorithms&quot;&gt;Other Algorithms&lt;/h2&gt;
-
-&lt;p&gt;From my cursory research, I found at least two other unique algorithms.&lt;/p&gt;
-
-&lt;p&gt;The first is the brute force approach: create a matrix the size of the union of all rectangles (initialized to 0), “color in” the area of rectangles in the matrix with a 1, then count the number of 1s.&lt;/p&gt;
-
-&lt;p&gt;The second recursively finds intersecting rectangles and applies the aforementioned inclusion-exclusion principle to add and subtract the intersecting areas.&lt;/p&gt;
-
-&lt;p&gt;See the Reddit link in the References section below if you’re interested in reading more about these.&lt;/p&gt;
-
-&lt;h2 id=&quot;conclusion&quot;&gt;Conclusion&lt;/h2&gt;
-
-&lt;p&gt;As an Electrical &amp;amp; Computer Engineering major in college, I didn’t get as much algorithms practice as you Comp Sci-ers, so this was a fun little exercise for me.&lt;/p&gt;
-
-&lt;p&gt;@ me on Twitter &lt;a href=&quot;https://twitter.com/twocentstudios&quot;&gt;@twocentstudios&lt;/a&gt; if you have ideas for a better algorithm!&lt;/p&gt;
-
-&lt;h2 id=&quot;references&quot;&gt;References&lt;/h2&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;&lt;a href=&quot;https://developer.apple.com/library/mac/documentation/GraphicsImaging/Conceptual/CoreImaging/ci_detect_faces/ci_detect_faces.html#//apple_ref/doc/uid/TP30001185-CH8-SW1&quot;&gt;Apple: Detecting Faces in an Image&lt;/a&gt;&lt;/li&gt;
-  &lt;li&gt;&lt;a href=&quot;http://codercareer.blogspot.com/2011/12/no-27-area-of-rectangles.html&quot;&gt;Coder Career: Area of Rectangles&lt;/a&gt;&lt;/li&gt;
-  &lt;li&gt;&lt;a href=&quot;https://www.reddit.com/r/dailyprogrammer/comments/zaa0v/9032012_challenge_95_difficult_overlapping/&quot;&gt;Reddit: Overlapping Rectangles Programming Challenge&lt;/a&gt;&lt;/li&gt;
-  &lt;li&gt;&lt;a href=&quot;https://en.wikipedia.org/wiki/Inclusion%E2%80%93exclusion_principle&quot;&gt;Inclusion-Exclusion Principle&lt;/a&gt;&lt;/li&gt;
-&lt;/ul&gt;
-
-</description>
-        <pubDate>Tue, 16 Aug 2016 15:26:22 -0500</pubDate>
-        <link>http://twocentstudios.com/2016/08/16/calculating-the-area-of-multiple-intersecting-rectangles-with-swift/</link>
-        <guid isPermaLink="true">http://twocentstudios.com/2016/08/16/calculating-the-area-of-multiple-intersecting-rectangles-with-swift/</guid>
         
         
       </item>
