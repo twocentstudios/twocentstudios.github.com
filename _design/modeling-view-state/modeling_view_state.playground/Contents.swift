@@ -168,10 +168,12 @@ struct D2 {
         }
         
         private static func toViewModels(_ viewModels: ProfileViewModel.ViewModelType) -> UserViewModel.ViewModelType {
+            fatalError()
             /* ... */
         }
         
         private static func toViewModels(_ viewModels: PostsViewModel.ViewModelType) -> UserViewModel.ViewModelType {
+            fatalError()
             /* ... */
         }
     }
@@ -194,7 +196,7 @@ struct D2 {
         
         let viewModels: [ViewModelType]
         
-//        init(state: State) { /* ... */ }
+        init(state: State) { /* ... */ fatalError() }
     }
     
     struct PostsViewModel {
@@ -202,7 +204,6 @@ struct D2 {
             case initialized
             case loading
             case loaded([PostViewModel])
-            case empty
             case failed(Error)
         }
         
@@ -219,7 +220,71 @@ struct D2 {
         
 //        init(state: State) { /* ... */ }
     }
+
+    struct ProfileViewModelReducer {
+        enum Command {
+            case load
+            case loaded(User)
+            case failed(Error)
+        }
+        
+        enum Effect {
+            case load
+        }
+        
+        struct State {
+            let viewModel: ProfileViewModel
+            let effect: Effect?
+        }
+        
+        static func reduce(state: State, command: Command) -> State {
+            let viewModel: ProfileViewModel = state.viewModel
+            let _: Effect? = state.effect
+            let viewModelState: ProfileViewModel.State = viewModel.state
+            let noChange = State(viewModel: viewModel, effect: nil)
+            
+            switch (command, viewModelState) {
+                
+            case (.load, .initialized),
+                 (.load, .loaded),
+                 (.load, .failed):
+                return State(viewModel: ProfileViewModel(state: .loading), effect: .load)
+                
+            case (.load, .loading):
+                return noChange // ignore `.load` messages if we're already in a loading state.
+                
+            case (.loaded(let user), .loading):
+                return State(viewModel: ProfileViewModel(state: .loaded(user)), effect: nil)
+                
+            case (.loaded, _):
+                return noChange // `.loaded` command can not be handled from any other view state besides `.loading`.
+                
+            case (.failed(let error), .loading):
+                return State(viewModel: ProfileViewModel(state: .failed(error)), effect: nil)
+                
+            case (.failed, _):
+                return noChange // `.failed` command can not be handled from any other view state besides `.loading`.
+            }
+        }
+    }
+
 }
+
+struct ViewModelReducer {
+    enum Command { /* cases */ }
+    
+    enum Effect {  /* cases */ }
+    
+    struct State {
+        let viewModel: ViewModel
+        let effect: Effect?
+    }
+    
+    static func reduce(state: State, command: Command) -> State {
+        // Determine a new output State based on each input State & Command combination.
+    }
+}
+
 
 
 
