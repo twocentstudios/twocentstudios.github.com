@@ -351,24 +351,20 @@ struct UserViewModel {
         self.profileViewModel = profileViewModel
         self.postsViewModel = postsViewModel
         
-        var innerViewModels: [ViewModelType] = []
+        let profileViewModels = profileViewModel.viewModels.map(UserViewModel.toViewModel)
+        let postsHeaderViewModels = [ViewModelType.contentHeader("Posts")]
+        let postsViewModels = postsViewModel.viewModels.map(UserViewModel.toViewModel)
         
-        // Convert ProfileViewModel.ViewModelType to UserViewModel.ViewModelType
-        let profileInnerViewModels = profileViewModel.viewModels.map(UserViewModel.toViewModels)
-        innerViewModels.append(contentsOf: profileInnerViewModels)
-        
-        // Convert PostsViewModel.ViewModelType to UserViewModel.ViewModelType
-        let postsViewModel = postsViewModel.viewModels.map(UserViewModel.toViewModels)
-        innerViewModels.append(contentsOf: postsViewModel)
+        let innerViewModels: [ViewModelType] = profileViewModels + postsHeaderViewModels + postsViewModels
         
         self.viewModels = innerViewModels
     }
     
-    private static func toViewModels(_ viewModels: ProfileViewModel.ViewModelType) -> UserViewModel.ViewModelType {
+    private static func toViewModel(_ viewModel: ProfileViewModel.ViewModelType) -> UserViewModel.ViewModelType {
         /* ... */
     }
     
-    private static func toViewModels(_ viewModels: PostsViewModel.ViewModelType) -> UserViewModel.ViewModelType {
+    private static func toViewModel(_ viewModel: PostsViewModel.ViewModelType) -> UserViewModel.ViewModelType {
         /* ... */
     }
 }
