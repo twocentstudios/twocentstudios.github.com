@@ -303,7 +303,7 @@ struct PostsViewModel {
     enum State {
         case initialized
         case loading
-        case loaded([PostViewModel])
+        case loaded([Post])
         case failed(Error)
     }
     
