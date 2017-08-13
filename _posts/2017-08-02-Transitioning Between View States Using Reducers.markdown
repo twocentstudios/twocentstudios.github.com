@@ -341,6 +341,8 @@ We looked at a reusable skeleton implementation for a reducer and its four parts
 ### Further reading
 
 * [Cocoa with Love: Statements, messages, and reducers](https://www.cocoawithlove.com/blog/statements-messages-reducers.html)
+* [BPXL Craft: The Value is the Boundary](https://medium.com/bpxl-craft/the-value-is-the-boundary-7c4d65322896)
+* [inamiy: ReactiveAutomaton](https://github.com/inamiy/ReactiveAutomaton)
 * [Chris Eidhof: Reducers](http://chris.eidhof.nl/post/reducers/)
 * [Wikipedia: Finite State Machine](https://en.wikipedia.org/wiki/Finite-state_machine)
 * [ReSwift](https://github.com/ReSwift/ReSwift)
