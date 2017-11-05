@@ -285,6 +285,16 @@ struct ViewModelReducer {
     }
 }
 
-
+final class Interactor {
+    enum Command { }
+    enum Effect { }
+    
+    // Inputs
+    let commandSink: Signal<Command, NoError>.Observer
+    
+    // Outputs
+    let viewModel: Property<ViewModel>
+    let effect: Signal<Effect, NoError>
+}
 
 
