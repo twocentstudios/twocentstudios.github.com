@@ -6,8 +6,8 @@
 </description>
     <link>http://twocentstudios.com/</link>
     <atom:link href="http://twocentstudios.com/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Sat, 16 Dec 2017 01:03:04 -0600</pubDate>
-    <lastBuildDate>Sat, 16 Dec 2017 01:03:04 -0600</lastBuildDate>
+    <pubDate>Sat, 16 Dec 2017 05:09:18 -0600</pubDate>
+    <lastBuildDate>Sat, 16 Dec 2017 05:09:18 -0600</lastBuildDate>
     <generator>Jekyll v3.0.0</generator>
     
       <item>
@@ -78,6 +78,14 @@
 &lt;p&gt;&lt;code class=&quot;highlighter-rouge&quot;&gt;Property&amp;lt;ViewModel&amp;gt;&lt;/code&gt; also provides us read-only access to &lt;code class=&quot;highlighter-rouge&quot;&gt;value&lt;/code&gt;, the latest &lt;code class=&quot;highlighter-rouge&quot;&gt;ViewModel&lt;/code&gt; that was sent through the &lt;code class=&quot;highlighter-rouge&quot;&gt;Signal&lt;/code&gt;. We’ll need access to this because of the way the &lt;code class=&quot;highlighter-rouge&quot;&gt;UITableView&lt;/code&gt; datasource and delegate APIs work.&lt;/p&gt;
 
 &lt;p&gt;In the interactor, we ensured that &lt;code class=&quot;highlighter-rouge&quot;&gt;viewModel&lt;/code&gt; is always set on the main thread.&lt;/p&gt;
+
+&lt;h3 id=&quot;configure-the-view-to-match-the-view-model&quot;&gt;2. Configure the view to match the view model&lt;/h3&gt;
+
+&lt;p&gt;We’re using a &lt;code class=&quot;highlighter-rouge&quot;&gt;UITableView&lt;/code&gt;. We therefore have to conform to &lt;code class=&quot;highlighter-rouge&quot;&gt;UITableViewDataSource&lt;/code&gt; and use its prescribed methods to assign view models to views.&lt;/p&gt;
+
+&lt;h3 id=&quot;send-raw-events-to-the-interactor-in-order-to-change-the-view-state&quot;&gt;3. Send raw events to the interactor in order to change the view state.&lt;/h3&gt;
+
+&lt;p&gt;We’ll wire up touch/selection events from the view layer to the interactor by mapping them to &lt;code class=&quot;highlighter-rouge&quot;&gt;Command&lt;/code&gt; values and placing them on the &lt;code class=&quot;highlighter-rouge&quot;&gt;commandSink&lt;/code&gt; bus using &lt;code class=&quot;highlighter-rouge&quot;&gt;ReactiveSwift&lt;/code&gt;’s &lt;code class=&quot;highlighter-rouge&quot;&gt;.send(value: ...)&lt;/code&gt; syntax.&lt;/p&gt;
 
 &lt;h2 id=&quot;implementation&quot;&gt;Implementation&lt;/h2&gt;
 

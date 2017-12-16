@@ -197,6 +197,14 @@
 
 <p>In the interactor, we ensured that <code class="highlighter-rouge">viewModel</code> is always set on the main thread.</p>
 
+<h3 id="configure-the-view-to-match-the-view-model">2. Configure the view to match the view model</h3>
+
+<p>We’re using a <code class="highlighter-rouge">UITableView</code>. We therefore have to conform to <code class="highlighter-rouge">UITableViewDataSource</code> and use its prescribed methods to assign view models to views.</p>
+
+<h3 id="send-raw-events-to-the-interactor-in-order-to-change-the-view-state">3. Send raw events to the interactor in order to change the view state.</h3>
+
+<p>We’ll wire up touch/selection events from the view layer to the interactor by mapping them to <code class="highlighter-rouge">Command</code> values and placing them on the <code class="highlighter-rouge">commandSink</code> bus using <code class="highlighter-rouge">ReactiveSwift</code>’s <code class="highlighter-rouge">.send(value: ...)</code> syntax.</p>
+
 <h2 id="implementation">Implementation</h2>
 
 <p>We’ve already done most of the heavy lifting in the interactor, reducer, and view model definition. We’ll mostly be doing the UI tasks of creating view subclasses, writing layout code, and implementing the required delegate methods for <code class="highlighter-rouge">UITableView</code>.</p>
