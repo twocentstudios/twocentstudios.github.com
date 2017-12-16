@@ -65,6 +65,14 @@ final class Interactor {
 
 In the interactor, we ensured that `viewModel` is always set on the main thread.
 
+### 2. Configure the view to match the view model
+
+We're using a `UITableView`. We therefore have to conform to `UITableViewDataSource` and use its prescribed methods to assign view models to views.
+
+### 3. Send raw events to the interactor in order to change the view state.
+
+We'll wire up touch/selection events from the view layer to the interactor by mapping them to `Command` values and placing them on the `commandSink` bus using `ReactiveSwift`'s `.send(value: ...)` syntax.
+
 ## Implementation
 
 We've already done most of the heavy lifting in the interactor, reducer, and view model definition. We'll mostly be doing the UI tasks of creating view subclasses, writing layout code, and implementing the required delegate methods for `UITableView`.
