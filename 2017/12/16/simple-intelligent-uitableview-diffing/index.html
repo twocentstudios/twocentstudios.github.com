@@ -134,16 +134,6 @@
 
 <p>In the previous three blog posts, we’ve modeled the <a href="http://twocentstudios.com/2017/07/24/modeling-view-state/">view state</a>, then created a <a href="http://twocentstudios.com/2017/08/02/transitioning-between-view-states-using-reducers/">reducer</a> to process changes to that view state, then created an <a href="http://twocentstudios.com/2017/11/05/interactors/">interactor</a> to process input events and manage the view state over time.</p>
 
-<h2 id="goal">Goal</h2>
-
-<p>Our goal will be a normal data load from two sources that looks like this video:</p>
-
-<video src="/images/view_controller_with_interactor-normal_load.mov" controls="" preload="none" poster="/images/view_controller_with_interactor-normal_load-poster.png" height="600"></video>
-
-<p>And we want to be able to seamlessly reload from failure like the video below:</p>
-
-<video src="/images/view_controller_with_interactor-failed.mov" controls="" preload="none" poster="/images/view_controller_with_interactor-failed-poster.png" height="600"></video>
-
 <h2 id="background">Background</h2>
 
 <p>Our goal in creating an interactor and a fully specified view state was to allow our view layer to be very dumb. There are a few reasons this is beneficial:</p>
@@ -158,7 +148,15 @@
   <p>Note that in this post, I’ll be using <a href="https://github.com/ReactiveCocoa/ReactiveSwift">ReactiveSwift</a> and <a href="https://github.com/tonyarnold/Differ">Differ</a> in my reference implementation.</p>
 </blockquote>
 
-<h2 id="goal-1">Goal</h2>
+<h2 id="goal">Goal</h2>
+
+<p>Our goal will be a normal data load from two sources that looks like this video:</p>
+
+<video src="/images/view_controller_with_interactor-normal_load.mov" controls="" preload="none" poster="/images/view_controller_with_interactor-normal_load-poster.png" height="600"></video>
+
+<p>And we want to be able to seamlessly reload from failure like the video below:</p>
+
+<video src="/images/view_controller_with_interactor-failed.mov" controls="" preload="none" poster="/images/view_controller_with_interactor-failed-poster.png" height="600"></video>
 
 <p>Like in most MVVM variants, we’ll consider pretty much everything in <code class="highlighter-rouge">UIKit</code> as part of the view layer. That means <code class="highlighter-rouge">UIViewController</code>, <code class="highlighter-rouge">UIView</code>, and <code class="highlighter-rouge">UIApplication</code>.</p>
 
