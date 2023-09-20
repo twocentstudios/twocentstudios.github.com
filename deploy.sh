@@ -3,7 +3,7 @@ set -e
 
 DATE=`date +%Y-%m-%d:%H:%M:%S`
  
-jekyll build && \
+bundle exec jekyll build && \
   cd _site && \
   git add . && \
   git commit -am $DATE && \
