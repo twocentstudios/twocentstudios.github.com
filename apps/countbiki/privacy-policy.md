@@ -1,10 +1,13 @@
-# Privacy Policy
+---
+title: Count Biki Privacy Policy
+layout: standalone
+---
 
 Count Biki is an iOS app created by twocentstudios.
 
-This policy describes the data that the app Count Biki collects and store about you (basically none).
+This policy describes the data that we collect and store about you (basically none).
 
-Count Biki does not collect any user input data from the app. All settings are stored locally on your device.
+We do not collect any user input or preferences from the app. All settings are stored locally on your device.
 
 If you email us for support or for any other reason, we will have your email address, but we will only use it for the duration of answering your request. We will remove your email address on request.
 
