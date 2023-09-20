@@ -53,6 +53,10 @@
           
         
           
+          <a class="page-link" href="/apps/countbiki/privacy-policy/">Count Biki Privacy Policy</a>
+          
+        
+          
         
           
         
@@ -175,18 +179,18 @@
 <figure class="highlight"><pre><code class="language-text" data-lang="text">View =&gt; View Model =&gt; Model
      &lt;-            &lt;-</code></pre></figure>
 
-<p>Where <code class="highlighter-rouge">=&gt;</code> represents some combination of ownership, strong references, direct observation, and events. <code class="highlighter-rouge">&lt;-</code> represents the flow of data (but not direct references, weak or strong).</p>
+<p>Where <code class="language-plaintext highlighter-rouge">=&gt;</code> represents some combination of ownership, strong references, direct observation, and events. <code class="language-plaintext highlighter-rouge">&lt;-</code> represents the flow of data (but not direct references, weak or strong).</p>
 
 <p>In Cocoa-land/objc-world:</p>
 
 <ul>
-  <li>The view layer is comprised primarily of <code class="highlighter-rouge">UIView</code>s and <code class="highlighter-rouge">UIViewController</code>s.</li>
-  <li>The view model layer is comprised of plain <code class="highlighter-rouge">NSObject</code>s.</li>
-  <li>The model layer is comprised of what I’ll actually call controllers, but could also be known as clients, data sources, etc. The roles are more important to keep in mind than the names. Controllers are also usually <code class="highlighter-rouge">NSObject</code> subclasses.</li>
+  <li>The view layer is comprised primarily of <code class="language-plaintext highlighter-rouge">UIView</code>s and <code class="language-plaintext highlighter-rouge">UIViewController</code>s.</li>
+  <li>The view model layer is comprised of plain <code class="language-plaintext highlighter-rouge">NSObject</code>s.</li>
+  <li>The model layer is comprised of what I’ll actually call controllers, but could also be known as clients, data sources, etc. The roles are more important to keep in mind than the names. Controllers are also usually <code class="language-plaintext highlighter-rouge">NSObject</code> subclasses.</li>
   <li>Model objects are the fourth role and raw models are the fifth.
     <ul>
-      <li>We’ll define model objects as simple dumb stores of data in properties on <code class="highlighter-rouge">NSObject</code>s.</li>
-      <li>We’ll define raw models as a representation of data in a non-native format (e.g. JSON string, <code class="highlighter-rouge">NSDictionary</code>, <code class="highlighter-rouge">NSManagedObject</code>, etc.).</li>
+      <li>We’ll define model objects as simple dumb stores of data in properties on <code class="language-plaintext highlighter-rouge">NSObject</code>s.</li>
+      <li>We’ll define raw models as a representation of data in a non-native format (e.g. JSON string, <code class="language-plaintext highlighter-rouge">NSDictionary</code>, <code class="language-plaintext highlighter-rouge">NSManagedObject</code>, etc.).</li>
     </ul>
   </li>
 </ul>
@@ -201,7 +205,7 @@
   <li>Views are allowed to access views and view models.</li>
   <li>Views are <em>not</em> allowed to access controllers or model objects.</li>
   <li>Views bind their display properties directly to view model properties.</li>
-  <li>Views pass user events to view models via <code class="highlighter-rouge">RACCommand</code>s/<code class="highlighter-rouge">RACAction</code>s, or alternatively by calling methods on the view models.</li>
+  <li>Views pass user events to view models via <code class="language-plaintext highlighter-rouge">RACCommand</code>s/<code class="language-plaintext highlighter-rouge">RACAction</code>s, or alternatively by calling methods on the view models.</li>
 </ul>
 
 <h4 id="view-models">View Models</h4>
@@ -209,8 +213,8 @@
 <ul>
   <li>View models are allowed to access view models, controllers, and model objects.</li>
   <li>View models are <em>not</em> allowed to access views or raw models.</li>
-  <li>View models convert model objects from controllers into observable properties on <code class="highlighter-rouge">self</code>, or other view models.</li>
-  <li>View models accept inputs from views or other view models which trigger actions on <code class="highlighter-rouge">self</code>, other view models, or controllers.</li>
+  <li>View models convert model objects from controllers into observable properties on <code class="language-plaintext highlighter-rouge">self</code>, or other view models.</li>
+  <li>View models accept inputs from views or other view models which trigger actions on <code class="language-plaintext highlighter-rouge">self</code>, other view models, or controllers.</li>
 </ul>
 
 <h4 id="controllers">Controllers</h4>
@@ -219,7 +223,7 @@
   <li>Controllers are allowed to access other controllers, model objects, and raw models.</li>
   <li>Controllers are <em>not</em> allowed to access view models or views.</li>
   <li>Controllers coordinate model object access from other controllers or directly from system level raw data stores (network, file system, database, etc.).</li>
-  <li>Controllers vend asynchronous (or maybe better put <em>time-agnostic</em>) data (via <code class="highlighter-rouge">RACSignal</code>s) to view models or other controllers.</li>
+  <li>Controllers vend asynchronous (or maybe better put <em>time-agnostic</em>) data (via <code class="language-plaintext highlighter-rouge">RACSignal</code>s) to view models or other controllers.</li>
   <li>Have to stress again that these are <em>not</em> view controllers!</li>
 </ul>
 
@@ -231,7 +235,7 @@
   |                |                    |
 View           View Model           Controller</code></pre></figure>
 
-<p>To clarify, <code class="highlighter-rouge">===&gt;</code> represents an ownership as stated above. <code class="highlighter-rouge">|</code> also represents an ownership of the bottom object by the top object. A view could spawn one or more subviews, present other view controllers, and also bind to a view model. Similarly, a view model could keep a collection of view models for its owning view to distribute to that view’s subviews. That view model can also have a controller and connect controllers to its sub-view models.</p>
+<p>To clarify, <code class="language-plaintext highlighter-rouge">===&gt;</code> represents an ownership as stated above. <code class="language-plaintext highlighter-rouge">|</code> also represents an ownership of the bottom object by the top object. A view could spawn one or more subviews, present other view controllers, and also bind to a view model. Similarly, a view model could keep a collection of view models for its owning view to distribute to that view’s subviews. That view model can also have a controller and connect controllers to its sub-view models.</p>
 
 <p>Secondly, here is the flow of objects between the roles.</p>
 
@@ -303,26 +307,26 @@ View           View Model           Controller</code></pre></figure>
 <p>A few things going on here:</p>
 
 <ul>
-  <li>The view is not bound to a view model for its entire lifecycle. This case is more rare. Most views should be bound to a particular view model for their entire lifecycle. Less mutability reduces view complexity greatly. You would normally require the view model be passed into the receiver on <code class="highlighter-rouge">init</code>. However, in this case we’re allowing the view model to be swapped out during this view’s life, and we therefore must reconfigure its data properly. You’d typically see this pattern in reusable views such as <code class="highlighter-rouge">UITableViewCell</code>s.</li>
+  <li>The view is not bound to a view model for its entire lifecycle. This case is more rare. Most views should be bound to a particular view model for their entire lifecycle. Less mutability reduces view complexity greatly. You would normally require the view model be passed into the receiver on <code class="language-plaintext highlighter-rouge">init</code>. However, in this case we’re allowing the view model to be swapped out during this view’s life, and we therefore must reconfigure its data properly. You’d typically see this pattern in reusable views such as <code class="language-plaintext highlighter-rouge">UITableViewCell</code>s.</li>
   <li>We’re creating a one way binding using ReactiveCocoa from our view model properties to view properties. Notice there is no data transformation at this stage.</li>
-  <li>The ReactiveCocoa will ensure <code class="highlighter-rouge">self.avatarView.image</code> is set with the current image in the <code class="highlighter-rouge">self.viewModel.avatarImage</code> property. It will ensure this even if the <code class="highlighter-rouge">viewModel</code> object itself changes during this view’s lifecycle. If our view was initialized with a view model, we could write <code class="highlighter-rouge">RAC(self.avatarView, image) = RACObserve(self.viewModel, avatarImage)</code> instead and only the <code class="highlighter-rouge">avatarImage</code> property will be observed.</li>
+  <li>The ReactiveCocoa will ensure <code class="language-plaintext highlighter-rouge">self.avatarView.image</code> is set with the current image in the <code class="language-plaintext highlighter-rouge">self.viewModel.avatarImage</code> property. It will ensure this even if the <code class="language-plaintext highlighter-rouge">viewModel</code> object itself changes during this view’s lifecycle. If our view was initialized with a view model, we could write <code class="language-plaintext highlighter-rouge">RAC(self.avatarView, image) = RACObserve(self.viewModel, avatarImage)</code> instead and only the <code class="language-plaintext highlighter-rouge">avatarImage</code> property will be observed.</li>
   <li>The label properties work the same way as the imageView’s.</li>
-  <li><code class="highlighter-rouge">RACCommand</code> is a somewhat magical object that transparently manages state between an action and its asynchronous results. The important part to notice here is that the view model owns and configures the <code class="highlighter-rouge">RACCommand</code> object in question. Behind the scenes, the <code class="highlighter-rouge">rac_command</code> helper category on <code class="highlighter-rouge">UIButton</code> performs three tasks (heavily simplified):
+  <li><code class="language-plaintext highlighter-rouge">RACCommand</code> is a somewhat magical object that transparently manages state between an action and its asynchronous results. The important part to notice here is that the view model owns and configures the <code class="language-plaintext highlighter-rouge">RACCommand</code> object in question. Behind the scenes, the <code class="language-plaintext highlighter-rouge">rac_command</code> helper category on <code class="language-plaintext highlighter-rouge">UIButton</code> performs three tasks (heavily simplified):
     <ul>
-      <li>Calls <code class="highlighter-rouge">-[execute:]</code> on the view model’s <code class="highlighter-rouge">RACCommand</code> on the touchUpInside action.</li>
-      <li>Disables itself while the <code class="highlighter-rouge">RACCommand</code> is executing.</li>
-      <li>Re-enables itself when the <code class="highlighter-rouge">RACCommand</code> finishes executing.</li>
+      <li>Calls <code class="language-plaintext highlighter-rouge">-[execute:]</code> on the view model’s <code class="language-plaintext highlighter-rouge">RACCommand</code> on the touchUpInside action.</li>
+      <li>Disables itself while the <code class="language-plaintext highlighter-rouge">RACCommand</code> is executing.</li>
+      <li>Re-enables itself when the <code class="language-plaintext highlighter-rouge">RACCommand</code> finishes executing.</li>
     </ul>
   </li>
-  <li>Imagine that there are standard <code class="highlighter-rouge">layoutSubviews</code> and <code class="highlighter-rouge">sizeThatFits:</code> methods.</li>
+  <li>Imagine that there are standard <code class="language-plaintext highlighter-rouge">layoutSubviews</code> and <code class="language-plaintext highlighter-rouge">sizeThatFits:</code> methods.</li>
 </ul>
 
-<p>You may be asking what this buys us so far over the typical pattern of passing in a model object to our view via a setter like <code class="highlighter-rouge">-[setData:(HOPUser *)]</code>.</p>
+<p>You may be asking what this buys us so far over the typical pattern of passing in a model object to our view via a setter like <code class="language-plaintext highlighter-rouge">-[setData:(HOPUser *)]</code>.</p>
 
 <ul>
   <li>It’s straightforward to add functionality to this view/view model pair. Need to load a low res cached image after a placeholder image followed by a high res network image? The view layer doesn’t change. It will automatically adopt whatever image is currently stored by the view model. There will never be a sprawl of callbacks originating from views hitting the network.</li>
-  <li>Our friend count is stored in our model as an <code class="highlighter-rouge">NSNumber</code> but our label needs a formatted <code class="highlighter-rouge">NSString</code>. The view layer isn’t bothered with the conversion, whether it be a simple @25 -&gt; “25” or @25 -&gt; “This user has 25 friends”.</li>
-  <li>We can test the view model directly by allowing the test bench to compare <code class="highlighter-rouge">UIImage</code>s and <code class="highlighter-rouge">NSString</code>s.</li>
+  <li>Our friend count is stored in our model as an <code class="language-plaintext highlighter-rouge">NSNumber</code> but our label needs a formatted <code class="language-plaintext highlighter-rouge">NSString</code>. The view layer isn’t bothered with the conversion, whether it be a simple @25 -&gt; “25” or @25 -&gt; “This user has 25 friends”.</li>
+  <li>We can test the view model directly by allowing the test bench to compare <code class="language-plaintext highlighter-rouge">UIImage</code>s and <code class="language-plaintext highlighter-rouge">NSString</code>s.</li>
   <li>In a more proper version of this view, a superview would bind a view model to a more generic subview, and thus enable a set of ultra-reusable content blocks to be used throughout the app with one or more various view models. The glue code is simple one-to-one bindings.</li>
 </ul>
 
@@ -345,9 +349,9 @@ View           View Model           Controller</code></pre></figure>
 
 <span class="k">@end</span></code></pre></figure>
 
-<p>Notice all these properties are readonly. The view is free to observe all these properties and call <code class="highlighter-rouge">execute</code> on the <code class="highlighter-rouge">RACCommand</code>. The view model obscures all its internal operations and provides a limited window into its state to its observers (its view).</p>
+<p>Notice all these properties are readonly. The view is free to observe all these properties and call <code class="language-plaintext highlighter-rouge">execute</code> on the <code class="language-plaintext highlighter-rouge">RACCommand</code>. The view model obscures all its internal operations and provides a limited window into its state to its observers (its view).</p>
 
-<p>There’s a designated initializer that accepts a <code class="highlighter-rouge">HOPUser</code> model object. For now, assume that another view model created this <code class="highlighter-rouge">HOPProfileViewModel</code> with a model object before it was bound to its view (I’ll come back this as my most glaring questions about MVVM).</p>
+<p>There’s a designated initializer that accepts a <code class="language-plaintext highlighter-rouge">HOPUser</code> model object. For now, assume that another view model created this <code class="language-plaintext highlighter-rouge">HOPProfileViewModel</code> with a model object before it was bound to its view (I’ll come back this as my most glaring questions about MVVM).</p>
 
 <figure class="highlight"><pre><code class="language-objc" data-lang="objc"><span class="k">@interface</span> <span class="nc">HOPProfileViewModel</span> <span class="p">()</span>
     
@@ -405,11 +409,11 @@ View           View Model           Controller</code></pre></figure>
 
 <ul>
   <li>First, we redeclare our outward-facing properties as readwrite internally.</li>
-  <li>Our first property binding is the <code class="highlighter-rouge">avatarImage</code>. We see that our image is represented as a URL in the <code class="highlighter-rouge">HOPUser</code> model. We first observe the <code class="highlighter-rouge">avatarURL</code> property on whatever the view model’s current user model is. Each time it changes, we take that URL and feed it into our singleton <code class="highlighter-rouge">HOPImageController</code>. The image controller is responsible for caching thumbnails, full images, and also fetching images from the network. This signal will send up to three different images which will eventually be assigned to <code class="highlighter-rouge">self.avatarImage</code>. The images may be fetched on background thread, so we make sure they’re delivered to their eventual destination imageView on the main thread.</li>
-  <li>The next property binding is <code class="highlighter-rouge">nameString</code>. We’re only performing one mapping operation on this string: uppercasing.</li>
+  <li>Our first property binding is the <code class="language-plaintext highlighter-rouge">avatarImage</code>. We see that our image is represented as a URL in the <code class="language-plaintext highlighter-rouge">HOPUser</code> model. We first observe the <code class="language-plaintext highlighter-rouge">avatarURL</code> property on whatever the view model’s current user model is. Each time it changes, we take that URL and feed it into our singleton <code class="language-plaintext highlighter-rouge">HOPImageController</code>. The image controller is responsible for caching thumbnails, full images, and also fetching images from the network. This signal will send up to three different images which will eventually be assigned to <code class="language-plaintext highlighter-rouge">self.avatarImage</code>. The images may be fetched on background thread, so we make sure they’re delivered to their eventual destination imageView on the main thread.</li>
+  <li>The next property binding is <code class="language-plaintext highlighter-rouge">nameString</code>. We’re only performing one mapping operation on this string: uppercasing.</li>
   <li>We map the friend count to a human-readable string.</li>
-  <li>The <code class="highlighter-rouge">refreshCommand</code> is created from scratch. It subscribes to the signal block each time the command is executed (in our case, when the button is pressed). The command automatically keeps track of the state of our signal and will not execute again until the inner signal has completed. In this case, we’re assuming our data comes from a shared <code class="highlighter-rouge">HOPNetworkController</code> which sends a <code class="highlighter-rouge">HOPUser</code> object and completes.</li>
-  <li>The <code class="highlighter-rouge">self.user</code> mapping first assigns the <code class="highlighter-rouge">user</code> object passed into the <code class="highlighter-rouge">init</code> method, then takes the latest result from the command’s execution.</li>
+  <li>The <code class="language-plaintext highlighter-rouge">refreshCommand</code> is created from scratch. It subscribes to the signal block each time the command is executed (in our case, when the button is pressed). The command automatically keeps track of the state of our signal and will not execute again until the inner signal has completed. In this case, we’re assuming our data comes from a shared <code class="language-plaintext highlighter-rouge">HOPNetworkController</code> which sends a <code class="language-plaintext highlighter-rouge">HOPUser</code> object and completes.</li>
+  <li>The <code class="language-plaintext highlighter-rouge">self.user</code> mapping first assigns the <code class="language-plaintext highlighter-rouge">user</code> object passed into the <code class="language-plaintext highlighter-rouge">init</code> method, then takes the latest result from the command’s execution.</li>
 </ul>
 
 <p>There was a lot to digest in that example. Things to notice:</p>
@@ -417,8 +421,8 @@ View           View Model           Controller</code></pre></figure>
 <ul>
   <li>All of the code was incredibly declarative. We stated exactly what each of our properties should be at any given time. They’re all only set from one place.</li>
   <li>We have a lot of flexibility changing the operations on our model object’s properties in response to product changes.</li>
-  <li>It’s incredibly easy to mock this object for our view. It only has four external properties. For example, our fake implementation could map our <code class="highlighter-rouge">self.avatarImage</code> property to <code class="highlighter-rouge">[[[RACSignal return:[UIImage imageNamed:@"final"]] delay:4] startWith:[UIImage imageNamed:@"placeholder"]];</code> which would simulate a placeholder image, a four second fake network delay, and a final image.</li>
-  <li>I’ll leave error handling for another post, but as a quick summary is the <code class="highlighter-rouge">RACSignal</code> contract makes it almost trivial to bubble up errors to the view model layer and present them in the proper way.</li>
+  <li>It’s incredibly easy to mock this object for our view. It only has four external properties. For example, our fake implementation could map our <code class="language-plaintext highlighter-rouge">self.avatarImage</code> property to <code class="language-plaintext highlighter-rouge">[[[RACSignal return:[UIImage imageNamed:@"final"]] delay:4] startWith:[UIImage imageNamed:@"placeholder"]];</code> which would simulate a placeholder image, a four second fake network delay, and a final image.</li>
+  <li>I’ll leave error handling for another post, but as a quick summary is the <code class="language-plaintext highlighter-rouge">RACSignal</code> contract makes it almost trivial to bubble up errors to the view model layer and present them in the proper way.</li>
 </ul>
 
 <h4 id="controller">Controller</h4>
@@ -458,13 +462,13 @@ View           View Model           Controller</code></pre></figure>
 
 <p>I tried to include some non-trivial aspects to this view/view model/controller set up, but at the end of the day this set of objects has to exist in a much broader application.</p>
 
-<p>In something run-of-the-mill like a <code class="highlighter-rouge">UITableView</code> system, there could quickly be a large graph of view models that each held arrays of view models which then have to be mapped to sections and reusable cells, and it can quickly become a mess of mapping view model class names to views, all while handling changing intermediary objects, refreshing, and errors at the individual cell level.</p>
+<p>In something run-of-the-mill like a <code class="language-plaintext highlighter-rouge">UITableView</code> system, there could quickly be a large graph of view models that each held arrays of view models which then have to be mapped to sections and reusable cells, and it can quickly become a mess of mapping view model class names to views, all while handling changing intermediary objects, refreshing, and errors at the individual cell level.</p>
 
 <p>I left a lot of hanging questions in the system I’ve presented above (only somewhat purposefully). I’m hoping someone with more experience in MVVM can shed some light on these.</p>
 
 <h4 id="where-is-the-top-of-the-object-graph">Where is the top of the object graph?</h4>
 
-<p>I stared off talking about testing, but by the end I was embedding singleton controllers deep within my view model implementation. In the interest of dependency injection, they should be specified at initialization. Being available as parameters for <code class="highlighter-rouge">init</code> is great for testing, but in the actual app, which view or view model should be responsible for creating the view model in question along with knowing exactly which controllers to provide?</p>
+<p>I stared off talking about testing, but by the end I was embedding singleton controllers deep within my view model implementation. In the interest of dependency injection, they should be specified at initialization. Being available as parameters for <code class="language-plaintext highlighter-rouge">init</code> is great for testing, but in the actual app, which view or view model should be responsible for creating the view model in question along with knowing exactly which controllers to provide?</p>
 
 <p>At a certain point, <em>some</em> object is going to have to connect all the dots and assemble the entire object graph. And at that point it may well be creating objects of all three roles (views, view models, and controllers). On one hand, it seems very offputting to allow one god object to have the entire map of the application. But on the other hand, that’s sort of like an extreme form of composition: all lower level objects are very dumb with very specific inputs and outputs.</p>
 
@@ -472,17 +476,17 @@ View           View Model           Controller</code></pre></figure>
 
 <p>Are there other examples or patterns in other languages? I’m curious if this would all be more clear if I was more versed in Haskell, or enterprise Java, or any other number of languages.</p>
 
-<p>Is the right answer for testing to have designated “testing” initializer that accepts a <code class="highlighter-rouge">HOPImageController</code> instance and a <code class="highlighter-rouge">HOPNetworkController</code> instance that can be mocks, while the application version is initialized with no parameters and configures its own controllers?</p>
+<p>Is the right answer for testing to have designated “testing” initializer that accepts a <code class="language-plaintext highlighter-rouge">HOPImageController</code> instance and a <code class="language-plaintext highlighter-rouge">HOPNetworkController</code> instance that can be mocks, while the application version is initialized with no parameters and configures its own controllers?</p>
 
 <h4 id="when-should-controllers-be-singletons">When should controllers be singletons?</h4>
 
 <p>Is there a hard and fast rule in MVVM for when a controller should be a singleton? When a resource starts storing state amongst disparate objects is that cause for being a singleton? Maybe the goal is actually on the opposite end: every controller should be a singleton to keep all services completely autonomous and interchangeable.</p>
 
-<p>My first hunch on this was that controllers that sat adjacent to system raw object producers (e.g. the network interface, an SQLite db, the file system, <code class="highlighter-rouge">NSUserDefaults</code>, etc.) would be singletons. But I also saw, for example, a controller that reads a single file should be configurable with a file URL by a parent object. Maybe it just depends on where you draw the line between needing lots of helper controllers and doing all the fetching directly from the view model.</p>
+<p>My first hunch on this was that controllers that sat adjacent to system raw object producers (e.g. the network interface, an SQLite db, the file system, <code class="language-plaintext highlighter-rouge">NSUserDefaults</code>, etc.) would be singletons. But I also saw, for example, a controller that reads a single file should be configurable with a file URL by a parent object. Maybe it just depends on where you draw the line between needing lots of helper controllers and doing all the fetching directly from the view model.</p>
 
 <h4 id="what-are-a-view-controllers-responsibilities">What are a view controller’s responsibilities?</h4>
 
-<p>Don’t get me wrong, doing some OS X development for the first time gave me a deep appreciation for <code class="highlighter-rouge">UIViewController</code>. But there’s still a lot of API cruft that’s developed on <code class="highlighter-rouge">UIViewController</code> that makes certain things difficult.</p>
+<p>Don’t get me wrong, doing some OS X development for the first time gave me a deep appreciation for <code class="language-plaintext highlighter-rouge">UIViewController</code>. But there’s still a lot of API cruft that’s developed on <code class="language-plaintext highlighter-rouge">UIViewController</code> that makes certain things difficult.</p>
 
 <p>When you’re trying to express your app as declaratively as possible, it’s sometimes easy to get lost in what the view controller hierarchy looks like, and how the imperative view controller changes can really put a stick in your tires.</p>
 
@@ -496,7 +500,7 @@ View           View Model           Controller</code></pre></figure>
 
 <p>Maybe the user session would be stored at the top level of the application, and then changes to the current user would be pushed directly to the top level view models and these view models would react accordingly. This would seemingly become quite unwieldy if a large number of sub view models had already been spawned from the top level view model. The top level view model would either have to distribute the current user to every other object directly and keep pushing new current users, or it would distribute the current user once and treat it as immutable on sub view models from then on.</p>
 
-<p>Relatedly, what about the current user’s auth token? In our example application, we have a network controller that requires the user’s auth token to be sent in the header of nearly every request. Should the network controller be a singleton with a mutable <code class="highlighter-rouge">authToken</code> parameter maintained by the application? Should one network controller be created at the top level and passed directly from view model to view model? How do we propagate changes in the auth token? What does not using a singleton buy us in this situation?</p>
+<p>Relatedly, what about the current user’s auth token? In our example application, we have a network controller that requires the user’s auth token to be sent in the header of nearly every request. Should the network controller be a singleton with a mutable <code class="language-plaintext highlighter-rouge">authToken</code> parameter maintained by the application? Should one network controller be created at the top level and passed directly from view model to view model? How do we propagate changes in the auth token? What does not using a singleton buy us in this situation?</p>
 
 <p>My initial solution to this problem was to have a userSessionController singleton that holds the currentUser object. This singleton creates a new immutable instance of the network controller, database controller, user defaults controller, etc. whenever the currentUser object changes. Almost all requests from other controllers or view models go through the userSessionController singleton. The user session quickly becomes another god object distinctively separate from the app delegate, and now almost every view model and controller is bound directly to the userSessionController singleton.</p>
 

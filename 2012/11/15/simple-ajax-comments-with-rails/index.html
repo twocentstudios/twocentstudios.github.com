@@ -53,6 +53,10 @@
           
         
           
+          <a class="page-link" href="/apps/countbiki/privacy-policy/">Count Biki Privacy Policy</a>
+          
+        
+          
         
           
         
@@ -212,14 +216,14 @@
 <p>The instructions for setting this up are pretty simple. I’m just using ActiveRecord and SQLite right now.</p>
 
 <ul>
-  <li>Put the gem in your bundle <code class="highlighter-rouge">gem acts_as_commentable_with_threading</code>.</li>
-  <li>Run <code class="highlighter-rouge">bundle install</code>.</li>
-  <li>Run the migrations <code class="highlighter-rouge">rails g acts_as_commentable_with_threading_migration</code>.</li>
-  <li>Run <code class="highlighter-rouge">rake db:migrate</code>.</li>
+  <li>Put the gem in your bundle <code class="language-plaintext highlighter-rouge">gem acts_as_commentable_with_threading</code>.</li>
+  <li>Run <code class="language-plaintext highlighter-rouge">bundle install</code>.</li>
+  <li>Run the migrations <code class="language-plaintext highlighter-rouge">rails g acts_as_commentable_with_threading_migration</code>.</li>
+  <li>Run <code class="language-plaintext highlighter-rouge">rake db:migrate</code>.</li>
   <li>
-    <p>Add <code class="highlighter-rouge">acts_as_commentable</code> to the <code class="highlighter-rouge">Event</code> model class (and any other model you want to have comments).</p>
+    <p>Add <code class="language-plaintext highlighter-rouge">acts_as_commentable</code> to the <code class="language-plaintext highlighter-rouge">Event</code> model class (and any other model you want to have comments).</p>
 
-    <div class="highlighter-rouge"><pre class="highlight"><code>  # event.rb
+    <div class="language-plaintext highlighter-rouge"><pre class="highlight"><code>  # event.rb
   class Event &lt; ActiveRecord::Base
 		acts_as_commentable
   end		
@@ -228,32 +232,32 @@
   </li>
 </ul>
 
-<p>This post is supposed to be more about AJAX than Rails associations, but it’s worth mentioning that acts_as_commentable uses a <a href="http://guides.rubyonrails.org/association_basics.html#polymorphic-associations">polymorphic association</a>. This means that any of your models can reference the same kind of comment model object, and we don’t have to have a separate table in our database for an <code class="highlighter-rouge">EventComment</code> or a <code class="highlighter-rouge">VideoComment</code> for example. Each comment record keeps track of what type of object its parent is, which will be important later since we need to know information about the parent in order to create a comment.</p>
+<p>This post is supposed to be more about AJAX than Rails associations, but it’s worth mentioning that acts_as_commentable uses a <a href="http://guides.rubyonrails.org/association_basics.html#polymorphic-associations">polymorphic association</a>. This means that any of your models can reference the same kind of comment model object, and we don’t have to have a separate table in our database for an <code class="language-plaintext highlighter-rouge">EventComment</code> or a <code class="language-plaintext highlighter-rouge">VideoComment</code> for example. Each comment record keeps track of what type of object its parent is, which will be important later since we need to know information about the parent in order to create a comment.</p>
 
 <h2 id="routes">Routes</h2>
 
-<p>Next we’ll set up our routes just to get that out of the way. We’re going to let the <code class="highlighter-rouge">CommentsController</code> handle creation and deletion of comments, so the routes should point there.</p>
+<p>Next we’ll set up our routes just to get that out of the way. We’re going to let the <code class="language-plaintext highlighter-rouge">CommentsController</code> handle creation and deletion of comments, so the routes should point there.</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code>	# routes.rb
+<div class="language-plaintext highlighter-rouge"><pre class="highlight"><code>	# routes.rb
 	resources :comments, :only =&gt; [:create, :destroy]
 </code></pre>
 </div>
 
-<p>This will give us two methods from the following urls (from <code class="highlighter-rouge">rake routes</code>).</p>
+<p>This will give us two methods from the following urls (from <code class="language-plaintext highlighter-rouge">rake routes</code>).</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code>	$ rake routes
+<div class="language-plaintext highlighter-rouge"><pre class="highlight"><code>	$ rake routes
 	comments 	POST 		/comments(.:format) 	comments#create
 	comment 	DELETE 	/comments/:id(.:format) 	comments#destroy
 </code></pre>
 </div>
 
-<p>This is going to give us a <code class="highlighter-rouge">commments_path</code> helper and <code class="highlighter-rouge">comment_path(:id)</code> helper to complete our POST and DELETE requests,  respectively. It will forward requests to those URLs to the <code class="highlighter-rouge">CommentsController</code>’s <code class="highlighter-rouge">create</code> and <code class="highlighter-rouge">destroy</code> methods. The create method has no parameters in the URL string. The destroy method takes the comment’s <code class="highlighter-rouge">id</code> as the single parameter of the URL string. Like we mentioned earlier, in order to create the comment, we’ll need a few more parameters. We’ll talk more about that when we get to the form.</p>
+<p>This is going to give us a <code class="language-plaintext highlighter-rouge">commments_path</code> helper and <code class="language-plaintext highlighter-rouge">comment_path(:id)</code> helper to complete our POST and DELETE requests,  respectively. It will forward requests to those URLs to the <code class="language-plaintext highlighter-rouge">CommentsController</code>’s <code class="language-plaintext highlighter-rouge">create</code> and <code class="language-plaintext highlighter-rouge">destroy</code> methods. The create method has no parameters in the URL string. The destroy method takes the comment’s <code class="language-plaintext highlighter-rouge">id</code> as the single parameter of the URL string. Like we mentioned earlier, in order to create the comment, we’ll need a few more parameters. We’ll talk more about that when we get to the form.</p>
 
 <h3 id="alternate-implementation">Alternate implementation</h3>
 
 <p>Aside: An alternate implementation worth mentioning is to include comments as a <a href="http://guides.rubyonrails.org/routing.html#nested-resources">nested resource</a> beneath each resource that has them. It would look something like this:</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code>	# routes.rb - alternate
+<div class="language-plaintext highlighter-rouge"><pre class="highlight"><code>	# routes.rb - alternate
 	resources :events
 		resources :comments, :only =&gt; [:create, :destroy]
 	end
@@ -264,7 +268,7 @@
 </code></pre>
 </div>
 
-<p>This works fine if your resources are all siblings. In my case, I have <code class="highlighter-rouge">Video</code> nested within <code class="highlighter-rouge">Event</code> already. It gets pretty hairy pretty quickly and gives you (unnecessarily) complicated routes and URLs. In this case, we’ll go with the other implementation that includes the necessary data about the comment’s parent in the HTTP POST data rather than the URL string.</p>
+<p>This works fine if your resources are all siblings. In my case, I have <code class="language-plaintext highlighter-rouge">Video</code> nested within <code class="language-plaintext highlighter-rouge">Event</code> already. It gets pretty hairy pretty quickly and gives you (unnecessarily) complicated routes and URLs. In this case, we’ll go with the other implementation that includes the necessary data about the comment’s parent in the HTTP POST data rather than the URL string.</p>
 
 <p>Again, it works either way so always tailor your implementation based on your particular situation.</p>
 
@@ -272,11 +276,11 @@
 
 <p>Now that we’ve got the bridge between the view and the controller built (the route), we’ll tackle the show view template.</p>
 
-<p>Our goal is to be able put the comment “block” (the add new form and the list of previously created comments) anywhere. In this example, we’ll stick it in the <code class="highlighter-rouge">show</code> view of the <code class="highlighter-rouge">EventsController</code>.</p>
+<p>Our goal is to be able put the comment “block” (the add new form and the list of previously created comments) anywhere. In this example, we’ll stick it in the <code class="language-plaintext highlighter-rouge">show</code> view of the <code class="language-plaintext highlighter-rouge">EventsController</code>.</p>
 
 <p>(Sidebar: I use <a href="http://www.haml.info">Haml</a> and <a href="https://github.com/plataformatec/simple_form">simple form</a>, sorry in advance to users of other templates. Hopefully you can still follow along.)</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code>	/ show.html.haml
+<div class="language-plaintext highlighter-rouge"><pre class="highlight"><code>	/ show.html.haml
 	.event
 		%h1= @event.name
 	.comments
@@ -286,21 +290,21 @@
 </code></pre>
 </div>
 
-<p>As you can see, our show template expects 3 different instance variables from the <code class="highlighter-rouge">EventsController</code>.</p>
+<p>As you can see, our show template expects 3 different instance variables from the <code class="language-plaintext highlighter-rouge">EventsController</code>.</p>
 
 <ul>
-  <li><code class="highlighter-rouge">@event</code>: the unique <code class="highlighter-rouge">Event</code> object we’re showing.</li>
-  <li><code class="highlighter-rouge">@new_comment</code>: a new <code class="highlighter-rouge">Comment</code> object that acts as our framework for building out the comment form. It exists only in Rails for now and has not been created in the database yet.</li>
-  <li><code class="highlighter-rouge">@comments</code>: an array of all or just a subset of the <code class="highlighter-rouge">Comment</code> objects that exist as children of the <code class="highlighter-rouge">@event</code> object (in reverse chronological order of course).</li>
+  <li><code class="language-plaintext highlighter-rouge">@event</code>: the unique <code class="language-plaintext highlighter-rouge">Event</code> object we’re showing.</li>
+  <li><code class="language-plaintext highlighter-rouge">@new_comment</code>: a new <code class="language-plaintext highlighter-rouge">Comment</code> object that acts as our framework for building out the comment form. It exists only in Rails for now and has not been created in the database yet.</li>
+  <li><code class="language-plaintext highlighter-rouge">@comments</code>: an array of all or just a subset of the <code class="language-plaintext highlighter-rouge">Comment</code> objects that exist as children of the <code class="language-plaintext highlighter-rouge">@event</code> object (in reverse chronological order of course).</li>
 </ul>
 
-<p>In our <code class="highlighter-rouge">views/comments</code> folder, we have the two partials <code class="highlighter-rouge">_form.html.haml</code> and <code class="highlighter-rouge">_comment.html.haml</code>. <code class="highlighter-rouge">_form</code> expects a local variable named <code class="highlighter-rouge">comment</code> as an input to help build the new comment form. <code class="highlighter-rouge">comment.html.haml</code> is our partial for displaying a single comment. It takes a collection of <code class="highlighter-rouge">comment</code>s and tells the renderer to treat each object in the collection as a <code class="highlighter-rouge">comment</code>.</p>
+<p>In our <code class="language-plaintext highlighter-rouge">views/comments</code> folder, we have the two partials <code class="language-plaintext highlighter-rouge">_form.html.haml</code> and <code class="language-plaintext highlighter-rouge">_comment.html.haml</code>. <code class="language-plaintext highlighter-rouge">_form</code> expects a local variable named <code class="language-plaintext highlighter-rouge">comment</code> as an input to help build the new comment form. <code class="language-plaintext highlighter-rouge">comment.html.haml</code> is our partial for displaying a single comment. It takes a collection of <code class="language-plaintext highlighter-rouge">comment</code>s and tells the renderer to treat each object in the collection as a <code class="language-plaintext highlighter-rouge">comment</code>.</p>
 
 <h2 id="eventsshow">events#show</h2>
 
-<p>Before we dig into writing each partial, let’s step backwards in the chain of events and go back to our <code class="highlighter-rouge">EventsController</code> to set up those instances variables that the show template will be looking for.</p>
+<p>Before we dig into writing each partial, let’s step backwards in the chain of events and go back to our <code class="language-plaintext highlighter-rouge">EventsController</code> to set up those instances variables that the show template will be looking for.</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code>	# events_controller.rb
+<div class="language-plaintext highlighter-rouge"><pre class="highlight"><code>	# events_controller.rb
 	class EventsController &lt; ApplicationController
 	  def show
 	    @event = Event.find(params[:id])
@@ -311,17 +315,17 @@
 </code></pre>
 </div>
 
-<p>The first line of the <code class="highlighter-rouge">show</code> method should be par for the course. We’re pulling the event in question from the database based on the <code class="highlighter-rouge">id</code> provided in the URL. Rails automatically inserts a <code class="highlighter-rouge">render 'show'</code> for us at the end of the method.</p>
+<p>The first line of the <code class="language-plaintext highlighter-rouge">show</code> method should be par for the course. We’re pulling the event in question from the database based on the <code class="language-plaintext highlighter-rouge">id</code> provided in the URL. Rails automatically inserts a <code class="language-plaintext highlighter-rouge">render 'show'</code> for us at the end of the method.</p>
 
-<p>The second line looks a little fishy. We’re using a helper method included in <code class="highlighter-rouge">acts_as_commentable_with_threading</code> to get the comments associated with the <code class="highlighter-rouge">@event</code> and order them by date. You might also want to do pagination at this step too, but with our nested event-&gt;comment architecture, it might also warrant an AJAX solution to load more (that’s a topic for another post).</p>
+<p>The second line looks a little fishy. We’re using a helper method included in <code class="language-plaintext highlighter-rouge">acts_as_commentable_with_threading</code> to get the comments associated with the <code class="language-plaintext highlighter-rouge">@event</code> and order them by date. You might also want to do pagination at this step too, but with our nested event-&gt;comment architecture, it might also warrant an AJAX solution to load more (that’s a topic for another post).</p>
 
-<p>The third line creates a placeholder comment object that acts as sort of a carrier for our parent object info. This new blank comment object will carry with it a reference to the parent <code class="highlighter-rouge">@event</code> and therefore its object type and id, and the current user. The <code class="highlighter-rouge">build_from</code> method is another helper created by <code class="highlighter-rouge">acts_as_commentable_with_threading</code>.</p>
+<p>The third line creates a placeholder comment object that acts as sort of a carrier for our parent object info. This new blank comment object will carry with it a reference to the parent <code class="language-plaintext highlighter-rouge">@event</code> and therefore its object type and id, and the current user. The <code class="language-plaintext highlighter-rouge">build_from</code> method is another helper created by <code class="language-plaintext highlighter-rouge">acts_as_commentable_with_threading</code>.</p>
 
-<h2 id="commentsformhtmlhaml">comments/_form.html.haml</h2>
+<h2 id="comments_formhtmlhaml">comments/_form.html.haml</h2>
 
 <p>Now we can continue on to our new comment form partial.</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code>	# _form.html.haml
+<div class="language-plaintext highlighter-rouge"><pre class="highlight"><code>	# _form.html.haml
 	.comment-form
 	  = simple_form_for comment, :remote =&gt; true do |f|
 	    = f.input :body, :input_html =&gt; { :rows =&gt; "2" }, :label =&gt; false
@@ -333,29 +337,29 @@
 
 <p>Let’s step through line by line.</p>
 
-<p>First, we’ll wrap the form with the <code class="highlighter-rouge">comment-form</code> class.</p>
+<p>First, we’ll wrap the form with the <code class="language-plaintext highlighter-rouge">comment-form</code> class.</p>
 
-<p>Next, we’re going to use simple form to create a form block for our comment. Adding <code class="highlighter-rouge">:remote =&gt; true</code> will provide the Rails magic to turn our standard form into an AJAX one. The form_for helper is smart enough in this case to pick the correct URL and HTTP method. We could specify it directly as:</p>
+<p>Next, we’re going to use simple form to create a form block for our comment. Adding <code class="language-plaintext highlighter-rouge">:remote =&gt; true</code> will provide the Rails magic to turn our standard form into an AJAX one. The form_for helper is smart enough in this case to pick the correct URL and HTTP method. We could specify it directly as:</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code>	= simple_form_for comment, :url =&gt; comment_path, :method =&gt; 'post', :remote =&gt; true do |f|
+<div class="language-plaintext highlighter-rouge"><pre class="highlight"><code>	= simple_form_for comment, :url =&gt; comment_path, :method =&gt; 'post', :remote =&gt; true do |f|
 </code></pre>
 </div>
 
 <p>The first input is the textarea for our comment body. Nothing special here, just limiting the rows to 2 and turning the label off.</p>
 
-<p>The next two inputs are hidden from the user and will be included with the form submission to the server. We’re including the <code class="highlighter-rouge">commentable_type</code> or class name of the parent object and its id so that our <code class="highlighter-rouge">CommentsController</code> will know what object to link the new comment to.</p>
+<p>The next two inputs are hidden from the user and will be included with the form submission to the server. We’re including the <code class="language-plaintext highlighter-rouge">commentable_type</code> or class name of the parent object and its id so that our <code class="language-plaintext highlighter-rouge">CommentsController</code> will know what object to link the new comment to.</p>
 
 <p>Aside: I want to mention that since these hidden inputs are technically open to alteration, they must be properly sanitized by the server before being acted upon. By altering these values, the user could potentially create a new comment on a different object type and/or an object they aren’t allowed to see.</p>
 
-<p>Our last form element is a submit button with Twitter Bootstrap classes for styling. Clicking this will trigger the AJAX action and submit our form data to the <code class="highlighter-rouge">CommentsController</code> for handling. The <code class="highlighter-rouge">disable_with</code> takes care of some of the JS we’d have to write by disabling the submit button.</p>
+<p>Our last form element is a submit button with Twitter Bootstrap classes for styling. Clicking this will trigger the AJAX action and submit our form data to the <code class="language-plaintext highlighter-rouge">CommentsController</code> for handling. The <code class="language-plaintext highlighter-rouge">disable_with</code> takes care of some of the JS we’d have to write by disabling the submit button.</p>
 
-<p>I’m going to skip the JS for now and move onto the <code class="highlighter-rouge">CommentsController</code> implementation. We’ll get back to the JS in a moment.</p>
+<p>I’m going to skip the JS for now and move onto the <code class="language-plaintext highlighter-rouge">CommentsController</code> implementation. We’ll get back to the JS in a moment.</p>
 
 <h2 id="commentscontroller">CommentsController</h2>
 
-<p>If you recall earlier, we set up routes to our <code class="highlighter-rouge">CommentsController</code> for two methods: <code class="highlighter-rouge">create</code> and <code class="highlighter-rouge">destroy</code>. Let’s take a look at <code class="highlighter-rouge">create</code>.</p>
+<p>If you recall earlier, we set up routes to our <code class="language-plaintext highlighter-rouge">CommentsController</code> for two methods: <code class="language-plaintext highlighter-rouge">create</code> and <code class="language-plaintext highlighter-rouge">destroy</code>. Let’s take a look at <code class="language-plaintext highlighter-rouge">create</code>.</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code>	# comments_controller.rb
+<div class="language-plaintext highlighter-rouge"><pre class="highlight"><code>	# comments_controller.rb
 	class CommentsController &lt; ApplicationController
 	  def create
 	    @comment_hash = params[:comment]
@@ -372,20 +376,20 @@
 </code></pre>
 </div>
 
-<p>The first thing we do is grab a reference to the form data. Our form data is in the params hash under the <code class="highlighter-rouge">:comment</code> symbol. We’ll store it as <code class="highlighter-rouge">@comment_hash</code> for use below.</p>
+<p>The first thing we do is grab a reference to the form data. Our form data is in the params hash under the <code class="language-plaintext highlighter-rouge">:comment</code> symbol. We’ll store it as <code class="language-plaintext highlighter-rouge">@comment_hash</code> for use below.</p>
 
-<p>Next we need to derive the parent object where the comment was created. Luckily, we included the commentable_type and commentable_id in our form data. <code class="highlighter-rouge">@comment_hash[:commentable_type]</code> will return the string <code class="highlighter-rouge">"Event"</code>. We can’t call find on a string, so we have to turn it into a symbol that Ruby recognizes. We can use <code class="highlighter-rouge">constantize</code> to do this conversion (it would be a good idea at this point to check to make sure the commentable_type is legitimate). With a fully qualified <code class="highlighter-rouge">Event</code> class we can call the class method <code class="highlighter-rouge">find</code> and pass it the <code class="highlighter-rouge">:commentable_id</code>. Out pops our event object.</p>
+<p>Next we need to derive the parent object where the comment was created. Luckily, we included the commentable_type and commentable_id in our form data. <code class="language-plaintext highlighter-rouge">@comment_hash[:commentable_type]</code> will return the string <code class="language-plaintext highlighter-rouge">"Event"</code>. We can’t call find on a string, so we have to turn it into a symbol that Ruby recognizes. We can use <code class="language-plaintext highlighter-rouge">constantize</code> to do this conversion (it would be a good idea at this point to check to make sure the commentable_type is legitimate). With a fully qualified <code class="language-plaintext highlighter-rouge">Event</code> class we can call the class method <code class="language-plaintext highlighter-rouge">find</code> and pass it the <code class="language-plaintext highlighter-rouge">:commentable_id</code>. Out pops our event object.</p>
 
 <p>The next step is to determine whether the current_user has permission to create the comment on the object. This depends on your authentication system, but should definitely be included.</p>
 
-<p>We now have references to all the objects we need in order to create the comment. We’ll use the <code class="highlighter-rouge">build_from</code> helper method again and give it the object, current_user, and the body of the comment.</p>
+<p>We now have references to all the objects we need in order to create the comment. We’ll use the <code class="language-plaintext highlighter-rouge">build_from</code> helper method again and give it the object, current_user, and the body of the comment.</p>
 
 <p>We need to save the comment back to the database. If the save is successful, we’re going to do a few things.</p>
 
 <ul>
   <li>Render the single comment partial with our new comment as the local variable. This will give the comment all the markup it needs to be inserted directly into the existing page.</li>
-  <li><code class="highlighter-rouge">:layout =&gt; false</code> will tell the renderer not to include all the extra header and footer markup.</li>
-  <li><code class="highlighter-rouge">:status =&gt; :created</code> returns the HTTP status code 201 as is proper.</li>
+  <li><code class="language-plaintext highlighter-rouge">:layout =&gt; false</code> will tell the renderer not to include all the extra header and footer markup.</li>
+  <li><code class="language-plaintext highlighter-rouge">:status =&gt; :created</code> returns the HTTP status code 201 as is proper.</li>
 </ul>
 
 <p>If the save is not successful, we need to tell the user that there was a problem. I’m leaving this outside the scope of the post simply because there are several different ways of doing this depending on how you set up your layout. Above, all we’re doing is popping up an alert box to the user. You should consider this an incomplete implementation.</p>
@@ -396,9 +400,9 @@
 
 <p>We’re finally back to the JavaScript, or more specifically, CoffeeScript. I’m not an expert in either, but for this stuff you don’t need to be one. I’m using CoffeeScript because it makes the code slightly cleaner.</p>
 
-<p>The only CoffeeScript we’re going to write can sit comfortably in the asset pipeline in the <code class="highlighter-rouge">comments.js.coffee</code> file (more specifically, app/assets/javascripts).</p>
+<p>The only CoffeeScript we’re going to write can sit comfortably in the asset pipeline in the <code class="language-plaintext highlighter-rouge">comments.js.coffee</code> file (more specifically, app/assets/javascripts).</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code>	# comments.js.coffee
+<div class="language-plaintext highlighter-rouge"><pre class="highlight"><code>	# comments.js.coffee
 	jQuery -&gt;
 	  # Create a comment
 	  $(".comment-form")
@@ -417,17 +421,17 @@
 
 <p>What is code actually doing? We’re simply registering for callbacks on the AJAX requests that will originate from our comment form. When those events occur, we’re going to run functions.</p>
 
-<p><code class="highlighter-rouge">$(.comment-form)</code> targets the <code class="highlighter-rouge">comment-form</code> class we applied to the <code class="highlighter-rouge">div</code> that wraps our comment form partial. This allows us to actually use multiple comment forms on a single page if we want to.</p>
+<p><code class="language-plaintext highlighter-rouge">$(.comment-form)</code> targets the <code class="language-plaintext highlighter-rouge">comment-form</code> class we applied to the <code class="language-plaintext highlighter-rouge">div</code> that wraps our comment form partial. This allows us to actually use multiple comment forms on a single page if we want to.</p>
 
-<p><code class="highlighter-rouge">.on</code> is the jQuery function that binds an event to a function. It replaces the older jQuery functions <code class="highlighter-rouge">.bind</code>, <code class="highlighter-rouge">.delegate</code>, and <code class="highlighter-rouge">.live</code>. You can read about it <a href="http://api.jquery.com/on/">here</a>.</p>
+<p><code class="language-plaintext highlighter-rouge">.on</code> is the jQuery function that binds an event to a function. It replaces the older jQuery functions <code class="language-plaintext highlighter-rouge">.bind</code>, <code class="language-plaintext highlighter-rouge">.delegate</code>, and <code class="language-plaintext highlighter-rouge">.live</code>. You can read about it <a href="http://api.jquery.com/on/">here</a>.</p>
 
-<p>The first event we’re binding to is <code class="highlighter-rouge">"ajax:beforeSend"</code>. When the user clicks the submit button, Rails will trigger this event, and our function will be called. The arguments passed to the function (and all the available callbacks) can be found on the <a href="https://github.com/rails/jquery-ujs/wiki/ajax">jquery-ujs wiki</a>.</p>
+<p>The first event we’re binding to is <code class="language-plaintext highlighter-rouge">"ajax:beforeSend"</code>. When the user clicks the submit button, Rails will trigger this event, and our function will be called. The arguments passed to the function (and all the available callbacks) can be found on the <a href="https://github.com/rails/jquery-ujs/wiki/ajax">jquery-ujs wiki</a>.</p>
 
 <p>The function that runs on this event is embedded as anonymous. We could call a function that exists elsewhere just as easily.</p>
 
-<p><code class="highlighter-rouge">$(this)</code> is the jQuery object version of the <code class="highlighter-rouge">.comment-form</code> <code class="highlighter-rouge">div</code> that was involved in the click. Alternatively, we could grab a reference to the form from <code class="highlighter-rouge">$(evt.currentTarget)</code>. We’ll use <code class="highlighter-rouge">$(this)</code> to extract the textarea element in the next line. <code class="highlighter-rouge">.find('textarea')</code> will select <code class="highlighter-rouge">textarea</code> elements within the form. In our case, we only have one. We then chain two functions together to perform two operations on the <code class="highlighter-rouge">textarea</code>s.</p>
+<p><code class="language-plaintext highlighter-rouge">$(this)</code> is the jQuery object version of the <code class="language-plaintext highlighter-rouge">.comment-form</code> <code class="language-plaintext highlighter-rouge">div</code> that was involved in the click. Alternatively, we could grab a reference to the form from <code class="language-plaintext highlighter-rouge">$(evt.currentTarget)</code>. We’ll use <code class="language-plaintext highlighter-rouge">$(this)</code> to extract the textarea element in the next line. <code class="language-plaintext highlighter-rouge">.find('textarea')</code> will select <code class="language-plaintext highlighter-rouge">textarea</code> elements within the form. In our case, we only have one. We then chain two functions together to perform two operations on the <code class="language-plaintext highlighter-rouge">textarea</code>s.</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code>	$(this).find('textarea')
+<div class="language-plaintext highlighter-rouge"><pre class="highlight"><code>	$(this).find('textarea')
 	  .addClass('uneditable-input')
 	  .attr('disabled', 'disabled');
 </code></pre>
@@ -435,31 +439,31 @@
 
 <p>is equivalent to:</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code>	$(this).find('textarea').addClass('uneditable-input');
+<div class="language-plaintext highlighter-rouge"><pre class="highlight"><code>	$(this).find('textarea').addClass('uneditable-input');
 	$(this).find('textarea').attr('disabled', 'disabled');
 </code></pre>
 </div>
 
-<p><code class="highlighter-rouge">addClass</code> adds the <code class="highlighter-rouge">uneditable-input</code> class to our textarea, which will perform some Bootstrap styling to our textarea, but not actually make it uneditable.</p>
+<p><code class="language-plaintext highlighter-rouge">addClass</code> adds the <code class="language-plaintext highlighter-rouge">uneditable-input</code> class to our textarea, which will perform some Bootstrap styling to our textarea, but not actually make it uneditable.</p>
 
-<p><code class="highlighter-rouge">attr</code> adds the <code class="highlighter-rouge">disabled='disabled'</code> element to our textarea actually disabling the user input.</p>
+<p><code class="language-plaintext highlighter-rouge">attr</code> adds the <code class="language-plaintext highlighter-rouge">disabled='disabled'</code> element to our textarea actually disabling the user input.</p>
 
-<p>We’re then chaining another <code class="highlighter-rouge">.on</code> for the <code class="highlighter-rouge">ajax:success</code> event that gets called if the AJAX call returns successfully. Our first move is to find the <code class="highlighter-rouge">textarea</code> and undo the temporary disabling (you may want to consider doing this at the <code class="highlighter-rouge">ajax:complete</code> event, because it should be done regardless of whether the AJAX was successful). You’ll notice we chained one additional function <code class="highlighter-rouge">.val('')</code> at the end. This will clear the <code class="highlighter-rouge">textarea</code> in anticipation of the user adding another comment. You wouldn’t want to do that in the error case, because the user should have an opportunity to resubmit the comment without having to retype it.</p>
+<p>We’re then chaining another <code class="language-plaintext highlighter-rouge">.on</code> for the <code class="language-plaintext highlighter-rouge">ajax:success</code> event that gets called if the AJAX call returns successfully. Our first move is to find the <code class="language-plaintext highlighter-rouge">textarea</code> and undo the temporary disabling (you may want to consider doing this at the <code class="language-plaintext highlighter-rouge">ajax:complete</code> event, because it should be done regardless of whether the AJAX was successful). You’ll notice we chained one additional function <code class="language-plaintext highlighter-rouge">.val('')</code> at the end. This will clear the <code class="language-plaintext highlighter-rouge">textarea</code> in anticipation of the user adding another comment. You wouldn’t want to do that in the error case, because the user should have an opportunity to resubmit the comment without having to retype it.</p>
 
 <p>We’re finally ready to add the nicely formatted comment to the top of our comment feed.</p>
 
 <ul>
-  <li><code class="highlighter-rouge">$(xhr.responseText)</code> gets a jQuery object version of the response HTML returned by the server.</li>
-  <li><code class="highlighter-rouge">.hide()</code> disappears our new <code class="highlighter-rouge">div</code> so it can be animated in.</li>
-  <li><code class="highlighter-rouge">.insertAfter($(this))</code> places our new <code class="highlighter-rouge">div</code> after the comment form. If you want to put it somewhere more specific, you can replace the <code class="highlighter-rouge">$(this)</code> selector with a more specific selector.</li>
-  <li><code class="highlighter-rouge">.show('slow')</code> animates our new <code class="highlighter-rouge">div</code> sliding down from the form.</li>
+  <li><code class="language-plaintext highlighter-rouge">$(xhr.responseText)</code> gets a jQuery object version of the response HTML returned by the server.</li>
+  <li><code class="language-plaintext highlighter-rouge">.hide()</code> disappears our new <code class="language-plaintext highlighter-rouge">div</code> so it can be animated in.</li>
+  <li><code class="language-plaintext highlighter-rouge">.insertAfter($(this))</code> places our new <code class="language-plaintext highlighter-rouge">div</code> after the comment form. If you want to put it somewhere more specific, you can replace the <code class="language-plaintext highlighter-rouge">$(this)</code> selector with a more specific selector.</li>
+  <li><code class="language-plaintext highlighter-rouge">.show('slow')</code> animates our new <code class="language-plaintext highlighter-rouge">div</code> sliding down from the form.</li>
 </ul>
 
-<h2 id="commenthtmlhaml--deletion">_comment.html.haml / deletion</h2>
+<h2 id="_commenthtmlhaml--deletion">_comment.html.haml / deletion</h2>
 
 <p>I skipped our single comment template, so I’ll add it here for completeness. This will lead us into the comment deletion section.</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code>	# _comment.html.haml
+<div class="language-plaintext highlighter-rouge"><pre class="highlight"><code>	# _comment.html.haml
 	%div.comment{ :id =&gt; "comment-#{comment.id}" }
 	  %hr
 	  = link_to "×", comment_path(comment), :method =&gt; :delete, :remote =&gt; true, :confirm =&gt; "Are you sure you want to remove this comment?", :disable_with =&gt; "×", :class =&gt; 'close'
@@ -470,11 +474,11 @@
 </code></pre>
 </div>
 
-<p>Our wrapper div has a <code class="highlighter-rouge">comment</code> class, and a CSS id unique to each comment. We’re not actually going to use that id, but it could be useful in the future.</p>
+<p>Our wrapper div has a <code class="language-plaintext highlighter-rouge">comment</code> class, and a CSS id unique to each comment. We’re not actually going to use that id, but it could be useful in the future.</p>
 
-<p><code class="highlighter-rouge">link_to</code> should look familiar. Our display text is an x. The link will go to the delete path we created earlier in the Routes section. To refresh your memory, it will go to <code class="highlighter-rouge">/comments/:id</code>. <code class="highlighter-rouge">:method =&gt; :delete</code> tells Rails to use the <code class="highlighter-rouge">DELETE</code> HTML method.</p>
+<p><code class="language-plaintext highlighter-rouge">link_to</code> should look familiar. Our display text is an x. The link will go to the delete path we created earlier in the Routes section. To refresh your memory, it will go to <code class="language-plaintext highlighter-rouge">/comments/:id</code>. <code class="language-plaintext highlighter-rouge">:method =&gt; :delete</code> tells Rails to use the <code class="language-plaintext highlighter-rouge">DELETE</code> HTML method.</p>
 
-<p><code class="highlighter-rouge">:remote =&gt; true</code> performs the Rails AJAX magic like we saw earlier with the creation form. <code class="highlighter-rouge">:confirm</code> pops up a JS alert to confirm the user wants to do remove the comment. <code class="highlighter-rouge">:disable_with</code> makes sure the user can’t try to delete the comment while the server is processing the first request. And the <code class="highlighter-rouge">close</code> class is Bootstrap styling.</p>
+<p><code class="language-plaintext highlighter-rouge">:remote =&gt; true</code> performs the Rails AJAX magic like we saw earlier with the creation form. <code class="language-plaintext highlighter-rouge">:confirm</code> pops up a JS alert to confirm the user wants to do remove the comment. <code class="language-plaintext highlighter-rouge">:disable_with</code> makes sure the user can’t try to delete the comment while the server is processing the first request. And the <code class="language-plaintext highlighter-rouge">close</code> class is Bootstrap styling.</p>
 
 <p>Another reminder: you’ll probably want to conditionally display the delete link to the comment creator and admins. <a href="https://github.com/drapergem/draper">Draper</a> is a good option for doing this cleanly.</p>
 
@@ -482,9 +486,9 @@
 
 <h2 id="back-to-commentscontroller">Back to CommentsController</h2>
 
-<p>Time to add the <code class="highlighter-rouge">destroy</code> method to your <code class="highlighter-rouge">CommentsController</code>.</p>
+<p>Time to add the <code class="language-plaintext highlighter-rouge">destroy</code> method to your <code class="language-plaintext highlighter-rouge">CommentsController</code>.</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code>	# comments_controller.rb
+<div class="language-plaintext highlighter-rouge"><pre class="highlight"><code>	# comments_controller.rb
 	def destroy
 	  @comment = Comment.find(params[:id])
 	  if @comment.destroy
@@ -496,19 +500,19 @@
 </code></pre>
 </div>
 
-<p><code class="highlighter-rouge">@comment</code> will track down the comment-to-be deleted from the database (check that user is allowed to delete it!).</p>
+<p><code class="language-plaintext highlighter-rouge">@comment</code> will track down the comment-to-be deleted from the database (check that user is allowed to delete it!).</p>
 
-<p>Then try to destroy the comment. This time, when the call completes successfully, I’m sending raw json back to the client with an <code class="highlighter-rouge">ok</code> status. There are a myriad of options here. Use what’s best for your app.</p>
+<p>Then try to destroy the comment. This time, when the call completes successfully, I’m sending raw json back to the client with an <code class="language-plaintext highlighter-rouge">ok</code> status. There are a myriad of options here. Use what’s best for your app.</p>
 
 <p>And on error I’m copping out again and sending back JS.</p>
 
-<p>Aside: if you want to do some informal testing, I recommend throwing a <code class="highlighter-rouge">sleep 5</code> call before the <code class="highlighter-rouge">if</code> statement so you have more time to observe your AJAX.</p>
+<p>Aside: if you want to do some informal testing, I recommend throwing a <code class="language-plaintext highlighter-rouge">sleep 5</code> call before the <code class="language-plaintext highlighter-rouge">if</code> statement so you have more time to observe your AJAX.</p>
 
 <h2 id="javascript-for-destroy">JavaScript for destroy</h2>
 
-<p>Back to our <code class="highlighter-rouge">comments.js.coffee</code> file.</p>
+<p>Back to our <code class="language-plaintext highlighter-rouge">comments.js.coffee</code> file.</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code>	jQuery -&gt;
+<div class="language-plaintext highlighter-rouge"><pre class="highlight"><code>	jQuery -&gt;
 	  # Create a comment
 	  # ...
 	
@@ -523,13 +527,13 @@
 </code></pre>
 </div>
 
-<p>We’re going to use the other incarnation of <code class="highlighter-rouge">.on</code> for the reason I’ll explain in a moment. This time we’re calling <code class="highlighter-rouge">.on</code> on the whole DOM. We specify our event first as we did before, but now we’ll add the <code class="highlighter-rouge">".comment"</code> selector as the second argument. Again, this applies to all of our comment <code class="highlighter-rouge">div</code>s with the <code class="highlighter-rouge">comment</code> class.</p>
+<p>We’re going to use the other incarnation of <code class="language-plaintext highlighter-rouge">.on</code> for the reason I’ll explain in a moment. This time we’re calling <code class="language-plaintext highlighter-rouge">.on</code> on the whole DOM. We specify our event first as we did before, but now we’ll add the <code class="language-plaintext highlighter-rouge">".comment"</code> selector as the second argument. Again, this applies to all of our comment <code class="language-plaintext highlighter-rouge">div</code>s with the <code class="language-plaintext highlighter-rouge">comment</code> class.</p>
 
-<p>We’re not going to bother including the arguments to the <code class="highlighter-rouge">ajax</code> event callbacks (for example <code class="highlighter-rouge">(evt, xhr, settings)</code>); we don’t need them.</p>
+<p>We’re not going to bother including the arguments to the <code class="language-plaintext highlighter-rouge">ajax</code> event callbacks (for example <code class="language-plaintext highlighter-rouge">(evt, xhr, settings)</code>); we don’t need them.</p>
 
-<p><code class="highlighter-rouge">$(this)</code> refers to the comment <code class="highlighter-rouge">div</code> that generated the event. We’re going fade the entire comment to half opacity before sending the request to the server by calling <code class="highlighter-rouge">.fadeTo('fast', 0.5)</code>. On success, we’ll animate the comment fading the rest of the way out and disappearing to show the user the request was completed succesfully. On error, we’ll fade the comment back to full opacity to show that the comment still exists.</p>
+<p><code class="language-plaintext highlighter-rouge">$(this)</code> refers to the comment <code class="language-plaintext highlighter-rouge">div</code> that generated the event. We’re going fade the entire comment to half opacity before sending the request to the server by calling <code class="language-plaintext highlighter-rouge">.fadeTo('fast', 0.5)</code>. On success, we’ll animate the comment fading the rest of the way out and disappearing to show the user the request was completed succesfully. On error, we’ll fade the comment back to full opacity to show that the comment still exists.</p>
 
-<p>The reason we used <code class="highlighter-rouge">$(document)</code> this time instead of calling <code class="highlighter-rouge">.on</code> on the selector directly is because it will apply the callback to newly created DOM elements as well. For example, I can add a comment and then immediately delete it without refreshing the page.</p>
+<p>The reason we used <code class="language-plaintext highlighter-rouge">$(document)</code> this time instead of calling <code class="language-plaintext highlighter-rouge">.on</code> on the selector directly is because it will apply the callback to newly created DOM elements as well. For example, I can add a comment and then immediately delete it without refreshing the page.</p>
 
 <h2 id="wrap-up">Wrap up</h2>
 

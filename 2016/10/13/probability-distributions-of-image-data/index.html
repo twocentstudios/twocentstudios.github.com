@@ -53,6 +53,10 @@
           
         
           
+          <a class="page-link" href="/apps/countbiki/privacy-policy/">Count Biki Privacy Policy</a>
+          
+        
+          
         
           
         
@@ -142,17 +146,17 @@
 
 <h2 id="gathering-data">Gathering data</h2>
 
-<p>As outlined in my previous post on <a href="http://twocentstudios.com/2016/10/12/image-into-music-transformation/">transformers</a>, I narrowed down the potential input space of <em>all possible <code class="highlighter-rouge">CGImage</code>s</em> into the more reasonable space of a common user’s iOS Camera Roll. Checking my own Camera Roll, I found 2,242 photos dating back a little over a year (I periodically dump them to a NAS for long term storage). With a good mix of photos and screenshots, this seems like a decent place to start.</p>
+<p>As outlined in my previous post on <a href="http://twocentstudios.com/2016/10/12/image-into-music-transformation/">transformers</a>, I narrowed down the potential input space of <em>all possible <code class="language-plaintext highlighter-rouge">CGImage</code>s</em> into the more reasonable space of a common user’s iOS Camera Roll. Checking my own Camera Roll, I found 2,242 photos dating back a little over a year (I periodically dump them to a NAS for long term storage). With a good mix of photos and screenshots, this seems like a decent place to start.</p>
 
-<p>We’re going to have to write some code to exercise our previously written deconstructors. We’ll call our class <code class="highlighter-rouge">PhotoDataAggregator</code> and import Photos.Framework to gain access to my Camera Roll.</p>
+<p>We’re going to have to write some code to exercise our previously written deconstructors. We’ll call our class <code class="language-plaintext highlighter-rouge">PhotoDataAggregator</code> and import Photos.Framework to gain access to my Camera Roll.</p>
 
 <p>Let’s first write a generic function that will fetch all photos, apply an arbitrary function to each photo in turn, and aggregate the results.</p>
 
 <blockquote>
-  <p>Note: since this is not shipping code, I’ll be force unwrapping and force <code class="highlighter-rouge">try</code>ing. Don’t judge.</p>
+  <p>Note: since this is not shipping code, I’ll be force unwrapping and force <code class="language-plaintext highlighter-rouge">try</code>ing. Don’t judge.</p>
 </blockquote>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="kd">static</span> <span class="kd">func</span> <span class="n">tranformPhotos</span><span class="o">&lt;</span><span class="kt">T</span><span class="o">&gt;</span><span class="p">(</span><span class="n">fromImageManager</span> <span class="nv">imageManager</span><span class="p">:</span> <span class="kt">PHImageManager</span><span class="p">,</span> <span class="nv">transform</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="p">((</span><span class="kt">UIImage</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">T</span><span class="p">))</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">T</span><span class="p">]</span> <span class="p">{</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">static</span> <span class="kd">func</span> <span class="n">tranformPhotos</span><span class="o">&lt;</span><span class="kt">T</span><span class="o">&gt;</span><span class="p">(</span><span class="n">fromImageManager</span> <span class="nv">imageManager</span><span class="p">:</span> <span class="kt">PHImageManager</span><span class="p">,</span> <span class="nv">transform</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="p">((</span><span class="kt">UIImage</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">T</span><span class="p">))</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">T</span><span class="p">]</span> <span class="p">{</span>
     <span class="k">let</span> <span class="nv">fetchOptions</span> <span class="o">=</span> <span class="kt">PHFetchOptions</span><span class="p">()</span>
     <span class="k">let</span> <span class="nv">fetchResults</span> <span class="o">=</span> <span class="kt">PHAsset</span><span class="o">.</span><span class="nf">fetchAssets</span><span class="p">(</span><span class="nv">with</span><span class="p">:</span> <span class="o">.</span><span class="n">image</span><span class="p">,</span> <span class="nv">options</span><span class="p">:</span> <span class="n">fetchOptions</span><span class="p">)</span>
             
@@ -177,7 +181,7 @@
 
 <p>Now we can pass any of our deconstructor functions (with a little massaging) to this function. Three representative examples are below.</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="kd">static</span> <span class="kd">func</span> <span class="nf">averageGrayTransform</span><span class="p">(</span><span class="nv">image</span><span class="p">:</span> <span class="kt">UIImage</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Normalized</span> <span class="p">{</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">static</span> <span class="kd">func</span> <span class="nf">averageGrayTransform</span><span class="p">(</span><span class="nv">image</span><span class="p">:</span> <span class="kt">UIImage</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Normalized</span> <span class="p">{</span>
     <span class="k">let</span> <span class="nv">imageData</span> <span class="o">=</span> <span class="k">try!</span> <span class="n">image</span><span class="o">.</span><span class="n">cgImage</span><span class="o">!.</span><span class="nf">imageData</span><span class="p">()</span>
     <span class="k">let</span> <span class="nv">result</span> <span class="o">=</span> <span class="n">imageData</span><span class="o">.</span><span class="nf">averageGray</span><span class="p">()</span>
     <span class="k">return</span> <span class="n">result</span><span class="o">.</span><span class="n">gray</span>
@@ -197,11 +201,11 @@
 </code></pre>
 </div>
 
-<p>Our results with either be <code class="highlighter-rouge">[Normalized]</code> or  <code class="highlighter-rouge">[[Normalized]]</code>.</p>
+<p>Our results with either be <code class="language-plaintext highlighter-rouge">[Normalized]</code> or  <code class="language-plaintext highlighter-rouge">[[Normalized]]</code>.</p>
 
 <p>We’ll want to use a spreadsheet to analyze the data, so let’s make a couple quick CSV functions and a way to write this data to a file on the device.</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="kd">static</span> <span class="kd">func</span> <span class="n">arrayOfArraysToCSV</span><span class="o">&lt;</span><span class="kt">T</span><span class="p">:</span> <span class="kt">CustomStringConvertible</span><span class="o">&gt;</span><span class="p">(</span><span class="nv">arrayOfArrays</span><span class="p">:</span> <span class="p">[[</span><span class="kt">T</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="kt">String</span> <span class="p">{</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">static</span> <span class="kd">func</span> <span class="n">arrayOfArraysToCSV</span><span class="o">&lt;</span><span class="kt">T</span><span class="p">:</span> <span class="kt">CustomStringConvertible</span><span class="o">&gt;</span><span class="p">(</span><span class="nv">arrayOfArrays</span><span class="p">:</span> <span class="p">[[</span><span class="kt">T</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="kt">String</span> <span class="p">{</span>
     <span class="k">return</span> <span class="n">arrayOfArrays</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="nf">arrayToCSV</span><span class="p">(</span><span class="nv">array</span><span class="p">:</span> <span class="nv">$0</span><span class="p">)</span> <span class="p">}</span><span class="o">.</span><span class="nf">joined</span><span class="p">(</span><span class="nv">separator</span><span class="p">:</span> <span class="s">"</span><span class="se">\n</span><span class="s">"</span><span class="p">)</span>
 <span class="p">}</span>
     
@@ -222,7 +226,7 @@
 
 <p>Great, now we just need some glue code to run all the deconstructors in parallel.</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="kd">func</span> <span class="nf">run</span><span class="p">()</span> <span class="p">{</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">func</span> <span class="nf">run</span><span class="p">()</span> <span class="p">{</span>
     <span class="k">let</span> <span class="nv">imageManager</span> <span class="o">=</span> <span class="kt">PHImageManager</span><span class="o">.</span><span class="nf">default</span><span class="p">()</span>
         
     <span class="kt">DispatchQueue</span><span class="o">.</span><span class="nf">global</span><span class="p">()</span><span class="o">.</span><span class="k">as</span><span class="n">ync</span> <span class="p">{</span>

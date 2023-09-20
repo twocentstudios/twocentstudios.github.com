@@ -10,7 +10,7 @@
   <meta name="description" content="In this post we’ll take a look at techniques to model view state in Swift. The goal of this post is to show how we’d go about translating a mockup like the o...">
 
   <link rel="stylesheet" href="/css/main.css">
-  <link rel="canonical" href="http://twocentstudios.com/2017/07/24/modeling-view-state/">
+  <link rel="canonical" href="http://twocentstudios.com/2017/07/24/Modeling-View-State/">
   <link rel="alternate" type="application/rss+xml" title="twocentstudios" href="http://twocentstudios.com/feed.xml" />
 </head>
 
@@ -50,6 +50,10 @@
           <a class="page-link" href="/portfolio/">Portfolio</a>
           
         
+          
+        
+          
+          <a class="page-link" href="/apps/countbiki/privacy-policy/">Count Biki Privacy Policy</a>
           
         
           
@@ -130,13 +134,13 @@
   </header>
 
   <article class="post-content">
-    <p>In this post we’ll take a look at techniques to model view state in Swift. The goal of this post is to show how we’d go about translating a mockup like the one we’d receive from a designer and convert it into a set of inert view models that fully describe all possible states of our view, but without referencing <code class="highlighter-rouge">UIKit</code>.</p>
+    <p>In this post we’ll take a look at techniques to model view state in Swift. The goal of this post is to show how we’d go about translating a mockup like the one we’d receive from a designer and convert it into a set of inert view models that fully describe all possible states of our view, but without referencing <code class="language-plaintext highlighter-rouge">UIKit</code>.</p>
 
 <p>In subsequent posts, we’ll look at techniques to transition from one view state to another, ways to create an interactor to orchestrate this process over time, and finally how to consume this view model in a view controller.</p>
 
 <h2 id="background">Background</h2>
 
-<p>In many common architectures, the only way to determine the current state of a view is to query individual properties of <code class="highlighter-rouge">UIView</code> subclasses or visually inspect the final rendering of a view snapshot. Transitions between view states are handled on an ad-hoc basis or the previous view state is simply ignored. Testing is either ignored or implemented with complicated UI-based tooling.</p>
+<p>In many common architectures, the only way to determine the current state of a view is to query individual properties of <code class="language-plaintext highlighter-rouge">UIView</code> subclasses or visually inspect the final rendering of a view snapshot. Transitions between view states are handled on an ad-hoc basis or the previous view state is simply ignored. Testing is either ignored or implemented with complicated UI-based tooling.</p>
 
 <p>Our goal with this technique is to have a full representation of all view states as a simple data structure in a separate conceptual layer from our UI.</p>
 
@@ -174,7 +178,7 @@
 
 <p>Let’s say our models were previously specified by the backend engineers.</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">User</span> <span class="p">{</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">User</span> <span class="p">{</span>
     <span class="k">let</span> <span class="nv">id</span><span class="p">:</span> <span class="kt">Int</span>
     <span class="k">let</span> <span class="nv">avatarURL</span><span class="p">:</span> <span class="kt">URL</span>
     <span class="k">let</span> <span class="nv">username</span><span class="p">:</span> <span class="kt">String</span>
@@ -185,9 +189,9 @@
 </code></pre>
 </div>
 
-<p>Based on the mockup, our view model is pretty straightforward. Just a little transformation for <code class="highlighter-rouge">friendsCount</code> and <code class="highlighter-rouge">website</code>.</p>
+<p>Based on the mockup, our view model is pretty straightforward. Just a little transformation for <code class="language-plaintext highlighter-rouge">friendsCount</code> and <code class="language-plaintext highlighter-rouge">website</code>.</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="c1">// V0</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="c1">// V0</span>
 <span class="kd">struct</span> <span class="kt">UserViewModel</span> <span class="p">{</span>
     <span class="k">let</span> <span class="nv">avatarURL</span><span class="p">:</span> <span class="kt">URL</span><span class="p">?</span>
     <span class="k">let</span> <span class="nv">username</span><span class="p">:</span> <span class="kt">String</span><span class="p">?</span>
@@ -198,7 +202,7 @@
 </code></pre>
 </div>
 
-<p>Note that these properties are all optional. This decision is somewhat of a judgement call, but since the properties we’ll be setting on the <code class="highlighter-rouge">UIKit</code> views are optional, it makes sense that we may want to distinguish between a <code class="highlighter-rouge">none</code> value and an empty value.</p>
+<p>Note that these properties are all optional. This decision is somewhat of a judgement call, but since the properties we’ll be setting on the <code class="language-plaintext highlighter-rouge">UIKit</code> views are optional, it makes sense that we may want to distinguish between a <code class="language-plaintext highlighter-rouge">none</code> value and an empty value.</p>
 
 <p>The V0 view model above is generally where most of us would start coding up view controllers. However, we’d soon realize that we’re missing a few view states.</p>
 
@@ -224,13 +228,13 @@
 
 <p>We can now start modeling the rest of our view state, confident that our users will have a better experience if they have a slow or spotty data connection.</p>
 
-<p>The responsibility of our view model is to transform model data into a representation that is immediately consumable by objects in the view layer with very little further transformation. In practice, this is more art than science so-to-speak. There are many correct solutions. View model design can still be heavily reliant on the specifics of how we decide to implement the view layer, e.g. using a <code class="highlighter-rouge">UITableView</code> versus using normal <code class="highlighter-rouge">UIView</code>s and a <code class="highlighter-rouge">UIScrollView</code>.</p>
+<p>The responsibility of our view model is to transform model data into a representation that is immediately consumable by objects in the view layer with very little further transformation. In practice, this is more art than science so-to-speak. There are many correct solutions. View model design can still be heavily reliant on the specifics of how we decide to implement the view layer, e.g. using a <code class="language-plaintext highlighter-rouge">UITableView</code> versus using normal <code class="language-plaintext highlighter-rouge">UIView</code>s and a <code class="language-plaintext highlighter-rouge">UIScrollView</code>.</p>
 
-<p>Based on the current mockup, I’m going to implement the view layer without a <code class="highlighter-rouge">UITableView</code> since the identity and location of views is known at compile time. To implement the loading and error states, I’ll add a full screen error view and loading view to the view hierarchy and toggle their hidden states.</p>
+<p>Based on the current mockup, I’m going to implement the view layer without a <code class="language-plaintext highlighter-rouge">UITableView</code> since the identity and location of views is known at compile time. To implement the loading and error states, I’ll add a full screen error view and loading view to the view hierarchy and toggle their hidden states.</p>
 
 <p>The output properties for our view model will now be the following:</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="c1">// V1 - only outputs</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="c1">// V1 - only outputs</span>
 <span class="kd">struct</span> <span class="kt">UserViewModel</span> <span class="p">{</span>
     <span class="k">let</span> <span class="nv">avatarURL</span><span class="p">:</span> <span class="kt">URL</span><span class="p">?</span>
     <span class="k">let</span> <span class="nv">username</span><span class="p">:</span> <span class="kt">String</span><span class="p">?</span>
@@ -260,13 +264,13 @@
 </code></pre>
 </div>
 
-<p>Since we’re going to have three distinct subviews (user, loading, and error), we’ll create a separate view model for each. We’ve also added a <code class="highlighter-rouge">isHidden</code> property to <code class="highlighter-rouge">UserViewModel</code> for the <code class="highlighter-rouge">initialized</code> state before <code class="highlighter-rouge">loading</code> begins.</p>
+<p>Since we’re going to have three distinct subviews (user, loading, and error), we’ll create a separate view model for each. We’ve also added a <code class="language-plaintext highlighter-rouge">isHidden</code> property to <code class="language-plaintext highlighter-rouge">UserViewModel</code> for the <code class="language-plaintext highlighter-rouge">initialized</code> state before <code class="language-plaintext highlighter-rouge">loading</code> begins.</p>
 
 <p>On every view state change, we can set all the properties on all our views. The view layer won’t need to ensure its states are consistent. That responsibility resides in the view model and can be tested independently.</p>
 
 <p>Now that we’ve determined the outputs that our views need, let’s go back and figure out the inputs and internal state we need to determine those outputs.</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="c1">// V1 - inputs and outputs</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="c1">// V1 - inputs and outputs</span>
 <span class="kd">struct</span> <span class="kt">UserViewModel</span> <span class="p">{</span>
     <span class="k">let</span> <span class="nv">avatarURL</span><span class="p">:</span> <span class="kt">URL</span><span class="p">?</span>
     <span class="k">let</span> <span class="nv">username</span><span class="p">:</span> <span class="kt">String</span><span class="p">?</span>
@@ -332,11 +336,11 @@
 </code></pre>
 </div>
 
-<p>The three inner view models (<code class="highlighter-rouge">UserViewModel</code>, <code class="highlighter-rouge">LoadingViewModel</code>, <code class="highlighter-rouge">ErrorViewModel</code>) are initialized with an optional model object (I’ve elided their implementations).</p>
+<p>The three inner view models (<code class="language-plaintext highlighter-rouge">UserViewModel</code>, <code class="language-plaintext highlighter-rouge">LoadingViewModel</code>, <code class="language-plaintext highlighter-rouge">ErrorViewModel</code>) are initialized with an optional model object (I’ve elided their implementations).</p>
 
-<p>The primary view model (<code class="highlighter-rouge">ProfileViewModel</code>) is initialized with an enum <code class="highlighter-rouge">State</code>, with each case representing one state from our designer’s mockup.</p>
+<p>The primary view model (<code class="language-plaintext highlighter-rouge">ProfileViewModel</code>) is initialized with an enum <code class="language-plaintext highlighter-rouge">State</code>, with each case representing one state from our designer’s mockup.</p>
 
-<p>Within the initializer, we map each state to a fully configured set of outputs. A different object will be responsible for initializing <code class="highlighter-rouge">ProfileViewModel</code> and determining valid state changes.</p>
+<p>Within the initializer, we map each state to a fully configured set of outputs. A different object will be responsible for initializing <code class="language-plaintext highlighter-rouge">ProfileViewModel</code> and determining valid state changes.</p>
 
 <p>With that, we now have a fully specified view model. We’ll also have a very light view controller since all we have to do is assign all relevant properties directly whenever the view state changes. (As previously mentioned, we’ll discuss the rest of the implementation of this system in subsequent posts).</p>
 
@@ -353,15 +357,15 @@
 <p>Let’s enumerate the changes we’ll have to make to the view models:</p>
 
 <ul>
-  <li>Since our view now includes an indeterminate amount of posts, we’ll convert our view layer to use a <code class="highlighter-rouge">UITableView</code> or <code class="highlighter-rouge">UICollectionView</code> instead of a static view.</li>
+  <li>Since our view now includes an indeterminate amount of posts, we’ll convert our view layer to use a <code class="language-plaintext highlighter-rouge">UITableView</code> or <code class="language-plaintext highlighter-rouge">UICollectionView</code> instead of a static view.</li>
   <li>That means we should split up our header view into multiple cells.</li>
-  <li>We’ll need to make a new shimmering <code class="highlighter-rouge">UILabel</code> class for displaying <code class="highlighter-rouge">initialized</code>, <code class="highlighter-rouge">loading</code>, and <code class="highlighter-rouge">loaded</code> states.</li>
+  <li>We’ll need to make a new shimmering <code class="language-plaintext highlighter-rouge">UILabel</code> class for displaying <code class="language-plaintext highlighter-rouge">initialized</code>, <code class="language-plaintext highlighter-rouge">loading</code>, and <code class="language-plaintext highlighter-rouge">loaded</code> states.</li>
   <li>We have two independent view states (profile and posts). We should model these separately and compose them.</li>
 </ul>
 
 <p>Let’s start by creating the smallest building blocks.</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="c1">// V2 - building blocks</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="c1">// V2 - building blocks</span>
 <span class="kd">struct</span> <span class="kt">ErrorViewModel</span> <span class="p">{</span>
     <span class="k">let</span> <span class="nv">message</span><span class="p">:</span> <span class="kt">String</span><span class="p">?</span>
     <span class="k">let</span> <span class="nv">actionTitle</span><span class="p">:</span> <span class="kt">String</span><span class="p">?</span>
@@ -404,11 +408,11 @@
 </code></pre>
 </div>
 
-<p>Each of the above will map 1-to-1 with a cell, except for <code class="highlighter-rouge">LoadingTextViewModel</code>.</p>
+<p>Each of the above will map 1-to-1 with a cell, except for <code class="language-plaintext highlighter-rouge">LoadingTextViewModel</code>.</p>
 
 <p>We can compose the above view models into the view models for profile and posts.</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="c1">// V2 - component view models</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="c1">// V2 - component view models</span>
 <span class="kd">struct</span> <span class="kt">ProfileViewModel</span> <span class="p">{</span>
     <span class="kd">enum</span> <span class="kt">State</span> <span class="p">{</span>
         <span class="k">case</span> <span class="n">initialized</span>
@@ -454,11 +458,11 @@
 </code></pre>
 </div>
 
-<p>Both <code class="highlighter-rouge">ProfileViewModel</code> and <code class="highlighter-rouge">PostsViewModel</code> are responsible for transforming their input <code class="highlighter-rouge">State</code> into a list of <code class="highlighter-rouge">viewModels</code> corresponding 1-to-1 with cells.</p>
+<p>Both <code class="language-plaintext highlighter-rouge">ProfileViewModel</code> and <code class="language-plaintext highlighter-rouge">PostsViewModel</code> are responsible for transforming their input <code class="language-plaintext highlighter-rouge">State</code> into a list of <code class="language-plaintext highlighter-rouge">viewModels</code> corresponding 1-to-1 with cells.</p>
 
-<p>And finally we can compose these two view models into <code class="highlighter-rouge">UserViewModel</code>.</p>
+<p>And finally we can compose these two view models into <code class="language-plaintext highlighter-rouge">UserViewModel</code>.</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="c1">// V2 - screen-level view model</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="c1">// V2 - screen-level view model</span>
 <span class="kd">struct</span> <span class="kt">UserViewModel</span> <span class="p">{</span>
     <span class="kd">enum</span> <span class="kt">ViewModelType</span> <span class="p">{</span>
         <span class="k">case</span> <span class="nf">profileHeader</span><span class="p">(</span><span class="kt">ProfileHeaderViewModel</span><span class="p">)</span>
@@ -502,24 +506,24 @@
 </code></pre>
 </div>
 
-<p><code class="highlighter-rouge">UserViewModel</code> only needs to map the inner view model types to its own enum <code class="highlighter-rouge">UserViewModel.ViewModelType</code> and concatenate the results into one array. <code class="highlighter-rouge">UserViewModel</code> has no state of its own. It composes the contents of its view models and exposes its own set of view models to the view layer.</p>
+<p><code class="language-plaintext highlighter-rouge">UserViewModel</code> only needs to map the inner view model types to its own enum <code class="language-plaintext highlighter-rouge">UserViewModel.ViewModelType</code> and concatenate the results into one array. <code class="language-plaintext highlighter-rouge">UserViewModel</code> has no state of its own. It composes the contents of its view models and exposes its own set of view models to the view layer.</p>
 
-<p>The view layer will only need to access <code class="highlighter-rouge">viewModels</code>.</p>
+<p>The view layer will only need to access <code class="language-plaintext highlighter-rouge">viewModels</code>.</p>
 
-<p>We now have the option of using <code class="highlighter-rouge">ProfileViewModel</code> and <code class="highlighter-rouge">PostsViewModel</code> alone on other screens, or composing them with other view models into other combinations.</p>
+<p>We now have the option of using <code class="language-plaintext highlighter-rouge">ProfileViewModel</code> and <code class="language-plaintext highlighter-rouge">PostsViewModel</code> alone on other screens, or composing them with other view models into other combinations.</p>
 
 <h2 id="conclusion">Conclusion</h2>
 
 <p>Modeling view model state is only a small part of designing a robust screen. I’ve elided a lot of the implementation details in this post in order to keep it more concise. I’ll explore the integration of these view models into the rest of the system in subsequent posts.</p>
 
-<p>Note that I’ve also elided <code class="highlighter-rouge">Equatable</code> implementations for each of these structs. <code class="highlighter-rouge">Equatable</code> conformance is important in doing diffing on the view side since our entire screens view model will change on every update to the composed view models.</p>
+<p>Note that I’ve also elided <code class="language-plaintext highlighter-rouge">Equatable</code> implementations for each of these structs. <code class="language-plaintext highlighter-rouge">Equatable</code> conformance is important in doing diffing on the view side since our entire screens view model will change on every update to the composed view models.</p>
 
 <p>It should now be easier to understand the pros this technique:</p>
 
 <ul>
   <li>The view controller is now mostly glue code, setting view models on subviews.</li>
-  <li>Comparing view states when testing (with <code class="highlighter-rouge">Equatable</code> implemented) is as simple as <code class="highlighter-rouge">XCTAssertEqual(viewModel, expectedViewModel)</code>.</li>
-  <li><code class="highlighter-rouge">PostsViewModel</code>’s logic can be used on other screens. There’s even some breathing room for using different view designs with the same data.</li>
+  <li>Comparing view states when testing (with <code class="language-plaintext highlighter-rouge">Equatable</code> implemented) is as simple as <code class="language-plaintext highlighter-rouge">XCTAssertEqual(viewModel, expectedViewModel)</code>.</li>
+  <li><code class="language-plaintext highlighter-rouge">PostsViewModel</code>’s logic can be used on other screens. There’s even some breathing room for using different view designs with the same data.</li>
   <li>Using explicit enumerable input states for our higher-level view models ensures that no bad view states can occur.</li>
   <li>Once view states are explicitly defined, it’s trivial to pass off the work of creating a view layer to another engineer.</li>
 </ul>
@@ -527,8 +531,8 @@
 <p>And the cons:</p>
 
 <ul>
-  <li>Lots more code to write and maintain, especially when considering manually writing <code class="highlighter-rouge">Equatable</code>.</li>
-  <li>Some background knowledge about how to implement the view hierarchy in <code class="highlighter-rouge">UIKit</code> needs to be known ahead of time in order to correctly design the view models on the first try.</li>
+  <li>Lots more code to write and maintain, especially when considering manually writing <code class="language-plaintext highlighter-rouge">Equatable</code>.</li>
+  <li>Some background knowledge about how to implement the view hierarchy in <code class="language-plaintext highlighter-rouge">UIKit</code> needs to be known ahead of time in order to correctly design the view models on the first try.</li>
 </ul>
 
 <p>I consider the overhead to be worthwhile if your objective is robust code, the design is relatively stable, and testing is part of your culture. Conversely, it might not be worthwhile if your product design is undergoing rapid change, secondary view states are not important to product validation, and a certain quantity of bugs are acceptable.</p>

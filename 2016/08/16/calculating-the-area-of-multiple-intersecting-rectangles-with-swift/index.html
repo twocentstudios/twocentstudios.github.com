@@ -53,6 +53,10 @@
           
         
           
+          <a class="page-link" href="/apps/countbiki/privacy-policy/">Count Biki Privacy Policy</a>
+          
+        
+          
         
           
         
@@ -130,7 +134,7 @@
   </header>
 
   <article class="post-content">
-    <p>A piece of palate data I’m creating in my image to music generating app is the total ratio of the area faces in an image i.e. <code class="highlighter-rouge">totalAreaOfFaces / totalAreaOfPhoto</code>.</p>
+    <p>A piece of palate data I’m creating in my image to music generating app is the total ratio of the area faces in an image i.e. <code class="language-plaintext highlighter-rouge">totalAreaOfFaces / totalAreaOfPhoto</code>.</p>
 
 <p>This turns out to be a lot like a classic programming algorithms interview question. Jump to <em>Implementation</em> if you want the TL;DR.</p>
 
@@ -140,9 +144,9 @@
 
 <h2 id="naive-solution">Naive Solution</h2>
 
-<p>At first, this seems like a trivial problem. Apple provides us with a facial recognition algorithm in the CoreImage framework. This algorithm takes a <code class="highlighter-rouge">CIImage</code> as input and returns <code class="highlighter-rouge">[CIFaceFeatures]</code> each of which contains a <code class="highlighter-rouge">bounds</code> property. Take the area of each bounds and add them together then divide by the area of the image and we’re done.</p>
+<p>At first, this seems like a trivial problem. Apple provides us with a facial recognition algorithm in the CoreImage framework. This algorithm takes a <code class="language-plaintext highlighter-rouge">CIImage</code> as input and returns <code class="language-plaintext highlighter-rouge">[CIFaceFeatures]</code> each of which contains a <code class="language-plaintext highlighter-rouge">bounds</code> property. Take the area of each bounds and add them together then divide by the area of the image and we’re done.</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="c1">/// WRONG - naive implementation</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="c1">/// WRONG - naive implementation</span>
 <span class="kd">func</span> <span class="nf">ratioOfFaces</span><span class="p">(</span><span class="nv">image</span><span class="p">:</span> <span class="kt">CIImage</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">CGFloat</span> <span class="p">{</span>
     <span class="k">let</span> <span class="nv">context</span> <span class="o">=</span> <span class="kt">CIContext</span><span class="p">(</span><span class="nv">options</span><span class="p">:</span> <span class="kc">nil</span><span class="p">)</span>
     <span class="k">let</span> <span class="nv">detector</span> <span class="o">=</span> <span class="kt">CIDetector</span><span class="p">(</span><span class="nv">ofType</span><span class="p">:</span> <span class="kt">CIDetectorTypeFace</span><span class="p">,</span> <span class="nv">context</span><span class="p">:</span> <span class="n">context</span><span class="p">,</span> <span class="nv">options</span><span class="p">:</span> <span class="p">[</span><span class="kt">CIDetectorAccuracy</span><span class="p">:</span> <span class="kt">CIDetectorAccuracyHigh</span><span class="p">])</span>
@@ -182,15 +186,15 @@
 
 <div class="caption-wrapper"><img class="caption" src="/images/rectangles-two_rectangles.png" width="" height="" alt="Two overlapping rectangles." title="Two overlapping rectangles." /><div class="caption-text">Two overlapping rectangles.</div></div>
 
-<p><code class="highlighter-rouge">3*3 + 3*3 - 3*1 = 15</code><br />
-<code class="highlighter-rouge">green + red - (green &amp;&amp; red)</code></p>
+<p><code class="language-plaintext highlighter-rouge">3*3 + 3*3 - 3*1 = 15</code>
+<code class="language-plaintext highlighter-rouge">green + red - (green &amp;&amp; red)</code></p>
 
 <div class="caption-wrapper"><img class="caption" src="/images/rectangles-three_rectangles.png" width="" height="" alt="Three overlapping rectangles." title="Three overlapping rectangles." /><div class="caption-text">Three overlapping rectangles.</div></div>
 
-<p><code class="highlighter-rouge">(3*3 + 3*3 + 3*3) - (3*1 + 2*1 + 2*1) + (1*1) = 21</code><br />
-<code class="highlighter-rouge">(green + red + black) - (green &amp;&amp; red + green &amp;&amp; black + red &amp;&amp; black) + (green &amp;&amp; red &amp;&amp; black)</code></p>
+<p><code class="language-plaintext highlighter-rouge">(3*3 + 3*3 + 3*3) - (3*1 + 2*1 + 2*1) + (1*1) = 21</code>
+<code class="language-plaintext highlighter-rouge">(green + red + black) - (green &amp;&amp; red + green &amp;&amp; black + red &amp;&amp; black) + (green &amp;&amp; red &amp;&amp; black)</code></p>
 
-<p>Notice the alternating + and -. Feel free to count them and see. If you don’t add back the <code class="highlighter-rouge">1*1</code> area covered by all three rectangles, your answer will be one short.</p>
+<p>Notice the alternating + and -. Feel free to count them and see. If you don’t add back the <code class="language-plaintext highlighter-rouge">1*1</code> area covered by all three rectangles, your answer will be one short.</p>
 
 <p>We’ve got to take it a step further.</p>
 
@@ -229,7 +233,7 @@
 
 <h3 id="high-level-function">High Level Function</h3>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="kd">func</span> <span class="nf">areaOfRects</span><span class="p">(</span><span class="nv">rects</span><span class="p">:</span> <span class="p">[</span><span class="kt">CGRect</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kt">CGFloat</span> <span class="p">{</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">func</span> <span class="nf">areaOfRects</span><span class="p">(</span><span class="nv">rects</span><span class="p">:</span> <span class="p">[</span><span class="kt">CGRect</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kt">CGFloat</span> <span class="p">{</span>
     <span class="k">let</span> <span class="nv">nonZeroRects</span> <span class="o">=</span> <span class="n">rects</span><span class="o">.</span><span class="n">filter</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="n">area</span> <span class="o">!=</span> <span class="mi">0</span> <span class="p">}</span>
     <span class="k">let</span> <span class="nv">xDividers</span> <span class="o">=</span> <span class="nf">uniqueSortedXDividers</span><span class="p">(</span><span class="n">nonZeroRects</span><span class="p">)</span>
     <span class="k">let</span> <span class="nv">splitRects</span> <span class="o">=</span> <span class="nf">rectsSplitAtXDividers</span><span class="p">(</span><span class="n">nonZeroRects</span><span class="p">,</span> <span class="nv">xDividers</span><span class="p">:</span> <span class="n">xDividers</span><span class="p">)</span>
@@ -254,7 +258,7 @@
 
 <p>Area is pretty straightforward.</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="kd">extension</span> <span class="kt">CGRect</span> <span class="p">{</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">extension</span> <span class="kt">CGRect</span> <span class="p">{</span>
     <span class="k">var</span> <span class="nv">area</span><span class="p">:</span> <span class="kt">CGFloat</span> <span class="p">{</span>
         <span class="k">return</span> <span class="k">self</span><span class="o">.</span><span class="n">width</span> <span class="o">*</span> <span class="k">self</span><span class="o">.</span><span class="n">height</span>
     <span class="p">}</span>
@@ -266,7 +270,7 @@
 
 <p>We’ll also need a function to split any rect at an X value.</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="c1">/// Split self into two rects at X. Otherwise, return self.</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="c1">/// Split self into two rects at X. Otherwise, return self.</span>
 <span class="kd">extension</span> <span class="kt">CGRect</span> <span class="p">{</span>
     <span class="kd">func</span> <span class="nf">splitAtX</span><span class="p">(</span><span class="nv">x</span><span class="p">:</span> <span class="kt">CGFloat</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">CGRect</span><span class="p">]</span> <span class="p">{</span>
         <span class="k">if</span> <span class="n">x</span> <span class="o">&lt;=</span> <span class="k">self</span><span class="o">.</span><span class="n">minX</span> <span class="o">||</span> <span class="n">x</span> <span class="o">&gt;=</span> <span class="k">self</span><span class="o">.</span><span class="n">maxX</span> <span class="p">{</span>
@@ -289,17 +293,17 @@
 </code></pre>
 </div>
 
-<p><code class="highlighter-rouge">CGRect</code> already has a function <code class="highlighter-rouge">CGRectDivide</code>, but since we have to do specific bounds checking anyway, I found it easier just to write my own.</p>
+<p><code class="language-plaintext highlighter-rouge">CGRect</code> already has a function <code class="language-plaintext highlighter-rouge">CGRectDivide</code>, but since we have to do specific bounds checking anyway, I found it easier just to write my own.</p>
 
 <h4 id="cgrectunion">CGRectUnion</h4>
 
-<p><code class="highlighter-rouge">CGRectUnion(rect1, rect2)</code> finds the smallest rectangle that contains <code class="highlighter-rouge">rect1</code> and <code class="highlighter-rouge">rect2</code>.</p>
+<p><code class="language-plaintext highlighter-rouge">CGRectUnion(rect1, rect2)</code> finds the smallest rectangle that contains <code class="language-plaintext highlighter-rouge">rect1</code> and <code class="language-plaintext highlighter-rouge">rect2</code>.</p>
 
 <div class="caption-wrapper"><img class="caption" src="/images/rectangles-union.png" width="" height="" alt="The union of two rectangles outlined in red." title="The union of two rectangles outlined in red." /><div class="caption-text">The union of two rectangles outlined in red.</div></div>
 
 <h4 id="cgrectintersection--cgrectintersectsrect">CGRectIntersection &amp; CGRectIntersectsRect</h4>
 
-<p><code class="highlighter-rouge">CGRectIntersection(rect1, rect2)</code> finds a rectangle shared by both <code class="highlighter-rouge">rect1</code> and <code class="highlighter-rouge">rect2</code> or <code class="highlighter-rouge">CGRectNull</code> if they do not intersect. It has a boolean cousin called <code class="highlighter-rouge">CGRectIntersectsRect</code>.</p>
+<p><code class="language-plaintext highlighter-rouge">CGRectIntersection(rect1, rect2)</code> finds a rectangle shared by both <code class="language-plaintext highlighter-rouge">rect1</code> and <code class="language-plaintext highlighter-rouge">rect2</code> or <code class="language-plaintext highlighter-rouge">CGRectNull</code> if they do not intersect. It has a boolean cousin called <code class="language-plaintext highlighter-rouge">CGRectIntersectsRect</code>.</p>
 
 <div class="caption-wrapper"><img class="caption" src="/images/rectangles-intersection.png" width="" height="" alt="The intersection of two rectangles filled in blue." title="The intersection of two rectangles filled in blue." /><div class="caption-text">The intersection of two rectangles filled in blue.</div></div>
 
@@ -307,7 +311,7 @@
 
 <p>Four transformations: take minX and maxX, flatten them back into one array, create a set to unique them, then sort min to max.</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="c1">/// Collect and unique all X coordinates.</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="c1">/// Collect and unique all X coordinates.</span>
 <span class="kd">func</span> <span class="nf">uniqueSortedXDividers</span><span class="p">(</span><span class="nv">rects</span><span class="p">:</span> <span class="p">[</span><span class="kt">CGRect</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">CGFloat</span><span class="p">]</span> <span class="p">{</span>
     <span class="k">let</span> <span class="nv">xDividers</span> <span class="o">=</span> <span class="n">rects</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="p">[</span><span class="nv">$0</span><span class="o">.</span><span class="n">minX</span><span class="p">,</span> <span class="nv">$0</span><span class="o">.</span><span class="n">maxX</span><span class="p">]</span> <span class="p">}</span><span class="o">.</span><span class="nf">flatten</span><span class="p">()</span>
     <span class="k">let</span> <span class="nv">xDividersUniqueSorted</span> <span class="o">=</span> <span class="kt">Array</span><span class="p">(</span><span class="kt">Set</span><span class="p">(</span><span class="n">xDividers</span><span class="p">))</span><span class="o">.</span><span class="nf">sort</span><span class="p">()</span>
@@ -320,7 +324,7 @@
 
 <p>For the outer loop, loop through each X value. For the inner loop, loop through each rect, split it if necessary, and return it to the array.</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="c1">/// Split all rects at X coordinates.</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="c1">/// Split all rects at X coordinates.</span>
 <span class="c1">/// Precondition: all rects must have non-zero area.</span>
 <span class="kd">func</span> <span class="nf">rectsSplitAtXDividers</span><span class="p">(</span><span class="nv">rects</span><span class="p">:</span> <span class="p">[</span><span class="kt">CGRect</span><span class="p">],</span> <span class="nv">xDividers</span><span class="p">:</span> <span class="p">[</span><span class="kt">CGFloat</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">CGRect</span><span class="p">]</span> <span class="p">{</span>
     <span class="k">for</span> <span class="n">r</span> <span class="k">in</span> <span class="n">rects</span> <span class="p">{</span> <span class="nf">precondition</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">area</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span> <span class="p">}</span>
@@ -363,9 +367,9 @@
 
 <p>Sorting rects by ascending Y value allows us to compare adjacent rects for intersection without skipping over any.</p>
 
-<p>Within the <code class="highlighter-rouge">sortedRects</code> loop, we compare each rect to its preceding neighbor, combine them with <code class="highlighter-rouge">CGRectUnion</code> if they intersect, or add the previous rect to the output array if it does not intersect.</p>
+<p>Within the <code class="language-plaintext highlighter-rouge">sortedRects</code> loop, we compare each rect to its preceding neighbor, combine them with <code class="language-plaintext highlighter-rouge">CGRectUnion</code> if they intersect, or add the previous rect to the output array if it does not intersect.</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="c1">/// For each set of rects at an X boundary,</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="c1">/// For each set of rects at an X boundary,</span>
 <span class="c1">/// combine the intersecting rects.</span>
 <span class="c1">///</span>
 <span class="c1">/// Precondition: all rects on the same X boundary must</span>
@@ -405,7 +409,7 @@
 
 <p>Now that we can more accurately calculate the area of our face rectangles, here is the final implementation of our original problem.</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="kd">func</span> <span class="nf">ratioOfFaces</span><span class="p">(</span><span class="nv">image</span><span class="p">:</span> <span class="kt">CIImage</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">CGFloat</span> <span class="p">{</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">func</span> <span class="nf">ratioOfFaces</span><span class="p">(</span><span class="nv">image</span><span class="p">:</span> <span class="kt">CIImage</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">CGFloat</span> <span class="p">{</span>
     <span class="k">let</span> <span class="nv">context</span> <span class="o">=</span> <span class="kt">CIContext</span><span class="p">(</span><span class="nv">options</span><span class="p">:</span> <span class="kc">nil</span><span class="p">)</span>
     <span class="k">let</span> <span class="nv">detector</span> <span class="o">=</span> <span class="kt">CIDetector</span><span class="p">(</span><span class="nv">ofType</span><span class="p">:</span> <span class="kt">CIDetectorTypeFace</span><span class="p">,</span> <span class="nv">context</span><span class="p">:</span> <span class="n">context</span><span class="p">,</span> <span class="nv">options</span><span class="p">:</span> <span class="p">[</span><span class="kt">CIDetectorAccuracy</span><span class="p">:</span> <span class="kt">CIDetectorAccuracyHigh</span><span class="p">])</span>
     <span class="k">let</span> <span class="nv">features</span> <span class="o">=</span> <span class="n">detector</span><span class="o">.</span><span class="nf">featuresInImage</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="nv">options</span><span class="p">:</span> <span class="kc">nil</span><span class="p">)</span>

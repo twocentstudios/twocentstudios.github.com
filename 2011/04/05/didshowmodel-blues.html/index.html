@@ -6,11 +6,11 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <title>TTXMLParser With a Variable Number of Elements</title>
-  <meta name="description" content="I’ve probably re-solved this problem at least three times, so time to document it.Let’s say you’re dealing with an XML feed response from a webservice. You’r...">
+  <title>didShowModel Blues</title>
+  <meta name="description" content="I’m working with a TTTableViewController right now. Try to stay with me.">
 
   <link rel="stylesheet" href="/css/main.css">
-  <link rel="canonical" href="http://twocentstudios.com/2011/04/17/ttxmlparser-with-a-variable-number-of-elements-html/">
+  <link rel="canonical" href="http://twocentstudios.com/2011/04/05/didshowmodel-blues.html/">
   <link rel="alternate" type="application/rss+xml" title="twocentstudios" href="http://twocentstudios.com/feed.xml" />
 </head>
 
@@ -50,6 +50,10 @@
           <a class="page-link" href="/portfolio/">Portfolio</a>
           
         
+          
+        
+          
+          <a class="page-link" href="/apps/countbiki/privacy-policy/">Count Biki Privacy Policy</a>
           
         
           
@@ -125,72 +129,24 @@
         <div class="post">
 
   <header class="post-header">
-    <h1 class="post-title">TTXMLParser With a Variable Number of Elements</h1>
-    <p class="post-meta">Apr 17, 2011</p>
+    <h1 class="post-title">didShowModel Blues</h1>
+    <p class="post-meta">Apr 5, 2011</p>
   </header>
 
   <article class="post-content">
-    <p>I’ve probably re-solved this problem at least three times, so time to document it.</p>
+    <p>I’m working with a TTTableViewController right now. Try to stay with me.</p>
 
-<p>Let’s say you’re dealing with an XML feed response from a webservice. You’re using the TTXMLParser extension. Here’s an example of what we might get back from a webservice that shows a user’s recently read books:</p>
+<p>TableViewController gets pushed onto the navigation stack, hits the network looking for data, and loads the data. I want to animate the top cell so it looks like it moves a little to the right then bounces back into place. This is supposed to key the user into the fact that there’s more info lurking beneath the top cell layer and that they should swipe to reveal it (a la the showMenu: and hideMenu: pre-rolled functions).</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code>&lt;response&gt;
-  &lt;book&gt;
-    &lt;title&gt;The Stranger&lt;/title&gt;
-    &lt;author&gt;Albert Camus&lt;/author&gt;
-    &lt;completed&gt;Apr 11&lt;/completed&gt;
-  &lt;/book&gt;
-  &lt;book&gt;
-    &lt;title&gt;Pinball 1973&lt;/title&gt;
-    &lt;author&gt;Haruki Murakami&lt;/author&gt;
-    &lt;completed&gt;Apr 5&lt;/completed&gt;
-  &lt;/book&gt;
-&lt;/response&gt;
-</code></pre>
-</div>
+<p>My first thought (which always seems to be wrong) was to trigger this in didShowModel in the TTTableViewController. This is supposed to be the moment when all the layout is has been completed, right? To test my theory, if I call showMenu not animated to push all the views right, then call hideMenu animated, it should swoop in just as the cells load.</p>
 
-<p>The number of books is completely variable. This is the problem we’re going to solve below. It could return zero, one, or more book elements.</p>
+<p>It doesn’t seem to work that way. The behavior I viewed in this situation was instead that the showMenu didn’t have any effect, and then the hideMenu (triggered a second later with a timer) would swipe everything off to the left (instead of bringing it from off-screen back into front and center). After didShowModel completes, is something going on in the TT objects that’s resetting the move I’m doing?</p>
 
-<p>First off, you have to tell your TTURLXMLResponse that it’s an RSS feed. It doesn’t actually have to be RSS, they just mean “is it going to have multiple elements with the same element name?” like we have with book elements. So we’ll check that off.</p>
+<p>For now, it seems like the best solution, although a bit hacky, is to set a short timer (0.3 seconds) in the didShowModel that calls back to a function with a CAAnimation group. This gives both the TTTableViewController time to lay out its views and get out of dodge, and also lets the user see the table momentarily before it starts moving. This is essentially the same as setting an animation delay.</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code>TTURLXMLResponse* response = [[TTURLXMLResponse alloc] init];
-response.isRssFeed = YES
-</code></pre>
-</div>
+<p>With that problem out of the way, I have to say that the animation effect is kind of cool, but I feel like it will definitely be fatiguing to users to see this animation every time the table loads. Should it be only for the first five table loads the user ever does? Should it be only for the first table load in every launch? Only for the first couple days after download? I’m thinking option A, but I’ll have to wait until the beta testing to zero in on that answer.</p>
 
-<p>Now we’ve got to deal with the response in requestDidFinishLoad.</p>
-
-<div class="highlighter-rouge"><pre class="highlight"><code>- (void)requestDidFinishLoad:(TTURLRequest*)request {
-	TTURLXMLResponse* response = request.response;
-
-	// The root object should definitely be a dictionary
-	TTDASSERT([response.rootObject isKindOfClass:[NSDictionary class]]);
-	NSDictionary* feed = response.rootObject;
-	
-	// Use &amp;quot;arrayForKey&amp;quot; not &amp;quot;objectForKey&amp;quot; as explained below
-	if ([feed objectForKey:@&amp;quot;book&amp;quot;] != nil])
-		NSArray* entries = [feed arrayForKey:@&amp;quot;book&amp;quot;];
-
-	// { Parse the feed and do whatever else you need to do}
-}
-</code></pre>
-</div>
-
-<p>The important part of the code is using arrayForKey instead of objectForKey. If we dig into the Three20 code:</p>
-
-<div class="highlighter-rouge"><pre class="highlight"><code>@interface NSDictionary (TTXMLAdditions)
-//...
-/**
- * @return Performs an &amp;quot;objectForKey&amp;quot;, then puts the object into an array. If the
- * object is already an array, that array is returned.
- */
-- (NSArray*)arrayForKey:(id)key;
-</code></pre>
-</div>
-
-<p>If the service returns only a single book, the object we get back for the “book” element will still be an array, but it will be an array of <i>strings</i> and not an array of <i>dictionaries</i> like we expect. ArrayForKey solves this by giving us back an array of dictionaries even if there is only one entry.</p>
-
-<p>Note that I had to check that an object existed for books before calling arrayForKey. In my experience, this method <i>will</i> crash if an object doesn’t exist for the key, so be careful!</p>
+<p>In any case, I’ll have to step through the TTTableViewController code to find out where the layout is getting reset. If anyone else has done this before, let me know in the comments.</p>
 
   </article>
 

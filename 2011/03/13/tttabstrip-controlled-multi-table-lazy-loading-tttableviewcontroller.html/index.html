@@ -10,7 +10,7 @@
   <meta name="description" content="Using a single TTTableViewController and a TTTabStrip can sometimes be an appropriate way to avoid drilling down through two tableviews. I’m going to walk th...">
 
   <link rel="stylesheet" href="/css/main.css">
-  <link rel="canonical" href="http://twocentstudios.com/2011/03/13/tttabstrip-controlled-multi-table-lazy-loading-tttableviewcontroller-html/">
+  <link rel="canonical" href="http://twocentstudios.com/2011/03/13/tttabstrip-controlled-multi-table-lazy-loading-tttableviewcontroller.html/">
   <link rel="alternate" type="application/rss+xml" title="twocentstudios" href="http://twocentstudios.com/feed.xml" />
 </head>
 
@@ -50,6 +50,10 @@
           <a class="page-link" href="/portfolio/">Portfolio</a>
           
         
+          
+        
+          
+          <a class="page-link" href="/apps/countbiki/privacy-policy/">Count Biki Privacy Policy</a>
           
         
           
@@ -146,31 +150,31 @@
 
 <p>Since we’ve decided to use our TTTableViewController as the director, we’ll need to set up a few pointers in the header.</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="c1">// TCYouTubeController.h
-</span><span class="k">@interface</span> <span class="nc">TCYouTubeViewController</span> <span class="p">:</span> <span class="nc">TTTableViewController</span> <span class="o">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">TTTabDelegate</span><span class="o">&amp;</span><span class="n">gt</span><span class="p">;{</span>
-    <span class="c1">// The TabStrip sitting above the table
-</span>	<span class="n">TTTabStrip</span><span class="o">*</span> <span class="n">_playlistsBar</span><span class="p">;</span>
+<div class="language-plaintext highlighter-rouge"><pre class="highlight"><code>// TCYouTubeController.h
+@interface TCYouTubeViewController : TTTableViewController &amp;lt;TTTabDelegate&amp;gt;{
+    // The TabStrip sitting above the table
+	TTTabStrip* _playlistsBar;
 
-    <span class="c1">// The model that generates a list of playlists for the TabStrip
-</span>	<span class="n">TCYouTubePlaylistsModel</span> <span class="o">*</span><span class="n">_playlistsModel</span><span class="p">;</span>
+    // The model that generates a list of playlists for the TabStrip
+	TCYouTubePlaylistsModel *_playlistsModel;
 
-    <span class="c1">// An array of TCYouTubeDataSource objects, one for each playlist
-</span>	<span class="n">NSMutableArray</span> <span class="o">*</span><span class="n">_playlistDataSources</span><span class="p">;</span>
+    // An array of TCYouTubeDataSource objects, one for each playlist
+	NSMutableArray *_playlistDataSources;
 
-    <span class="c1">// A ppinter to the playlist datasource currently being viewed
-</span>	<span class="n">TCYouTubePlaylistDataSource</span> <span class="o">*</span><span class="n">_activePlaylistDataSource</span><span class="p">;</span>
-<span class="p">}</span>
+    // A ppinter to the playlist datasource currently being viewed
+	TCYouTubePlaylistDataSource *_activePlaylistDataSource;
+}
 
-<span class="k">@property</span> <span class="p">(</span><span class="n">nonatomic</span><span class="p">,</span> <span class="n">retain</span><span class="p">)</span> <span class="n">TCYouTubePlaylistsModel</span><span class="o">*</span> <span class="n">playlistsModel</span><span class="p">;</span>
-<span class="k">@property</span> <span class="p">(</span><span class="n">nonatomic</span><span class="p">,</span> <span class="n">retain</span><span class="p">)</span> <span class="n">NSMutableArray</span><span class="o">*</span> <span class="n">playlistDataSources</span><span class="p">;</span>
-<span class="k">@property</span> <span class="p">(</span><span class="n">nonatomic</span><span class="p">,</span> <span class="n">retain</span><span class="p">)</span> <span class="n">TCYouTubePlaylistDataSource</span><span class="o">*</span> <span class="n">activePlaylistDataSource</span><span class="p">;</span>
+@property (nonatomic, retain) TCYouTubePlaylistsModel* playlistsModel;
+@property (nonatomic, retain) NSMutableArray* playlistDataSources;
+@property (nonatomic, retain) TCYouTubePlaylistDataSource* activePlaylistDataSource;
 
-<span class="c1">// Convenience method for setting the active playlist from an index
+// Convenience method for setting the active playlist from an index
 // (usually from a button in an array whose entries correspond
 // to those of the playlistModels)
-</span><span class="k">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="nf">setActivePlaylistAtIndex</span><span class="p">:(</span><span class="n">NSInteger</span><span class="p">)</span><span class="nv">xActiveIndex</span><span class="p">;</span>
+- (void)setActivePlaylistAtIndex:(NSInteger)xActiveIndex;
 
-<span class="k">@end</span>
+@end
 </code></pre>
 </div>
 
@@ -180,7 +184,7 @@
 
 <p>Next, we need to start the ball rolling in our createModel (defined in the TTTableController source). First check to make sure we haven’t already loaded the playlists. If we haven’t, create the model, add the controller as a delegate, and then start the load.</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code>- (void)createModel {
+<div class="language-plaintext highlighter-rouge"><pre class="highlight"><code>- (void)createModel {
 	if (!_playlistsModel &amp;amp;&amp;amp; !_playlistsModel.isLoaded){
 		TT_RELEASE_SAFELY(_playlistsModel);
 		_playlistsModel = [[TCYouTubePlaylistsModel alloc] initWithUsername:kYouTubeUserName];
@@ -201,7 +205,7 @@
 
 <p>Since this is the first load, we want to load up the first playlist if it exists. We do this by momentarily setting the tabstrip index to max, then back to 0. This will trigger the setActivePlaylistAtIndex and load as if the user had tapped the button.</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code>- (void)modelDidFinishLoad:(id&amp;lt;TTModel&amp;gt;)model {
+<div class="language-plaintext highlighter-rouge"><pre class="highlight"><code>- (void)modelDidFinishLoad:(id&amp;lt;TTModel&amp;gt;)model {
 	[super modelDidFinishLoad:model];
 
 	// For only the playlist model...
@@ -234,7 +238,7 @@
 
 <p>To fulfill our responsibility as a TTTabDelegate, add the following function to the dot m:</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code>#pragma mark TTTabDelegate
+<div class="language-plaintext highlighter-rouge"><pre class="highlight"><code>#pragma mark TTTabDelegate
 - (void)tabBar:(TTTabBar*)tabBar tabSelected:(NSInteger)selectedIndex{
 	[self setActivePlaylistAtIndex:selectedIndex];
 }
@@ -243,7 +247,7 @@
 
 <p>Here we’re just passing along the message to our setActive helper function that the user changed the playlist tab.</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code>- (void)setActivePlaylistAtIndex:(NSInteger)xActiveIndex{
+<div class="language-plaintext highlighter-rouge"><pre class="highlight"><code>- (void)setActivePlaylistAtIndex:(NSInteger)xActiveIndex{
 	if (self.playlistDataSources.count &amp;gt; xActiveIndex){
 		self.activePlaylistDataSource = [self.playlistDataSources objectAtIndex:xActiveIndex];
 		self.dataSource = self.activePlaylistDataSource;
@@ -262,7 +266,7 @@
 
 <p>Starting with the PlaylistsModel header, we have two pieces of data to store.</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code>@interface TCYouTubePlaylistsModel : TTURLRequestModel  {
+<div class="language-plaintext highlighter-rouge"><pre class="highlight"><code>@interface TCYouTubePlaylistsModel : TTURLRequestModel  {
 	NSString* _username;	//username to search for
 	NSArray* _playlists;		//array of TCYouTubeObjectPlaylist
 } 
@@ -273,7 +277,7 @@
 
 <p>The implementation is a textbook TTURLRequestModel.</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code>- (void)load:(TTURLRequestCachePolicy)cachePolicy more:(BOOL)more{
+<div class="language-plaintext highlighter-rouge"><pre class="highlight"><code>- (void)load:(TTURLRequestCachePolicy)cachePolicy more:(BOOL)more{
 // assemble the URL based on the username
 
 // create a TTURLRequest
@@ -295,7 +299,7 @@
 
 <p>In the model, we need to keep the following information:</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code>@interface TCYouTubeVideosModel : TTURLRequestModel {
+<div class="language-plaintext highlighter-rouge"><pre class="highlight"><code>@interface TCYouTubeVideosModel : TTURLRequestModel {
 	NSString* _sourceURL;	//URL that returns video entries (username, playlist, etc.)
 	NSArray* _videos;       //array of TCYouTubeObjectVideo
 }
@@ -308,7 +312,7 @@
 
 <p>And because we’ll be loading these objects into the table, we’ll need a dataSource, TTTableItem, and TTTableCell. The dataSource should store its corresponding playlist object (containing the URL, title, etc.), and its model (used to get data about the videos in the data).</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code>@interface TCYouTubePlaylistDataSource : TTListDataSource {
+<div class="language-plaintext highlighter-rouge"><pre class="highlight"><code>@interface TCYouTubePlaylistDataSource : TTListDataSource {
 	TCYouTubeObjectPlaylist* _playlist;
 	TCYouTubeVideosModel* _videosModel;
 }
@@ -317,7 +321,7 @@
 
 <p>Since we need the playlist, make an initializer to accept it. Then make the model right away.</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code>- (id)initWithPlaylist:(TCYouTubeObjectPlaylist*)xPlaylist{
+<div class="language-plaintext highlighter-rouge"><pre class="highlight"><code>- (id)initWithPlaylist:(TCYouTubeObjectPlaylist*)xPlaylist{
 	if (self = [super init]) {
 		_playlist = [xPlaylist retain];
 		_videosModel = [[TCYouTubeVideosModel alloc] initWithSourceURL:[xPlaylist playlistURL]];
@@ -334,7 +338,7 @@
 
 <p>Don’t forget to create your TTTableItems in didLoadModel. In this case, my TCYouTubeObjectVideo is a subclass of a TTTableItem, so I skipped most of this step.</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code>- (void)tableViewDidLoadModel:(UITableView*)tableView {
+<div class="language-plaintext highlighter-rouge"><pre class="highlight"><code>- (void)tableViewDidLoadModel:(UITableView*)tableView {
 	self.items = [NSMutableArray arrayWithArray:[_videosModel videos]];
 }
 </code></pre>
@@ -342,7 +346,7 @@
 
 <p>Connect up your TTTableItems and TTTableCells as I mentioned in my previous post <a href="/blog/2011/02/06/all-about-tttableitems-cells.html/">All About TTTableItems &amp; Cells</a>.</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code>- (Class)tableView:(UITableView *)tableView cellClassForObject:(id)object {
+<div class="language-plaintext highlighter-rouge"><pre class="highlight"><code>- (Class)tableView:(UITableView *)tableView cellClassForObject:(id)object {
     if([object isKindOfClass:[TCYouTubeObjectVideo class]])
         return [TCYouTubeVideoMultipleCell class];
     else
@@ -358,17 +362,17 @@
 <h2>Update</h2>
 <p>It’s important to clarify my getters and setters for playlistDataSource. I’m synthesizing it as:</p>
 
-<p><code class="highlighter-rouge"><span class="k">@property</span> <span class="p">(</span><span class="n">nonatomic</span><span class="p">,</span> <span class="n">retain</span><span class="p">)</span> <span class="n">NSMutableArray</span><span class="o">*</span> <span class="n">playlistDataSources</span><span class="p">;</span></code></p>
+<p><code class="language-plaintext highlighter-rouge">@property (nonatomic, retain) NSMutableArray* playlistDataSources;</code></p>
 
-<p>And I’m overriding the getter like so:<br />
-<code class="highlighter-rouge">
-- (NSMutableArray*)playlistDataSources{
+<p>And I’m overriding the getter like so:</p>
+<div class="language-plaintext highlighter-rouge"><pre class="highlight"><code>- (NSMutableArray*)playlistDataSources{
 	if (_playlistDataSources == nil){
 		_playlistDataSources = [[NSMutableArray alloc] init];	
 	}
 	return _playlistDataSources;
 }
-</code></p>
+</code></pre>
+</div>
 
   </article>
 

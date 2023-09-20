@@ -53,6 +53,10 @@
           
         
           
+          <a class="page-link" href="/apps/countbiki/privacy-policy/">Count Biki Privacy Policy</a>
+          
+        
+          
         
           
         
@@ -159,7 +163,7 @@
 
 <h3 id="event">Event</h3>
 
-<p>An event is the building block of a message. It’s defined as an enum, and each case has up to one associated value (note: it’s different from a ReactiveCocoa Event). You can think of it as a strongly-typed <code class="highlighter-rouge">NSNotification</code>. Each case starts with <code class="highlighter-rouge">Request</code> or <code class="highlighter-rouge">Response</code> out of convention. Below are a few example cases.</p>
+<p>An event is the building block of a message. It’s defined as an enum, and each case has up to one associated value (note: it’s different from a ReactiveCocoa Event). You can think of it as a strongly-typed <code class="language-plaintext highlighter-rouge">NSNotification</code>. Each case starts with <code class="language-plaintext highlighter-rouge">Request</code> or <code class="language-plaintext highlighter-rouge">Response</code> out of convention. Below are a few example cases.</p>
 
 <figure class="highlight"><pre><code class="language-swift" data-lang="swift"><span class="c1">/// Event.swift</span>
 <span class="kd">enum</span> <span class="kt">Event</span> <span class="p">{</span>
@@ -179,15 +183,15 @@
 <span class="p">}</span></code></pre></figure>
 
 <ul>
-  <li>Model and ViewModel “type” events are both included in the <code class="highlighter-rouge">Event</code> enum.<sup id="fnref:1"><a href="#fn:1" class="footnote">1</a></sup></li>
-  <li><code class="highlighter-rouge">RequestReadTodos</code> does not have a parameter since this app has no per-view filtering or sorting that needs to happen.<sup id="fnref:2"><a href="#fn:2" class="footnote">2</a></sup></li>
-  <li>We’re using a <a href="https://github.com/antitypical/Result">Result</a> to encapsulate the response value or error.<sup id="fnref:3"><a href="#fn:3" class="footnote">3</a></sup></li>
+  <li>Model and ViewModel “type” events are both included in the <code class="language-plaintext highlighter-rouge">Event</code> enum.<sup id="fnref:1" role="doc-noteref"><a href="#fn:1" class="footnote" rel="footnote">1</a></sup></li>
+  <li><code class="language-plaintext highlighter-rouge">RequestReadTodos</code> does not have a parameter since this app has no per-view filtering or sorting that needs to happen.<sup id="fnref:2" role="doc-noteref"><a href="#fn:2" class="footnote" rel="footnote">2</a></sup></li>
+  <li>We’re using a <a href="https://github.com/antitypical/Result">Result</a> to encapsulate the response value or error.<sup id="fnref:3" role="doc-noteref"><a href="#fn:3" class="footnote" rel="footnote">3</a></sup></li>
   <li>All enum case associated values are value types which is important in ensuring system integrity. The same Event may be received by many objects on any number of threads.</li>
 </ul>
 
 <h3 id="eventssignal--eventsobserver">EventsSignal &amp; EventsObserver</h3>
 
-<p><code class="highlighter-rouge">eventsSignal</code> and <code class="highlighter-rouge">eventsObserver</code> will be our shared event streams. We’ll inject them into classes and those classes will be able to attach observer blocks to <code class="highlighter-rouge">eventsSignal</code> and send new Events on <code class="highlighter-rouge">eventsObserver</code>.</p>
+<p><code class="language-plaintext highlighter-rouge">eventsSignal</code> and <code class="language-plaintext highlighter-rouge">eventsObserver</code> will be our shared event streams. We’ll inject them into classes and those classes will be able to attach observer blocks to <code class="language-plaintext highlighter-rouge">eventsSignal</code> and send new Events on <code class="language-plaintext highlighter-rouge">eventsObserver</code>.</p>
 
 <figure class="highlight"><pre><code class="language-swift" data-lang="swift"><span class="c1">/// AppContext.swift</span>
 <span class="kd">class</span> <span class="kt">AppContext</span> <span class="p">{</span>
@@ -196,7 +200,7 @@
     <span class="c1">// ...</span>
 <span class="p">}</span></code></pre></figure>
 
-<p>We’ve located this pair in a class called <code class="highlighter-rouge">AppContext</code>. These are implemented using a ReactiveCocoa signal and observer pair created by <code class="highlighter-rouge">.pipe()</code>. There are a few implementation details that we’ll cover later.</p>
+<p>We’ve located this pair in a class called <code class="language-plaintext highlighter-rouge">AppContext</code>. These are implemented using a ReactiveCocoa signal and observer pair created by <code class="language-plaintext highlighter-rouge">.pipe()</code>. There are a few implementation details that we’ll cover later.</p>
 
 <p>In simple terms though the syntax is as follows:</p>
 
@@ -208,7 +212,7 @@
 
 <h3 id="server">Server</h3>
 
-<p>A server is a long-lived class that contains observers and may send messages. In our example app, there are two servers, <code class="highlighter-rouge">ViewModelServer</code> and <code class="highlighter-rouge">ModelServer</code>. These are created and retained by <code class="highlighter-rouge">AppDelegate</code>. From the names, you may posit that <code class="highlighter-rouge">ViewModelServer</code> sets up observers for the ViewModel-related duties of our application. For example, it is responsible for receiving requests for ViewModels and fulfilling them, either by transforming ViewModels provided in the event or by sending a new event requesting the data it needs.<sup id="fnref:4"><a href="#fn:4" class="footnote">4</a></sup><sup id="fnref:5"><a href="#fn:5" class="footnote">5</a></sup></p>
+<p>A server is a long-lived class that contains observers and may send messages. In our example app, there are two servers, <code class="language-plaintext highlighter-rouge">ViewModelServer</code> and <code class="language-plaintext highlighter-rouge">ModelServer</code>. These are created and retained by <code class="language-plaintext highlighter-rouge">AppDelegate</code>. From the names, you may posit that <code class="language-plaintext highlighter-rouge">ViewModelServer</code> sets up observers for the ViewModel-related duties of our application. For example, it is responsible for receiving requests for ViewModels and fulfilling them, either by transforming ViewModels provided in the event or by sending a new event requesting the data it needs.<sup id="fnref:4" role="doc-noteref"><a href="#fn:4" class="footnote" rel="footnote">4</a></sup><sup id="fnref:5" role="doc-noteref"><a href="#fn:5" class="footnote" rel="footnote">5</a></sup></p>
 
 <p>Servers represent the “smart” objects in our application. They’re the orchestrators. They create and manipulate our ViewModel and Model value types and communicate with other servers by creating Events and attaching values to them.</p>
 
@@ -216,21 +220,21 @@
 
 <p>A Model is a value type containing the base data. As in standard MVVM, it should not contain anything specific to an underlying database.</p>
 
-<p>In the example application, I have extensions to serialize the <code class="highlighter-rouge">Todo</code> model object into a <code class="highlighter-rouge">TodoObject</code> for our Realm database.</p>
+<p>In the example application, I have extensions to serialize the <code class="language-plaintext highlighter-rouge">Todo</code> model object into a <code class="language-plaintext highlighter-rouge">TodoObject</code> for our Realm database.</p>
 
 <p>The Model layer only knows about itself. It doesn’t know about ViewModels or Views.</p>
 
 <h3 id="viewmodel">ViewModel</h3>
 
-<p>A ViewModel is a value type containing properties directly consumable by the View layer. For example, text displayed by a <code class="highlighter-rouge">UILabel</code> should be a <code class="highlighter-rouge">String</code>. The ViewModel receives and stores a Model object in its <code class="highlighter-rouge">init</code> method and transforms it for consumption by the View layer. A ViewModel may expose other ViewModels for use by subviews, etc.</p>
+<p>A ViewModel is a value type containing properties directly consumable by the View layer. For example, text displayed by a <code class="language-plaintext highlighter-rouge">UILabel</code> should be a <code class="language-plaintext highlighter-rouge">String</code>. The ViewModel receives and stores a Model object in its <code class="language-plaintext highlighter-rouge">init</code> method and transforms it for consumption by the View layer. A ViewModel may expose other ViewModels for use by subviews, etc.</p>
 
-<p>In this interpretation<sup id="fnref:6"><a href="#fn:6" class="footnote">6</a></sup>, ViewModels are completely inert and cannot run asynchronous operations or send messages on the event stream. This ensures they can be passed around threads safely.</p>
+<p>In this interpretation<sup id="fnref:6" role="doc-noteref"><a href="#fn:6" class="footnote" rel="footnote">6</a></sup>, ViewModels are completely inert and cannot run asynchronous operations or send messages on the event stream. This ensures they can be passed around threads safely.</p>
 
 <p>ViewModels don’t know about the View layer. They can manipulate other ViewModels and Models.</p>
 
 <h3 id="view">View</h3>
 
-<p>Our View layer is UIKit, including <code class="highlighter-rouge">UIViewController</code>s and <code class="highlighter-rouge">UIView</code>s and their subclasses. Although my original intention was to explore the View layer also sending its own events through the event stream, in this simple implementation it would have been overkill and probably more distracting than anything.<sup id="fnref:7"><a href="#fn:7" class="footnote">7</a></sup></p>
+<p>Our View layer is UIKit, including <code class="language-plaintext highlighter-rouge">UIViewController</code>s and <code class="language-plaintext highlighter-rouge">UIView</code>s and their subclasses. Although my original intention was to explore the View layer also sending its own events through the event stream, in this simple implementation it would have been overkill and probably more distracting than anything.<sup id="fnref:7" role="doc-noteref"><a href="#fn:7" class="footnote" rel="footnote">7</a></sup></p>
 
 <p>The View layer is only allowed to interact with the View and ViewModel layers. That means it knows nothing about Models.</p>
 
@@ -240,30 +244,30 @@
 
 <h3 id="the-spec">The Spec</h3>
 
-<p>What are the features of our Todo list? They end up being analogous to our <code class="highlighter-rouge">Event</code> cases. (For me, this was one of the coolest parts.) From <code class="highlighter-rouge">Event.swift</code>:</p>
+<p>What are the features of our Todo list? They end up being analogous to our <code class="language-plaintext highlighter-rouge">Event</code> cases. (For me, this was one of the coolest parts.) From <code class="language-plaintext highlighter-rouge">Event.swift</code>:</p>
 
 <ul>
-  <li><code class="highlighter-rouge">RequestTodoViewModels</code>: we want to be able to see all our todos in the default order with deleted items filtered out.</li>
-  <li><code class="highlighter-rouge">RequestToggleCompleteTodoViewModel</code>: we need to be able to mark todos as complete from the list view.</li>
-  <li><code class="highlighter-rouge">RequestDeleteTodoViewModel</code>: we’ll add the ability to delete them from the list view too.</li>
-  <li><code class="highlighter-rouge">RequestNewTodoDetailViewModel</code>: we need to be able to create new todos.</li>
-  <li><code class="highlighter-rouge">RequestTodoDetailViewModel</code>: we need to be able to view/edit a todo in all its glory.</li>
-  <li><code class="highlighter-rouge">RequestUpdateDetailViewModel</code>: we need to be able to commit our changes.</li>
+  <li><code class="language-plaintext highlighter-rouge">RequestTodoViewModels</code>: we want to be able to see all our todos in the default order with deleted items filtered out.</li>
+  <li><code class="language-plaintext highlighter-rouge">RequestToggleCompleteTodoViewModel</code>: we need to be able to mark todos as complete from the list view.</li>
+  <li><code class="language-plaintext highlighter-rouge">RequestDeleteTodoViewModel</code>: we’ll add the ability to delete them from the list view too.</li>
+  <li><code class="language-plaintext highlighter-rouge">RequestNewTodoDetailViewModel</code>: we need to be able to create new todos.</li>
+  <li><code class="language-plaintext highlighter-rouge">RequestTodoDetailViewModel</code>: we need to be able to view/edit a todo in all its glory.</li>
+  <li><code class="language-plaintext highlighter-rouge">RequestUpdateDetailViewModel</code>: we need to be able to commit our changes.</li>
 </ul>
 
 <p>Those are all of our requests. They’ll all originate from the View layer. Since these are just events/messages we’re broadcasting out, there won’t necessarily be a direct 1-1 response. This has both positive and negative consequences for us.</p>
 
-<p>One of the effects is that we need fewer types of response events. <code class="highlighter-rouge">RequestTodoViewModels</code> will have a 1-1 response with <code class="highlighter-rouge">ResponseTodoViewModels</code>, but <code class="highlighter-rouge">RequestToggleCompleteTodoViewModel</code>, <code class="highlighter-rouge">RequestDeleteTodoViewModel</code>, and <code class="highlighter-rouge">RequestUpdateDetailViewModel</code> will all respond with <code class="highlighter-rouge">ResponseTodoViewModel</code>. That simplifies our view code a bit, and it also ensures a view can get updates for a ViewModel that was changed from a different view with zero additional work by us.</p>
+<p>One of the effects is that we need fewer types of response events. <code class="language-plaintext highlighter-rouge">RequestTodoViewModels</code> will have a 1-1 response with <code class="language-plaintext highlighter-rouge">ResponseTodoViewModels</code>, but <code class="language-plaintext highlighter-rouge">RequestToggleCompleteTodoViewModel</code>, <code class="language-plaintext highlighter-rouge">RequestDeleteTodoViewModel</code>, and <code class="language-plaintext highlighter-rouge">RequestUpdateDetailViewModel</code> will all respond with <code class="language-plaintext highlighter-rouge">ResponseTodoViewModel</code>. That simplifies our view code a bit, and it also ensures a view can get updates for a ViewModel that was changed from a different view with zero additional work by us.</p>
 
-<p>Both <code class="highlighter-rouge">RequestNewTodoDetailViewModel</code> and <code class="highlighter-rouge">RequestTodoDetailViewModel</code> (aka new and edit) will respond from <code class="highlighter-rouge">ResponseTodoDetailViewModel</code>.</p>
+<p>Both <code class="language-plaintext highlighter-rouge">RequestNewTodoDetailViewModel</code> and <code class="language-plaintext highlighter-rouge">RequestTodoDetailViewModel</code> (aka new and edit) will respond from <code class="language-plaintext highlighter-rouge">ResponseTodoDetailViewModel</code>.</p>
 
-<p>Interestingly enough, <code class="highlighter-rouge">RequestUpdateDetailViewModel</code> must respond from both <code class="highlighter-rouge">ResponseUpdateDetailViewModel</code> and <code class="highlighter-rouge">ResponseTodoViewModel</code> since their underlying todo Model changed. We’ll explore this scenario in more detail later on.</p>
+<p>Interestingly enough, <code class="language-plaintext highlighter-rouge">RequestUpdateDetailViewModel</code> must respond from both <code class="language-plaintext highlighter-rouge">ResponseUpdateDetailViewModel</code> and <code class="language-plaintext highlighter-rouge">ResponseTodoViewModel</code> since their underlying todo Model changed. We’ll explore this scenario in more detail later on.</p>
 
 <p>In order to fill these requests from the View layer, the ViewModelServer will need to make its own requests for Model data. These are 1-to-1 request-response.</p>
 
 <ul>
-  <li><code class="highlighter-rouge">RequestReadTodos</code> -&gt; <code class="highlighter-rouge">ResponseTodos</code></li>
-  <li><code class="highlighter-rouge">RequestWriteTodo</code> -&gt; <code class="highlighter-rouge">ResponseTodo</code></li>
+  <li><code class="language-plaintext highlighter-rouge">RequestReadTodos</code> -&gt; <code class="language-plaintext highlighter-rouge">ResponseTodos</code></li>
+  <li><code class="language-plaintext highlighter-rouge">RequestWriteTodo</code> -&gt; <code class="language-plaintext highlighter-rouge">ResponseTodo</code></li>
 </ul>
 
 <p>We implement deletes by setting a flag on our Todo model. This technique makes it significantly easier to coordinate changes between our application layers.</p>
@@ -297,17 +301,17 @@
     <span class="p">}</span>
 <span class="p">}</span></code></pre></figure>
 
-<p>As previously mentioned, the <code class="highlighter-rouge">AppContext</code> contains our eventSignal and eventObserver pair. We’ll inject it into all of our other high-level components to allow them to communicate.</p>
+<p>As previously mentioned, the <code class="language-plaintext highlighter-rouge">AppContext</code> contains our eventSignal and eventObserver pair. We’ll inject it into all of our other high-level components to allow them to communicate.</p>
 
-<p>We have to retain the <code class="highlighter-rouge">ModelServer</code> and <code class="highlighter-rouge">ViewModelServer</code> since they have no direct references to the view layer or to one another.<sup id="fnref:8"><a href="#fn:8" class="footnote">8</a></sup></p>
+<p>We have to retain the <code class="language-plaintext highlighter-rouge">ModelServer</code> and <code class="language-plaintext highlighter-rouge">ViewModelServer</code> since they have no direct references to the view layer or to one another.<sup id="fnref:8" role="doc-noteref"><a href="#fn:8" class="footnote" rel="footnote">8</a></sup></p>
 
-<p>Remember <code class="highlighter-rouge">TodoListViewModel</code> is just an inert struct. Although for this simple app, we could have had the <code class="highlighter-rouge">TodoListViewController</code> create its own ViewModel, it’s better practice to inject it. You can easily imagine adding a “list of lists” feature to the app. In that case we (probably?) wouldn’t have to change any of our interfaces.</p>
+<p>Remember <code class="language-plaintext highlighter-rouge">TodoListViewModel</code> is just an inert struct. Although for this simple app, we could have had the <code class="language-plaintext highlighter-rouge">TodoListViewController</code> create its own ViewModel, it’s better practice to inject it. You can easily imagine adding a “list of lists” feature to the app. In that case we (probably?) wouldn’t have to change any of our interfaces.</p>
 
 <h3 id="view-layer-list">View layer: List</h3>
 
 <p>It’s actually pretty straightforward to see the boundaries of our system. The View layer will be making all the ViewModel requests and observing all the ViewModel responses.</p>
 
-<p>Our subject of this section will be <code class="highlighter-rouge">TodoListViewController</code>. For reference:</p>
+<p>Our subject of this section will be <code class="language-plaintext highlighter-rouge">TodoListViewController</code>. For reference:</p>
 
 <figure class="highlight"><pre><code class="language-swift" data-lang="swift"><span class="c1">// TodoListViewController.swift</span>
 <span class="kd">final</span> <span class="kd">class</span> <span class="kt">TodoListViewController</span><span class="p">:</span> <span class="kt">UITableViewController</span> <span class="p">{</span>
@@ -317,7 +321,7 @@
     <span class="c1">// ...</span>
 <span class="p">}</span></code></pre></figure>
 
-<p>We’ll send our first event to request <code class="highlighter-rouge">TodoViewModel</code>s to fill the table view when the view appears.</p>
+<p>We’ll send our first event to request <code class="language-plaintext highlighter-rouge">TodoViewModel</code>s to fill the table view when the view appears.</p>
 
 <figure class="highlight"><pre><code class="language-swift" data-lang="swift"><span class="c1">// TodoListViewController.swift</span>
     <span class="k">override</span> <span class="kd">func</span> <span class="nf">viewWillAppear</span><span class="p">(</span><span class="nv">animated</span><span class="p">:</span> <span class="kt">Bool</span><span class="p">)</span> <span class="p">{</span>
@@ -326,7 +330,7 @@
         <span class="n">appContext</span><span class="o">.</span><span class="n">eventsObserver</span><span class="o">.</span><span class="nf">sendNext</span><span class="p">(</span><span class="kt">Event</span><span class="o">.</span><span class="kt">RequestTodoViewModels</span><span class="p">)</span>
     <span class="p">}</span></code></pre></figure>
 
-<p>Now we need to set up an observer for the response event. Observers in the View layer will always be placed in <code class="highlighter-rouge">viewDidLoad</code> and mirror the lifecycle of the <code class="highlighter-rouge">UIViewController</code> itself.</p>
+<p>Now we need to set up an observer for the response event. Observers in the View layer will always be placed in <code class="language-plaintext highlighter-rouge">viewDidLoad</code> and mirror the lifecycle of the <code class="language-plaintext highlighter-rouge">UIViewController</code> itself.</p>
 
 <figure class="highlight"><pre><code class="language-swift" data-lang="swift">    <span class="k">override</span> <span class="kd">func</span> <span class="nf">viewDidLoad</span><span class="p">()</span> <span class="p">{</span>
         <span class="c1">// ...</span>
@@ -355,7 +359,7 @@
 
 <p>For the View layer output is usually in the form of side effects (e.g. updating the view model or reloading the table view). For the other Servers, the output is usually sending another Event.</p>
 
-<p>Let’s take a look at <code class="highlighter-rouge">Event.ResponseTodoViewModels</code>.</p>
+<p>Let’s take a look at <code class="language-plaintext highlighter-rouge">Event.ResponseTodoViewModels</code>.</p>
 
 <figure class="highlight"><pre><code class="language-swift" data-lang="swift">    <span class="n">appContext</span><span class="o">.</span><span class="n">eventsSignal</span>
         <span class="o">.</span><span class="n">takeUntilNil</span> <span class="p">{</span> <span class="p">[</span><span class="k">weak</span> <span class="k">self</span><span class="p">]</span> <span class="k">in</span> <span class="k">self</span> <span class="p">}</span>  <span class="c1">// #1</span>
@@ -384,10 +388,10 @@
         <span class="p">}</span></code></pre></figure>
 
 <ul>
-  <li><strong>#1</strong>: This is an implementation detail of ReactiveCocoa that (kind of<sup id="fnref:9"><a href="#fn:9" class="footnote">9</a></sup>) limits the lifetime of our observer to the lifetime of <code class="highlighter-rouge">self</code>. In other words, stop processing this observer when this instance of <code class="highlighter-rouge">TodoListViewController</code> goes away.</li>
-  <li><strong>#2</strong>: This is where where we filter and unbox the value from the event if necessary. Remember, we’re observing the firehose of Events that are sent throughout the app. We only want <code class="highlighter-rouge">Event.ResponseTodoViewModels</code>, and if so, we want its value passed along. For all the other events that come through, they’ll be mapped to <code class="highlighter-rouge">nil</code> and discarded by the <code class="highlighter-rouge">ignoreNil()</code> operator.</li>
-  <li><strong>#3</strong>: This is our error handling. <code class="highlighter-rouge">promoteErrors</code> is an implementation detail of ReactiveCocoa which turns a signal incapable of erroring into one that can send errors of a certain type. <code class="highlighter-rouge">attemptMap</code> then unboxes the <code class="highlighter-rouge">Result</code> object and allows us to use ReactiveCocoa’s built in error processing. <code class="highlighter-rouge">flatMapError</code> is where we have our error side effects, in this case, presenting the error as an alert. If we used <code class="highlighter-rouge">observeError</code> instead, our observer would be disposed of after the first error event which is not what we want.<sup id="fnref:11"><a href="#fn:11" class="footnote">10</a></sup></li>
-  <li><strong>#4</strong>: Events can be delivered on any thread by the eventsSignal. Therefore, for any thread critical work we need to specify a target scheduler. In this case, our critical work is UI-related, thus we use the <code class="highlighter-rouge">UIScheduler</code>. Note that only the operators <em>after</em> <code class="highlighter-rouge">observeOn</code> will be executed on the <code class="highlighter-rouge">UIScheduler</code>.<sup id="fnref:12"><a href="#fn:12" class="footnote">11</a></sup></li>
+  <li><strong>#1</strong>: This is an implementation detail of ReactiveCocoa that (kind of<sup id="fnref:9" role="doc-noteref"><a href="#fn:9" class="footnote" rel="footnote">9</a></sup>) limits the lifetime of our observer to the lifetime of <code class="language-plaintext highlighter-rouge">self</code>. In other words, stop processing this observer when this instance of <code class="language-plaintext highlighter-rouge">TodoListViewController</code> goes away.</li>
+  <li><strong>#2</strong>: This is where where we filter and unbox the value from the event if necessary. Remember, we’re observing the firehose of Events that are sent throughout the app. We only want <code class="language-plaintext highlighter-rouge">Event.ResponseTodoViewModels</code>, and if so, we want its value passed along. For all the other events that come through, they’ll be mapped to <code class="language-plaintext highlighter-rouge">nil</code> and discarded by the <code class="language-plaintext highlighter-rouge">ignoreNil()</code> operator.</li>
+  <li><strong>#3</strong>: This is our error handling. <code class="language-plaintext highlighter-rouge">promoteErrors</code> is an implementation detail of ReactiveCocoa which turns a signal incapable of erroring into one that can send errors of a certain type. <code class="language-plaintext highlighter-rouge">attemptMap</code> then unboxes the <code class="language-plaintext highlighter-rouge">Result</code> object and allows us to use ReactiveCocoa’s built in error processing. <code class="language-plaintext highlighter-rouge">flatMapError</code> is where we have our error side effects, in this case, presenting the error as an alert. If we used <code class="language-plaintext highlighter-rouge">observeError</code> instead, our observer would be disposed of after the first error event which is not what we want.<sup id="fnref:11" role="doc-noteref"><a href="#fn:11" class="footnote" rel="footnote">10</a></sup></li>
+  <li><strong>#4</strong>: Events can be delivered on any thread by the eventsSignal. Therefore, for any thread critical work we need to specify a target scheduler. In this case, our critical work is UI-related, thus we use the <code class="language-plaintext highlighter-rouge">UIScheduler</code>. Note that only the operators <em>after</em> <code class="language-plaintext highlighter-rouge">observeOn</code> will be executed on the <code class="language-plaintext highlighter-rouge">UIScheduler</code>.<sup id="fnref:12" role="doc-noteref"><a href="#fn:12" class="footnote" rel="footnote">11</a></sup></li>
   <li><strong>#5</strong>: Finally, we have a non-error value from the correct event. We’ll use this to completely replace the TodoListViewModel and conditionally reload the table view if any change to the list was actually made.</li>
 </ul>
 
@@ -395,7 +399,7 @@
 
 <h4 id="more-actions">More Actions</h4>
 
-<p>We’ll use the <code class="highlighter-rouge">UITableViewRowAction</code> API to send events for marking todos as complete or deleting them.</p>
+<p>We’ll use the <code class="language-plaintext highlighter-rouge">UITableViewRowAction</code> API to send events for marking todos as complete or deleting them.</p>
 
 <figure class="highlight"><pre><code class="language-swift" data-lang="swift"><span class="c1">// TodoListViewController.swift</span>
     <span class="k">override</span> <span class="kd">func</span> <span class="nf">tableView</span><span class="p">(</span><span class="nv">tableView</span><span class="p">:</span> <span class="kt">UITableView</span><span class="p">,</span> <span class="n">editActionsForRowAtIndexPath</span> <span class="nv">indexPath</span><span class="p">:</span> <span class="kt">NSIndexPath</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">UITableViewRowAction</span><span class="p">]?</span> <span class="p">{</span>
@@ -412,7 +416,7 @@
 
 <p>Each of these Events are simply modifying a ViewModel. The View layer only cares about changes at the granularity level of TodoViewModel.</p>
 
-<p>We want to observe <code class="highlighter-rouge">ResponseTodoViewModel</code> so that our view is always showing the most accurate todos. We also want to animate changes because that’s nice.</p>
+<p>We want to observe <code class="language-plaintext highlighter-rouge">ResponseTodoViewModel</code> so that our view is always showing the most accurate todos. We also want to animate changes because that’s nice.</p>
 
 <figure class="highlight"><pre><code class="language-swift" data-lang="swift"><span class="c1">// TodoListViewController.swift - viewDidLoad()</span>
     <span class="n">appContext</span><span class="o">.</span><span class="n">eventsSignal</span>
@@ -432,11 +436,11 @@
             <span class="p">}</span>
         <span class="p">}</span></code></pre></figure>
 
-<p>Those are the basics of the View layer. Let’s move to the <code class="highlighter-rouge">ViewModelServer</code> to see how we can respond to these request Events and issue new ones.</p>
+<p>Those are the basics of the View layer. Let’s move to the <code class="language-plaintext highlighter-rouge">ViewModelServer</code> to see how we can respond to these request Events and issue new ones.</p>
 
 <h3 id="viewmodel-list">ViewModel: List</h3>
 
-<p><code class="highlighter-rouge">ViewModelServer</code> is one big init method for setting up observers.</p>
+<p><code class="language-plaintext highlighter-rouge">ViewModelServer</code> is one big init method for setting up observers.</p>
 
 <figure class="highlight"><pre><code class="language-swift" data-lang="swift"><span class="c1">// ViewModelServer.swift</span>
 <span class="kd">final</span> <span class="kd">class</span> <span class="kt">ViewModelServer</span> <span class="p">{</span>   
@@ -447,9 +451,9 @@
 
 <h4 id="eventrequesttodoviewmodels">Event.RequestTodoViewModels</h4>
 
-<p><code class="highlighter-rouge">ViewModelServer</code> listens for ViewModel requests and sends ViewModel response Events.</p>
+<p><code class="language-plaintext highlighter-rouge">ViewModelServer</code> listens for ViewModel requests and sends ViewModel response Events.</p>
 
-<p><code class="highlighter-rouge">.RequestTodoViewModels</code> is pretty simple. It just creates a corresponding request from the model layer.<sup id="fnref:14"><a href="#fn:14" class="footnote">12</a></sup></p>
+<p><code class="language-plaintext highlighter-rouge">.RequestTodoViewModels</code> is pretty simple. It just creates a corresponding request from the model layer.<sup id="fnref:14" role="doc-noteref"><a href="#fn:14" class="footnote" rel="footnote">12</a></sup></p>
 
 <figure class="highlight"><pre><code class="language-swift" data-lang="swift">    <span class="n">appContext</span><span class="o">.</span><span class="n">eventsSignal</span>
         <span class="c1">// ... Event.RequestTodoViewModels</span>
@@ -474,11 +478,11 @@
         <span class="o">.</span><span class="nf">observeOn</span><span class="p">(</span><span class="n">appContext</span><span class="o">.</span><span class="n">scheduler</span><span class="p">)</span>
         <span class="o">.</span><span class="nf">observe</span><span class="p">(</span><span class="n">appContext</span><span class="o">.</span><span class="n">eventsObserver</span><span class="p">)</span></code></pre></figure>
 
-<p>We’re mapping <code class="highlighter-rouge">Result&lt;[Todo], NSError&gt;</code> to <code class="highlighter-rouge">Result&lt;[TodoViewModel], NSError&gt;</code> and sending the result as a new Event. There’s a placeholder for where we could map the error from the Model layer to one more suited to show the user.<sup id="fnref:15"><a href="#fn:15" class="footnote">13</a></sup></p>
+<p>We’re mapping <code class="language-plaintext highlighter-rouge">Result&lt;[Todo], NSError&gt;</code> to <code class="language-plaintext highlighter-rouge">Result&lt;[TodoViewModel], NSError&gt;</code> and sending the result as a new Event. There’s a placeholder for where we could map the error from the Model layer to one more suited to show the user.<sup id="fnref:15" role="doc-noteref"><a href="#fn:15" class="footnote" rel="footnote">13</a></sup></p>
 
 <h4 id="other-viewmodel-events">Other ViewModel Events</h4>
 
-<p>In the view layer, we saw that two events, <code class="highlighter-rouge">RequestToggleCompleteTodoViewModel</code> and <code class="highlighter-rouge">RequestDeleteTodoViewModel</code>, could be sent to change individual ViewModels on the fly.</p>
+<p>In the view layer, we saw that two events, <code class="language-plaintext highlighter-rouge">RequestToggleCompleteTodoViewModel</code> and <code class="language-plaintext highlighter-rouge">RequestDeleteTodoViewModel</code>, could be sent to change individual ViewModels on the fly.</p>
 
 <p>The map block for delete is:</p>
 
@@ -498,7 +502,7 @@
 
 <p>Straightforward transformations, then we fire off a message.</p>
 
-<p>Both events will receive responses on <code class="highlighter-rouge">Event.ResponseTodo</code>.</p>
+<p>Both events will receive responses on <code class="language-plaintext highlighter-rouge">Event.ResponseTodo</code>.</p>
 
 <figure class="highlight"><pre><code class="language-swift" data-lang="swift">    <span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="n">result</span> <span class="o">-&gt;</span> <span class="kt">Result</span><span class="o">&lt;</span><span class="kt">TodoViewModel</span><span class="p">,</span> <span class="kt">NSError</span><span class="o">&gt;</span> <span class="k">in</span>
         <span class="k">return</span> <span class="n">result</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="n">todo</span> <span class="k">in</span> <span class="kt">TodoViewModel</span><span class="p">(</span><span class="nv">todo</span><span class="p">:</span> <span class="n">todo</span><span class="p">)</span> <span class="p">}</span>
@@ -511,12 +515,12 @@
 
 <h4 id="tododetailviewmodel">TodoDetailViewModel</h4>
 
-<p>The <code class="highlighter-rouge">TodoDetailViewController</code> accepts a <code class="highlighter-rouge">TodoDetailViewModel</code> that allows the user to mutate its properties. When done is tapped, <code class="highlighter-rouge">TodoDetailViewController</code> will send a request to the <code class="highlighter-rouge">ViewModelServer</code> with its <code class="highlighter-rouge">TodoDetailViewModel</code>. The <code class="highlighter-rouge">ViewModelServer</code> will validate all the new parameters and send a response. The response event <code class="highlighter-rouge">Event.ResponseUpdateDetailViewModel</code> is interesting because it will be observed by three different objects.</p>
+<p>The <code class="language-plaintext highlighter-rouge">TodoDetailViewController</code> accepts a <code class="language-plaintext highlighter-rouge">TodoDetailViewModel</code> that allows the user to mutate its properties. When done is tapped, <code class="language-plaintext highlighter-rouge">TodoDetailViewController</code> will send a request to the <code class="language-plaintext highlighter-rouge">ViewModelServer</code> with its <code class="language-plaintext highlighter-rouge">TodoDetailViewModel</code>. The <code class="language-plaintext highlighter-rouge">ViewModelServer</code> will validate all the new parameters and send a response. The response event <code class="language-plaintext highlighter-rouge">Event.ResponseUpdateDetailViewModel</code> is interesting because it will be observed by three different objects.</p>
 
 <ul>
-  <li><code class="highlighter-rouge">TodoDetailViewController</code> will observe it for errors. If there are errors with the validation, it will present the error above the current context.</li>
-  <li><code class="highlighter-rouge">TodoListViewController</code> will observe it for non-errors, interpreting that as a sign that the user has finished editing the view model and it should dismiss the <code class="highlighter-rouge">TodoDetailViewController</code>.</li>
-  <li><code class="highlighter-rouge">ViewModelServer</code> will observe a message it itself will be sending because it has to now create an updated todo Model and send a write todo Event. The response to that will come back through the normal Event stream and be updated transparently by the <code class="highlighter-rouge">TodoListViewController</code>.</li>
+  <li><code class="language-plaintext highlighter-rouge">TodoDetailViewController</code> will observe it for errors. If there are errors with the validation, it will present the error above the current context.</li>
+  <li><code class="language-plaintext highlighter-rouge">TodoListViewController</code> will observe it for non-errors, interpreting that as a sign that the user has finished editing the view model and it should dismiss the <code class="language-plaintext highlighter-rouge">TodoDetailViewController</code>.</li>
+  <li><code class="language-plaintext highlighter-rouge">ViewModelServer</code> will observe a message it itself will be sending because it has to now create an updated todo Model and send a write todo Event. The response to that will come back through the normal Event stream and be updated transparently by the <code class="language-plaintext highlighter-rouge">TodoListViewController</code>.</li>
 </ul>
 
 <h4 id="responseupdatedetailviewmodel">ResponseUpdateDetailViewModel</h4>
@@ -529,7 +533,7 @@
 
 <h4 id="unique-identifiers">Unique Identifiers</h4>
 
-<p>One thing you may notice in the code base is that every value type must be equatable. Since requests and responses are not directly paired, having a unique identifier is critical to being able to filter and operate on responses. There are actually two concepts of equality that come into play. The first is normal equality, as in “do these two models have the exact same values for all of their parameters?”. The second is equal identity, as in “do these two models represent the same underlying resource?” (i.e. <code class="highlighter-rouge">lhs.id == rhs.id</code>). Equal identity is useful in operations where a model has been updated and you want to replace it.</p>
+<p>One thing you may notice in the code base is that every value type must be equatable. Since requests and responses are not directly paired, having a unique identifier is critical to being able to filter and operate on responses. There are actually two concepts of equality that come into play. The first is normal equality, as in “do these two models have the exact same values for all of their parameters?”. The second is equal identity, as in “do these two models represent the same underlying resource?” (i.e. <code class="language-plaintext highlighter-rouge">lhs.id == rhs.id</code>). Equal identity is useful in operations where a model has been updated and you want to replace it.</p>
 
 <h4 id="testing">Testing</h4>
 
@@ -607,15 +611,15 @@
   <li><strong>CON</strong> All events are public (to the system) and therefore more unexpected consequences are likely to occur as the system grows in size and complexity.</li>
   <li><strong>CON</strong> There’s a fair amount of boilerplate in observer declarations.</li>
   <li><strong>PRO</strong> It’s easier to reason about ownership and lifetime of objects.</li>
-  <li><strong>CON</strong> Using Result for error handling doesn’t quite fit. I need to investigate another hunch I have about how to do it better.<sup id="fnref:13"><a href="#fn:13" class="footnote">14</a></sup></li>
+  <li><strong>CON</strong> Using Result for error handling doesn’t quite fit. I need to investigate another hunch I have about how to do it better.<sup id="fnref:13" role="doc-noteref"><a href="#fn:13" class="footnote" rel="footnote">14</a></sup></li>
   <li><strong>PRO</strong> Testing is arguably a fairly painless process.</li>
-  <li><strong>PRO</strong> It would be possible to “playback” a user’s entire session by piping the serialized saved output from <code class="highlighter-rouge">eventsSignal</code> into the <code class="highlighter-rouge">eventsObserver</code> in a new session.</li>
+  <li><strong>PRO</strong> It would be possible to “playback” a user’s entire session by piping the serialized saved output from <code class="language-plaintext highlighter-rouge">eventsSignal</code> into the <code class="language-plaintext highlighter-rouge">eventsObserver</code> in a new session.</li>
   <li><strong>PRO</strong> Analytics would be very easy to set up as a separate Server-type object that could listen into Events as they are placed onto the stream and transform them and POST them to a server as necessary.</li>
 </ul>
 
 <h2 id="library">Library</h2>
 
-<p>After I finished building this Todo app, I realized that ReactiveCocoa wasn’t necessarily the best tool for implementing EventMVVM. I don’t use a lot of its features and there are some quirks because I’m not using it as it was intended to be used.<sup id="fnref:10"><a href="#fn:10" class="footnote">15</a></sup></p>
+<p>After I finished building this Todo app, I realized that ReactiveCocoa wasn’t necessarily the best tool for implementing EventMVVM. I don’t use a lot of its features and there are some quirks because I’m not using it as it was intended to be used.<sup id="fnref:10" role="doc-noteref"><a href="#fn:10" class="footnote" rel="footnote">15</a></sup></p>
 
 <p>I decided to see if I could write my own simple library that was tailored to implementing EventMVVM. It took a day of wrestling with the type system, but I have an alpha that I’m going to try to test out. It’s only about 100 lines of code. Unfortunately, it couldn’t automate all the things I wanted to so the observing process still has some warts. I’ll try to find some time to write something up about the library later.</p>
 
@@ -627,57 +631,57 @@
 
 <p>Please let me know on <a href="https://twitter.com/twocentstudios">Twitter</a> if you have any thoughts about the EventMVVM. I’m sure there’s already a name for this style (maybe it’s just the <a href="https://en.wikipedia.org/wiki/Observer_pattern">observer pattern</a>?).</p>
 
-<p>How cool is it though that I could add this one observer to <code class="highlighter-rouge">AppDelegate</code> and get a log of every Event passed in the system?</p>
+<p>How cool is it though that I could add this one observer to <code class="language-plaintext highlighter-rouge">AppDelegate</code> and get a log of every Event passed in the system?</p>
 
 <figure class="highlight"><pre><code class="language-swift" data-lang="swift"><span class="n">appContext</span><span class="o">.</span><span class="n">eventsSignal</span><span class="o">.</span><span class="n">observeNext</span> <span class="p">{</span> <span class="nf">print</span><span class="p">(</span><span class="nv">$0</span><span class="p">)</span> <span class="p">}</span></code></pre></figure>
 
 <hr />
-<div class="footnotes">
+<div class="footnotes" role="doc-endnotes">
   <ol>
-    <li id="fn:1">
-      <p>A future expansion to EventMVVM could have a <code class="highlighter-rouge">ModelEvent</code> and <code class="highlighter-rouge">ViewModel</code> event, and a typed stream for each. That way, a View objects would only see the ViewModel stream, whereas ViewModelServers (I’ll cover this later) would see both ViewModel and Model streams. <a href="#fnref:1" class="reversefootnote">&#8617;</a></p>
+    <li id="fn:1" role="doc-endnote">
+      <p>A future expansion to EventMVVM could have a <code class="language-plaintext highlighter-rouge">ModelEvent</code> and <code class="language-plaintext highlighter-rouge">ViewModel</code> event, and a typed stream for each. That way, a View objects would only see the ViewModel stream, whereas ViewModelServers (I’ll cover this later) would see both ViewModel and Model streams. <a href="#fnref:1" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
     </li>
-    <li id="fn:2">
-      <p>In a more complex app, there would need to be a <code class="highlighter-rouge">ReadTodosRequest</code> struct to encapsulate a sort descriptor and predicate. Or better yet, a more thorough TodoListViewModel that contains all this information. <a href="#fnref:2" class="reversefootnote">&#8617;</a></p>
+    <li id="fn:2" role="doc-endnote">
+      <p>In a more complex app, there would need to be a <code class="language-plaintext highlighter-rouge">ReadTodosRequest</code> struct to encapsulate a sort descriptor and predicate. Or better yet, a more thorough TodoListViewModel that contains all this information. <a href="#fnref:2" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
     </li>
-    <li id="fn:3">
-      <p>It turns out it would probably be better to embed an optional error parameter within the response itself. Otherwise, it becomes impossible to know which request the error is associated with. We’ll kick that problem down the road for now. <a href="#fnref:3" class="reversefootnote">&#8617;</a></p>
+    <li id="fn:3" role="doc-endnote">
+      <p>It turns out it would probably be better to embed an optional error parameter within the response itself. Otherwise, it becomes impossible to know which request the error is associated with. We’ll kick that problem down the road for now. <a href="#fnref:3" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
     </li>
-    <li id="fn:4">
-      <p>You could certainly combine <code class="highlighter-rouge">ViewModelServer</code> and <code class="highlighter-rouge">ModelServer</code> into one <code class="highlighter-rouge">Server</code> (or just dump everything in the AppDelegate), but MVVM helps us separate our concerns. <a href="#fnref:4" class="reversefootnote">&#8617;</a></p>
+    <li id="fn:4" role="doc-endnote">
+      <p>You could certainly combine <code class="language-plaintext highlighter-rouge">ViewModelServer</code> and <code class="language-plaintext highlighter-rouge">ModelServer</code> into one <code class="language-plaintext highlighter-rouge">Server</code> (or just dump everything in the AppDelegate), but MVVM helps us separate our concerns. <a href="#fnref:4" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
     </li>
-    <li id="fn:5">
-      <p>One of the biggest open questions I have is if and how Server objects spawn one another. In any decent sized application, it would be unwieldy to have one <code class="highlighter-rouge">ViewModelServer</code> with hundreds or thousands of observers on one stream. It may also use too many resources. If we split ViewModelServers per ViewModel type, how would the primary <code class="highlighter-rouge">ViewModelServer</code> know how to manage the lifecycles of them? <a href="#fnref:5" class="reversefootnote">&#8617;</a></p>
+    <li id="fn:5" role="doc-endnote">
+      <p>One of the biggest open questions I have is if and how Server objects spawn one another. In any decent sized application, it would be unwieldy to have one <code class="language-plaintext highlighter-rouge">ViewModelServer</code> with hundreds or thousands of observers on one stream. It may also use too many resources. If we split ViewModelServers per ViewModel type, how would the primary <code class="language-plaintext highlighter-rouge">ViewModelServer</code> know how to manage the lifecycles of them? <a href="#fnref:5" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
     </li>
-    <li id="fn:6">
-      <p>In most of my other work with MVVM, some ViewModels are classes and do the majority of the heavy lifting with regards to asynchronous work and organizing data flow within the app, while some are inert value types. The reasoning behind this is to make the ViewControllers a bit “dumber” by keeping that logic out of them. <a href="#fnref:6" class="reversefootnote">&#8617;</a></p>
+    <li id="fn:6" role="doc-endnote">
+      <p>In most of my other work with MVVM, some ViewModels are classes and do the majority of the heavy lifting with regards to asynchronous work and organizing data flow within the app, while some are inert value types. The reasoning behind this is to make the ViewControllers a bit “dumber” by keeping that logic out of them. <a href="#fnref:6" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
     </li>
-    <li id="fn:7">
-      <p>Examples of these types of events would be <code class="highlighter-rouge">ViewControllerDidBecomeActive(UIViewController)</code> or <code class="highlighter-rouge">ButtonWasTapped(UIButton)</code>. As you can see, this would break our assumptions of only sending value types through the stream, which requires some more thought. And as I’ve learned from working with other frameworks, you can jump through a lot of hoops to avoid doing things the way UIKit wants you to do them, and you usually come out the other side worse off. <a href="#fnref:7" class="reversefootnote">&#8617;</a></p>
+    <li id="fn:7" role="doc-endnote">
+      <p>Examples of these types of events would be <code class="language-plaintext highlighter-rouge">ViewControllerDidBecomeActive(UIViewController)</code> or <code class="language-plaintext highlighter-rouge">ButtonWasTapped(UIButton)</code>. As you can see, this would break our assumptions of only sending value types through the stream, which requires some more thought. And as I’ve learned from working with other frameworks, you can jump through a lot of hoops to avoid doing things the way UIKit wants you to do them, and you usually come out the other side worse off. <a href="#fnref:7" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
     </li>
-    <li id="fn:8">
-      <p>In “Classic” MVVM the View would own the ViewModel which would own the Model/Controller. <a href="#fnref:8" class="reversefootnote">&#8617;</a></p>
+    <li id="fn:8" role="doc-endnote">
+      <p>In “Classic” MVVM the View would own the ViewModel which would own the Model/Controller. <a href="#fnref:8" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
     </li>
-    <li id="fn:9">
-      <p>To be accurate, the observer will be triggered to complete when any event is sent and self is no longer alive. For our purposes, this shouldn’t be a huge deal. There are other ways to solve this problem, but they require a lot more syntactic baggage. <a href="#fnref:9" class="reversefootnote">&#8617;</a></p>
+    <li id="fn:9" role="doc-endnote">
+      <p>To be accurate, the observer will be triggered to complete when any event is sent and self is no longer alive. For our purposes, this shouldn’t be a huge deal. There are other ways to solve this problem, but they require a lot more syntactic baggage. <a href="#fnref:9" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
     </li>
-    <li id="fn:11">
-      <p>In retrospect, it may have been clearer to let the <code class="highlighter-rouge">Result</code> pass all the way through to <code class="highlighter-rouge">observeNext</code> and handle both success and error cases within the same block. <a href="#fnref:11" class="reversefootnote">&#8617;</a></p>
+    <li id="fn:11" role="doc-endnote">
+      <p>In retrospect, it may have been clearer to let the <code class="language-plaintext highlighter-rouge">Result</code> pass all the way through to <code class="language-plaintext highlighter-rouge">observeNext</code> and handle both success and error cases within the same block. <a href="#fnref:11" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
     </li>
-    <li id="fn:12">
-      <p><a href="https://github.com/ReactiveCocoa/ReactiveCocoa/blob/master/ReactiveCocoa/Swift/Scheduler.swift"><code class="highlighter-rouge">Scheduler</code></a> is a ReactiveCocoa primitive. It’s pretty slick. <a href="#fnref:12" class="reversefootnote">&#8617;</a></p>
+    <li id="fn:12" role="doc-endnote">
+      <p><a href="https://github.com/ReactiveCocoa/ReactiveCocoa/blob/master/ReactiveCocoa/Swift/Scheduler.swift"><code class="language-plaintext highlighter-rouge">Scheduler</code></a> is a ReactiveCocoa primitive. It’s pretty slick. <a href="#fnref:12" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
     </li>
-    <li id="fn:14">
-      <p>If you are unfamiliar to MVVM, you may be wondering why the View layer didn’t simply issue a <code class="highlighter-rouge">RequestReadTodos</code> Event directly instead of relaying the <code class="highlighter-rouge">RequestTodoViewModels</code> Event through the ViewModelServer. It’s a welcome layer of indirection to have our View layer be unaware of all matters related to the Model layer. It introduces a predictability for yourself and others on the project that all types of objects and values obey the same set of rules with regards to what they’re allowed to do and which other objects they’re allowed to talk to. It is certainly overhead, and feels like it in the early stages of a project, but in large projects I’ve rarely found it to be unwarranted optimization. <a href="#fnref:14" class="reversefootnote">&#8617;</a></p>
+    <li id="fn:14" role="doc-endnote">
+      <p>If you are unfamiliar to MVVM, you may be wondering why the View layer didn’t simply issue a <code class="language-plaintext highlighter-rouge">RequestReadTodos</code> Event directly instead of relaying the <code class="language-plaintext highlighter-rouge">RequestTodoViewModels</code> Event through the ViewModelServer. It’s a welcome layer of indirection to have our View layer be unaware of all matters related to the Model layer. It introduces a predictability for yourself and others on the project that all types of objects and values obey the same set of rules with regards to what they’re allowed to do and which other objects they’re allowed to talk to. It is certainly overhead, and feels like it in the early stages of a project, but in large projects I’ve rarely found it to be unwarranted optimization. <a href="#fnref:14" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
     </li>
-    <li id="fn:15">
-      <p>It was lazy to not include a typed error enum from the Model layer. The transformation pipeline we have set up makes it easy to make our data available in the right representation for the right context. <a href="#fnref:15" class="reversefootnote">&#8617;</a></p>
+    <li id="fn:15" role="doc-endnote">
+      <p>It was lazy to not include a typed error enum from the Model layer. The transformation pipeline we have set up makes it easy to make our data available in the right representation for the right context. <a href="#fnref:15" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
     </li>
-    <li id="fn:13">
-      <p>Spoiler alert: it’s adding an <code class="highlighter-rouge">error</code> parameter to all models and view models. <a href="#fnref:13" class="reversefootnote">&#8617;</a></p>
+    <li id="fn:13" role="doc-endnote">
+      <p>Spoiler alert: it’s adding an <code class="language-plaintext highlighter-rouge">error</code> parameter to all models and view models. <a href="#fnref:13" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
     </li>
-    <li id="fn:10">
-      <p>It could probably be implemented with <code class="highlighter-rouge">NSNotificationCenter</code> (not that I’d ever try that). Or any of the other Reactive Swift libraries. <a href="#fnref:10" class="reversefootnote">&#8617;</a></p>
+    <li id="fn:10" role="doc-endnote">
+      <p>It could probably be implemented with <code class="language-plaintext highlighter-rouge">NSNotificationCenter</code> (not that I’d ever try that). Or any of the other Reactive Swift libraries. <a href="#fnref:10" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
     </li>
   </ol>
 </div>

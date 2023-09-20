@@ -53,6 +53,10 @@
           
         
           
+          <a class="page-link" href="/apps/countbiki/privacy-policy/">Count Biki Privacy Policy</a>
+          
+        
+          
         
           
         
@@ -138,7 +142,7 @@
 
 <p>My first shot at this was writing a shell script to rsync a selection of my music from my NAS to a cache on my laptop and still use iTunes to sync from laptop to iPhone. It’s a pretty simple script, but gave me a chance to dive into bash scripting, something I had previously avoided like the plague.</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="c">#!/bin/bash</span>
+<div class="language-sh highlighter-rouge"><pre class="highlight"><code><span class="c">#!/bin/bash</span>
 <span class="nb">set</span> -e
 
 <span class="nv">src_music_root</span><span class="o">=</span><span class="s1">'/Volumes/music'</span>
@@ -153,7 +157,7 @@
 </code></pre>
 </div>
 
-<p>I’m still having a hard time getting my head around the seemly first-class path support. I’m used to having distinct types for <code class="highlighter-rouge">NSURL</code> vs <code class="highlighter-rouge">NSString</code>. Trying to concatenate paths from inputs and variables and literals has led to a lot of confusion. The combination of that confusion and the destructive nature of file system mutations leaves me wanting to use something like Rake or raw Ruby instead.</p>
+<p>I’m still having a hard time getting my head around the seemly first-class path support. I’m used to having distinct types for <code class="language-plaintext highlighter-rouge">NSURL</code> vs <code class="language-plaintext highlighter-rouge">NSString</code>. Trying to concatenate paths from inputs and variables and literals has led to a lot of confusion. The combination of that confusion and the destructive nature of file system mutations leaves me wanting to use something like Rake or raw Ruby instead.</p>
 
 <p>To that end, I did run through the <a href="http://cli.learncodethehardway.org/book/">Command Line Crash Course</a> from the Learn Code The Hard Way series to pick up a few techniques I didn’t know from before. I don’t think I retained enough of it, so I might have to breeze through it again soon.</p>
 
@@ -189,7 +193,7 @@
 
 <p>I ran into two problems, one of which I was able to fix.</p>
 
-<p>The first problem was that I was rendering stars using <code class="highlighter-rouge">SKShapeNode()</code> with a circular path. I could only get something like 20fps with 30 stars - not nearly enough to fill the screen. A little googling suggested that <code class="highlighter-rouge">SKShapeNode()</code> is extremely performance adverse and causes constant rerendering. I changed my stars to use square <code class="highlighter-rouge">SKSpriteNode()</code>s instead, and the performance issues were more or less resolved.</p>
+<p>The first problem was that I was rendering stars using <code class="language-plaintext highlighter-rouge">SKShapeNode()</code> with a circular path. I could only get something like 20fps with 30 stars - not nearly enough to fill the screen. A little googling suggested that <code class="language-plaintext highlighter-rouge">SKShapeNode()</code> is extremely performance adverse and causes constant rerendering. I changed my stars to use square <code class="language-plaintext highlighter-rouge">SKSpriteNode()</code>s instead, and the performance issues were more or less resolved.</p>
 
 <p>The second problem was that using small stars confuses the physics engine when they bounce off the walls at low angles on incidence due to floating point rounding errors. This causes the stars to stick to the walls on contact and congregate in corners. Unfortunately, this seems to be a known issue with SpriteKit (amongst other game engines).</p>
 
@@ -213,7 +217,7 @@
 
 <p>I used the app for a few days and enjoyed it. The code was so ugly though, and I wanted to use more of Swift’s language features and see what it was like to try to architect an app without the ReactiveCocoa conveniences I was used to. It was a good experience in that it made me appreciate reactive programming that much more.</p>
 
-<p>It took about as long to refactor the app as it did to write V0. I added the Gloss JSON parsing library after getting CocoaPods set up (with Orta’s <code class="highlighter-rouge">cocoapods-expert-difficulty</code> gem). I wrote my own simple <code class="highlighter-rouge">Result</code> type, wrapped a <code class="highlighter-rouge">throws</code> function (I really dislike Swift 2.0’s <code class="highlighter-rouge">throws</code> syntax), set up some struct models, parsed some JSON, wrote a view model protocol, refactored the interface design to mirror Apple’s focus support (with some really ugly frame layout code), added image assets (including a fun parallax icon), did some testing, and packaged it up for the App Store.</p>
+<p>It took about as long to refactor the app as it did to write V0. I added the Gloss JSON parsing library after getting CocoaPods set up (with Orta’s <code class="language-plaintext highlighter-rouge">cocoapods-expert-difficulty</code> gem). I wrote my own simple <code class="language-plaintext highlighter-rouge">Result</code> type, wrapped a <code class="language-plaintext highlighter-rouge">throws</code> function (I really dislike Swift 2.0’s <code class="language-plaintext highlighter-rouge">throws</code> syntax), set up some struct models, parsed some JSON, wrote a view model protocol, refactored the interface design to mirror Apple’s focus support (with some really ugly frame layout code), added image assets (including a fun parallax icon), did some testing, and packaged it up for the App Store.</p>
 
 <p>I got a rejection for an error message not being forthright enough, but I fixed that and resubmitted and was accepted in no time. It sounded like a lot of other developers had a hard time with this initial submission process. I’m sure Apple was being extra picky with the public release.</p>
 

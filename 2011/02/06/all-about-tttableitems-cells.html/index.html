@@ -10,7 +10,7 @@
   <meta name="description" content="Another tough thing about Three20 was wrapping my head around the table system. I disliked it at first, but in retrospect, it’s much more organized than usin...">
 
   <link rel="stylesheet" href="/css/main.css">
-  <link rel="canonical" href="http://twocentstudios.com/2011/02/06/all-about-tttableitems-cells-html/">
+  <link rel="canonical" href="http://twocentstudios.com/2011/02/06/all-about-tttableitems-cells.html/">
   <link rel="alternate" type="application/rss+xml" title="twocentstudios" href="http://twocentstudios.com/feed.xml" />
 </head>
 
@@ -50,6 +50,10 @@
           <a class="page-link" href="/portfolio/">Portfolio</a>
           
         
+          
+        
+          
+          <a class="page-link" href="/apps/countbiki/privacy-policy/">Count Biki Privacy Policy</a>
           
         
           
@@ -152,12 +156,12 @@
 </ul>
 
 <h2>Initializers</h2>
-<p>Most of the higher level items come with class convenience initializers. An example from TTTableSubtitleItem for context:<br />
-<code class="highlighter-rouge">+ (id)itemWithText:(NSString*)text subtitle:(NSString*)subtitle URL:(NSString*)URL;</code><br />
+<p>Most of the higher level items come with class convenience initializers. An example from TTTableSubtitleItem for context:
+<code class="language-plaintext highlighter-rouge">+ (id)itemWithText:(NSString*)text subtitle:(NSString*)subtitle URL:(NSString*)URL;</code>
 If your cell is only displaying a few chunks of data, I would initialize this way.</p>
 
-<p>When you’re working with lots of fields, it’s much easier to pass in your model object or NSDictionary. My initializer from a TTTableLinkedItem subclass:<br />
-<code class="highlighter-rouge">+ (id)itemWithObject:(TCExampleObject*)xObject;</code><br />
+<p>When you’re working with lots of fields, it’s much easier to pass in your model object or NSDictionary. My initializer from a TTTableLinkedItem subclass:
+<code class="language-plaintext highlighter-rouge">+ (id)itemWithObject:(TCExampleObject*)xObject;</code>
 When you’re doing it this way, you’ll have to decide whether you want to manually move strings and data from your model object to table item class variables, or you can store a copy of your model object inside the item. It’s a judgement call of whether you want to be tidy or quick and dirty. Just remember which way you did it when you’re loading data into your cell.</p>
 
 <h2>Using Cells</h2>
@@ -169,7 +173,7 @@ When you’re doing it this way, you’ll have to decide whether you want to man
 
 <p>Start by making instance variables for each view element you need. Labels and imageViews are the most common, but any view will do. Next, override the initWithStyle initializer.</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code> // TCExampleCell
+<div class="language-plaintext highlighter-rouge"><pre class="highlight"><code> // TCExampleCell
 - (id)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString*)identifier {
 	if (self = [super initWithStyle:UITableViewCellStyleValue2 reuseIdentifier:identifier]) {
 		// If you're using custom backgrounds, initialize them here
@@ -194,7 +198,7 @@ When you’re doing it this way, you’ll have to decide whether you want to man
 
 <p>setObject is the method where you’ll load your cell with data from the item.</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code>- (void)setObject:(id)object {
+<div class="language-plaintext highlighter-rouge"><pre class="highlight"><code>- (void)setObject:(id)object {
   if (_item != object) {
     [super setObject:object];
 
@@ -210,7 +214,7 @@ When you’re doing it this way, you’ll have to decide whether you want to man
 
 <p>Before we get knee-deep in layout, go ahead and create initializers for your other views.</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code>- (UILabel*)suffixLabel {
+<div class="language-plaintext highlighter-rouge"><pre class="highlight"><code>- (UILabel*)suffixLabel {
   if (!_suffixLabel) {
     _suffixLabel = [[UILabel alloc] init];
     _suffixLabel.textColor = [UIColor blackColor];
@@ -225,13 +229,13 @@ When you’re doing it this way, you’ll have to decide whether you want to man
 
 <p>Now for the hard part. Maybe. If you’re using fixed height cells, it will be as easy as setting the frames of your views and going from there. In this case, your TTTableViewController will have the following in the initializer method:</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code>self.tableView.rowHeight = TTSTYLEVAR(tExampleCellRowHeight);     // CGFloat
+<div class="language-plaintext highlighter-rouge"><pre class="highlight"><code>self.tableView.rowHeight = TTSTYLEVAR(tExampleCellRowHeight);     // CGFloat
 self.variableHeightRows = NO;
 </code></pre>
 </div>
 
-<p>If you are using variable height rows, you’ve got your work cut out for you. The main reason you’ll be using variable height rows is if you have dynamic text or other content that you don’t know the size of. Start by setting variableHeightRows to YES in your TTTableViewController initializer (opposite of the code above). Next, add the following class method:<br />
-<code class="highlighter-rouge">+ (CGFloat)tableView:(UITableView*)tableView rowHeightForObject:(id)object {</code><br />
+<p>If you are using variable height rows, you’ve got your work cut out for you. The main reason you’ll be using variable height rows is if you have dynamic text or other content that you don’t know the size of. Start by setting variableHeightRows to YES in your TTTableViewController initializer (opposite of the code above). Next, add the following class method:
+<code class="language-plaintext highlighter-rouge">+ (CGFloat)tableView:(UITableView*)tableView rowHeightForObject:(id)object {</code>
 In essence you will be doing layout twice. The reason you have to do this is because the table needs to know how big each cell will be before it can create and lay out the cell. You can find more discussion on the Three20 Google Group, the main area for Three20 discussion thus far.</p>
 
 <p>It’s also difficult because this is a class method. The only information we get to work with is the cell’s item and the tableView. In the instance method layoutSubviews, we’ll get to work with the cell’s instance variables.</p>
@@ -240,12 +244,12 @@ In essence you will be doing layout twice. The reason you have to do this is bec
 
 <p>Use a static const to store your margins, or just use Three20’s built in constants (variations of kTableCellVPadding, etc.). Work your way down vertically and add heights to a CGFloat.</p>
 
-<p>First, you’ll need to calculate the maximum width of your text labels. Normally you’ll only have one column to do this for. For example, this is from TTTableImageItemCell:<br />
+<p>First, you’ll need to calculate the maximum width of your text labels. Normally you’ll only have one column to do this for. For example, this is from TTTableImageItemCell:
 `  CGFloat maxWidth = tableView.width - (imageWidth + kTableCellHPadding<em>2 + kTableCellMargin</em>2);`</p>
 
 <p>Add your vertical margins, then calculate what the label sizes will be using the NSString method sizeWithFont:</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code>CGSize firstNameSize = [item.firstName sizeWithFont:TTSTYLEVAR(firstNameFont)
+<div class="language-plaintext highlighter-rouge"><pre class="highlight"><code>CGSize firstNameSize = [item.firstName sizeWithFont:TTSTYLEVAR(firstNameFont)
                                constrainedToSize:CGSizeMake(maxWidth, CGFLOAT_MAX)
                                    lineBreakMode:UILineBreakModeWordWrap];
 totalHeight += firstNameSize.height
@@ -256,7 +260,7 @@ totalHeight += firstNameSize.height
 
 <p>In layout subviews, you’ll do the same thing, only this time set the frames of all your views. Calculate the maxWidth again. Use maxWidth in sizeWithFont for each your views. Consult the TTTableImageItemCell source for a good (yet complicated) example of how to do this. This is also the place to set the styles of our cell backgrounds.</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code>	[(TTView*)self.backgroundView setStyle:TTSTYLEVAR(tCellBackStyle)];
+<div class="language-plaintext highlighter-rouge"><pre class="highlight"><code>	[(TTView*)self.backgroundView setStyle:TTSTYLEVAR(tCellBackStyle)];
 	[(TTView*)self.selectedBackgroundView setStyle:TTSTYLEVAR(tCellBackStyleSelected)];
 </code></pre>
 </div>
@@ -267,7 +271,7 @@ totalHeight += firstNameSize.height
 
 <p>The last thing we need to do is connect the cell and the item. This is actually pretty easy. In your datasource, override the cellClassForObject method:</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code>- (Class)tableView:(UITableView *)tableView cellClassForObject:(id)object {
+<div class="language-plaintext highlighter-rouge"><pre class="highlight"><code>- (Class)tableView:(UITableView *)tableView cellClassForObject:(id)object {
     if([object isKindOfClass:[TCExampleItem class]])
         return [TCExampleCell class];
     else

@@ -10,7 +10,7 @@
   <meta name="description" content="In this post we’ll discuss some techniques for testing the reducers and interactors we introduced in the previous reducers post and interactors post.">
 
   <link rel="stylesheet" href="/css/main.css">
-  <link rel="canonical" href="http://twocentstudios.com/2018/02/18/testing-reducers-and-interactors/">
+  <link rel="canonical" href="http://twocentstudios.com/2018/02/18/Testing-Reducers-and-Interactors/">
   <link rel="alternate" type="application/rss+xml" title="twocentstudios" href="http://twocentstudios.com/feed.xml" />
 </head>
 
@@ -50,6 +50,10 @@
           <a class="page-link" href="/portfolio/">Portfolio</a>
           
         
+          
+        
+          
+          <a class="page-link" href="/apps/countbiki/privacy-policy/">Count Biki Privacy Policy</a>
           
         
           
@@ -140,7 +144,7 @@
 
 <p>Leaning on structs and enums as the input and output boundary of each component makes testing more straightforward; we need to create fewer mock classes to observe the behavior of the system.</p>
 
-<p>Using a special <code class="highlighter-rouge">Scheduler</code> type to control the flow of time allows us to test asynchronous behavior without slowing down testing. It also allows us to mimic any sort of delays or operation ordering that would usually cause subtle, difficult to reproduce bugs in production.</p>
+<p>Using a special <code class="language-plaintext highlighter-rouge">Scheduler</code> type to control the flow of time allows us to test asynchronous behavior without slowing down testing. It also allows us to mimic any sort of delays or operation ordering that would usually cause subtle, difficult to reproduce bugs in production.</p>
 
 <h2 id="preview">Preview</h2>
 
@@ -148,7 +152,7 @@
 
 <p>The reducer is trivial to test. It’s a pure function with two inputs, one output, and no side effects.</p>
 
-<p>The interactor is a bit more complex. It will require a mock <code class="highlighter-rouge">Service</code> class for the data layer. It will require a special <code class="highlighter-rouge">Scheduler</code> type in order to control the flow of time.</p>
+<p>The interactor is a bit more complex. It will require a mock <code class="language-plaintext highlighter-rouge">Service</code> class for the data layer. It will require a special <code class="language-plaintext highlighter-rouge">Scheduler</code> type in order to control the flow of time.</p>
 
 <h2 id="testing-the-reducer">Testing the reducer</h2>
 
@@ -160,9 +164,9 @@
 
 <h3 id="outline-of-profileinteractorreducertests">Outline of ProfileInteractorReducerTests</h3>
 
-<p>Let’s start with an outline of the <code class="highlighter-rouge">XCTestCase</code> subclass we’ll be writing.</p>
+<p>Let’s start with an outline of the <code class="language-plaintext highlighter-rouge">XCTestCase</code> subclass we’ll be writing.</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="kd">class</span> <span class="kt">ProfileInteractorReducerTests</span><span class="p">:</span> <span class="kt">XCTestCase</span> <span class="p">{</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">class</span> <span class="kt">ProfileInteractorReducerTests</span><span class="p">:</span> <span class="kt">XCTestCase</span> <span class="p">{</span>
     <span class="kd">typealias</span> <span class="kt">Reducer</span> <span class="o">=</span> <span class="kt">ProfileInteractor</span><span class="o">.</span><span class="kt">Reducer</span>
     
     <span class="k">let</span> <span class="nv">user</span> <span class="o">=</span> <span class="kt">Mocks</span><span class="o">.</span><span class="n">user</span>
@@ -193,22 +197,22 @@
 
 <h3 id="mocks-and-helpers">Mocks and helpers</h3>
 
-<p>Because we’ve namespaced our reducer under <code class="highlighter-rouge">ProfileInteractor</code> we’ll make a type alias to cut down on some boilerplate.</p>
+<p>Because we’ve namespaced our reducer under <code class="language-plaintext highlighter-rouge">ProfileInteractor</code> we’ll make a type alias to cut down on some boilerplate.</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code>    <span class="kd">typealias</span> <span class="kt">Reducer</span> <span class="o">=</span> <span class="kt">ProfileInteractor</span><span class="o">.</span><span class="kt">Reducer</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code>    <span class="kd">typealias</span> <span class="kt">Reducer</span> <span class="o">=</span> <span class="kt">ProfileInteractor</span><span class="o">.</span><span class="kt">Reducer</span>
 </code></pre>
 </div>
 
 <p>We’ll also make some mock structs to cut down on boilerplate.</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code>    <span class="k">let</span> <span class="nv">user</span> <span class="o">=</span> <span class="kt">Mocks</span><span class="o">.</span><span class="n">user</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code>    <span class="k">let</span> <span class="nv">user</span> <span class="o">=</span> <span class="kt">Mocks</span><span class="o">.</span><span class="n">user</span>
     <span class="k">let</span> <span class="nv">error</span> <span class="o">=</span> <span class="kt">Mocks</span><span class="o">.</span><span class="n">error</span>
 </code></pre>
 </div>
 
-<p>Where the <code class="highlighter-rouge">Mock</code> enum acts as a namespace:</p>
+<p>Where the <code class="language-plaintext highlighter-rouge">Mock</code> enum acts as a namespace:</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="kd">enum</span> <span class="kt">Mocks</span> <span class="p">{</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">enum</span> <span class="kt">Mocks</span> <span class="p">{</span>
     <span class="kd">static</span> <span class="k">let</span> <span class="nv">user</span> <span class="o">=</span> <span class="kt">User</span><span class="p">(</span><span class="nv">id</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
                            <span class="nv">avatarURL</span><span class="p">:</span> <span class="kt">URL</span><span class="p">(</span><span class="nv">string</span><span class="p">:</span> <span class="s">"https://en.gravatar.com/userimage/30721452/beb8f097031268cc19d5e6261603d419.jpeg"</span><span class="p">)</span><span class="o">!</span><span class="p">,</span>
                            <span class="nv">username</span><span class="p">:</span> <span class="s">"twocentstudios"</span><span class="p">,</span>
@@ -223,21 +227,21 @@
 </code></pre>
 </div>
 
-<p>Finally, we’ll need to ensure we’ve implemented equatable for all of the structs we’ll use. This includes <code class="highlighter-rouge">ProfileViewModel</code>, <code class="highlighter-rouge">ProfileInteractor.Reducer.State</code>, <code class="highlighter-rouge">ProfileInteractor.Reducer.Command</code>, and <code class="highlighter-rouge">ProfileInteractor.Reducer.Effect</code>. Otherwise, we’d have no way to assert.</p>
+<p>Finally, we’ll need to ensure we’ve implemented equatable for all of the structs we’ll use. This includes <code class="language-plaintext highlighter-rouge">ProfileViewModel</code>, <code class="language-plaintext highlighter-rouge">ProfileInteractor.Reducer.State</code>, <code class="language-plaintext highlighter-rouge">ProfileInteractor.Reducer.Command</code>, and <code class="language-plaintext highlighter-rouge">ProfileInteractor.Reducer.Effect</code>. Otherwise, we’d have no way to assert.</p>
 
 <h3 id="writing-the-reducer-tests">Writing the reducer tests</h3>
 
 <p>With the boilerplate out of the way, let’s write our first test.</p>
 
-<p>Our first valid transition is a <code class="highlighter-rouge">ProfileViewModel</code> from <code class="highlighter-rouge">Initialized</code> to <code class="highlighter-rouge">Loading</code> state.</p>
+<p>Our first valid transition is a <code class="language-plaintext highlighter-rouge">ProfileViewModel</code> from <code class="language-plaintext highlighter-rouge">Initialized</code> to <code class="language-plaintext highlighter-rouge">Loading</code> state.</p>
 
-<p>Remember that this state transition does not go directly from <code class="highlighter-rouge">Initialized</code> to <code class="highlighter-rouge">Loaded</code> and hit the network or perform other side effects. The reducer is a synchronous function. Its two outputs are 1. the state of the view model updated to <code class="highlighter-rouge">Loading</code> and 2. the <code class="highlighter-rouge">.load</code> <code class="highlighter-rouge">Effect</code> which will be used by the interactor to perform side effects.</p>
+<p>Remember that this state transition does not go directly from <code class="language-plaintext highlighter-rouge">Initialized</code> to <code class="language-plaintext highlighter-rouge">Loaded</code> and hit the network or perform other side effects. The reducer is a synchronous function. Its two outputs are 1. the state of the view model updated to <code class="language-plaintext highlighter-rouge">Loading</code> and 2. the <code class="language-plaintext highlighter-rouge">.load</code> <code class="language-plaintext highlighter-rouge">Effect</code> which will be used by the interactor to perform side effects.</p>
 
 <blockquote>
   <p>Refer to the <a href="/2017/08/02/transitioning-between-view-states-using-reducers/">view state post</a> and <a href="/2017/08/02/transitioning-between-view-states-using-reducers/">reducers post</a> for more background.</p>
 </blockquote>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="kd">class</span> <span class="kt">ProfileInteractorReducerTests</span><span class="p">:</span> <span class="kt">XCTestCase</span> <span class="p">{</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">class</span> <span class="kt">ProfileInteractorReducerTests</span><span class="p">:</span> <span class="kt">XCTestCase</span> <span class="p">{</span>
     <span class="kd">func</span> <span class="nf">testInitializedLoad</span><span class="p">()</span> <span class="p">{</span>
     
         <span class="c1">// 1a. Create an initial `ProfileViewModel` and state containing it.</span>
@@ -276,9 +280,9 @@
   <p>There are probably better ways to automate writing and testing the reducer since it’s just a state machine. I’m open to ideas!</p>
 </blockquote>
 
-<p>Let’s show one more test for the transition from state <code class="highlighter-rouge">Loading</code> to <code class="highlighter-rouge">Failed</code>. Remember that the <code class="highlighter-rouge">Command</code> for this state transition comes as a result of the <code class="highlighter-rouge">Service</code> returning a value (presumably from the server), and all of that is handled by the interactor.</p>
+<p>Let’s show one more test for the transition from state <code class="language-plaintext highlighter-rouge">Loading</code> to <code class="language-plaintext highlighter-rouge">Failed</code>. Remember that the <code class="language-plaintext highlighter-rouge">Command</code> for this state transition comes as a result of the <code class="language-plaintext highlighter-rouge">Service</code> returning a value (presumably from the server), and all of that is handled by the interactor.</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="kd">class</span> <span class="kt">ProfileInteractorReducerTests</span><span class="p">:</span> <span class="kt">XCTestCase</span> <span class="p">{</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">class</span> <span class="kt">ProfileInteractorReducerTests</span><span class="p">:</span> <span class="kt">XCTestCase</span> <span class="p">{</span>
     <span class="kd">func</span> <span class="nf">testLoadingFailed</span><span class="p">()</span> <span class="p">{</span>
         <span class="k">let</span> <span class="nv">initialViewModel</span> <span class="o">=</span> <span class="kt">ProfileViewModel</span><span class="p">(</span><span class="nv">state</span><span class="p">:</span> <span class="o">.</span><span class="n">loading</span><span class="p">)</span>
         <span class="k">let</span> <span class="nv">initialState</span> <span class="o">=</span> <span class="kt">Reducer</span><span class="o">.</span><span class="kt">State</span><span class="p">(</span><span class="nv">viewModel</span><span class="p">:</span> <span class="n">initialViewModel</span><span class="p">,</span> <span class="nv">effect</span><span class="p">:</span> <span class="kc">nil</span><span class="p">)</span>
@@ -303,7 +307,7 @@
 
 <p>In the <a href="">source</a>, I’m only testing valid transitions. However, we could also test that invalid transitions are handled in a deterministic way. The rigor of your test coverage is up to you.</p>
 
-<p>In the most rigorous implementation of a reducer, you could add an <code class="highlighter-rouge">Effect</code> for invalid transitions. Upstream, in the interactor, you could use that <code class="highlighter-rouge">Effect</code> to log an error to an external service. This would keep your reducer completely deterministic and side-effect free.</p>
+<p>In the most rigorous implementation of a reducer, you could add an <code class="language-plaintext highlighter-rouge">Effect</code> for invalid transitions. Upstream, in the interactor, you could use that <code class="language-plaintext highlighter-rouge">Effect</code> to log an error to an external service. This would keep your reducer completely deterministic and side-effect free.</p>
 
 <h2 id="testing-the-interactor">Testing the interactor</h2>
 
@@ -319,9 +323,9 @@
 
 <div class="caption-wrapper"><img class="caption" src="/images/transitioning_view_states-04.png" width="" height="" alt="" title="" /><div class="caption-text"></div></div>
 
-<p>Let’s outline <code class="highlighter-rouge">ProfileInteractorTests</code>.</p>
+<p>Let’s outline <code class="language-plaintext highlighter-rouge">ProfileInteractorTests</code>.</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="kd">class</span> <span class="kt">ProfileInteractorTests</span><span class="p">:</span> <span class="kt">XCTestCase</span> <span class="p">{</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">class</span> <span class="kt">ProfileInteractorTests</span><span class="p">:</span> <span class="kt">XCTestCase</span> <span class="p">{</span>
     <span class="kd">typealias</span> <span class="kt">Command</span> <span class="o">=</span> <span class="kt">ProfileInteractor</span><span class="o">.</span><span class="kt">Command</span>
     <span class="kd">typealias</span> <span class="kt">Effect</span> <span class="o">=</span> <span class="kt">ProfileInteractor</span><span class="o">.</span><span class="kt">Effect</span>
     
@@ -362,15 +366,15 @@
 
 <h3 id="mocks-and-helpers-1">Mocks and helpers</h3>
 
-<p>Like the reducer tests above, we’ll use some <code class="highlighter-rouge">typealias</code>es and mocks to cut down on boilerplate.</p>
+<p>Like the reducer tests above, we’ll use some <code class="language-plaintext highlighter-rouge">typealias</code>es and mocks to cut down on boilerplate.</p>
 
 <p>We’ll also need to add two new mock classes that our interactor(s) have as dependencies.</p>
 
 <h4 id="profileservice">ProfileService</h4>
 
-<p><code class="highlighter-rouge">Mock.ProfileService</code> should conform to <code class="highlighter-rouge">ProfileServiceType</code>:</p>
+<p><code class="language-plaintext highlighter-rouge">Mock.ProfileService</code> should conform to <code class="language-plaintext highlighter-rouge">ProfileServiceType</code>:</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="kd">protocol</span> <span class="kt">ProfileServiceType</span> <span class="p">{</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">protocol</span> <span class="kt">ProfileServiceType</span> <span class="p">{</span>
     <span class="kd">func</span> <span class="nf">readProfile</span><span class="p">(</span><span class="nv">userId</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">SignalProducer</span><span class="o">&lt;</span><span class="kt">User</span><span class="p">,</span> <span class="kt">NSError</span><span class="o">&gt;</span>
 <span class="p">}</span>
 </code></pre>
@@ -378,9 +382,9 @@
 
 <p>Our mock should return a valid user or an error depending on what we want to test.</p>
 
-<p>The simplest version of this mock can just mirror whatever <code class="highlighter-rouge">Result</code> we set.</p>
+<p>The simplest version of this mock can just mirror whatever <code class="language-plaintext highlighter-rouge">Result</code> we set.</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="kd">enum</span> <span class="kt">Mocks</span> <span class="p">{</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">enum</span> <span class="kt">Mocks</span> <span class="p">{</span>
     <span class="kd">final</span> <span class="kd">class</span> <span class="kt">ProfileService</span><span class="p">:</span> <span class="kt">ProfileServiceType</span> <span class="p">{</span>
         <span class="k">var</span> <span class="nv">result</span><span class="p">:</span> <span class="kt">Result</span><span class="o">&lt;</span><span class="kt">User</span><span class="p">,</span> <span class="kt">NSError</span><span class="o">&gt;!</span>
         
@@ -396,19 +400,19 @@
 
 <h4 id="testschedulercontext">TestSchedulerContext</h4>
 
-<p>The interface for the interactor accepts a <code class="highlighter-rouge">SchedulerContextType</code>. This requires a more detailed explanation, but for now I’ll explain the basics.</p>
+<p>The interface for the interactor accepts a <code class="language-plaintext highlighter-rouge">SchedulerContextType</code>. This requires a more detailed explanation, but for now I’ll explain the basics.</p>
 
-<p><code class="highlighter-rouge">SchedulerContextType</code> asks for three distinct schedulers:</p>
+<p><code class="language-plaintext highlighter-rouge">SchedulerContextType</code> asks for three distinct schedulers:</p>
 
 <ul>
-  <li><code class="highlighter-rouge">state</code> to update state by running the synchronous reducer function.</li>
-  <li><code class="highlighter-rouge">work</code> to dispatch asynchronous work like network requests.</li>
-  <li><code class="highlighter-rouge">output</code> to set the <code class="highlighter-rouge">viewModel</code> and <code class="highlighter-rouge">effect</code> variables.</li>
+  <li><code class="language-plaintext highlighter-rouge">state</code> to update state by running the synchronous reducer function.</li>
+  <li><code class="language-plaintext highlighter-rouge">work</code> to dispatch asynchronous work like network requests.</li>
+  <li><code class="language-plaintext highlighter-rouge">output</code> to set the <code class="language-plaintext highlighter-rouge">viewModel</code> and <code class="language-plaintext highlighter-rouge">effect</code> variables.</li>
 </ul>
 
 <p>This will allow us to manipulate the flow of time and observe/assert the state of the system at critical points.</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">TestSchedulerContext</span><span class="p">:</span> <span class="kt">SchedulerContextType</span> <span class="p">{</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">TestSchedulerContext</span><span class="p">:</span> <span class="kt">SchedulerContextType</span> <span class="p">{</span>
     
     <span class="c1">// ...</span>
     
@@ -430,15 +434,15 @@
 </code></pre>
 </div>
 
-<p>I’ve added two helper functions to formalize how the schedulers should be advanced: <code class="highlighter-rouge">nextOutput</code> which accepts input, computes a new state, and delivers output; and <code class="highlighter-rouge">doWork</code> which simulates the service layer returning a new result.</p>
+<p>I’ve added two helper functions to formalize how the schedulers should be advanced: <code class="language-plaintext highlighter-rouge">nextOutput</code> which accepts input, computes a new state, and delivers output; and <code class="language-plaintext highlighter-rouge">doWork</code> which simulates the service layer returning a new result.</p>
 
 <h4 id="testobserver">TestObserver</h4>
 
-<p><code class="highlighter-rouge">TestObserver</code> is a helper class specifically for testing the output of <code class="highlighter-rouge">ReactiveSwift</code> signals. This was originally written by the Kickstarter team (their source <a href="https://github.com/kickstarter/Kickstarter-ReactiveExtensions/blob/15631b40c437d18db4187d9b8ad117115775ea3f/ReactiveExtensions/test-helpers/TestObserver.swift">here</a>).</p>
+<p><code class="language-plaintext highlighter-rouge">TestObserver</code> is a helper class specifically for testing the output of <code class="language-plaintext highlighter-rouge">ReactiveSwift</code> signals. This was originally written by the Kickstarter team (their source <a href="https://github.com/kickstarter/Kickstarter-ReactiveExtensions/blob/15631b40c437d18db4187d9b8ad117115775ea3f/ReactiveExtensions/test-helpers/TestObserver.swift">here</a>).</p>
 
 <p>The header comments explain its purpose:</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code>A `TestObserver` is a wrapper around an `Observer` that saves all events 
+<div class="language-plaintext highlighter-rouge"><pre class="highlight"><code>A `TestObserver` is a wrapper around an `Observer` that saves all events 
 to an internal array so that assertions can be made on a signal's behavior. 
 To use, just create an instance of `TestObserver` that matches the type of 
 signal/producer you are testing, and observer/start your signal by feeding 
@@ -457,7 +461,7 @@ it the wrapped observer. For example,
 
 <p>Let’s start with the first test: ensuring our interactor has the expected initial state.</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="kd">class</span> <span class="kt">ProfileInteractorTests</span><span class="p">:</span> <span class="kt">XCTestCase</span> <span class="p">{</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">class</span> <span class="kt">ProfileInteractorTests</span><span class="p">:</span> <span class="kt">XCTestCase</span> <span class="p">{</span>
     <span class="c1">// ...</span>
     
     <span class="c1">// Initialized</span>
@@ -482,10 +486,10 @@ it the wrapped observer. For example,
 </div>
 
 <blockquote>
-  <p>Note that we don’t need to run the output scheduler since the interactor’s <code class="highlighter-rouge">viewModel.value</code> is set on whatever scheduler <code class="highlighter-rouge">init</code> is called on.</p>
+  <p>Note that we don’t need to run the output scheduler since the interactor’s <code class="language-plaintext highlighter-rouge">viewModel.value</code> is set on whatever scheduler <code class="language-plaintext highlighter-rouge">init</code> is called on.</p>
 </blockquote>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="kd">class</span> <span class="kt">ProfileInteractorTests</span><span class="p">:</span> <span class="kt">XCTestCase</span> <span class="p">{</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">class</span> <span class="kt">ProfileInteractorTests</span><span class="p">:</span> <span class="kt">XCTestCase</span> <span class="p">{</span>
     <span class="c1">// ...</span>
     
     <span class="c1">// Initialized -&gt; Load -&gt; Loaded</span>
@@ -543,11 +547,11 @@ it the wrapped observer. For example,
 <p>A couple things to note:</p>
 
 <ul>
-  <li>[2][9][13] Because our <code class="highlighter-rouge">interactor.effect</code> is a stateless <code class="highlighter-rouge">Signal</code>, we need to use <code class="highlighter-rouge">TestObserver</code> to temporary capture its values (or lack there of) to assert.</li>
-  <li>[6][10] We have to call functions on <code class="highlighter-rouge">schedulerContext</code> to artificially advance time.</li>
+  <li>[2][9][13] Because our <code class="language-plaintext highlighter-rouge">interactor.effect</code> is a stateless <code class="language-plaintext highlighter-rouge">Signal</code>, we need to use <code class="language-plaintext highlighter-rouge">TestObserver</code> to temporary capture its values (or lack there of) to assert.</li>
+  <li>[6][10] We have to call functions on <code class="language-plaintext highlighter-rouge">schedulerContext</code> to artificially advance time.</li>
 </ul>
 
-<p>The interactor tests are more like integration tests. There’s a lot more internal behavior handled by the interactor in order to produce the <code class="highlighter-rouge">viewModel</code> and <code class="highlighter-rouge">effect</code> outputs. However, we get much more control and granularity as opposed to UI testing.</p>
+<p>The interactor tests are more like integration tests. There’s a lot more internal behavior handled by the interactor in order to produce the <code class="language-plaintext highlighter-rouge">viewModel</code> and <code class="language-plaintext highlighter-rouge">effect</code> outputs. However, we get much more control and granularity as opposed to UI testing.</p>
 
 <p>See <a href="">the source</a> for the other two cases I decided to test. They’re very similar.</p>
 
@@ -557,7 +561,7 @@ it the wrapped observer. For example,
 
 <p>My past team experience focused on using manual pre-release testing to discover UI bugs. We did no automated UI testing at all. The biggest reason was that almost every screen in our app changed in a non-trivial way at least once a month. Maintaining expectation images and UI automation testing would have required resources we didn’t have.</p>
 
-<p>In this post, I specifically target my tests in code outside of <code class="highlighter-rouge">UIKit</code>. The architecture itself from the last four posts is designed to push code as far as reasonably possible outside of <code class="highlighter-rouge">UIKit</code>. <code class="highlighter-rouge">UIKit</code> simply introduces far too much state and far too many side-effects into a system for me to feel confident that my tests are useful.</p>
+<p>In this post, I specifically target my tests in code outside of <code class="language-plaintext highlighter-rouge">UIKit</code>. The architecture itself from the last four posts is designed to push code as far as reasonably possible outside of <code class="language-plaintext highlighter-rouge">UIKit</code>. <code class="language-plaintext highlighter-rouge">UIKit</code> simply introduces far too much state and far too many side-effects into a system for me to feel confident that my tests are useful.</p>
 
 <p>Although there has been lots of progress made both by Apple and in open source in making UI testing more useful and feasible, I still consider manual testing to be more resource efficient than writing and maintaining a suite of UI tests especially for the kinds of apps I currently work on.</p>
 
@@ -575,7 +579,7 @@ it the wrapped observer. For example,
 
 <ul>
   <li>Since our reducer is a straightforward state machine, are there better ways to automate testing?</li>
-  <li>Is there a way we can eliminate at least one of the three scheduler context types? Perhaps the <code class="highlighter-rouge">state</code> scheduler can use the <code class="highlighter-rouge">output</code> scheduler instead?</li>
+  <li>Is there a way we can eliminate at least one of the three scheduler context types? Perhaps the <code class="language-plaintext highlighter-rouge">state</code> scheduler can use the <code class="language-plaintext highlighter-rouge">output</code> scheduler instead?</li>
 </ul>
 
 <h2 id="further-reading">Further reading</h2>

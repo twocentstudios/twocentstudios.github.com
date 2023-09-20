@@ -6,11 +6,11 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <title>Hosting</title>
-  <meta name="description" content="My rent on my shared garbage VPS is up in early August and I’m not sure what to do. I’ve got two problems and a number of routes I could go.">
+  <title>TTXMLParser With a Variable Number of Elements</title>
+  <meta name="description" content="I’ve probably re-solved this problem at least three times, so time to document it.Let’s say you’re dealing with an XML feed response from a webservice. You’r...">
 
   <link rel="stylesheet" href="/css/main.css">
-  <link rel="canonical" href="http://twocentstudios.com/2011/07/30/hosting-html/">
+  <link rel="canonical" href="http://twocentstudios.com/2011/04/17/ttxmlparser-with-a-variable-number-of-elements.html/">
   <link rel="alternate" type="application/rss+xml" title="twocentstudios" href="http://twocentstudios.com/feed.xml" />
 </head>
 
@@ -50,6 +50,10 @@
           <a class="page-link" href="/portfolio/">Portfolio</a>
           
         
+          
+        
+          
+          <a class="page-link" href="/apps/countbiki/privacy-policy/">Count Biki Privacy Policy</a>
           
         
           
@@ -125,26 +129,72 @@
         <div class="post">
 
   <header class="post-header">
-    <h1 class="post-title">Hosting</h1>
-    <p class="post-meta">Jul 30, 2011</p>
+    <h1 class="post-title">TTXMLParser With a Variable Number of Elements</h1>
+    <p class="post-meta">Apr 17, 2011</p>
   </header>
 
   <article class="post-content">
-    <p>My rent on my shared garbage VPS is up in early August and I’m not sure what to do. I’ve got two problems and a number of routes I could go.</p>
+    <p>I’ve probably re-solved this problem at least three times, so time to document it.</p>
 
-<p>I know very little about server admining and hosting. Next to nothing I’d say. I would like to learn, but like anything, there’s an opportunity cost to it. I’m leaning towards not taking the easy way out this time, simply because I know some more advanced knowledge of Linux will most likely be useful sometime in my not-so-distant future.</p>
+<p>Let’s say you’re dealing with an XML feed response from a webservice. You’re using the TTXMLParser extension. Here’s an example of what we might get back from a webservice that shows a user’s recently read books:</p>
 
-<p>My first problem to solve is what platform is best for this blog. I started on Wordpress because it’s ridiculously easy to leave all the technical stuff aside and just get to writing. Unfortunately, I don’t know any PHP and don’t much care to learn it, so hacking on it is out of the question for now. And if I’m not going to try to deal with PHP, I might as well put my eggs in one basket and try to hack on a Rails blog framework. So I guess my real problem is how to migrate the few posts on here over to a Rails platform (after setting it up of course).</p>
+<div class="language-plaintext highlighter-rouge"><pre class="highlight"><code>&lt;response&gt;
+  &lt;book&gt;
+    &lt;title&gt;The Stranger&lt;/title&gt;
+    &lt;author&gt;Albert Camus&lt;/author&gt;
+    &lt;completed&gt;Apr 11&lt;/completed&gt;
+  &lt;/book&gt;
+  &lt;book&gt;
+    &lt;title&gt;Pinball 1973&lt;/title&gt;
+    &lt;author&gt;Haruki Murakami&lt;/author&gt;
+    &lt;completed&gt;Apr 5&lt;/completed&gt;
+  &lt;/book&gt;
+&lt;/response&gt;
+</code></pre>
+</div>
 
-<p>Seeing as I’ve decided not to continue on with Wordpress and switch to Rails, the next item on the agenda is where to host it.</p>
-<ol>
-	<li><strong>Stay on my current garbage VPS for another year.</strong> This is what I'd call the easy way out. I could leave the WP version of this blog and the rest of my site up and give myself some time to migrate over. While supposedly my VPS does support Rails, I don't get command line access without paying some ridiculous fee, and I have no idea what its capabilities are.</li>
-	<li><strong>Set up something on Heroku.</strong> I was exploring Heroku a little bit over last weekend, and things there are looking rather nice. However, I think it may end up being too complicated for the low-key hodge-podge of things I'd be running on it. At some point in the future I'd like to deploy some stuff there just to check it out in greater detail.</li>
-	<li><strong>Set up a VPS on Linode.</strong> I feel like I would easily learn the most on this route. I'd get a chance to really dig into a Linux distro and learn how to set everything up manually. I know there are a ton of great tutorials out there for doing pretty much anything on a fresh install. The only downside is that I'm sure it would pretty much every waking moment of my freetime to get everything I need up and running to the capability I'm at right now. I'm just not sure I have that kind of time to devote to this right now.</li>
-</ol>
-<p>With all that being said, I looks like maybe my best option is to go with #1 (as much as I feel like I’m wussing out), and shoot for #3 next year. That will give me some more time to get a better hold on Rails.</p>
+<p>The number of books is completely variable. This is the problem we’re going to solve below. It could return zero, one, or more book elements.</p>
 
-<p>If anyone else has been in this boat before, I’d love to hear about it in the comments.</p>
+<p>First off, you have to tell your TTURLXMLResponse that it’s an RSS feed. It doesn’t actually have to be RSS, they just mean “is it going to have multiple elements with the same element name?” like we have with book elements. So we’ll check that off.</p>
+
+<div class="language-plaintext highlighter-rouge"><pre class="highlight"><code>TTURLXMLResponse* response = [[TTURLXMLResponse alloc] init];
+response.isRssFeed = YES
+</code></pre>
+</div>
+
+<p>Now we’ve got to deal with the response in requestDidFinishLoad.</p>
+
+<div class="language-plaintext highlighter-rouge"><pre class="highlight"><code>- (void)requestDidFinishLoad:(TTURLRequest*)request {
+	TTURLXMLResponse* response = request.response;
+
+	// The root object should definitely be a dictionary
+	TTDASSERT([response.rootObject isKindOfClass:[NSDictionary class]]);
+	NSDictionary* feed = response.rootObject;
+	
+	// Use &amp;quot;arrayForKey&amp;quot; not &amp;quot;objectForKey&amp;quot; as explained below
+	if ([feed objectForKey:@&amp;quot;book&amp;quot;] != nil])
+		NSArray* entries = [feed arrayForKey:@&amp;quot;book&amp;quot;];
+
+	// { Parse the feed and do whatever else you need to do}
+}
+</code></pre>
+</div>
+
+<p>The important part of the code is using arrayForKey instead of objectForKey. If we dig into the Three20 code:</p>
+
+<div class="language-plaintext highlighter-rouge"><pre class="highlight"><code>@interface NSDictionary (TTXMLAdditions)
+//...
+/**
+ * @return Performs an &amp;quot;objectForKey&amp;quot;, then puts the object into an array. If the
+ * object is already an array, that array is returned.
+ */
+- (NSArray*)arrayForKey:(id)key;
+</code></pre>
+</div>
+
+<p>If the service returns only a single book, the object we get back for the “book” element will still be an array, but it will be an array of <i>strings</i> and not an array of <i>dictionaries</i> like we expect. ArrayForKey solves this by giving us back an array of dictionaries even if there is only one entry.</p>
+
+<p>Note that I had to check that an object existed for books before calling arrayForKey. In my experience, this method <i>will</i> crash if an object doesn’t exist for the key, so be careful!</p>
 
   </article>
 

@@ -10,7 +10,7 @@
   <meta name="description" content="This post shows one way to create an audio file from MIDI data and a soundfont (.sf2) file on iOS. It targets iOS 10.2 and Swift 3.0.1.">
 
   <link rel="stylesheet" href="/css/main.css">
-  <link rel="canonical" href="http://twocentstudios.com/2017/02/20/bouncing-midi-to-audio-on-ios/">
+  <link rel="canonical" href="http://twocentstudios.com/2017/02/20/Bouncing-MIDI-to-Audio-on-iOS/">
   <link rel="alternate" type="application/rss+xml" title="twocentstudios" href="http://twocentstudios.com/feed.xml" />
 </head>
 
@@ -50,6 +50,10 @@
           <a class="page-link" href="/portfolio/">Portfolio</a>
           
         
+          
+        
+          
+          <a class="page-link" href="/apps/countbiki/privacy-policy/">Count Biki Privacy Policy</a>
           
         
           
@@ -151,11 +155,11 @@
 
 <p>In iOS 8, Apple began adding some higher level components to AVFoundation that both wrap their lower level AudioToolbox relatives and provide solutions to common tasks.</p>
 
-<p><code class="highlighter-rouge">AVMIDIPlayer</code> was added in iOS 8, and solves MIDI playback elegantly.</p>
+<p><code class="language-plaintext highlighter-rouge">AVMIDIPlayer</code> was added in iOS 8, and solves MIDI playback elegantly.</p>
 
 <p>You can load MIDI from a file or from raw Data, provide a URL for a soundbank file, then control playback with a few straightforward methods. All the underlying components used to sequence the MIDI and synthesize it are encapsulated within.</p>
 
-<p>In order to gain access to the output bus tap that contains the raw audio data, we’ll essentially need to recreate <code class="highlighter-rouge">AVMIDIPlayer</code> using some other framework components.</p>
+<p>In order to gain access to the output bus tap that contains the raw audio data, we’ll essentially need to recreate <code class="language-plaintext highlighter-rouge">AVMIDIPlayer</code> using some other framework components.</p>
 
 <h3 id="strategy-and-limitations">Strategy and Limitations</h3>
 
@@ -170,30 +174,30 @@
 <p>Observing the output of this process limits us to real time processing speed. In other words, if the MIDI file is 60 seconds, it’ll take 60 seconds to produce the output audio file.</p>
 
 <blockquote>
-  <p>One strategy I haven’t tried would be to pitch shift the MIDI up one octave, play it back at 2x, record it at 88.2kHz, then downsample to 44.1kHz. <code class="highlighter-rouge">AVAudioSession</code> presumably can’t go past 48kHz though.</p>
+  <p>One strategy I haven’t tried would be to pitch shift the MIDI up one octave, play it back at 2x, record it at 88.2kHz, then downsample to 44.1kHz. <code class="language-plaintext highlighter-rouge">AVAudioSession</code> presumably can’t go past 48kHz though.</p>
 </blockquote>
 
 <h3 id="components-well-need">Components We’ll Need</h3>
 
-<p>We need to set up an <code class="highlighter-rouge">AVAudioEngine</code> with a few nodes. Conceptually, the chain will look something like this:</p>
+<p>We need to set up an <code class="language-plaintext highlighter-rouge">AVAudioEngine</code> with a few nodes. Conceptually, the chain will look something like this:</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code>                                     Output Tap
+<div class="language-plaintext highlighter-rouge"><pre class="highlight"><code>                                     Output Tap
                                          |                      
 AVAudioSequencer -&gt; AVAudioUnitMIDISynth -&gt; AVAudioMixerNode -&gt;
 </code></pre>
 </div>
 
 <blockquote>
-  <p>Technically, the <code class="highlighter-rouge">AVAudioSequencer</code> is connected directly to the <code class="highlighter-rouge">AVAudioEngine</code>. And the <code class="highlighter-rouge">AVAudioMixerNode</code> is managed by the <code class="highlighter-rouge">AVAudioEngine</code> too.</p>
+  <p>Technically, the <code class="language-plaintext highlighter-rouge">AVAudioSequencer</code> is connected directly to the <code class="language-plaintext highlighter-rouge">AVAudioEngine</code>. And the <code class="language-plaintext highlighter-rouge">AVAudioMixerNode</code> is managed by the <code class="language-plaintext highlighter-rouge">AVAudioEngine</code> too.</p>
 </blockquote>
 
-<p><code class="highlighter-rouge">AVAudioSequencer</code> provides a modern interface to <code class="highlighter-rouge">MusicSequence</code> from the <code class="highlighter-rouge">AudioToolbox</code> framework.</p>
+<p><code class="language-plaintext highlighter-rouge">AVAudioSequencer</code> provides a modern interface to <code class="language-plaintext highlighter-rouge">MusicSequence</code> from the <code class="language-plaintext highlighter-rouge">AudioToolbox</code> framework.</p>
 
-<p><code class="highlighter-rouge">AVAudioUnitMIDISynth</code> is an <code class="highlighter-rouge">AVAudioUnit</code> we’ll have to create ourselves by subclassing <code class="highlighter-rouge">AVAudioUnitMIDIInstrument</code>. The reason we can’t use Apple’s provided <code class="highlighter-rouge">AVAudioUnitSampler</code> (also a subclass of <code class="highlighter-rouge">AVAudioUnitMIDIInstrument</code>) is because our MIDI file is multi-timbral: it uses multiple instrument presets from the soundfont and plays notes simultaneously.</p>
+<p><code class="language-plaintext highlighter-rouge">AVAudioUnitMIDISynth</code> is an <code class="language-plaintext highlighter-rouge">AVAudioUnit</code> we’ll have to create ourselves by subclassing <code class="language-plaintext highlighter-rouge">AVAudioUnitMIDIInstrument</code>. The reason we can’t use Apple’s provided <code class="language-plaintext highlighter-rouge">AVAudioUnitSampler</code> (also a subclass of <code class="language-plaintext highlighter-rouge">AVAudioUnitMIDIInstrument</code>) is because our MIDI file is multi-timbral: it uses multiple instrument presets from the soundfont and plays notes simultaneously.</p>
 
-<p><code class="highlighter-rouge">AVAudioMixerNode</code> is the output of the <code class="highlighter-rouge">AVAudioEngine</code>, capable of combining multiple input nodes. In our case, we only need one.</p>
+<p><code class="language-plaintext highlighter-rouge">AVAudioMixerNode</code> is the output of the <code class="language-plaintext highlighter-rouge">AVAudioEngine</code>, capable of combining multiple input nodes. In our case, we only need one.</p>
 
-<p>I decided I don’t want the user to hear the export progress, so the file output tap will go at the output of the <code class="highlighter-rouge">AVAudioUnitMIDISynth</code> and the output of the <code class="highlighter-rouge">AVAudioMixerNode</code> will be muted.</p>
+<p>I decided I don’t want the user to hear the export progress, so the file output tap will go at the output of the <code class="language-plaintext highlighter-rouge">AVAudioUnitMIDISynth</code> and the output of the <code class="language-plaintext highlighter-rouge">AVAudioMixerNode</code> will be muted.</p>
 
 <p>Now that we have a general diagram of how these components will fit together, let’s get started on the implementation.</p>
 
@@ -201,7 +205,7 @@ AVAudioSequencer -&gt; AVAudioUnitMIDISynth -&gt; AVAudioMixerNode -&gt;
 
 <p>The following targets Swift 3.0.1 and iOS 10.</p>
 
-<p>First let’s create <code class="highlighter-rouge">AVAudioUnitMIDISynth</code>.</p>
+<p>First let’s create <code class="language-plaintext highlighter-rouge">AVAudioUnitMIDISynth</code>.</p>
 
 <h3 id="avaudiounitmidisynth">AVAudioUnitMIDISynth</h3>
 
@@ -209,7 +213,7 @@ AVAudioSequencer -&gt; AVAudioUnitMIDISynth -&gt; AVAudioMixerNode -&gt;
   <p>Most of this code is adapted directly from <a href="http://www.rockhoppertech.com/blog/multi-timbral-avaudiounitmidiinstrument/">Gene De Lisa’s blog</a>. He’s prolific in writing about iOS and MIDI topics.</p>
 </blockquote>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="kd">class</span> <span class="kt">AVAudioUnitMIDISynth</span><span class="p">:</span> <span class="kt">AVAudioUnitMIDIInstrument</span> <span class="p">{</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">class</span> <span class="kt">AVAudioUnitMIDISynth</span><span class="p">:</span> <span class="kt">AVAudioUnitMIDIInstrument</span> <span class="p">{</span>
     <span class="nf">init</span><span class="p">(</span><span class="nv">soundBankURL</span><span class="p">:</span> <span class="kt">URL</span><span class="p">)</span> <span class="k">throws</span> <span class="p">{</span>
         <span class="k">let</span> <span class="nv">description</span> <span class="o">=</span> <span class="kt">AudioComponentDescription</span><span class="p">(</span>
             <span class="nv">componentType</span><span class="p">:</span> <span class="n">kAudioUnitType_MusicDevice</span><span class="p">,</span>
@@ -257,17 +261,17 @@ AVAudioSequencer -&gt; AVAudioUnitMIDISynth -&gt; AVAudioMixerNode -&gt;
 </code></pre>
 </div>
 
-<p>In <code class="highlighter-rouge">init</code>, we’re telling the AudioUnit that it’s a MIDISynth. Then we’ll set the soundbank that we want it to use.</p>
+<p>In <code class="language-plaintext highlighter-rouge">init</code>, we’re telling the AudioUnit that it’s a MIDISynth. Then we’ll set the soundbank that we want it to use.</p>
 
-<p>The <code class="highlighter-rouge">setPreload</code> function is the critical part that will allow faithful playback of the instruments in the MIDI data. The MIDISynth AudioUnit has a property that allows it to preload instrument banks from the soundfont we provided on initialization. While this flag is set to true, any MIDI events sent to the MIDISynth, instead of being played, will be parsed for their instrument/bank messages and those instruments’ samples will be loaded.</p>
+<p>The <code class="language-plaintext highlighter-rouge">setPreload</code> function is the critical part that will allow faithful playback of the instruments in the MIDI data. The MIDISynth AudioUnit has a property that allows it to preload instrument banks from the soundfont we provided on initialization. While this flag is set to true, any MIDI events sent to the MIDISynth, instead of being played, will be parsed for their instrument/bank messages and those instruments’ samples will be loaded.</p>
 
-<p>A caveat is that the MIDISynth must be connected to the <code class="highlighter-rouge">AVAudioEngine</code> which must also be running when the preload message is sent.</p>
+<p>A caveat is that the MIDISynth must be connected to the <code class="language-plaintext highlighter-rouge">AVAudioEngine</code> which must also be running when the preload message is sent.</p>
 
 <p>After we’re done sending messages intended for preloading, the MIDISynth should have preload mode disabled, after which it will play any incoming MIDI message normally.</p>
 
 <h3 id="midifilebouncer">MIDIFileBouncer</h3>
 
-<p>Let’s put it all together in the <code class="highlighter-rouge">MIDIFileBouncer</code>.</p>
+<p>Let’s put it all together in the <code class="language-plaintext highlighter-rouge">MIDIFileBouncer</code>.</p>
 
 <p>Our inputs will be:</p>
 
@@ -277,7 +281,7 @@ AVAudioSequencer -&gt; AVAudioUnitMIDISynth -&gt; AVAudioMixerNode -&gt;
   <li>The AVAudioSession</li>
 </ol>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="kd">class</span> <span class="kt">MIDIFileBouncer</span> <span class="p">{</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">class</span> <span class="kt">MIDIFileBouncer</span> <span class="p">{</span>
     <span class="n">fileprivate</span> <span class="k">let</span> <span class="nv">audioSession</span><span class="p">:</span> <span class="kt">AVAudioSession</span>
     
     <span class="n">fileprivate</span> <span class="k">var</span> <span class="nv">engine</span><span class="p">:</span> <span class="kt">AVAudioEngine</span><span class="o">!</span>
@@ -316,14 +320,14 @@ AVAudioSequencer -&gt; AVAudioUnitMIDISynth -&gt; AVAudioMixerNode -&gt;
 </div>
 
 <blockquote>
-  <p>Regarding the deinit, the reason we’re not declaring the engine, sampler, or sequencer as <code class="highlighter-rouge">let</code> (or non-optional) is because we need to specify their order of deallocation to avoid a crash (<code class="highlighter-rouge">audioEngine</code> is released before <code class="highlighter-rouge">sequencer</code> has finished with it). Please let me know if you know a more elegant way to avoid this crash.</p>
+  <p>Regarding the deinit, the reason we’re not declaring the engine, sampler, or sequencer as <code class="language-plaintext highlighter-rouge">let</code> (or non-optional) is because we need to specify their order of deallocation to avoid a crash (<code class="language-plaintext highlighter-rouge">audioEngine</code> is released before <code class="language-plaintext highlighter-rouge">sequencer</code> has finished with it). Please let me know if you know a more elegant way to avoid this crash.</p>
 </blockquote>
 
-<p>In <code class="highlighter-rouge">init</code>, we’re going to create an instance of our three required classes: <code class="highlighter-rouge">AVAudioEngine</code>, <code class="highlighter-rouge">AVAudioUnitMIDISynth</code>, and <code class="highlighter-rouge">AVAudioSequencer</code>. Then we’ll wire them together and get the sequencer ready for playback.</p>
+<p>In <code class="language-plaintext highlighter-rouge">init</code>, we’re going to create an instance of our three required classes: <code class="language-plaintext highlighter-rouge">AVAudioEngine</code>, <code class="language-plaintext highlighter-rouge">AVAudioUnitMIDISynth</code>, and <code class="language-plaintext highlighter-rouge">AVAudioSequencer</code>. Then we’ll wire them together and get the sequencer ready for playback.</p>
 
 <p>Now onto our bounce function.</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="kd">extension</span> <span class="kt">MIDIFileBouncer</span> <span class="p">{</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">extension</span> <span class="kt">MIDIFileBouncer</span> <span class="p">{</span>
     <span class="kd">func</span> <span class="nf">bounce</span><span class="p">(</span><span class="n">toFileURL</span> <span class="nv">fileURL</span><span class="p">:</span> <span class="kt">URL</span><span class="p">)</span> <span class="k">throws</span> <span class="p">{</span>
         <span class="k">let</span> <span class="nv">outputNode</span> <span class="o">=</span> <span class="k">self</span><span class="o">.</span><span class="n">sampler</span><span class="o">!</span>
         
@@ -396,25 +400,25 @@ AVAudioSequencer -&gt; AVAudioUnitMIDISynth -&gt; AVAudioMixerNode -&gt;
 </code></pre>
 </div>
 
-<p>The bounce function is synchronous. <code class="highlighter-rouge">AVAudioSequencer</code> is interesting in that it will play beyond the length of the MIDI track it’s playing. It will play until it’s told to stop or it’s interrupted. We don’t get a callback when the last MIDI event has rung out.</p>
+<p>The bounce function is synchronous. <code class="language-plaintext highlighter-rouge">AVAudioSequencer</code> is interesting in that it will play beyond the length of the MIDI track it’s playing. It will play until it’s told to stop or it’s interrupted. We don’t get a callback when the last MIDI event has rung out.</p>
 
-<p>The most straightforward solution, although not the most efficient or elegant, is to sleep the current thread until either the sequencer has stopped for some external reason or it has played past the length of its last MIDI event. This is also arguably the most robust solution without the knowledge of whether we can observe <code class="highlighter-rouge">isPlaying</code>.</p>
+<p>The most straightforward solution, although not the most efficient or elegant, is to sleep the current thread until either the sequencer has stopped for some external reason or it has played past the length of its last MIDI event. This is also arguably the most robust solution without the knowledge of whether we can observe <code class="language-plaintext highlighter-rouge">isPlaying</code>.</p>
 
 <p>With that disclaimer in place, let’s walk through the code.</p>
 
 <ul>
-  <li>Calculate the sequence length for later use with help from <code class="highlighter-rouge">AVMusicTrack</code>.</li>
-  <li>Set up an <code class="highlighter-rouge">AVAudioFile</code> to write the output buffers to.</li>
-  <li>Start up the <code class="highlighter-rouge">AVAudioSession</code> and the <code class="highlighter-rouge">AVAudioEngine</code>.</li>
-  <li>Play the entire sequence through once with the <code class="highlighter-rouge">AVAudioUnitMIDISynth</code> in preload mode as discussed earlier. However, we can cheat a little bit and play it through at 100x normal speed since it simply needs to see all the events.</li>
+  <li>Calculate the sequence length for later use with help from <code class="language-plaintext highlighter-rouge">AVMusicTrack</code>.</li>
+  <li>Set up an <code class="language-plaintext highlighter-rouge">AVAudioFile</code> to write the output buffers to.</li>
+  <li>Start up the <code class="language-plaintext highlighter-rouge">AVAudioSession</code> and the <code class="language-plaintext highlighter-rouge">AVAudioEngine</code>.</li>
+  <li>Play the entire sequence through once with the <code class="language-plaintext highlighter-rouge">AVAudioUnitMIDISynth</code> in preload mode as discussed earlier. However, we can cheat a little bit and play it through at 100x normal speed since it simply needs to see all the events.</li>
   <li>Reset everything for the real recording session playback.</li>
-  <li>Install a tap on the output of <code class="highlighter-rouge">AVAudioUnitMIDISynth</code> and write the output buffers to our <code class="highlighter-rouge">AVAudioFile</code>.</li>
+  <li>Install a tap on the output of <code class="language-plaintext highlighter-rouge">AVAudioUnitMIDISynth</code> and write the output buffers to our <code class="language-plaintext highlighter-rouge">AVAudioFile</code>.</li>
   <li>Start playback, wait for it to finish or error, then remove the bus.</li>
 </ul>
 
 <p>I’ve added a few pauses to ensure there’s adequate gaps of silence between the beginning and end of the file.</p>
 
-<p>Assuming the function doesn’t throw, a wave file will be written to the URL you provided to the function input as a <code class="highlighter-rouge">.caf</code> file. <code class="highlighter-rouge">AVFoundation</code> has additional facilities available to convert uncompressed audio to other formats.</p>
+<p>Assuming the function doesn’t throw, a wave file will be written to the URL you provided to the function input as a <code class="language-plaintext highlighter-rouge">.caf</code> file. <code class="language-plaintext highlighter-rouge">AVFoundation</code> has additional facilities available to convert uncompressed audio to other formats.</p>
 
 <h2 id="wrap-up">Wrap Up</h2>
 

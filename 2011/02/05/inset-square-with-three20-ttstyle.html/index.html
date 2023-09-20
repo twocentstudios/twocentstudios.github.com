@@ -6,11 +6,11 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <title>didShowModel Blues</title>
-  <meta name="description" content="I’m working with a TTTableViewController right now. Try to stay with me.">
+  <title>Inset Square with Three20 & TTStyle</title>
+  <meta name="description" content="Three20 is a pretty fantastic iOS library. One of the features that took me awhile to get a handle on was using TTView and TTStyles. Here, I’ll show how to m...">
 
   <link rel="stylesheet" href="/css/main.css">
-  <link rel="canonical" href="http://twocentstudios.com/2011/04/05/didshowmodel-blues-html/">
+  <link rel="canonical" href="http://twocentstudios.com/2011/02/05/inset-square-with-three20-ttstyle.html/">
   <link rel="alternate" type="application/rss+xml" title="twocentstudios" href="http://twocentstudios.com/feed.xml" />
 </head>
 
@@ -50,6 +50,10 @@
           <a class="page-link" href="/portfolio/">Portfolio</a>
           
         
+          
+        
+          
+          <a class="page-link" href="/apps/countbiki/privacy-policy/">Count Biki Privacy Policy</a>
           
         
           
@@ -125,24 +129,68 @@
         <div class="post">
 
   <header class="post-header">
-    <h1 class="post-title">didShowModel Blues</h1>
-    <p class="post-meta">Apr 5, 2011</p>
+    <h1 class="post-title">Inset Square with Three20 & TTStyle</h1>
+    <p class="post-meta">Feb 5, 2011</p>
   </header>
 
   <article class="post-content">
-    <p>I’m working with a TTTableViewController right now. Try to stay with me.</p>
+    <p><a href="http://three20.info">Three20</a> is a pretty fantastic iOS library. One of the features that took me awhile to get a handle on was using TTView and TTStyles. Here, I’ll show how to make a fancy square button that looks like this:</p>
 
-<p>TableViewController gets pushed onto the navigation stack, hits the network looking for data, and loads the data. I want to animate the top cell so it looks like it moves a little to the right then bounces back into place. This is supposed to key the user into the fact that there’s more info lurking beneath the top cell layer and that they should swipe to reveal it (a la the showMenu: and hideMenu: pre-rolled functions).</p>
+<p><img class="size-full wp-image-10" title="red-inset-square" src="/images/red-inset-square.png" alt="" width="102" height="94" /></p>
 
-<p>My first thought (which always seems to be wrong) was to trigger this in didShowModel in the TTTableViewController. This is supposed to be the moment when all the layout is has been completed, right? To test my theory, if I call showMenu not animated to push all the views right, then call hideMenu animated, it should swoop in just as the cells load.</p>
+<p>I’m not going to go into getting started with Three20, how to create a default style sheet, or any other intro material. Just the meat and bones here.</p>
 
-<p>It doesn’t seem to work that way. The behavior I viewed in this situation was instead that the showMenu didn’t have any effect, and then the hideMenu (triggered a second later with a timer) would swipe everything off to the left (instead of bringing it from off-screen back into front and center). After didShowModel completes, is something going on in the TT objects that’s resetting the move I’m doing?</p>
+<h2>The Style</h2>
 
-<p>For now, it seems like the best solution, although a bit hacky, is to set a short timer (0.3 seconds) in the didShowModel that calls back to a function with a CAAnimation group. This gives both the TTTableViewController time to lay out its views and get out of dodge, and also lets the user see the table momentarily before it starts moving. This is essentially the same as setting an animation delay.</p>
+<p>Let’s start with the good stuff. Here is the TTStyle we need to generate the box.</p>
 
-<p>With that problem out of the way, I have to say that the animation effect is kind of cool, but I feel like it will definitely be fatiguing to users to see this animation every time the table loads. Should it be only for the first five table loads the user ever does? Should it be only for the first table load in every launch? Only for the first couple days after download? I’m thinking option A, but I’ll have to wait until the beta testing to zero in on that answer.</p>
+<div class="language-plaintext highlighter-rouge"><pre class="highlight"><code> // In our default style sheet
+- (TTStyle*)insetSquare{
+  return [TTShapeStyle styleWithShape:[TTRoundedRectangleShape shapeWithRadius:8] next:
+  [TTLinearGradientFillStyle styleWithColor1:RGBCOLOR(218, 0, 0) color2:RGBCOLOR(140, 0, 0) next:
+  [TTInnerShadowStyle styleWithColor:RGBCOLOR(104, 2, 2) blur:3 offset:CGSizeMake(0, 1) next:nil]]];
+}
+</code></pre>
+</div>
 
-<p>In any case, I’ll have to step through the TTTableViewController code to find out where the layout is getting reset. If anyone else has done this before, let me know in the comments.</p>
+<p>We start out by making our shape. In this case, we’re using a rounded rectangle with a radius of 8px. “But I thought it was a square!” you may ask. Relax, we’ll be specifying dimensions when we create our view in the next section.</p>
+
+<p>If you’re unfamiliar with creating TTStyles, each style has a <span style="font-family: Consolas, Monaco, 'Courier New', Courier, monospace; font-size: 12px; line-height: 18px; white-space: pre;">next:</span> input used to string together multiple drawing commands.</p>
+
+<p>Our next command is a linear gradient going from a light to medium red. <span style="font-family: Consolas, Monaco, 'Courier New', Courier, monospace; font-size: 12px; line-height: 18px; white-space: pre;">RGBCOLOR</span> is a nice TT macro for creating colors you dream up in Photoshop. We’ll use those as our color1 and color2 inputs.</p>
+
+<p>Lastly, we’re going to add an inner shadow to make our square look inset. We’ll use an even darker red for this. Experiment with the blur and offset to achieve the desired effect. Blur will expand the size of the shadow while spreading out the effect. Beware, it doesn’t work exactly the same as the inner shadow blending property in Photoshop (namely, it doesn’t really extend past 10-20px or so).</p>
+
+<p>The offset is a CGSize. We’re using a 1px offset down. You’ll usually be using y-axis offsets as the default light source is from above the screen. Don’t forget about <code>RGBACOLOR</code> as well to experiment with different transparencies for your shadows.</p>
+
+<p>That was pretty easy, right? I recommend checking out the TTCatalog example project custom views section for more great looking style examples.</p>
+
+<h2>Setting Up the View</h2>
+
+<p>Now we need a view to draw our beautiful new style. In your view controller, add the following:</p>
+
+<div class="language-plaintext highlighter-rouge"><pre class="highlight"><code>  // In our view controller
+- (void)viewDidLoad {
+	// Create a new TTView
+	TTView *insetSquareView = [[TTView alloc] initWithFrame:CGRectMake(40, 20, 240, 240)];
+
+	// Set the style to our insetSquare style via the TTSTYLEVAR convenience macro
+	insetSquareView.style = TTSTYLEVAR(insetSquare);
+
+	// Sometimes you'll need to set the background color to clear so that the edges
+	// of the rounded rectangle aren't opaque
+	insetSquareView.backgroundColor = [UIColor clearColor];
+
+	// Add it to the view and release it.
+	[self.view addSubview:insetSquareView];
+	TT_RELEASE_SAFELY(insetSquareView);
+}
+</code></pre>
+</div>
+
+<p>The comments should be self explanatory. Setting the style will tell our view how to draw itself.</p>
+
+<p>And the best part about our new inset square? It automatically scales to retina and standard res, and we don’t have to worry about loading in tons of image files and bloating up our binary unnecessarily.</p>
 
   </article>
 

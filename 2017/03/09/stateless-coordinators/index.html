@@ -10,7 +10,7 @@
   <meta name="description" content="In this post, I’m presenting an experimental iOS architecture I’m calling Stateless Coordinators. Consider what I’ll present as still a work in progress. Alo...">
 
   <link rel="stylesheet" href="/css/main.css">
-  <link rel="canonical" href="http://twocentstudios.com/2017/03/09/stateless-coordinators/">
+  <link rel="canonical" href="http://twocentstudios.com/2017/03/09/Stateless-Coordinators/">
   <link rel="alternate" type="application/rss+xml" title="twocentstudios" href="http://twocentstudios.com/feed.xml" />
 </head>
 
@@ -50,6 +50,10 @@
           <a class="page-link" href="/portfolio/">Portfolio</a>
           
         
+          
+        
+          
+          <a class="page-link" href="/apps/countbiki/privacy-policy/">Count Biki Privacy Policy</a>
           
         
           
@@ -142,7 +146,7 @@
 
 <h2 id="introduction">Introduction</h2>
 
-<p>The goal of this architecture is to abstract out the presentation and flow responsibility of <code class="highlighter-rouge">UIViewController</code> and its subclasses in order to make the view layer of the application more composable.</p>
+<p>The goal of this architecture is to abstract out the presentation and flow responsibility of <code class="language-plaintext highlighter-rouge">UIViewController</code> and its subclasses in order to make the view layer of the application more composable.</p>
 
 <p>The proposed architecture is an alternate take on the Coordinator Pattern. I found inspiration in the following posts:</p>
 
@@ -178,7 +182,7 @@
 
 <h2 id="responsibilities">Responsibilities</h2>
 
-<p>At this point, I’m only going to discuss two major components to the architecture: the <code class="highlighter-rouge">UIViewController</code> family and coordinators. In the future I’d like to expand more on other ways to extract responsibilities from <code class="highlighter-rouge">UIViewController</code> (specifically view models), but for the purposes of this post, let’s assume that the view controller is responsible in one way or another for everything besides managing the presentation flow of itself or its children.</p>
+<p>At this point, I’m only going to discuss two major components to the architecture: the <code class="language-plaintext highlighter-rouge">UIViewController</code> family and coordinators. In the future I’d like to expand more on other ways to extract responsibilities from <code class="language-plaintext highlighter-rouge">UIViewController</code> (specifically view models), but for the purposes of this post, let’s assume that the view controller is responsible in one way or another for everything besides managing the presentation flow of itself or its children.</p>
 
 <p>Before jumping into code, let’s enumerate the responsibilities of coordinators and view controllers.</p>
 
@@ -213,7 +217,7 @@
   <li>Remove the presentation responsibility from view controller subclasses.</li>
 </ul>
 
-<p>Our strategy will be to create a standardized public extension point on each view controller in which we can add behavior at view controller creation time. The extension point will be a <code class="highlighter-rouge">Signal</code> and we’ll add behaviors by attaching observers. By tying the lifetime of these behaviors to their view controller, we can avoid the common difficulties of working against UIKit patterns.</p>
+<p>Our strategy will be to create a standardized public extension point on each view controller in which we can add behavior at view controller creation time. The extension point will be a <code class="language-plaintext highlighter-rouge">Signal</code> and we’ll add behaviors by attaching observers. By tying the lifetime of these behaviors to their view controller, we can avoid the common difficulties of working against UIKit patterns.</p>
 
 <p>That strategy probably doesn’t make sense yet. It’s okay because we’re going to go through lots of code examples.</p>
 
@@ -229,7 +233,7 @@
 
 <p>All of our view controllers will have the shape of the code below. We’ll add more as the complexity of this module increases.</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">UIKit</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">UIKit</span>
 <span class="kd">import</span> <span class="kt">ReactiveSwift</span>
 <span class="kd">import</span> <span class="kd">enum</span> <span class="kt">Result</span><span class="o">.</span><span class="kt">NoError</span>
 
@@ -256,11 +260,11 @@
 </code></pre>
 </div>
 
-<p>The first thing to note is each view controller specifically declares what dynamic inputs it accepts and what dynamic outputs it provides to the outside world. The template view controller above is completely static with no input or output cases. Because these enums are nested within the view controller, they can always be named <code class="highlighter-rouge">Inputs</code> and <code class="highlighter-rouge">Outputs</code>.</p>
+<p>The first thing to note is each view controller specifically declares what dynamic inputs it accepts and what dynamic outputs it provides to the outside world. The template view controller above is completely static with no input or output cases. Because these enums are nested within the view controller, they can always be named <code class="language-plaintext highlighter-rouge">Inputs</code> and <code class="language-plaintext highlighter-rouge">Outputs</code>.</p>
 
-<p>Next, we have a <code class="highlighter-rouge">Signal</code>/<code class="highlighter-rouge">Observer</code> pair for inputs and one for outputs. The <code class="highlighter-rouge">private</code>/<code class="highlighter-rouge">internal</code> distinctions are intentional: the outside world can send inputs (of type <code class="highlighter-rouge">Inputs</code>) on <code class="highlighter-rouge">inputObserver</code> and can observe outputs (of type <code class="highlighter-rouge">Outputs</code>) on <code class="highlighter-rouge">outputSignal</code>.</p>
+<p>Next, we have a <code class="language-plaintext highlighter-rouge">Signal</code>/<code class="language-plaintext highlighter-rouge">Observer</code> pair for inputs and one for outputs. The <code class="language-plaintext highlighter-rouge">private</code>/<code class="language-plaintext highlighter-rouge">internal</code> distinctions are intentional: the outside world can send inputs (of type <code class="language-plaintext highlighter-rouge">Inputs</code>) on <code class="language-plaintext highlighter-rouge">inputObserver</code> and can observe outputs (of type <code class="language-plaintext highlighter-rouge">Outputs</code>) on <code class="language-plaintext highlighter-rouge">outputSignal</code>.</p>
 
-<p>As stated in the type signature (<code class="highlighter-rouge">NoError</code>), these signals can’t error. They are also not intended to complete before the view controller has deallocated, but we’ll have to take some additional steps to guarantee that behavior.</p>
+<p>As stated in the type signature (<code class="language-plaintext highlighter-rouge">NoError</code>), these signals can’t error. They are also not intended to complete before the view controller has deallocated, but we’ll have to take some additional steps to guarantee that behavior.</p>
 
 <h4 id="one-button-one-output">One button, one output</h4>
 
@@ -268,7 +272,7 @@
 
 <div class="caption-wrapper"><img class="caption" src="/images/stateless_coordinators-01.jpg" width="" height="" alt="" title="" /><div class="caption-text"></div></div>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="kd">final</span> <span class="kd">class</span> <span class="kt">StartViewController</span><span class="p">:</span> <span class="kt">UIViewController</span> <span class="p">{</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">final</span> <span class="kd">class</span> <span class="kt">StartViewController</span><span class="p">:</span> <span class="kt">UIViewController</span> <span class="p">{</span>
     <span class="kd">enum</span> <span class="kt">Inputs</span> <span class="p">{</span> <span class="p">}</span>
     <span class="kd">enum</span> <span class="kt">Outputs</span> <span class="p">{</span>
         <span class="k">case</span> <span class="n">tappedStart</span>
@@ -306,15 +310,15 @@
 <p>A few small changes:</p>
 
 <ul>
-  <li>We’ve added a new output case <code class="highlighter-rouge">tappedStart</code>.</li>
+  <li>We’ve added a new output case <code class="language-plaintext highlighter-rouge">tappedStart</code>.</li>
   <li>We’ve added a button with a standard target/selector.</li>
-  <li>We’re sending <code class="highlighter-rouge">Outputs.tappedStart</code> to the private <code class="highlighter-rouge">outputObserver</code> on each button tap.</li>
+  <li>We’re sending <code class="language-plaintext highlighter-rouge">Outputs.tappedStart</code> to the private <code class="language-plaintext highlighter-rouge">outputObserver</code> on each button tap.</li>
 </ul>
 
-<p>The outside world can subscribe to <code class="highlighter-rouge">outputSignal</code> on this view controller and respond to the single event type <code class="highlighter-rouge">tappedStart</code>.</p>
+<p>The outside world can subscribe to <code class="language-plaintext highlighter-rouge">outputSignal</code> on this view controller and respond to the single event type <code class="language-plaintext highlighter-rouge">tappedStart</code>.</p>
 
 <blockquote>
-  <p>For now, I’m going to continue using the grammar <code class="highlighter-rouge">tap</code> for view controller outputs (sending them “as is” so to speak) and allowing subscribers translate the meaning. In the future, I’ll probably revisit this decision.</p>
+  <p>For now, I’m going to continue using the grammar <code class="language-plaintext highlighter-rouge">tap</code> for view controller outputs (sending them “as is” so to speak) and allowing subscribers translate the meaning. In the future, I’ll probably revisit this decision.</p>
 </blockquote>
 
 <h4 id="static-input-two-buttons-two-outputs">Static input, two buttons, two outputs</h4>
@@ -323,7 +327,7 @@
 
 <div class="caption-wrapper"><img class="caption" src="/images/stateless_coordinators-02.jpg" width="" height="" alt="" title="" /><div class="caption-text"></div></div>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="kd">typealias</span> <span class="kt">PizzaTopping</span> <span class="o">=</span> <span class="kt">String</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">typealias</span> <span class="kt">PizzaTopping</span> <span class="o">=</span> <span class="kt">String</span>
 
 <span class="kd">final</span> <span class="kd">class</span> <span class="kt">SelectToppingsViewController</span><span class="p">:</span> <span class="kt">UITableViewController</span> <span class="p">{</span>
     <span class="kd">enum</span> <span class="kt">Inputs</span> <span class="p">{</span> <span class="p">}</span>
@@ -384,15 +388,15 @@
 </code></pre>
 </div>
 
-<p>We’ve added a table view with multiple selection as well as two bar button items. Since our input is static (i.e. the input will not change for the entire lifetime of the view controller), we don’t have to declare it as a part of our signal <code class="highlighter-rouge">Inputs</code>.</p>
+<p>We’ve added a table view with multiple selection as well as two bar button items. Since our input is static (i.e. the input will not change for the entire lifetime of the view controller), we don’t have to declare it as a part of our signal <code class="language-plaintext highlighter-rouge">Inputs</code>.</p>
 
-<p>Notice we’re sending an associated value <code class="highlighter-rouge">[PizzaToppings]</code>. Another important note is that view controllers should only communicate to the outside world through immutable data structures.</p>
+<p>Notice we’re sending an associated value <code class="language-plaintext highlighter-rouge">[PizzaToppings]</code>. Another important note is that view controllers should only communicate to the outside world through immutable data structures.</p>
 
 <p>The public API surface of this subclass is:</p>
 
 <ul>
-  <li><code class="highlighter-rouge">init(toppings: [PizzaTopping])</code></li>
-  <li><code class="highlighter-rouge">outputSignal: Signal&lt;Outputs, NoError&gt;</code></li>
+  <li><code class="language-plaintext highlighter-rouge">init(toppings: [PizzaTopping])</code></li>
+  <li><code class="language-plaintext highlighter-rouge">outputSignal: Signal&lt;Outputs, NoError&gt;</code></li>
 </ul>
 
 <h4 id="cells-with-multiple-buttons">Cells with multiple buttons</h4>
@@ -403,7 +407,7 @@
   <p>This example isn’t strictly necessary to understand the coordinator section, so feel free to skip it.</p>
 </blockquote>
 
-<p>This time we have a view controller that shows a static table of <code class="highlighter-rouge">n</code> tweets, each with a share button and a save button. The outputs available to external classes are <code class="highlighter-rouge">tapSave(Tweet)</code> and <code class="highlighter-rouge">tapShare(Tweet)</code>.</p>
+<p>This time we have a view controller that shows a static table of <code class="language-plaintext highlighter-rouge">n</code> tweets, each with a share button and a save button. The outputs available to external classes are <code class="language-plaintext highlighter-rouge">tapSave(Tweet)</code> and <code class="language-plaintext highlighter-rouge">tapShare(Tweet)</code>.</p>
 
 <div class="caption-wrapper"><img class="caption" src="/images/stateless_coordinators-03.jpg" width="" height="" alt="" title="" /><div class="caption-text"></div></div>
 
@@ -411,7 +415,7 @@
   <p>Note: I’ve included only the code necessary to illustrate this technique.</p>
 </blockquote>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">Tweet</span> <span class="p">{</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">Tweet</span> <span class="p">{</span>
     <span class="k">let</span> <span class="nv">id</span><span class="p">:</span> <span class="kt">String</span>
     <span class="k">let</span> <span class="nv">text</span><span class="p">:</span> <span class="kt">String</span>
 <span class="p">}</span>
@@ -516,31 +520,31 @@
 
 <p>I chose to use a dedicated view model for each tweet. It’s possible to use this technique without a view model, but the reuse semantics are a bit different.</p>
 
-<p>You’ll notice <code class="highlighter-rouge">TweetViewModel</code> has a output signal/observer set. When a view model is assigned to a visible cell, a button tap on that cell will be transformed into a <code class="highlighter-rouge">tapShare</code> or <code class="highlighter-rouge">tapSave</code> enum value on the view model’s output signal.</p>
+<p>You’ll notice <code class="language-plaintext highlighter-rouge">TweetViewModel</code> has a output signal/observer set. When a view model is assigned to a visible cell, a button tap on that cell will be transformed into a <code class="language-plaintext highlighter-rouge">tapShare</code> or <code class="language-plaintext highlighter-rouge">tapSave</code> enum value on the view model’s output signal.</p>
 
-<p>In order to capture those values, we created another signal/observer pair called <code class="highlighter-rouge">outputBusSignal</code>/<code class="highlighter-rouge">outputBusObserver</code>. <code class="highlighter-rouge">outputBusSignal</code> is a signal of signals whose values are merged into our standard <code class="highlighter-rouge">outputSignal</code>.</p>
+<p>In order to capture those values, we created another signal/observer pair called <code class="language-plaintext highlighter-rouge">outputBusSignal</code>/<code class="language-plaintext highlighter-rouge">outputBusObserver</code>. <code class="language-plaintext highlighter-rouge">outputBusSignal</code> is a signal of signals whose values are merged into our standard <code class="language-plaintext highlighter-rouge">outputSignal</code>.</p>
 
 <p>You might be wondering, why do we need a bus? Instead of:</p>
 
-<p><code class="highlighter-rouge">outputBusObserver.send(value: vm.outputSignal.map(mapIO))</code></p>
+<p><code class="language-plaintext highlighter-rouge">outputBusObserver.send(value: vm.outputSignal.map(mapIO))</code></p>
 
 <p>Why can’t we just do:</p>
 
-<p><code class="highlighter-rouge">viewModel.outputSignal.map(mapIO).observe(outputObserver)</code></p>
+<p><code class="language-plaintext highlighter-rouge">viewModel.outputSignal.map(mapIO).observe(outputObserver)</code></p>
 
-<p>The reason is safety. As the consumer of the view model, we can’t guarantee that <code class="highlighter-rouge">viewModel.outputSignal</code> won’t send a <code class="highlighter-rouge">.completed</code> ReactiveSwift event. If it does, the <code class="highlighter-rouge">.completed</code> event will propagate through and terminate all the downstream signals and no further events can be processed by the system. (This problem could be solved by a specialized reactive framework signal that 1. only sends values and 2. stays alive only as long as it is retained by its owner.)</p>
+<p>The reason is safety. As the consumer of the view model, we can’t guarantee that <code class="language-plaintext highlighter-rouge">viewModel.outputSignal</code> won’t send a <code class="language-plaintext highlighter-rouge">.completed</code> ReactiveSwift event. If it does, the <code class="language-plaintext highlighter-rouge">.completed</code> event will propagate through and terminate all the downstream signals and no further events can be processed by the system. (This problem could be solved by a specialized reactive framework signal that 1. only sends values and 2. stays alive only as long as it is retained by its owner.)</p>
 
 <p>Therefore another cardinal rule of this architecture while using a value/error/completed reactive framework is <strong>never connect signals directly together</strong>.</p>
 
-<p>Moving on. You’ll also notice the static function <code class="highlighter-rouge">mapIO</code> that transforms the child’s <code class="highlighter-rouge">Outputs</code> type to the parent’s <code class="highlighter-rouge">Outputs</code> type.</p>
+<p>Moving on. You’ll also notice the static function <code class="language-plaintext highlighter-rouge">mapIO</code> that transforms the child’s <code class="language-plaintext highlighter-rouge">Outputs</code> type to the parent’s <code class="language-plaintext highlighter-rouge">Outputs</code> type.</p>
 
-<p><code class="highlighter-rouge">static func mapIO(output: TweetViewModel.Outputs) -&gt; TweetsViewController.Outputs</code></p>
+<p><code class="language-plaintext highlighter-rouge">static func mapIO(output: TweetViewModel.Outputs) -&gt; TweetsViewController.Outputs</code></p>
 
-<p>In this architecture, you’ll see this function defined on its own very often for the sake of explicitness. In general, this architecture focuses on wiring input and output signals together in various ways, transforming the inner values. I’ve standardized the name as <code class="highlighter-rouge">mapIO</code>. Conveniently, in case your class has to map different output types you can use the same function name. You’ll see more examples in the upcoming coordinators section.</p>
+<p>In this architecture, you’ll see this function defined on its own very often for the sake of explicitness. In general, this architecture focuses on wiring input and output signals together in various ways, transforming the inner values. I’ve standardized the name as <code class="language-plaintext highlighter-rouge">mapIO</code>. Conveniently, in case your class has to map different output types you can use the same function name. You’ll see more examples in the upcoming coordinators section.</p>
 
 <h4 id="additional-complexity">Additional complexity</h4>
 
-<p>I know I haven’t illustrated more complex cases like using the <code class="highlighter-rouge">Inputs</code> signal of the view controller. At the moment, I have an vague idea of how I’d want to use the <code class="highlighter-rouge">Inputs</code> signal instead of passing in data providers or view models to the view controller. For now though, I’d like to move on to the coordinators to see how we can actually use the standardized <code class="highlighter-rouge">Outputs</code> signal of multiple view controllers to manage our view controller hierarchy from above.</p>
+<p>I know I haven’t illustrated more complex cases like using the <code class="language-plaintext highlighter-rouge">Inputs</code> signal of the view controller. At the moment, I have an vague idea of how I’d want to use the <code class="language-plaintext highlighter-rouge">Inputs</code> signal instead of passing in data providers or view models to the view controller. For now though, I’d like to move on to the coordinators to see how we can actually use the standardized <code class="language-plaintext highlighter-rouge">Outputs</code> signal of multiple view controllers to manage our view controller hierarchy from above.</p>
 
 <p>Hopefully, through these examples you’re getting a feel for what we’re trying to accomplish. We’ve created a strict grammar for communication with view layer classes in our architecture (analogous to a protocol) and provided an extension point for coordinators.</p>
 
@@ -550,7 +554,7 @@
 
 <h4 id="basic-template-1">Basic template</h4>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">Coordinator</span> <span class="p">{</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">Coordinator</span> <span class="p">{</span>
     <span class="kd">static</span> <span class="kd">func</span> <span class="nf">vend</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">ViewController</span> <span class="p">{</span>
         <span class="k">let</span> <span class="nv">viewController</span> <span class="o">=</span> <span class="kt">ViewController</span><span class="p">()</span>
         <span class="k">return</span> <span class="n">viewController</span>
@@ -559,12 +563,12 @@
 </code></pre>
 </div>
 
-<p>Coordinators in this architecture are structurally quite simple. A coordinator is a container for static functions, the most important being the <code class="highlighter-rouge">vend</code> function.</p>
+<p>Coordinators in this architecture are structurally quite simple. A coordinator is a container for static functions, the most important being the <code class="language-plaintext highlighter-rouge">vend</code> function.</p>
 
-<p>Because <code class="highlighter-rouge">vend</code> is a static function, it needs to take in any dependencies required to initialize its view controller. <code class="highlighter-rouge">vend</code> will <em>always</em> return a <code class="highlighter-rouge">UIViewController</code> subclass.</p>
+<p>Because <code class="language-plaintext highlighter-rouge">vend</code> is a static function, it needs to take in any dependencies required to initialize its view controller. <code class="language-plaintext highlighter-rouge">vend</code> will <em>always</em> return a <code class="language-plaintext highlighter-rouge">UIViewController</code> subclass.</p>
 
 <blockquote>
-  <p>Aside: why not make <code class="highlighter-rouge">Coordinator</code> a protocol? <code class="highlighter-rouge">vend</code>’s arguments vary on the type of view controller being created. The type of view controller being returned needs to be knowable by the calling class so that its input and output signals can be properly utilized.</p>
+  <p>Aside: why not make <code class="language-plaintext highlighter-rouge">Coordinator</code> a protocol? <code class="language-plaintext highlighter-rouge">vend</code>’s arguments vary on the type of view controller being created. The type of view controller being returned needs to be knowable by the calling class so that its input and output signals can be properly utilized.</p>
 </blockquote>
 
 <p>Because coordinators are simply recipes for creating view controllers and wiring together signals, we don’t need to worry about creating a whole sidecar system that simultaneously owns and takes orders from UIKit. (A lot of the motivation behind this architecture was getting tired of fighting UIKit, but still wanting to improve MVC). View controllers still follow their lifetime semantics when they’re attached to windows and presented by other view controllers. There’s no double referencing or external monitoring of UIKit’s inner workings required. This also means we could add this architecture to an existing architecture simply by vending a new view controller from a coordinator into the existing code.</p>
@@ -573,13 +577,13 @@
 
 <h4 id="presenting">Presenting</h4>
 
-<p>The most simple case is a view controller that wants to present an error. <code class="highlighter-rouge">UIAlertController</code> handles its own dismissal so at this point we won’t worry about handling output from a presented view controller.</p>
+<p>The most simple case is a view controller that wants to present an error. <code class="language-plaintext highlighter-rouge">UIAlertController</code> handles its own dismissal so at this point we won’t worry about handling output from a presented view controller.</p>
 
 <div class="caption-wrapper"><img class="caption" src="/images/stateless_coordinators-04.jpg" width="" height="" alt="" title="" /><div class="caption-text"></div></div>
 
 <p>(Note: I’ve omitted some code in the sample below).</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="kd">final</span> <span class="kd">class</span> <span class="kt">MainViewController</span><span class="p">:</span> <span class="kt">UIViewController</span> <span class="p">{</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">final</span> <span class="kd">class</span> <span class="kt">MainViewController</span><span class="p">:</span> <span class="kt">UIViewController</span> <span class="p">{</span>
     <span class="kd">enum</span> <span class="kt">Outputs</span> <span class="p">{</span>
         <span class="k">case</span> <span class="nf">error</span><span class="p">(</span><span class="kt">NSError</span><span class="p">)</span>
     <span class="p">}</span>
@@ -613,25 +617,25 @@
 </code></pre>
 </div>
 
-<p>The <code class="highlighter-rouge">AlertCoordinator</code> is as simple as the template. It configures a view controller (in this case, pretty trivially) and returns it. Whether this work can be inlined into the caller depends on how complex the set up is, how often these kinds of view controllers will be created, and your discretion.</p>
+<p>The <code class="language-plaintext highlighter-rouge">AlertCoordinator</code> is as simple as the template. It configures a view controller (in this case, pretty trivially) and returns it. Whether this work can be inlined into the caller depends on how complex the set up is, how often these kinds of view controllers will be created, and your discretion.</p>
 
-<p>In <code class="highlighter-rouge">MainCoordinator</code>, in addition to creating a <code class="highlighter-rouge">MainViewController</code>, we’re attaching an ad-hoc observer to its <code class="highlighter-rouge">outputSignal</code>. We’ll ensure the observe block is executed on the UI thread because we can’t guarantee <code class="highlighter-rouge">outputSignal</code> will always return values on the UI thread.</p>
+<p>In <code class="language-plaintext highlighter-rouge">MainCoordinator</code>, in addition to creating a <code class="language-plaintext highlighter-rouge">MainViewController</code>, we’re attaching an ad-hoc observer to its <code class="language-plaintext highlighter-rouge">outputSignal</code>. We’ll ensure the observe block is executed on the UI thread because we can’t guarantee <code class="language-plaintext highlighter-rouge">outputSignal</code> will always return values on the UI thread.</p>
 
-<p>We have to create a unowned capture block for <code class="highlighter-rouge">mainViewController</code>, otherwise it will create a retain cycle.</p>
+<p>We have to create a unowned capture block for <code class="language-plaintext highlighter-rouge">mainViewController</code>, otherwise it will create a retain cycle.</p>
 
 <p>We switch on all output types. In this case there’s only one. Personally, I like exhaustive enums and if a view controller added an output type, I would want to ensure it was handled in the coordinator or intentionally discarded.</p>
 
-<p>The caller of <code class="highlighter-rouge">MainCoordinator</code> (and receiver of <code class="highlighter-rouge">MainViewController</code>) could be the our app delegate or a completely separate module of the app.</p>
+<p>The caller of <code class="language-plaintext highlighter-rouge">MainCoordinator</code> (and receiver of <code class="language-plaintext highlighter-rouge">MainViewController</code>) could be the our app delegate or a completely separate module of the app.</p>
 
-<p>Because <code class="highlighter-rouge">MainViewController</code> is returned directly from the <code class="highlighter-rouge">vend</code> function, that also means the caller has the ability to attach any number of observers to the public <code class="highlighter-rouge">MainViewController.outputSignal</code>. This functionality may be useful, but you’ll see in the coming examples that navigating in this fashion is relatively rare in data driven apps.</p>
+<p>Because <code class="language-plaintext highlighter-rouge">MainViewController</code> is returned directly from the <code class="language-plaintext highlighter-rouge">vend</code> function, that also means the caller has the ability to attach any number of observers to the public <code class="language-plaintext highlighter-rouge">MainViewController.outputSignal</code>. This functionality may be useful, but you’ll see in the coming examples that navigating in this fashion is relatively rare in data driven apps.</p>
 
-<p>The lifetime of the observe block we created is tied directly to <code class="highlighter-rouge">MainViewController.outputSignal</code> which will be destroyed alongside <code class="highlighter-rouge">MainViewController</code>. <code class="highlighter-rouge">MainCoordinator</code> itself is stateless.</p>
+<p>The lifetime of the observe block we created is tied directly to <code class="language-plaintext highlighter-rouge">MainViewController.outputSignal</code> which will be destroyed alongside <code class="language-plaintext highlighter-rouge">MainViewController</code>. <code class="language-plaintext highlighter-rouge">MainCoordinator</code> itself is stateless.</p>
 
 <h4 id="navigation-stack">Navigation stack</h4>
 
-<p>I find that in data driven apps, view controllers are almost always in a navigation stack, and similarly are presenting other navigation stacks. Therefore, I created a helper <code class="highlighter-rouge">UINavigationController</code> subclass for use in coordinators. Let’s take a look at the template for what I call <code class="highlighter-rouge">IONavigationController</code>.</p>
+<p>I find that in data driven apps, view controllers are almost always in a navigation stack, and similarly are presenting other navigation stacks. Therefore, I created a helper <code class="language-plaintext highlighter-rouge">UINavigationController</code> subclass for use in coordinators. Let’s take a look at the template for what I call <code class="language-plaintext highlighter-rouge">IONavigationController</code>.</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="kd">final</span> <span class="kd">class</span> <span class="kt">IONavigationController</span><span class="o">&lt;</span><span class="kt">InputType</span><span class="p">,</span> <span class="kt">OutputType</span><span class="o">&gt;</span><span class="p">:</span> <span class="kt">UINavigationController</span> <span class="p">{</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">final</span> <span class="kd">class</span> <span class="kt">IONavigationController</span><span class="o">&lt;</span><span class="kt">InputType</span><span class="p">,</span> <span class="kt">OutputType</span><span class="o">&gt;</span><span class="p">:</span> <span class="kt">UINavigationController</span> <span class="p">{</span>
     <span class="k">let</span> <span class="nv">inputSignal</span><span class="p">:</span> <span class="kt">Signal</span><span class="o">&lt;</span><span class="kt">InputType</span><span class="p">,</span> <span class="kt">NoError</span><span class="o">&gt;</span>
     <span class="k">let</span> <span class="nv">inputObserver</span><span class="p">:</span> <span class="kt">Observer</span><span class="o">&lt;</span><span class="kt">InputType</span><span class="p">,</span> <span class="kt">NoError</span><span class="o">&gt;</span>
     <span class="k">let</span> <span class="nv">outputSignal</span><span class="p">:</span> <span class="kt">Signal</span><span class="o">&lt;</span><span class="kt">OutputType</span><span class="p">,</span> <span class="kt">NoError</span><span class="o">&gt;</span>
@@ -657,7 +661,7 @@
 </code></pre>
 </div>
 
-<p>The purpose of <code class="highlighter-rouge">IONavigationController</code> will be more clear in the coming examples. For now, notice that the input/output signal structure looks similar to our view controllers, except the input and output types are specified by the instantiating coordinator and the basic signal pairs are public.</p>
+<p>The purpose of <code class="language-plaintext highlighter-rouge">IONavigationController</code> will be more clear in the coming examples. For now, notice that the input/output signal structure looks similar to our view controllers, except the input and output types are specified by the instantiating coordinator and the basic signal pairs are public.</p>
 
 <h4 id="presenting-and-dismissing">Presenting and dismissing</h4>
 
@@ -665,9 +669,9 @@
 
 <div class="caption-wrapper"><img class="caption" src="/images/stateless_coordinators-05.jpg" width="" height="" alt="" title="" /><div class="caption-text"></div></div>
 
-<p>I’ll split the code up this time, showing the <code class="highlighter-rouge">SettingsCoordinator</code> components on their own first. (Note: I’ve omitted some code for clarity.)</p>
+<p>I’ll split the code up this time, showing the <code class="language-plaintext highlighter-rouge">SettingsCoordinator</code> components on their own first. (Note: I’ve omitted some code for clarity.)</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="kd">final</span> <span class="kd">class</span> <span class="kt">SettingsViewController</span><span class="p">:</span> <span class="kt">UIViewController</span> <span class="p">{</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">final</span> <span class="kd">class</span> <span class="kt">SettingsViewController</span><span class="p">:</span> <span class="kt">UIViewController</span> <span class="p">{</span>
     <span class="kd">enum</span> <span class="kt">Outputs</span> <span class="p">{</span>
         <span class="k">case</span> <span class="n">tapDone</span>
     <span class="p">}</span>
@@ -697,11 +701,11 @@
 </code></pre>
 </div>
 
-<p>The <code class="highlighter-rouge">IONavigationController</code> is essentially a wrapper for <code class="highlighter-rouge">SettingsViewController</code> in this case. This architecture makes it pretty straightforward to forward signals alongside a quick map.</p>
+<p>The <code class="language-plaintext highlighter-rouge">IONavigationController</code> is essentially a wrapper for <code class="language-plaintext highlighter-rouge">SettingsViewController</code> in this case. This architecture makes it pretty straightforward to forward signals alongside a quick map.</p>
 
-<p>As previously mentioned in the view controllers section, we’re placing <code class="highlighter-rouge">settingsViewController</code>’s mapped <code class="highlighter-rouge">outputSignal</code> on an <code class="highlighter-rouge">outputBusObserver</code> instead of connecting it directly to maintain safety. We shouldn’t assume <code class="highlighter-rouge">settingsViewController.outputSignal</code> will never complete.</p>
+<p>As previously mentioned in the view controllers section, we’re placing <code class="language-plaintext highlighter-rouge">settingsViewController</code>’s mapped <code class="language-plaintext highlighter-rouge">outputSignal</code> on an <code class="language-plaintext highlighter-rouge">outputBusObserver</code> instead of connecting it directly to maintain safety. We shouldn’t assume <code class="language-plaintext highlighter-rouge">settingsViewController.outputSignal</code> will never complete.</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="c1">// Unsafe</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="c1">// Unsafe</span>
 <span class="n">settingsViewController</span><span class="o">.</span><span class="n">outputSignal</span><span class="o">.</span><span class="nf">map</span><span class="p">(</span><span class="n">mapIO</span><span class="p">)</span><span class="o">.</span><span class="nf">observe</span><span class="p">(</span><span class="n">navigationController</span><span class="o">.</span><span class="n">outputObserver</span><span class="p">)</span>
 
 <span class="c1">// Safe</span>
@@ -709,17 +713,17 @@
 </code></pre>
 </div>
 
-<p>Now callers of <code class="highlighter-rouge">SettingsCoordinator</code> can interact with the returned <code class="highlighter-rouge">IONavigationController</code> like they do with any other view controller by observing its outputs.</p>
+<p>Now callers of <code class="language-plaintext highlighter-rouge">SettingsCoordinator</code> can interact with the returned <code class="language-plaintext highlighter-rouge">IONavigationController</code> like they do with any other view controller by observing its outputs.</p>
 
-<p>I almost always follow the rule that view controllers should not dismiss themselves, even though UIKit is pretty lax with allowing this behavior (and allowing any view controller to walk the parent/child chain up and down). The reason being that the view controller shouldn’t be aware of its presentation context. That’s why this coordinator returns <code class="highlighter-rouge">done</code> instead of just dismissing itself.</p>
+<p>I almost always follow the rule that view controllers should not dismiss themselves, even though UIKit is pretty lax with allowing this behavior (and allowing any view controller to walk the parent/child chain up and down). The reason being that the view controller shouldn’t be aware of its presentation context. That’s why this coordinator returns <code class="language-plaintext highlighter-rouge">done</code> instead of just dismissing itself.</p>
 
 <blockquote>
-  <p>At the moment, I haven’t figured out a way to obscure the concrete <code class="highlighter-rouge">IONavigationController</code> behind a protocol when it’s returned from a coordinator’s <code class="highlighter-rouge">vend</code> function. Therefore all its public signals and observers are available down the stack, even though they shouldn’t be.</p>
+  <p>At the moment, I haven’t figured out a way to obscure the concrete <code class="language-plaintext highlighter-rouge">IONavigationController</code> behind a protocol when it’s returned from a coordinator’s <code class="language-plaintext highlighter-rouge">vend</code> function. Therefore all its public signals and observers are available down the stack, even though they shouldn’t be.</p>
 </blockquote>
 
-<p>Now let’s look at the <code class="highlighter-rouge">MainCoordinator</code> which will be responsible for presenting and dismissing the result of <code class="highlighter-rouge">SettingsCoordinator</code>.</p>
+<p>Now let’s look at the <code class="language-plaintext highlighter-rouge">MainCoordinator</code> which will be responsible for presenting and dismissing the result of <code class="language-plaintext highlighter-rouge">SettingsCoordinator</code>.</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="kd">final</span> <span class="kd">class</span> <span class="kt">MainViewController</span><span class="p">:</span> <span class="kt">UIViewController</span> <span class="p">{</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">final</span> <span class="kd">class</span> <span class="kt">MainViewController</span><span class="p">:</span> <span class="kt">UIViewController</span> <span class="p">{</span>
     <span class="kd">enum</span> <span class="kt">Outputs</span> <span class="p">{</span>
         <span class="k">case</span> <span class="n">tapSettings</span>
     <span class="p">}</span>
@@ -769,15 +773,15 @@
 </code></pre>
 </div>
 
-<p>We’re going to use a new technique since this coordinator is a bit more complicated. We’re going to map all side-effecting actions to specific coordinator <code class="highlighter-rouge">Inputs</code> and map and pipe all output signals from view controllers into <code class="highlighter-rouge">inputObserver</code>/<code class="highlighter-rouge">inputSignal</code>. We’ll declare all the action/data pairs that this coordinator can process as <code class="highlighter-rouge">Inputs</code>.</p>
+<p>We’re going to use a new technique since this coordinator is a bit more complicated. We’re going to map all side-effecting actions to specific coordinator <code class="language-plaintext highlighter-rouge">Inputs</code> and map and pipe all output signals from view controllers into <code class="language-plaintext highlighter-rouge">inputObserver</code>/<code class="language-plaintext highlighter-rouge">inputSignal</code>. We’ll declare all the action/data pairs that this coordinator can process as <code class="language-plaintext highlighter-rouge">Inputs</code>.</p>
 
 <blockquote>
-  <p>I’m not 100% sold on whether marking internal actions as <code class="highlighter-rouge">Inputs</code> is a sustainable idea. In theory they shouldn’t necessarily be exposed as <code class="highlighter-rouge">Inputs</code>. There should be another internal signal type that handles the primary data processing flows for the coordinator.</p>
+  <p>I’m not 100% sold on whether marking internal actions as <code class="language-plaintext highlighter-rouge">Inputs</code> is a sustainable idea. In theory they shouldn’t necessarily be exposed as <code class="language-plaintext highlighter-rouge">Inputs</code>. There should be another internal signal type that handles the primary data processing flows for the coordinator.</p>
 </blockquote>
 
-<p>As the <code class="highlighter-rouge">rootViewController</code>, <code class="highlighter-rouge">mainViewController</code> doesn’t need to be initialized within the <code class="highlighter-rouge">inputSignal</code> processing chain. <code class="highlighter-rouge">mainViewController.outputSignal</code> will be mapped and connected to the <code class="highlighter-rouge">IONavigationController</code>’s <code class="highlighter-rouge">inputBusObserver</code>. We’ve seen this pattern a few times already.</p>
+<p>As the <code class="language-plaintext highlighter-rouge">rootViewController</code>, <code class="language-plaintext highlighter-rouge">mainViewController</code> doesn’t need to be initialized within the <code class="language-plaintext highlighter-rouge">inputSignal</code> processing chain. <code class="language-plaintext highlighter-rouge">mainViewController.outputSignal</code> will be mapped and connected to the <code class="language-plaintext highlighter-rouge">IONavigationController</code>’s <code class="language-plaintext highlighter-rouge">inputBusObserver</code>. We’ve seen this pattern a few times already.</p>
 
-<p>Moving into the observe block, we’ll find two cases we need to cover. In general, the code within each case should only be about 3 lines long max like shown in <code class="highlighter-rouge">presentSettings</code>.</p>
+<p>Moving into the observe block, we’ll find two cases we need to cover. In general, the code within each case should only be about 3 lines long max like shown in <code class="language-plaintext highlighter-rouge">presentSettings</code>.</p>
 
 <ol>
   <li>Vend a new view controller.</li>
@@ -788,16 +792,16 @@
 <p>For side effects with no output:</p>
 
 <ol>
-  <li>Create a <code class="highlighter-rouge">SignalProducer</code>.</li>
-  <li>Start the <code class="highlighter-rouge">SignalProducer</code> and discard the output.</li>
+  <li>Create a <code class="language-plaintext highlighter-rouge">SignalProducer</code>.</li>
+  <li>Start the <code class="language-plaintext highlighter-rouge">SignalProducer</code> and discard the output.</li>
 </ol>
 
 <p>For side effects with output:</p>
 
 <ol>
-  <li>Create a <code class="highlighter-rouge">SignalProducer</code>.</li>
-  <li>Start the <code class="highlighter-rouge">SignalProducer</code>.</li>
-  <li>Wire the <code class="highlighter-rouge">SignalProducer</code>’s resulting <code class="highlighter-rouge">Signal</code> to the navigation controller’s input bus.</li>
+  <li>Create a <code class="language-plaintext highlighter-rouge">SignalProducer</code>.</li>
+  <li>Start the <code class="language-plaintext highlighter-rouge">SignalProducer</code>.</li>
+  <li>Wire the <code class="language-plaintext highlighter-rouge">SignalProducer</code>’s resulting <code class="language-plaintext highlighter-rouge">Signal</code> to the navigation controller’s input bus.</li>
 </ol>
 
 <h4 id="pushing-and-popping">Pushing and popping</h4>
@@ -810,7 +814,7 @@
 
 <p>(Note: some structural code has been omitted for clarity. Data fetching code has also been omitted.)</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">Tweet</span> <span class="p">{</span> <span class="p">}</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">Tweet</span> <span class="p">{</span> <span class="p">}</span>
 <span class="kd">struct</span> <span class="kt">User</span> <span class="p">{</span> <span class="p">}</span>
 
 <span class="kd">final</span> <span class="kd">class</span> <span class="kt">TweetsViewController</span><span class="p">:</span> <span class="kt">UIViewController</span> <span class="p">{</span>
@@ -902,7 +906,7 @@
 
 <div class="caption-wrapper"><img class="caption" src="/images/stateless_coordinators-07.jpg" width="" height="" alt="" title="" /><div class="caption-text"></div></div>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">MainTabBarCoordinator</span> <span class="p">{</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">MainTabBarCoordinator</span> <span class="p">{</span>
     <span class="kd">enum</span> <span class="kt">Inputs</span> <span class="p">{</span> <span class="p">}</span>
     <span class="kd">enum</span> <span class="kt">Outputs</span> <span class="p">{</span> <span class="p">}</span>
     
@@ -925,7 +929,7 @@
 
 <p>Each of the navigation controllers vended by the coordinators will handle its own stack transparently.</p>
 
-<p>In the more complicated (and usual) case that our child view controllers have outputs, we should use a <code class="highlighter-rouge">UITabBarController</code> subclass identical to the <code class="highlighter-rouge">UINavigationController</code> subclass <code class="highlighter-rouge">IONavigationController</code> shown previously in this post. The layout of the coordinator will look similar to the <code class="highlighter-rouge">NavigationCoordinator</code>s also presented previously. The primary differences will be that all the view controllers will be created up front (and not in response to another view controller’s output), and all view controller output signals can be wired up at the same time.</p>
+<p>In the more complicated (and usual) case that our child view controllers have outputs, we should use a <code class="language-plaintext highlighter-rouge">UITabBarController</code> subclass identical to the <code class="language-plaintext highlighter-rouge">UINavigationController</code> subclass <code class="language-plaintext highlighter-rouge">IONavigationController</code> shown previously in this post. The layout of the coordinator will look similar to the <code class="language-plaintext highlighter-rouge">NavigationCoordinator</code>s also presented previously. The primary differences will be that all the view controllers will be created up front (and not in response to another view controller’s output), and all view controller output signals can be wired up at the same time.</p>
 
 <h3 id="code-example-wrap-up">Code example wrap up</h3>
 
@@ -936,7 +940,7 @@
 <p>The standard pattern for view controllers is:</p>
 
 <ul>
-  <li>Declare an enum of <code class="highlighter-rouge">Inputs</code> and <code class="highlighter-rouge">Outputs</code>.</li>
+  <li>Declare an enum of <code class="language-plaintext highlighter-rouge">Inputs</code> and <code class="language-plaintext highlighter-rouge">Outputs</code>.</li>
   <li>Declare a public input observer and a public output signal to accept and transmit dynamic events during the view controller’s lifecycle.</li>
   <li>Accept static dependencies in the initializer.</li>
 </ul>
@@ -947,9 +951,9 @@
 
 <ul>
   <li>Identify as a struct with no state or static methods.</li>
-  <li>Declare an enum of <code class="highlighter-rouge">Inputs</code> and <code class="highlighter-rouge">Outputs</code> if necessary.</li>
-  <li>Declare a static function called <code class="highlighter-rouge">vend</code> that returns a <code class="highlighter-rouge">UIViewController</code> subclass.</li>
-  <li>Accept static dependencies necessary for creating child view controllers in the initializer for <code class="highlighter-rouge">vend</code>.</li>
+  <li>Declare an enum of <code class="language-plaintext highlighter-rouge">Inputs</code> and <code class="language-plaintext highlighter-rouge">Outputs</code> if necessary.</li>
+  <li>Declare a static function called <code class="language-plaintext highlighter-rouge">vend</code> that returns a <code class="language-plaintext highlighter-rouge">UIViewController</code> subclass.</li>
+  <li>Accept static dependencies necessary for creating child view controllers in the initializer for <code class="language-plaintext highlighter-rouge">vend</code>.</li>
   <li>Declare pure transformation functions between child view controller outputs and coordinator inputs.</li>
   <li>Dynamically attach child view controller outputs to coordinator inputs.</li>
   <li>Perform navigation related side effects or other side effects.</li>
@@ -989,7 +993,7 @@
 
 <p>I’ve intentionally ignored the architecture of data flows beyond saying “data sources can be provided via dependency injection”. In the practice of using this architecture so far I’ve used a few different architectures, the most common being a more looser form of MVVM. I’m still creating a view model for each view controller, but that view model is more or less a helper class of the view controller and the view controller is responsible for communicating with the rest of the app.</p>
 
-<p>I’d like to explore using the <code class="highlighter-rouge">Inputs</code> signal as the only conduit for dynamic communication into a view controller. Does that increase or decrease complexity? Do view controller lifetime events clutter up the communication channels? Does stricter separation push too much responsibility into the coordinator?</p>
+<p>I’d like to explore using the <code class="language-plaintext highlighter-rouge">Inputs</code> signal as the only conduit for dynamic communication into a view controller. Does that increase or decrease complexity? Do view controller lifetime events clutter up the communication channels? Does stricter separation push too much responsibility into the coordinator?</p>
 
 <p>What about having both the view controller and the view model have input and output signals and having the coordinator tie them together?</p>
 
@@ -1007,23 +1011,23 @@
 
 <h3 id="dont-use-ionavigationcontroller-uinavigationcontroller-subclass">Don’t use IONavigationController (UINavigationController subclass)</h3>
 
-<p>It’s convenient to use configure an <code class="highlighter-rouge">IONavigationController</code> from coordinators, but perhaps it would make more sense to create special purpose <code class="highlighter-rouge">UINavigationController</code> subclasses for each coordinator (that also might solve the stateless navigation problem mentioned above).</p>
+<p>It’s convenient to use configure an <code class="language-plaintext highlighter-rouge">IONavigationController</code> from coordinators, but perhaps it would make more sense to create special purpose <code class="language-plaintext highlighter-rouge">UINavigationController</code> subclasses for each coordinator (that also might solve the stateless navigation problem mentioned above).</p>
 
 <h3 id="is-it-really-worth-it-not-to-use-delegation">Is it really worth it not to use delegation?</h3>
 
-<p>Is using an <code class="highlighter-rouge">Outputs</code> enum and a signal really any better than using a protocol and assigning a delegate? I’d like to find more direct comparisons between the two approaches.</p>
+<p>Is using an <code class="language-plaintext highlighter-rouge">Outputs</code> enum and a signal really any better than using a protocol and assigning a delegate? I’d like to find more direct comparisons between the two approaches.</p>
 
 <h3 id="all-around-naming">All around naming</h3>
 
-<p>Should view controllers interpret meaning in their events before sending them? Should we keep using UI focused prefixes like “tap” in the <code class="highlighter-rouge">Outputs</code> cases? Should the enums be called <code class="highlighter-rouge">Input</code>/<code class="highlighter-rouge">Output</code> or <code class="highlighter-rouge">Inputs</code>/<code class="highlighter-rouge">Outputs</code>?</p>
+<p>Should view controllers interpret meaning in their events before sending them? Should we keep using UI focused prefixes like “tap” in the <code class="language-plaintext highlighter-rouge">Outputs</code> cases? Should the enums be called <code class="language-plaintext highlighter-rouge">Input</code>/<code class="language-plaintext highlighter-rouge">Output</code> or <code class="language-plaintext highlighter-rouge">Inputs</code>/<code class="language-plaintext highlighter-rouge">Outputs</code>?</p>
 
 <p>Should these coordinators be called something else?</p>
 
-<p>How about <code class="highlighter-rouge">IONavigationController</code>’s <code class="highlighter-rouge">Inputs</code>? Should there be another private enum and signal?</p>
+<p>How about <code class="language-plaintext highlighter-rouge">IONavigationController</code>’s <code class="language-plaintext highlighter-rouge">Inputs</code>? Should there be another private enum and signal?</p>
 
 <h3 id="blocks-instead-of-signals">Blocks instead of signals?</h3>
 
-<p>Would it be possible to replace <code class="highlighter-rouge">inputSignal</code>/<code class="highlighter-rouge">outputSignal</code> with an optional <code class="highlighter-rouge">inputBlock?</code>/<code class="highlighter-rouge">outputBlock?</code>? If we’re not using the multi-observer functionality, it could decrease complexity. It would definitely change the all-around syntax of the architecture.</p>
+<p>Would it be possible to replace <code class="language-plaintext highlighter-rouge">inputSignal</code>/<code class="language-plaintext highlighter-rouge">outputSignal</code> with an optional <code class="language-plaintext highlighter-rouge">inputBlock?</code>/<code class="language-plaintext highlighter-rouge">outputBlock?</code>? If we’re not using the multi-observer functionality, it could decrease complexity. It would definitely change the all-around syntax of the architecture.</p>
 
 <h2 id="conclusion">Conclusion</h2>
 

@@ -53,6 +53,10 @@
           
         
           
+          <a class="page-link" href="/apps/countbiki/privacy-policy/">Count Biki Privacy Policy</a>
+          
+        
+          
         
           
         
@@ -152,9 +156,9 @@
 
 <p>Using 12 possible keys in our transformer will allow a variety of different sounding pieces to be created.</p>
 
-<p>The determination of what input data we use to determine which of the 12 keys is chosen is part of the creativity and unique character of the transformer. We have several deconstructors available to us. For this example, let’s use the <code class="highlighter-rouge">averageGray</code> of the input image.</p>
+<p>The determination of what input data we use to determine which of the 12 keys is chosen is part of the creativity and unique character of the transformer. We have several deconstructors available to us. For this example, let’s use the <code class="language-plaintext highlighter-rouge">averageGray</code> of the input image.</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="c1">// Expresses a percentage 0...1 inclusive</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="c1">// Expresses a percentage 0...1 inclusive</span>
 <span class="kd">typealias</span> <span class="kt">Normalized</span> <span class="o">=</span> <span class="kt">Double</span>
 
 <span class="kd">struct</span> <span class="kt">Gray</span> <span class="p">{</span>
@@ -167,29 +171,29 @@
 </code></pre>
 </div>
 
-<p>Our entire input image will be converted to grayscale, then all its values will be averaged. The final result is that we’ll have a single <code class="highlighter-rouge">Double</code> value constrained 0.0 to 1.0 inclusive that represents the data in this photo. A solid black image will produce 0.0, a solid white image will produce 1.0, and everything else will produce some number in between.</p>
+<p>Our entire input image will be converted to grayscale, then all its values will be averaged. The final result is that we’ll have a single <code class="language-plaintext highlighter-rouge">Double</code> value constrained 0.0 to 1.0 inclusive that represents the data in this photo. A solid black image will produce 0.0, a solid white image will produce 1.0, and everything else will produce some number in between.</p>
 
-<p>The most straightforward way to proceed from here is to create 12 equal-sized buckets along the 0.0 to 1.0 number line that correspond to each potential musical key. Whichever bucket the <code class="highlighter-rouge">averageGray</code> value falls into determines our key.</p>
+<p>The most straightforward way to proceed from here is to create 12 equal-sized buckets along the 0.0 to 1.0 number line that correspond to each potential musical key. Whichever bucket the <code class="language-plaintext highlighter-rouge">averageGray</code> value falls into determines our key.</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code>0.0..&lt;0.083 -&gt; C
+<div class="language-plaintext highlighter-rouge"><pre class="highlight"><code>0.0..&lt;0.083 -&gt; C
 0.083..&lt;0.166 -&gt; C#
 ...
 0.917...1.0 -&gt; B
 </code></pre>
 </div>
 
-<p>For example, if the <code class="highlighter-rouge">averageGray</code> of our input image was <code class="highlighter-rouge">0.121</code>, it would fall into the second bucket above, and our resulting piece would be created in the key of C#.</p>
+<p>For example, if the <code class="language-plaintext highlighter-rouge">averageGray</code> of our input image was <code class="language-plaintext highlighter-rouge">0.121</code>, it would fall into the second bucket above, and our resulting piece would be created in the key of C#.</p>
 
 <p>We can even create a function that will automate this decision making process for us.</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="c1">/// Returns exactly one entry of the array based on the input.</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="c1">/// Returns exactly one entry of the array based on the input.</span>
 <span class="kd">func</span> <span class="n">exactlyOneOf</span><span class="o">&lt;</span><span class="kt">T</span><span class="o">&gt;</span><span class="p">(</span><span class="n">_</span> <span class="nv">input</span><span class="p">:</span> <span class="kt">Normalized</span><span class="p">,</span> <span class="nv">items</span><span class="p">:</span> <span class="p">[</span><span class="kt">T</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kt">T</span> <span class="p">{</span> <span class="p">}</span>
 </code></pre>
 </div>
 
 <p>And an example of how we’d use it:</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="k">let</span> <span class="nv">imageData</span><span class="p">:</span> <span class="kt">ImageData</span> <span class="o">=</span> <span class="o">...</span> <span class="c1">// converted from the input image</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="k">let</span> <span class="nv">imageData</span><span class="p">:</span> <span class="kt">ImageData</span> <span class="o">=</span> <span class="o">...</span> <span class="c1">// converted from the input image</span>
 <span class="k">let</span> <span class="nv">averageGrayValue</span><span class="p">:</span> <span class="kt">Normalized</span> <span class="o">=</span> <span class="n">imageData</span><span class="o">.</span><span class="nf">averageGray</span><span class="p">()</span><span class="o">.</span><span class="n">gray</span>
 <span class="k">let</span> <span class="nv">possibleKeys</span> <span class="o">=</span> <span class="p">[</span><span class="s">"C"</span><span class="p">,</span> <span class="s">"C#"</span><span class="p">,</span> <span class="s">"D"</span><span class="p">,</span> <span class="s">"D#"</span><span class="p">,</span> <span class="s">"E"</span><span class="p">,</span> <span class="s">"F"</span><span class="p">,</span> <span class="s">"F#"</span><span class="p">,</span> <span class="s">"G"</span><span class="p">,</span> <span class="s">"G#"</span><span class="p">,</span> <span class="s">"A"</span><span class="p">,</span> <span class="s">"A#"</span><span class="p">,</span> <span class="s">"B"</span><span class="p">]</span>
 <span class="k">let</span> <span class="nv">outputKey</span> <span class="o">=</span> <span class="nf">exactlyOneOf</span><span class="p">(</span><span class="n">averageGrayValue</span><span class="p">,</span> <span class="nv">items</span><span class="p">:</span> <span class="n">possibleKeys</span><span class="p">)</span>
@@ -198,11 +202,11 @@
 
 <h2 id="probability">Probability</h2>
 
-<p>Astute readers might notice a potential oversight in the previous algorithm related to the probability distribution of the <code class="highlighter-rouge">averageGray</code> function. There are a Pandora’s Box of questions we need dive into in order for our transformer to produce the “expected” results.</p>
+<p>Astute readers might notice a potential oversight in the previous algorithm related to the probability distribution of the <code class="language-plaintext highlighter-rouge">averageGray</code> function. There are a Pandora’s Box of questions we need dive into in order for our transformer to produce the “expected” results.</p>
 
 <h3 id="should-any-key-be-more-popular-than-the-others">Should any key be more popular than the others?</h3>
 
-<p>Or in mathematical terms, what is the probability distribution of keys based on the deconstructor we’ve chosen (in our example, <code class="highlighter-rouge">averageGray</code>)?</p>
+<p>Or in mathematical terms, what is the probability distribution of keys based on the deconstructor we’ve chosen (in our example, <code class="language-plaintext highlighter-rouge">averageGray</code>)?</p>
 
 <p>The answer is almost certainly that the probability distribution of all input images will not be equal across the normalized values between 0.0 and 1.0, but what will it be? And do we care?</p>
 
@@ -212,7 +216,7 @@
 
 <h3 id="what-is-our-input-space">What is our input space?</h3>
 
-<p>Technically, our input space is defined as any <code class="highlighter-rouge">CGImage</code>. It could be a solid color, a selfie, a Renaissance painting, a landscape photo, television static, etc.</p>
+<p>Technically, our input space is defined as any <code class="language-plaintext highlighter-rouge">CGImage</code>. It could be a solid color, a selfie, a Renaissance painting, a landscape photo, television static, etc.</p>
 
 <p>However, we can narrow down the expected input space considerably by targeting iOS as our eventual distribution platform, and saying a user’s camera roll is the only photo source.</p>
 
@@ -252,13 +256,13 @@
 
 <p>Strategy A ensures that all pieces generated by this transformer will have musically valid drums because it can only choose between musically valid drum beats we’ve written in advance. We gain confidence in the musicality of the output by sacrificing entropy. The likelihood that two images produce the same drum beat is much greater than Strategy B.</p>
 
-<p>An example of A is below. We’ve created 4 different options for drum patterns, with hits on the timeline indicated by <code class="highlighter-rouge">x</code> and rest beats indicated by <code class="highlighter-rouge">-</code>.</p>
+<p>An example of A is below. We’ve created 4 different options for drum patterns, with hits on the timeline indicated by <code class="language-plaintext highlighter-rouge">x</code> and rest beats indicated by <code class="language-plaintext highlighter-rouge">-</code>.</p>
 
 <ol>
-  <li><code class="highlighter-rouge">x-x-x-x-</code></li>
-  <li><code class="highlighter-rouge">x---x---</code></li>
-  <li><code class="highlighter-rouge">x-x-x---</code></li>
-  <li><code class="highlighter-rouge">x---x-x-</code></li>
+  <li><code class="language-plaintext highlighter-rouge">x-x-x-x-</code></li>
+  <li><code class="language-plaintext highlighter-rouge">x---x---</code></li>
+  <li><code class="language-plaintext highlighter-rouge">x-x-x---</code></li>
+  <li><code class="language-plaintext highlighter-rouge">x---x-x-</code></li>
 </ol>
 
 <h4 id="strategy-b-uniqueness">Strategy B: Uniqueness</h4>
@@ -275,9 +279,9 @@
 <p>It’s possible that Strategy B could produce the following patterns as well as hundreds more:</p>
 
 <ul>
-  <li><code class="highlighter-rouge">x-------</code></li>
-  <li><code class="highlighter-rouge">xxxxxxxx</code></li>
-  <li><code class="highlighter-rouge">x--x-x-x</code></li>
+  <li><code class="language-plaintext highlighter-rouge">x-------</code></li>
+  <li><code class="language-plaintext highlighter-rouge">xxxxxxxx</code></li>
+  <li><code class="language-plaintext highlighter-rouge">x--x-x-x</code></li>
 </ul>
 
 <p>In deciding between prebaked options like in Strategy A, and more complicated algorithms like Strategy B, it is up to the transformer’s creator to weigh the tradeoffs.</p>

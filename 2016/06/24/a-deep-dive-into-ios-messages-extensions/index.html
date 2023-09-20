@@ -53,6 +53,10 @@
           
         
           
+          <a class="page-link" href="/apps/countbiki/privacy-policy/">Count Biki Privacy Policy</a>
+          
+        
+          
         
           
         
@@ -146,7 +150,7 @@
 
 <h3 id="backwards-compatibility">Backwards Compatibility</h3>
 
-<p>Messages Extensions allow the creation and modification of a standardized encapsulated model/view pair <code class="highlighter-rouge">MSMessage</code>. Two of the main design points Apple needed to address in their implementation of Messages Extensions were:</p>
+<p>Messages Extensions allow the creation and modification of a standardized encapsulated model/view pair <code class="language-plaintext highlighter-rouge">MSMessage</code>. Two of the main design points Apple needed to address in their implementation of Messages Extensions were:</p>
 
 <ol>
   <li>User A creates a custom message using an extension. What happens if User B receiving a specially created message does not have the extension installed that was used to create the message?</li>
@@ -165,16 +169,16 @@
 <p>At their core, Messages Extensions:</p>
 
 <ul>
-  <li>provide the specification of a model and template view model (contained within an <code class="highlighter-rouge">MSMessage</code> instance).</li>
-  <li>provide a rich interface to view, create, and manipulate these models (an <code class="highlighter-rouge">MSMessagesAppViewController</code> subclass).</li>
+  <li>provide the specification of a model and template view model (contained within an <code class="language-plaintext highlighter-rouge">MSMessage</code> instance).</li>
+  <li>provide a rich interface to view, create, and manipulate these models (an <code class="language-plaintext highlighter-rouge">MSMessagesAppViewController</code> subclass).</li>
 </ul>
 
 <p>Defining these bits further:</p>
 
 <ul>
-  <li>The <strong>model</strong> is a URL (<code class="highlighter-rouge">MSMessage.url</code>). It is arguably designed to be very interoperable in the case that all parties do not have an extension installed.</li>
-  <li>The <strong>template view model</strong> is a special framework-provided template object (<code class="highlighter-rouge">MSMessageTemplateLayout</code>). It is minimally configurable and designed to be a summary view of your content.</li>
-  <li>The <strong>rich interface</strong> is a fully customizable <code class="highlighter-rouge">UIView</code> (<code class="highlighter-rouge">MSMessagesAppViewController</code>). This custom view can display a more domain appropriate representation of the model and allow creation and modification of the model.</li>
+  <li>The <strong>model</strong> is a URL (<code class="language-plaintext highlighter-rouge">MSMessage.url</code>). It is arguably designed to be very interoperable in the case that all parties do not have an extension installed.</li>
+  <li>The <strong>template view model</strong> is a special framework-provided template object (<code class="language-plaintext highlighter-rouge">MSMessageTemplateLayout</code>). It is minimally configurable and designed to be a summary view of your content.</li>
+  <li>The <strong>rich interface</strong> is a fully customizable <code class="language-plaintext highlighter-rouge">UIView</code> (<code class="language-plaintext highlighter-rouge">MSMessagesAppViewController</code>). This custom view can display a more domain appropriate representation of the model and allow creation and modification of the model.</li>
 </ul>
 
 <h3 id="user-interface-points">User Interface Points</h3>
@@ -199,9 +203,9 @@
 
 <h4 id="standalone-extensions">Standalone Extensions</h4>
 
-<p>If you’re creating a standalone extension that exists only within the walls of Messages.app, you will have to encode all model data shared between conversation participants in <code class="highlighter-rouge">MSMessage</code>’s <code class="highlighter-rouge">url</code> field. Your extension itself will essentially be stateless or hold state that is only relevant to the current user (e.g. IceCreamBuilder saves the user’s previously created stickers in <code class="highlighter-rouge">NSUserDefaults</code>).</p>
+<p>If you’re creating a standalone extension that exists only within the walls of Messages.app, you will have to encode all model data shared between conversation participants in <code class="language-plaintext highlighter-rouge">MSMessage</code>’s <code class="language-plaintext highlighter-rouge">url</code> field. Your extension itself will essentially be stateless or hold state that is only relevant to the current user (e.g. IceCreamBuilder saves the user’s previously created stickers in <code class="language-plaintext highlighter-rouge">NSUserDefaults</code>).</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code>?type=translation&amp;question=What%20time%20is%20it?&amp;answer=今何時ですか。
+<div class="language-plaintext highlighter-rouge"><pre class="highlight"><code>?type=translation&amp;question=What%20time%20is%20it?&amp;answer=今何時ですか。
 </code></pre>
 </div>
 
@@ -209,15 +213,15 @@
 
 <h3 id="webservice-extensions">Webservice Extensions</h3>
 
-<p>If you’re creating an extension to an existing webservice, you have the ability to use your servers to share state between participants. Instead of encoding all state into the <code class="highlighter-rouge">MSMessage</code>’s <code class="highlighter-rouge">url</code> field, you could provide a link to a resource and fetch it from the server as necessary via <code class="highlighter-rouge">NSURLSession</code>.</p>
+<p>If you’re creating an extension to an existing webservice, you have the ability to use your servers to share state between participants. Instead of encoding all state into the <code class="language-plaintext highlighter-rouge">MSMessage</code>’s <code class="language-plaintext highlighter-rouge">url</code> field, you could provide a link to a resource and fetch it from the server as necessary via <code class="language-plaintext highlighter-rouge">NSURLSession</code>.</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code>https://example.com/items/742932
+<div class="language-plaintext highlighter-rouge"><pre class="highlight"><code>https://example.com/items/742932
 </code></pre>
 </div>
 
 <p>Apple recommends this approach in the WWDC session (albeit somewhat casually, simply referencing “the cloud”), specifically mentioning the avoidance of race conditions.</p>
 
-<p>Keep security in mind though. If your app is creating harmless, ephemeral resources, it may be acceptable to use the participant UUIDs provided by <code class="highlighter-rouge">MSConversation</code> as security tokens. These would not work for long term resources, as reinstalling your extension will regenerate the local participant UUID. You could also use <code class="highlighter-rouge">NSUserDefaults</code> to share your service’s auth token for the user logged into your primary app. This technique is beyond the scope of this post, but see the <a href="https://developer.apple.com/library/ios/documentation/General/Conceptual/ExtensibilityPG/ExtensionScenarios.html#//apple_ref/doc/uid/TP40014214-CH21-SW1">App Extension Programming Guide</a> for more information.</p>
+<p>Keep security in mind though. If your app is creating harmless, ephemeral resources, it may be acceptable to use the participant UUIDs provided by <code class="language-plaintext highlighter-rouge">MSConversation</code> as security tokens. These would not work for long term resources, as reinstalling your extension will regenerate the local participant UUID. You could also use <code class="language-plaintext highlighter-rouge">NSUserDefaults</code> to share your service’s auth token for the user logged into your primary app. This technique is beyond the scope of this post, but see the <a href="https://developer.apple.com/library/ios/documentation/General/Conceptual/ExtensibilityPG/ExtensionScenarios.html#//apple_ref/doc/uid/TP40014214-CH21-SW1">App Extension Programming Guide</a> for more information.</p>
 
 <h2 id="example-extension-walkthrough">Example Extension Walkthrough</h2>
 
@@ -240,8 +244,8 @@
 <p>Here’s an example correction request flow in our extension (<a href="/images/messages-correction.mov">View the screen capture 5.3MB</a>):</p>
 
 <blockquote>
-  <p>Chris: [correction request] 週末、東京<strong>で</strong>行きましたか。<br />
-Miu: [correction] 週末、東京<strong>に</strong>行きましたか。<br />
+  <p>Chris: [correction request] 週末、東京<strong>で</strong>行きましたか。
+Miu: [correction] 週末、東京<strong>に</strong>行きましたか。
 Miu: [continuing conversation] はい、東京に行きました！</p>
 </blockquote>
 
@@ -250,7 +254,7 @@ Miu: [continuing conversation] はい、東京に行きました！</p>
 <p>Here’s an example translation request flow in our extension:</p>
 
 <blockquote>
-  <p>Chris: [translation request] Did you go to Tokyo last weekend?<br />
+  <p>Chris: [translation request] Did you go to Tokyo last weekend?
 Miu: [translation] 週末、東京に行きましたか。</p>
 </blockquote>
 
@@ -267,17 +271,17 @@ Miu: [translation] 週末、東京に行きましたか。</p>
 <p>Defining some of our terms:</p>
 
 <ul>
-  <li><strong>URL</strong>: Data is stored in the <code class="highlighter-rouge">url</code> parameter of an <code class="highlighter-rouge">MSMessage</code>. Everything we need to restore the state of our message must be contained in the <code class="highlighter-rouge">url</code> string.</li>
-  <li><strong>Model</strong>: This is our domain model, an enum we’ll call <code class="highlighter-rouge">Pair</code> (referring to a question/answer pair) that contains <code class="highlighter-rouge">Translation</code> or <code class="highlighter-rouge">Correction</code> structs. All value types.</li>
+  <li><strong>URL</strong>: Data is stored in the <code class="language-plaintext highlighter-rouge">url</code> parameter of an <code class="language-plaintext highlighter-rouge">MSMessage</code>. Everything we need to restore the state of our message must be contained in the <code class="language-plaintext highlighter-rouge">url</code> string.</li>
+  <li><strong>Model</strong>: This is our domain model, an enum we’ll call <code class="language-plaintext highlighter-rouge">Pair</code> (referring to a question/answer pair) that contains <code class="language-plaintext highlighter-rouge">Translation</code> or <code class="language-plaintext highlighter-rouge">Correction</code> structs. All value types.</li>
   <li><strong>ViewState</strong>: Another enum that describes each possible state our view can be in. It can be converted directly from any Pair.</li>
-  <li><strong>View</strong>: Our extension only has one <code class="highlighter-rouge">UIView</code> which is configured directly from a <code class="highlighter-rouge">ViewState</code> value.</li>
+  <li><strong>View</strong>: Our extension only has one <code class="language-plaintext highlighter-rouge">UIView</code> which is configured directly from a <code class="language-plaintext highlighter-rouge">ViewState</code> value.</li>
   <li><strong>ViewAction</strong>: The View communicates well specified actions to its delegate.</li>
   <li><strong>MSMessageTemplateLayout</strong>: This is basically another ViewState/ViewModel object provided by Messages.Framework and configured by us.</li>
 </ul>
 
 <p>Below is the entire transformation flow:</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code>MSConversation -&gt; 
+<div class="language-plaintext highlighter-rouge"><pre class="highlight"><code>MSConversation -&gt; 
 MSMessage -&gt; 
 URL -&gt; 
 Model -&gt; 
@@ -294,14 +298,14 @@ MSConversation
 <p>Broken down:</p>
 
 <ul>
-  <li><code class="highlighter-rouge">MSConversation -&gt; MSMessage -&gt; URL</code>: We’ll access the <code class="highlighter-rouge">url</code> property on the <code class="highlighter-rouge">MSMessage</code> instance on the <code class="highlighter-rouge">MSConversation</code> instance provided by Messages. <code class="highlighter-rouge">conversation.selectedMessage.url</code> if you will.</li>
-  <li><code class="highlighter-rouge">URL -&gt; Model</code>: Our Model’s properties will have been previously encoded (by us) into <code class="highlighter-rouge">URLQueryItem</code>s. We’ll need a function to decode them.</li>
-  <li><code class="highlighter-rouge">Model -&gt; ViewState</code>: Any Model value must be able to be shown to the user.</li>
-  <li><code class="highlighter-rouge">ViewState -&gt; View</code>: Setting the <code class="highlighter-rouge">viewState</code> property on our view will configure the view by adding data to text fields, showing/hiding subviews, and changing labels.</li>
-  <li><code class="highlighter-rouge">View -&gt; ViewAction</code>: We’ll encode button taps and text field data into an enum of actions and pass the enum to the View’s delegate. Our View won’t have to know anything about how to transform these actions into a new Model or ViewState.</li>
-  <li><code class="highlighter-rouge">ViewAction + Model -&gt; Model</code>: We need to combine an action with the old model to create a new model that includes the user’s changes.</li>
-  <li><code class="highlighter-rouge">Model -&gt; URL + MSMessageTemplateLayout</code>: Finally, we need to convert our model back to the the fields required to configure a new message.</li>
-  <li><code class="highlighter-rouge">URL + MSMessageTemplateLayout -&gt; MSMessage + MSSession -&gt; MSConversation</code>: We’ll configure a new message, attaching an <code class="highlighter-rouge">MSSession</code> provided by Messages, then call <code class="highlighter-rouge">insertMessage</code> on the conversation.</li>
+  <li><code class="language-plaintext highlighter-rouge">MSConversation -&gt; MSMessage -&gt; URL</code>: We’ll access the <code class="language-plaintext highlighter-rouge">url</code> property on the <code class="language-plaintext highlighter-rouge">MSMessage</code> instance on the <code class="language-plaintext highlighter-rouge">MSConversation</code> instance provided by Messages. <code class="language-plaintext highlighter-rouge">conversation.selectedMessage.url</code> if you will.</li>
+  <li><code class="language-plaintext highlighter-rouge">URL -&gt; Model</code>: Our Model’s properties will have been previously encoded (by us) into <code class="language-plaintext highlighter-rouge">URLQueryItem</code>s. We’ll need a function to decode them.</li>
+  <li><code class="language-plaintext highlighter-rouge">Model -&gt; ViewState</code>: Any Model value must be able to be shown to the user.</li>
+  <li><code class="language-plaintext highlighter-rouge">ViewState -&gt; View</code>: Setting the <code class="language-plaintext highlighter-rouge">viewState</code> property on our view will configure the view by adding data to text fields, showing/hiding subviews, and changing labels.</li>
+  <li><code class="language-plaintext highlighter-rouge">View -&gt; ViewAction</code>: We’ll encode button taps and text field data into an enum of actions and pass the enum to the View’s delegate. Our View won’t have to know anything about how to transform these actions into a new Model or ViewState.</li>
+  <li><code class="language-plaintext highlighter-rouge">ViewAction + Model -&gt; Model</code>: We need to combine an action with the old model to create a new model that includes the user’s changes.</li>
+  <li><code class="language-plaintext highlighter-rouge">Model -&gt; URL + MSMessageTemplateLayout</code>: Finally, we need to convert our model back to the the fields required to configure a new message.</li>
+  <li><code class="language-plaintext highlighter-rouge">URL + MSMessageTemplateLayout -&gt; MSMessage + MSSession -&gt; MSConversation</code>: We’ll configure a new message, attaching an <code class="language-plaintext highlighter-rouge">MSSession</code> provided by Messages, then call <code class="language-plaintext highlighter-rouge">insertMessage</code> on the conversation.</li>
 </ul>
 
 <p>That may seem like a lot of transformations, but in reality they’re all simple ~10-20 line pure functions that cover all the possible enum cases.</p>
@@ -322,18 +326,18 @@ MSConversation
 
 <p>We’re going to go a little enum crazy because in my opinion that’s one of the coolest features of Swift.</p>
 
-<p><code class="highlighter-rouge">Pair</code> represents a question/answer pair. It can be either a translation or a correction.</p>
+<p><code class="language-plaintext highlighter-rouge">Pair</code> represents a question/answer pair. It can be either a translation or a correction.</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="kd">enum</span> <span class="kt">Pair</span> <span class="p">{</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">enum</span> <span class="kt">Pair</span> <span class="p">{</span>
     <span class="k">case</span> <span class="nf">translation</span><span class="p">(</span><span class="kt">Translation</span><span class="p">)</span>
     <span class="k">case</span> <span class="nf">correction</span><span class="p">(</span><span class="kt">Correction</span><span class="p">)</span>
 <span class="p">}</span>
 </code></pre>
 </div>
 
-<p>Our <code class="highlighter-rouge">Translation</code> type will have a question and an answer. We have two types of answer though, so we’ll make another enum (<code class="highlighter-rouge">TranslationAnswer</code>) for that.</p>
+<p>Our <code class="language-plaintext highlighter-rouge">Translation</code> type will have a question and an answer. We have two types of answer though, so we’ll make another enum (<code class="language-plaintext highlighter-rouge">TranslationAnswer</code>) for that.</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">Translation</span> <span class="p">{</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">Translation</span> <span class="p">{</span>
     <span class="k">var</span> <span class="nv">question</span><span class="p">:</span> <span class="kt">String</span><span class="p">?</span>
     <span class="k">var</span> <span class="nv">answer</span><span class="p">:</span> <span class="kt">TranslationAnswer</span><span class="p">?</span>    
 <span class="p">}</span>
@@ -345,9 +349,9 @@ MSConversation
 </code></pre>
 </div>
 
-<p>The <code class="highlighter-rouge">Correction</code> type looks pretty similar. Just one more <code class="highlighter-rouge">CorrectionAnswer</code> case.</p>
+<p>The <code class="language-plaintext highlighter-rouge">Correction</code> type looks pretty similar. Just one more <code class="language-plaintext highlighter-rouge">CorrectionAnswer</code> case.</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">Correction</span> <span class="p">{</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">Correction</span> <span class="p">{</span>
     <span class="k">var</span> <span class="nv">question</span><span class="p">:</span> <span class="kt">String</span><span class="p">?</span>
     <span class="k">var</span> <span class="nv">answer</span><span class="p">:</span> <span class="kt">CorrectionAnswer</span><span class="p">?</span>    
 <span class="p">}</span>
@@ -361,28 +365,28 @@ MSConversation
 </div>
 
 <blockquote>
-  <p>Another valid interpretation would have been to condense <code class="highlighter-rouge">Correction</code> and <code class="highlighter-rouge">CorrectionAnswer</code> into a single enum instead of using nullable properties. We’re doing some of this transformation work in the <code class="highlighter-rouge">ViewState</code> instead.</p>
+  <p>Another valid interpretation would have been to condense <code class="language-plaintext highlighter-rouge">Correction</code> and <code class="language-plaintext highlighter-rouge">CorrectionAnswer</code> into a single enum instead of using nullable properties. We’re doing some of this transformation work in the <code class="language-plaintext highlighter-rouge">ViewState</code> instead.</p>
 </blockquote>
 
 <h4 id="messages-framework-model">Messages Framework Model</h4>
 
-<p>In order to do the <code class="highlighter-rouge">URL -&gt; Model</code> and <code class="highlighter-rouge">Model -&gt; URL</code> transformations, we’ll need to devise an encoding scheme for our Model. There are a number of ways to do this, but we’ll go with the simplest method.</p>
+<p>In order to do the <code class="language-plaintext highlighter-rouge">URL -&gt; Model</code> and <code class="language-plaintext highlighter-rouge">Model -&gt; URL</code> transformations, we’ll need to devise an encoding scheme for our Model. There are a number of ways to do this, but we’ll go with the simplest method.</p>
 
 <ul>
-  <li><code class="highlighter-rouge">Pair</code> (our top level enum) will encode its case as a <code class="highlighter-rouge">type</code> param. (e.g. <code class="highlighter-rouge">type=translation</code> or <code class="highlighter-rouge">type=correction</code>).</li>
-  <li><code class="highlighter-rouge">TransformationAnswer</code> and <code class="highlighter-rouge">CorrectionAnswer</code> will be conformed to the <code class="highlighter-rouge">RawRepresentable</code> protocol and converted to a single string field.</li>
-  <li><code class="highlighter-rouge">Pair</code>, <code class="highlighter-rouge">Transformation</code>, <code class="highlighter-rouge">Correction</code> will expose a <code class="highlighter-rouge">queryItems</code> property for the <code class="highlighter-rouge">Model -&gt; URL</code> transformation. They will expose a custom nilable initializer receiving an array of <code class="highlighter-rouge">[URLQueryItem]</code>.</li>
+  <li><code class="language-plaintext highlighter-rouge">Pair</code> (our top level enum) will encode its case as a <code class="language-plaintext highlighter-rouge">type</code> param. (e.g. <code class="language-plaintext highlighter-rouge">type=translation</code> or <code class="language-plaintext highlighter-rouge">type=correction</code>).</li>
+  <li><code class="language-plaintext highlighter-rouge">TransformationAnswer</code> and <code class="language-plaintext highlighter-rouge">CorrectionAnswer</code> will be conformed to the <code class="language-plaintext highlighter-rouge">RawRepresentable</code> protocol and converted to a single string field.</li>
+  <li><code class="language-plaintext highlighter-rouge">Pair</code>, <code class="language-plaintext highlighter-rouge">Transformation</code>, <code class="language-plaintext highlighter-rouge">Correction</code> will expose a <code class="language-plaintext highlighter-rouge">queryItems</code> property for the <code class="language-plaintext highlighter-rouge">Model -&gt; URL</code> transformation. They will expose a custom nilable initializer receiving an array of <code class="language-plaintext highlighter-rouge">[URLQueryItem]</code>.</li>
 </ul>
 
 <p>At the end of the day, the URL will look something like this:</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code>?type=translation&amp;question=What%20time%20is%20it?&amp;answer=今何時ですか。
+<div class="language-plaintext highlighter-rouge"><pre class="highlight"><code>?type=translation&amp;question=What%20time%20is%20it?&amp;answer=今何時ですか。
 </code></pre>
 </div>
 
 <p>Unfortunately, it’s still pretty boilerplatey. Check out the <a href="https://github.com/twocentstudios/Messages-Translator-Extension/blob/master/MessagesExtension/URLQueryItem.swift">source</a> for the implementation details.</p>
 
-<p>Other implementations could convert object graphs to a single JSON string first (URL encoded of course) and store this encoded string as a single <code class="highlighter-rouge">URLQueryItem</code>.</p>
+<p>Other implementations could convert object graphs to a single JSON string first (URL encoded of course) and store this encoded string as a single <code class="language-plaintext highlighter-rouge">URLQueryItem</code>.</p>
 
 <h3 id="view-models">View Models</h3>
 
@@ -392,12 +396,12 @@ MSConversation
 
 <ul>
   <li>1 introductory state.</li>
-  <li>2 intermediate steps for each <code class="highlighter-rouge">Pair</code> type.</li>
-  <li>3 end states for a <code class="highlighter-rouge">Translation</code>.</li>
-  <li>2 end states for a <code class="highlighter-rouge">Correction</code>.</li>
+  <li>2 intermediate steps for each <code class="language-plaintext highlighter-rouge">Pair</code> type.</li>
+  <li>3 end states for a <code class="language-plaintext highlighter-rouge">Translation</code>.</li>
+  <li>2 end states for a <code class="language-plaintext highlighter-rouge">Correction</code>.</li>
 </ul>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="kd">enum</span> <span class="kt">ViewState</span> <span class="p">{</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">enum</span> <span class="kt">ViewState</span> <span class="p">{</span>
     <span class="k">case</span> <span class="n">promptNew</span>
     <span class="k">case</span> <span class="n">translationNew</span>
     <span class="k">case</span> <span class="nf">translationPart</span><span class="p">(</span><span class="nv">question</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span>
@@ -414,15 +418,15 @@ MSConversation
 
 <p>With any case, we have enough information to completely lay out our interface.</p>
 
-<p>See the implementation of the <code class="highlighter-rouge">Model -&gt; ViewState</code> transformation <a href="https://github.com/twocentstudios/Messages-Translator-Extension/blob/master/MessagesExtension/ViewState.swift">here</a>.</p>
+<p>See the implementation of the <code class="language-plaintext highlighter-rouge">Model -&gt; ViewState</code> transformation <a href="https://github.com/twocentstudios/Messages-Translator-Extension/blob/master/MessagesExtension/ViewState.swift">here</a>.</p>
 
-<p>Although in this case it would be possible to do a <code class="highlighter-rouge">ViewState -&gt; Model</code> transformation, this type of transformation can be inherently lossy. We’ll use a <code class="highlighter-rouge">ViewAction + Model -&gt; Model</code> transformation instead to process changes.</p>
+<p>Although in this case it would be possible to do a <code class="language-plaintext highlighter-rouge">ViewState -&gt; Model</code> transformation, this type of transformation can be inherently lossy. We’ll use a <code class="language-plaintext highlighter-rouge">ViewAction + Model -&gt; Model</code> transformation instead to process changes.</p>
 
 <h4 id="viewaction">ViewAction</h4>
 
 <p>As discussed a earlier, we’ll be using another enum to succinctly communicate user actions from the View layer back to the Controller layer. The intention behind this is to keep any domain logic and transformations out of the View layer and present a strict interface between our application’s layers defined by value types.</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="kd">enum</span> <span class="kt">ViewAction</span> <span class="p">{</span>   
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">enum</span> <span class="kt">ViewAction</span> <span class="p">{</span>   
     <span class="k">case</span> <span class="n">createNewTranslation</span>
     <span class="k">case</span> <span class="n">createNewCorrection</span>
     <span class="k">case</span> <span class="nf">addTranslation</span><span class="p">(</span><span class="nv">question</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span>
@@ -438,9 +442,9 @@ MSConversation
 
 <h4 id="msmessagetemplatelayout--messagetemplatelayout">MSMessageTemplateLayout &amp; MessageTemplateLayout</h4>
 
-<p><code class="highlighter-rouge">MSMessageTemplateLayout</code> is Messages.app’s generic view format for inline messages. It serves the same purpose of our ViewState. (<code class="highlighter-rouge">MSMessageTemplateLayout</code> is currently the sole subclass of the <code class="highlighter-rouge">MSMessageLayout</code> base class, which could allow Apple to provide other message layouts in the future.)</p>
+<p><code class="language-plaintext highlighter-rouge">MSMessageTemplateLayout</code> is Messages.app’s generic view format for inline messages. It serves the same purpose of our ViewState. (<code class="language-plaintext highlighter-rouge">MSMessageTemplateLayout</code> is currently the sole subclass of the <code class="language-plaintext highlighter-rouge">MSMessageLayout</code> base class, which could allow Apple to provide other message layouts in the future.)</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="c1">// Messages.framework</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="c1">// Messages.framework</span>
 <span class="kd">public</span> <span class="kd">class</span> <span class="kt">MSMessageTemplateLayout</span> <span class="p">:</span> <span class="kt">MSMessageLayout</span> <span class="p">{</span>
     <span class="kd">public</span> <span class="k">var</span> <span class="nv">caption</span><span class="p">:</span> <span class="kt">String</span><span class="p">?</span>
     <span class="kd">public</span> <span class="k">var</span> <span class="nv">subcaption</span><span class="p">:</span> <span class="kt">String</span><span class="p">?</span>
@@ -455,12 +459,12 @@ MSConversation
 </div>
 
 <blockquote>
-  <p>I’m a little disappointed that the text is <code class="highlighter-rouge">String</code> and not <code class="highlighter-rouge">AttributedString</code>, but I can see why Apple might want to keep customization to a minimum up front.</p>
+  <p>I’m a little disappointed that the text is <code class="language-plaintext highlighter-rouge">String</code> and not <code class="language-plaintext highlighter-rouge">AttributedString</code>, but I can see why Apple might want to keep customization to a minimum up front.</p>
 </blockquote>
 
 <p>We’ll only be using the caption and subcaptions so we’ll make a helper struct to decouple our implementation from Messages. It’s a bit pedantic to do so, but oh well.</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">MessageTemplateLayout</span> <span class="p">{</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">MessageTemplateLayout</span> <span class="p">{</span>
     <span class="k">var</span> <span class="nv">caption</span><span class="p">:</span> <span class="kt">String</span><span class="p">?</span>
     <span class="k">var</span> <span class="nv">subcaption</span><span class="p">:</span> <span class="kt">String</span><span class="p">?</span>
     <span class="k">var</span> <span class="nv">trailingCaption</span><span class="p">:</span> <span class="kt">String</span><span class="p">?</span>
@@ -469,19 +473,19 @@ MSConversation
 </code></pre>
 </div>
 
-<p>Although we could do the transformation as <code class="highlighter-rouge">Pair -&gt;  MessageTemplateLayout</code>, I think it makes our lives easier to convert from <code class="highlighter-rouge">ViewState -&gt;  MessageTemplateLayout</code> instead.</p>
+<p>Although we could do the transformation as <code class="language-plaintext highlighter-rouge">Pair -&gt;  MessageTemplateLayout</code>, I think it makes our lives easier to convert from <code class="language-plaintext highlighter-rouge">ViewState -&gt;  MessageTemplateLayout</code> instead.</p>
 
 <h3 id="view">View</h3>
 
 <p>I usually don’t use Storyboards, but for this occasion I decided to do so.</p>
 
-<p><code class="highlighter-rouge">MessagesView</code> is our custom view. It has a couple text fields, a bunch of labels, and a bunch of buttons. All of these subviews are shared amongst our various <code class="highlighter-rouge">ViewState</code>s and their actions and data are translated back to something our Controller understands.</p>
+<p><code class="language-plaintext highlighter-rouge">MessagesView</code> is our custom view. It has a couple text fields, a bunch of labels, and a bunch of buttons. All of these subviews are shared amongst our various <code class="language-plaintext highlighter-rouge">ViewState</code>s and their actions and data are translated back to something our Controller understands.</p>
 
-<p>There’s a huge function that converts <code class="highlighter-rouge">ViewState -&gt; View</code> by setting label text, hidden attributes, and button titles for each state.</p>
+<p>There’s a huge function that converts <code class="language-plaintext highlighter-rouge">ViewState -&gt; View</code> by setting label text, hidden attributes, and button titles for each state.</p>
 
-<p><code class="highlighter-rouge">@IBAction -&gt; ViewAction</code> happens in each tap handler before being provided to the view’s delegate.</p>
+<p><code class="language-plaintext highlighter-rouge">@IBAction -&gt; ViewAction</code> happens in each tap handler before being provided to the view’s delegate.</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="kd">protocol</span> <span class="kt">MessagesViewDelegate</span><span class="p">:</span> <span class="kt">NSObjectProtocol</span> <span class="p">{</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">protocol</span> <span class="kt">MessagesViewDelegate</span><span class="p">:</span> <span class="kt">NSObjectProtocol</span> <span class="p">{</span>
     <span class="kd">func</span> <span class="nf">didAction</span><span class="p">(</span><span class="n">_</span> <span class="nv">view</span><span class="p">:</span> <span class="kt">MessagesView</span><span class="p">,</span> <span class="nv">action</span><span class="p">:</span> <span class="kt">ViewAction</span><span class="p">,</span> <span class="nv">state</span><span class="p">:</span> <span class="kt">ViewState</span><span class="p">)</span>
 <span class="p">}</span>
 </code></pre>
@@ -489,36 +493,36 @@ MSConversation
 
 <p>The relevant code is <a href="https://github.com/twocentstudios/Messages-Translator-Extension/blob/master/MessagesExtension/MessagesView.swift">here</a>.</p>
 
-<p>Another valid implementation would be to use two or more <code class="highlighter-rouge">UIViewController</code> subclasses and the UIViewController containment APIs.</p>
+<p>Another valid implementation would be to use two or more <code class="language-plaintext highlighter-rouge">UIViewController</code> subclasses and the UIViewController containment APIs.</p>
 
 <h3 id="controller">Controller</h3>
 
-<p><code class="highlighter-rouge">MessagesViewController</code> is our <code class="highlighter-rouge">MSMessagesAppViewController</code> subclass. It will be responsible for performing most of the data transformations, holding state through the extension’s lifecycle, and handling other calls from Messages.app.</p>
+<p><code class="language-plaintext highlighter-rouge">MessagesViewController</code> is our <code class="language-plaintext highlighter-rouge">MSMessagesAppViewController</code> subclass. It will be responsible for performing most of the data transformations, holding state through the extension’s lifecycle, and handling other calls from Messages.app.</p>
 
 <p>Our controller has two instance variables:</p>
 
 <ul>
-  <li><code class="highlighter-rouge">@IBOutlet weak var messagesView: MessagesView!</code>: our only view.</li>
-  <li><code class="highlighter-rouge">var pair: Pair?</code>: the current model. We need to hold onto this temporarily while we’re waiting for user input in order to do the <code class="highlighter-rouge">ViewAction + Pair -&gt; Pair</code> transformation. This value may also change if we’re performing a <code class="highlighter-rouge">ViewAction</code> that is not intended to produce an <code class="highlighter-rouge">MSMessage</code> but only alter the <code class="highlighter-rouge">ViewState</code> directly (e.g. <code class="highlighter-rouge">ViewState.promptNew -&gt; ViewState.translationNew</code>).</li>
+  <li><code class="language-plaintext highlighter-rouge">@IBOutlet weak var messagesView: MessagesView!</code>: our only view.</li>
+  <li><code class="language-plaintext highlighter-rouge">var pair: Pair?</code>: the current model. We need to hold onto this temporarily while we’re waiting for user input in order to do the <code class="language-plaintext highlighter-rouge">ViewAction + Pair -&gt; Pair</code> transformation. This value may also change if we’re performing a <code class="language-plaintext highlighter-rouge">ViewAction</code> that is not intended to produce an <code class="language-plaintext highlighter-rouge">MSMessage</code> but only alter the <code class="language-plaintext highlighter-rouge">ViewState</code> directly (e.g. <code class="language-plaintext highlighter-rouge">ViewState.promptNew -&gt; ViewState.translationNew</code>).</li>
 </ul>
 
 <h3 id="entry-point">Entry Point</h3>
 
 <p>The entry point of our extension in the general case will be:</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="c1">// MessagesViewController.swift</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="c1">// MessagesViewController.swift</span>
 <span class="k">override</span> <span class="kd">func</span> <span class="nf">willBecomeActive</span><span class="p">(</span><span class="n">with</span> <span class="nv">conversation</span><span class="p">:</span> <span class="kt">MSConversation</span><span class="p">)</span> <span class="p">{</span> <span class="c1">// ... }</span>
 </code></pre>
 </div>
 
 <ul>
-  <li><code class="highlighter-rouge">conversation.selectedMessage == nil</code>: the user opened our extension in the extension browser and will be creating a new translation or correction.</li>
-  <li><code class="highlighter-rouge">conversation.selectedMessage != nil</code>: the user has tapped on a translation or correction embedded in an existing message in their timeline.</li>
+  <li><code class="language-plaintext highlighter-rouge">conversation.selectedMessage == nil</code>: the user opened our extension in the extension browser and will be creating a new translation or correction.</li>
+  <li><code class="language-plaintext highlighter-rouge">conversation.selectedMessage != nil</code>: the user has tapped on a translation or correction embedded in an existing message in their timeline.</li>
 </ul>
 
 <p>The full implementation with transformations annotated:</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="k">override</span> <span class="kd">func</span> <span class="nf">willBecomeActive</span><span class="p">(</span><span class="n">with</span> <span class="nv">conversation</span><span class="p">:</span> <span class="kt">MSConversation</span><span class="p">)</span> <span class="p">{</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="k">override</span> <span class="kd">func</span> <span class="nf">willBecomeActive</span><span class="p">(</span><span class="n">with</span> <span class="nv">conversation</span><span class="p">:</span> <span class="kt">MSConversation</span><span class="p">)</span> <span class="p">{</span>
     <span class="c1">// MSConversation -&gt; MSMessage -&gt; URL -&gt; Model</span>
     <span class="k">self</span><span class="o">.</span><span class="n">pair</span> <span class="o">=</span> <span class="kt">Pair</span><span class="p">(</span><span class="nv">conversation</span><span class="p">:</span> <span class="n">conversation</span><span class="p">)</span>
     
@@ -533,24 +537,24 @@ MSConversation
 
 <h3 id="exit-point">Exit Point</h3>
 
-<p>The exit point of an Messages Extension in the general case will be a call to <code class="highlighter-rouge">MSConversation.insert</code> followed by <code class="highlighter-rouge">MyMessagesAppViewController.dismiss</code> and can be called from any part of your extension. This inserts a message (that your extension has just finished crafting) into the Messages.app’s main text field allowing the user to (optionally) tap the send button.</p>
+<p>The exit point of an Messages Extension in the general case will be a call to <code class="language-plaintext highlighter-rouge">MSConversation.insert</code> followed by <code class="language-plaintext highlighter-rouge">MyMessagesAppViewController.dismiss</code> and can be called from any part of your extension. This inserts a message (that your extension has just finished crafting) into the Messages.app’s main text field allowing the user to (optionally) tap the send button.</p>
 
 <p>In our case, we’re channeling all user actions into the delegate method:</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="kd">func</span> <span class="nf">didAction</span><span class="p">(</span><span class="n">_</span> <span class="nv">view</span><span class="p">:</span> <span class="kt">MessagesView</span><span class="p">,</span> <span class="nv">action</span><span class="p">:</span> <span class="kt">ViewAction</span><span class="p">,</span> <span class="nv">state</span><span class="p">:</span> <span class="kt">ViewState</span><span class="p">)</span> <span class="p">{</span> <span class="c1">// ... }</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">func</span> <span class="nf">didAction</span><span class="p">(</span><span class="n">_</span> <span class="nv">view</span><span class="p">:</span> <span class="kt">MessagesView</span><span class="p">,</span> <span class="nv">action</span><span class="p">:</span> <span class="kt">ViewAction</span><span class="p">,</span> <span class="nv">state</span><span class="p">:</span> <span class="kt">ViewState</span><span class="p">)</span> <span class="p">{</span> <span class="c1">// ... }</span>
 </code></pre>
 </div>
 
 <p>There are a few resulting view states where the behavior of inserting a message and dismissing is not correct. If the user is in the compact view and has decided to start a new translation, they’re not finished interacting with our extension. In this case, we should request an expanded view:</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="c1">// MessagesViewController.swift</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="c1">// MessagesViewController.swift</span>
 <span class="k">self</span><span class="o">.</span><span class="nf">requestPresentationStyle</span><span class="p">(</span><span class="o">.</span><span class="n">expanded</span><span class="p">)</span>
 </code></pre>
 </div>
 
 <p>Let’s now walk through the entire function.</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="kd">func</span> <span class="nf">didAction</span><span class="p">(</span><span class="n">_</span> <span class="nv">view</span><span class="p">:</span> <span class="kt">MessagesView</span><span class="p">,</span> <span class="nv">action</span><span class="p">:</span> <span class="kt">ViewAction</span><span class="p">,</span> <span class="nv">state</span><span class="p">:</span> <span class="kt">ViewState</span><span class="p">)</span> <span class="p">{</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">func</span> <span class="nf">didAction</span><span class="p">(</span><span class="n">_</span> <span class="nv">view</span><span class="p">:</span> <span class="kt">MessagesView</span><span class="p">,</span> <span class="nv">action</span><span class="p">:</span> <span class="kt">ViewAction</span><span class="p">,</span> <span class="nv">state</span><span class="p">:</span> <span class="kt">ViewState</span><span class="p">)</span> <span class="p">{</span>
     <span class="c1">// ViewAction + Pair -&gt; Pair</span>
     <span class="k">let</span> <span class="nv">newPair</span> <span class="o">=</span> <span class="n">action</span><span class="o">.</span><span class="nf">combine</span><span class="p">(</span><span class="nv">withPair</span><span class="p">:</span> <span class="k">self</span><span class="o">.</span><span class="n">pair</span><span class="p">)</span>
     
@@ -586,27 +590,27 @@ MSConversation
 </code></pre>
 </div>
 
-<p>As you can see, we’re mostly applying transformations based on the user’s action (<code class="highlighter-rouge">ViewAction</code>), the input pair we saved earlier (<code class="highlighter-rouge">self.pair</code>), and some state saved in the superclass <code class="highlighter-rouge">MSMessagesAppViewController</code> (<code class="highlighter-rouge">self.activeConversation.selectedMessage.session</code>). These transformations produce a new <code class="highlighter-rouge">Pair</code> and <code class="highlighter-rouge">ViewState</code>, and the side effect of either an inserted <code class="highlighter-rouge">MSMessage</code> in the conversation or a view state change.</p>
+<p>As you can see, we’re mostly applying transformations based on the user’s action (<code class="language-plaintext highlighter-rouge">ViewAction</code>), the input pair we saved earlier (<code class="language-plaintext highlighter-rouge">self.pair</code>), and some state saved in the superclass <code class="language-plaintext highlighter-rouge">MSMessagesAppViewController</code> (<code class="language-plaintext highlighter-rouge">self.activeConversation.selectedMessage.session</code>). These transformations produce a new <code class="language-plaintext highlighter-rouge">Pair</code> and <code class="language-plaintext highlighter-rouge">ViewState</code>, and the side effect of either an inserted <code class="language-plaintext highlighter-rouge">MSMessage</code> in the conversation or a view state change.</p>
 
 <p>All side effects are located in our class closest to the outside world (the view controller), while other classes and structs define valid transformations. Notice in particular that the view does not change its own state directly from user actions such as button presses.</p>
 
 <h3 id="more-complicated-flows">More Complicated Flows</h3>
 
-<p>We’ve now looked at the most common lifecycle of <code class="highlighter-rouge">input -&gt; user action -&gt; output</code>. Now let’s look at some other cases.</p>
+<p>We’ve now looked at the most common lifecycle of <code class="language-plaintext highlighter-rouge">input -&gt; user action -&gt; output</code>. Now let’s look at some other cases.</p>
 
 <h4 id="willselect--didselect">willSelect &amp; didSelect</h4>
 
-<p>If your extension is already active when the user taps one of your extension’s messages, the extension doesn’t have to launch and therefore won’t call our view controller’s <code class="highlighter-rouge">willBecomeActive</code> &amp; <code class="highlighter-rouge">didBecomeActive</code> as we were expecting. Instead, it will call <code class="highlighter-rouge">willSelect</code> &amp; <code class="highlighter-rouge">didSelect</code>, so we also need to set the <code class="highlighter-rouge">Pair</code> and <code class="highlighter-rouge">ViewState</code> from this entry point too. Unfortunately, at iOS 10 beta1, <code class="highlighter-rouge">willSelect</code> &amp; <code class="highlighter-rouge">didSelect</code> don’t seem to be implemented. This was confirmed as a known issue in beta2. The workaround is to place this behavior in <code class="highlighter-rouge">willTransition</code>.</p>
+<p>If your extension is already active when the user taps one of your extension’s messages, the extension doesn’t have to launch and therefore won’t call our view controller’s <code class="language-plaintext highlighter-rouge">willBecomeActive</code> &amp; <code class="language-plaintext highlighter-rouge">didBecomeActive</code> as we were expecting. Instead, it will call <code class="language-plaintext highlighter-rouge">willSelect</code> &amp; <code class="language-plaintext highlighter-rouge">didSelect</code>, so we also need to set the <code class="language-plaintext highlighter-rouge">Pair</code> and <code class="language-plaintext highlighter-rouge">ViewState</code> from this entry point too. Unfortunately, at iOS 10 beta1, <code class="language-plaintext highlighter-rouge">willSelect</code> &amp; <code class="language-plaintext highlighter-rouge">didSelect</code> don’t seem to be implemented. This was confirmed as a known issue in beta2. The workaround is to place this behavior in <code class="language-plaintext highlighter-rouge">willTransition</code>.</p>
 
 <h4 id="didreceive">didReceive</h4>
 
-<p>While your extension is active, it’s possible that one of the conversation’s other participants will send a message to your extension. The original sender could have updated the message, or a third member of the group could have replied. In either case, you can monitor <code class="highlighter-rouge">didRecieve</code> to react to new messages outside of the <code class="highlighter-rouge">input -&gt; user action -&gt; output</code> cycle presented earlier and optionally alert the local participant that something has changed since they opened your extension.</p>
+<p>While your extension is active, it’s possible that one of the conversation’s other participants will send a message to your extension. The original sender could have updated the message, or a third member of the group could have replied. In either case, you can monitor <code class="language-plaintext highlighter-rouge">didRecieve</code> to react to new messages outside of the <code class="language-plaintext highlighter-rouge">input -&gt; user action -&gt; output</code> cycle presented earlier and optionally alert the local participant that something has changed since they opened your extension.</p>
 
 <h4 id="didstartsending--didcancelsending">didStartSending &amp; didCancelSending</h4>
 
-<p>If you need to take direct action based on the user attempting to send or deciding not to send your message after it’s been inserted into the conversation, override your view controller’s <code class="highlighter-rouge">didStartSending</code> and/or <code class="highlighter-rouge">didCancelSending</code> functions. These would presumably be called after you’ve called <code class="highlighter-rouge">dismiss</code> inside the defacto exit point I described earlier.</p>
+<p>If you need to take direct action based on the user attempting to send or deciding not to send your message after it’s been inserted into the conversation, override your view controller’s <code class="language-plaintext highlighter-rouge">didStartSending</code> and/or <code class="language-plaintext highlighter-rouge">didCancelSending</code> functions. These would presumably be called after you’ve called <code class="language-plaintext highlighter-rouge">dismiss</code> inside the defacto exit point I described earlier.</p>
 
-<p>Notice that <code class="highlighter-rouge">didStartSending</code> is called on an <em>attempt</em> to send, i.e. when the user taps the Messages.app’s send button. Apple doesn’t guarantee the message will be delivered to the other participants. This could create a few opportunities for edge cases you should be aware of. For example, if the message service goes down and you’ve <code class="highlighter-rouge">POST</code>ed resource state changes to your server successfully in <code class="highlighter-rouge">didStartSending</code>, other participants may see outdated information in their message’s <code class="highlighter-rouge">MSMessageTemplateLayout</code> that represents that resource on your server. Rare, but still something to think about that synchronizing state using <code class="highlighter-rouge">MSMessage</code>s will not always be perfect.</p>
+<p>Notice that <code class="language-plaintext highlighter-rouge">didStartSending</code> is called on an <em>attempt</em> to send, i.e. when the user taps the Messages.app’s send button. Apple doesn’t guarantee the message will be delivered to the other participants. This could create a few opportunities for edge cases you should be aware of. For example, if the message service goes down and you’ve <code class="language-plaintext highlighter-rouge">POST</code>ed resource state changes to your server successfully in <code class="language-plaintext highlighter-rouge">didStartSending</code>, other participants may see outdated information in their message’s <code class="language-plaintext highlighter-rouge">MSMessageTemplateLayout</code> that represents that resource on your server. Rare, but still something to think about that synchronizing state using <code class="language-plaintext highlighter-rouge">MSMessage</code>s will not always be perfect.</p>
 
 <p>Note that there also may be an issue with these two delegate methods with iOS 10 beta1 as well, possibly on the simulator but not real devices.</p>
 
@@ -620,7 +624,7 @@ MSConversation
 
 <h3 id="collapsed-view-state">Collapsed View State</h3>
 
-<p>When your <code class="highlighter-rouge">MSMessagesAppViewController</code> is in its collapsed state, it won’t have access to horizontal swipe or pan gestures. That’s how users will swipe between different extensions.</p>
+<p>When your <code class="language-plaintext highlighter-rouge">MSMessagesAppViewController</code> is in its collapsed state, it won’t have access to horizontal swipe or pan gestures. That’s how users will swipe between different extensions.</p>
 
 <p>Your text fields or anything that requires a keyboard will also be disabled since the keyboard would otherwise obscure your view.</p>
 
@@ -628,7 +632,7 @@ MSConversation
 
 <p>When your extension is launched by a user tapping an existing message, the view controller is automatically launched into expanded mode by Messages.app.</p>
 
-<p>You can also request that your app be expanded after it has started in compact mode. In my tests on the simulator, my request to expand my extension was accepted no earlier than 0.3 seconds after <code class="highlighter-rouge">viewDidAppear</code>, the final callback we get from the view system (I set a timer). Those numbers may change, but the takeaway is that you can’t <em>immediately</em> expand your extension with no user interaction having taken place.</p>
+<p>You can also request that your app be expanded after it has started in compact mode. In my tests on the simulator, my request to expand my extension was accepted no earlier than 0.3 seconds after <code class="language-plaintext highlighter-rouge">viewDidAppear</code>, the final callback we get from the view system (I set a timer). Those numbers may change, but the takeaway is that you can’t <em>immediately</em> expand your extension with no user interaction having taken place.</p>
 
 <h3 id="saved-screenshots">Saved Screenshots</h3>
 
@@ -652,15 +656,15 @@ MSConversation
 
 <h3 id="msmessage">MSMessage</h3>
 
-<p>As the unit encapsulating data and view specification, <code class="highlighter-rouge">MSMessage</code> has a few points we should cover.</p>
+<p>As the unit encapsulating data and view specification, <code class="language-plaintext highlighter-rouge">MSMessage</code> has a few points we should cover.</p>
 
 <h4 id="accessibility">Accessibility</h4>
 
-<p>The second “view” of a message if you will is the <code class="highlighter-rouge">accessibilityLabel</code> property. You should use this label to specifically spell out any implicit context in the <code class="highlighter-rouge">MSMessageTemplateLayout</code>.</p>
+<p>The second “view” of a message if you will is the <code class="language-plaintext highlighter-rouge">accessibilityLabel</code> property. You should use this label to specifically spell out any implicit context in the <code class="language-plaintext highlighter-rouge">MSMessageTemplateLayout</code>.</p>
 
 <h4 id="session">Session</h4>
 
-<p>We ran into <code class="highlighter-rouge">MSSession</code> briefly in the sample app. The <code class="highlighter-rouge">MSSession</code> is an identifier you can use to link messages together. Messages.app will replace the contents of any previous message with the same session. When preparing an <code class="highlighter-rouge">MSMessage</code> for the user, if the message represents a resource that already exists, you should initialize the <code class="highlighter-rouge">MSMessage</code> with the previous <code class="highlighter-rouge">MSMessage</code>’s <code class="highlighter-rouge">MSSession</code>. Otherwise, use the designated initializer <code class="highlighter-rouge">MSSession()</code> to create a new one.</p>
+<p>We ran into <code class="language-plaintext highlighter-rouge">MSSession</code> briefly in the sample app. The <code class="language-plaintext highlighter-rouge">MSSession</code> is an identifier you can use to link messages together. Messages.app will replace the contents of any previous message with the same session. When preparing an <code class="language-plaintext highlighter-rouge">MSMessage</code> for the user, if the message represents a resource that already exists, you should initialize the <code class="language-plaintext highlighter-rouge">MSMessage</code> with the previous <code class="language-plaintext highlighter-rouge">MSMessage</code>’s <code class="language-plaintext highlighter-rouge">MSSession</code>. Otherwise, use the designated initializer <code class="language-plaintext highlighter-rouge">MSSession()</code> to create a new one.</p>
 
 <h4 id="app-icon">App Icon</h4>
 
@@ -670,25 +674,25 @@ MSConversation
 
 <h4 id="nscoding">NSCoding</h4>
 
-<p><code class="highlighter-rouge">MSMessage</code> conforms to both <code class="highlighter-rouge">NSSecureCoding</code> and <code class="highlighter-rouge">NSCopying</code> making life a bit easier if you wanted to save messages wholesale.</p>
+<p><code class="language-plaintext highlighter-rouge">MSMessage</code> conforms to both <code class="language-plaintext highlighter-rouge">NSSecureCoding</code> and <code class="language-plaintext highlighter-rouge">NSCopying</code> making life a bit easier if you wanted to save messages wholesale.</p>
 
 <h4 id="participants">Participants</h4>
 
 <p>Due to privacy concerns, the identities of a conversation’s participants are obscured through the use of UUIDs.</p>
 
 <ul>
-  <li>You can identify a message’s sender from <code class="highlighter-rouge">MSMessage.senderParticipantIdentifier</code>.</li>
-  <li>You can identify the local user from <code class="highlighter-rouge">MSConversation.localParticipantIdentifier</code>.</li>
-  <li>You can identify all other participants from <code class="highlighter-rouge">MSConversation.remoteParticipantIdentifiers</code>.</li>
+  <li>You can identify a message’s sender from <code class="language-plaintext highlighter-rouge">MSMessage.senderParticipantIdentifier</code>.</li>
+  <li>You can identify the local user from <code class="language-plaintext highlighter-rouge">MSConversation.localParticipantIdentifier</code>.</li>
+  <li>You can identify all other participants from <code class="language-plaintext highlighter-rouge">MSConversation.remoteParticipantIdentifiers</code>.</li>
 </ul>
 
 <p>These three properties should be enough for your extension to determine at any given time whether a message was sent by the current user.</p>
 
-<p>You can insert these UUIDs directly into user-facing strings within <code class="highlighter-rouge">MSMessageTemplateLayout()</code> prefixed with a <code class="highlighter-rouge">$</code> and Messages.app will replace them with the contact’s actual name before showing them to the user. However on the iOS Simulator and iOS 10 beta1 I haven’t be able to reproduce the intended behavior. It still shows up as the raw UUID string in Messages (thanks to <a href="https://twitter.com/zachsimone">@zachsimone</a> for the heads up). <em>Update 7/7/16: Fixed in beta2.</em></p>
+<p>You can insert these UUIDs directly into user-facing strings within <code class="language-plaintext highlighter-rouge">MSMessageTemplateLayout()</code> prefixed with a <code class="language-plaintext highlighter-rouge">$</code> and Messages.app will replace them with the contact’s actual name before showing them to the user. However on the iOS Simulator and iOS 10 beta1 I haven’t be able to reproduce the intended behavior. It still shows up as the raw UUID string in Messages (thanks to <a href="https://twitter.com/zachsimone">@zachsimone</a> for the heads up). <em>Update 7/7/16: Fixed in beta2.</em></p>
 
 <p>For example:</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="k">let</span> <span class="nv">layout</span> <span class="o">=</span> <span class="kt">MSMessageTemplateLayout</span><span class="p">()</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="k">let</span> <span class="nv">layout</span> <span class="o">=</span> <span class="kt">MSMessageTemplateLayout</span><span class="p">()</span>
 <span class="n">layout</span><span class="o">.</span><span class="n">caption</span> <span class="o">=</span> <span class="s">"My name is $</span><span class="se">\(</span><span class="n">conversation</span><span class="o">.</span><span class="n">localParticipantIdentifer</span><span class="o">.</span><span class="n">uuidString</span><span class="se">)</span><span class="s">."</span>
 <span class="n">conversation</span><span class="o">.</span><span class="nf">insert</span><span class="p">(</span><span class="n">message</span><span class="p">,</span> <span class="nv">localizedChangeDescription</span><span class="p">:</span> <span class="kc">nil</span><span class="p">)</span>
 </code></pre>
@@ -696,26 +700,26 @@ MSConversation
 
 <h4 id="msmessagetemplatelayout-attributes">MSMessageTemplateLayout Attributes</h4>
 
-<p>A couple quick notes on <code class="highlighter-rouge">MSMessageTemplateLayout</code>’s attributes.</p>
+<p>A couple quick notes on <code class="language-plaintext highlighter-rouge">MSMessageTemplateLayout</code>’s attributes.</p>
 
 <ul>
-  <li>If you include both <code class="highlighter-rouge">image</code> and <code class="highlighter-rouge">mediaFileURL</code>, <code class="highlighter-rouge">mediaFileURL</code> will be ignored.</li>
+  <li>If you include both <code class="language-plaintext highlighter-rouge">image</code> and <code class="language-plaintext highlighter-rouge">mediaFileURL</code>, <code class="language-plaintext highlighter-rouge">mediaFileURL</code> will be ignored.</li>
   <li>Apple recommends your images be 300x300pt @3x, but also says you should experiment with what looks best for your use case.</li>
-  <li><code class="highlighter-rouge">mediaFileURL</code>/<code class="highlighter-rouge">image</code> can be an PNG, JPEG, GIF, or video.</li>
+  <li><code class="language-plaintext highlighter-rouge">mediaFileURL</code>/<code class="language-plaintext highlighter-rouge">image</code> can be an PNG, JPEG, GIF, or video.</li>
   <li>Media will be compressed before being sent.</li>
   <li>You should avoid writing text to an image due to possible compression/scaling artifacts rendering it illegible.</li>
-  <li>If you don’t include an <code class="highlighter-rouge">image</code> or <code class="highlighter-rouge">mediaFileURL</code> in your template, <code class="highlighter-rouge">imageTitle</code> and <code class="highlighter-rouge">imageSubtitle</code> will be ignored.</li>
-  <li><code class="highlighter-rouge">caption</code> is limited to 3 lines with an automatically added trailing ellipsis.</li>
-  <li><code class="highlighter-rouge">subcaption</code> is not shown unless a caption is present.</li>
-  <li><code class="highlighter-rouge">subcaption</code> is limited to 1 line and no trailing ellipsis is added.</li>
-  <li><code class="highlighter-rouge">trailingCaption</code>/<code class="highlighter-rouge">trailingSubcaption</code> seem to mirror the behavior of their <code class="highlighter-rouge">caption</code>/<code class="highlighter-rouge">subcaption</code> counterparts.</li>
+  <li>If you don’t include an <code class="language-plaintext highlighter-rouge">image</code> or <code class="language-plaintext highlighter-rouge">mediaFileURL</code> in your template, <code class="language-plaintext highlighter-rouge">imageTitle</code> and <code class="language-plaintext highlighter-rouge">imageSubtitle</code> will be ignored.</li>
+  <li><code class="language-plaintext highlighter-rouge">caption</code> is limited to 3 lines with an automatically added trailing ellipsis.</li>
+  <li><code class="language-plaintext highlighter-rouge">subcaption</code> is not shown unless a caption is present.</li>
+  <li><code class="language-plaintext highlighter-rouge">subcaption</code> is limited to 1 line and no trailing ellipsis is added.</li>
+  <li><code class="language-plaintext highlighter-rouge">trailingCaption</code>/<code class="language-plaintext highlighter-rouge">trailingSubcaption</code> seem to mirror the behavior of their <code class="language-plaintext highlighter-rouge">caption</code>/<code class="language-plaintext highlighter-rouge">subcaption</code> counterparts.</li>
 </ul>
 
 <div class="caption-wrapper"><img class="caption" src="/images/messages-template-layout-test-large.png" width="" height="" alt="Various configurations of MSMessageTemplateLayout." title="Various configurations of MSMessageTemplateLayout." /><div class="caption-text">Various configurations of MSMessageTemplateLayout.</div></div>
 
 <h4 id="urls">URLs</h4>
 
-<p>As previously mentioned, the URL you attach to an <code class="highlighter-rouge">MSMessage</code> will be available directly to the user in two cases:</p>
+<p>As previously mentioned, the URL you attach to an <code class="language-plaintext highlighter-rouge">MSMessage</code> will be available directly to the user in two cases:</p>
 
 <ul>
   <li>The recipient views the message on iOS 9 or earlier.</li>
@@ -728,17 +732,17 @@ MSConversation
 
 <h4 id="expiring">Expiring</h4>
 
-<p>You can set your messages to expire by default by setting <code class="highlighter-rouge">shouldExpire</code> on the <code class="highlighter-rouge">MSMessage</code> instance. This behavior is the same as other Messages.app expiring messages and can be overridden by the recipient.</p>
+<p>You can set your messages to expire by default by setting <code class="language-plaintext highlighter-rouge">shouldExpire</code> on the <code class="language-plaintext highlighter-rouge">MSMessage</code> instance. This behavior is the same as other Messages.app expiring messages and can be overridden by the recipient.</p>
 
 <h3 id="icon-template-sizes">Icon Template Sizes</h3>
 
 <p>For reference, here are the listed sizes for Messages App Icons.</p>
 
-<p>Messages: 27x20pt @1x @2x @3x<br />
-Messages: 32x24pt @1x @2x @3x<br />
-Messages App Store: 1024x768pt @1x<br />
-Messages iPhone: 60x45pt @2x @3x<br />
-Messages iPad: 67x50pt @1x @2x<br />
+<p>Messages: 27x20pt @1x @2x @3x
+Messages: 32x24pt @1x @2x @3x
+Messages App Store: 1024x768pt @1x
+Messages iPhone: 60x45pt @2x @3x
+Messages iPad: 67x50pt @1x @2x
 Messages iPad Pro: 74x55pt @2x</p>
 
 <div class="caption-wrapper"><img class="caption" src="/images/messages-app-icon-sizes.png" width="" height="" alt="Various configurations of MSMessageTemplateLayout." title="Various configurations of MSMessageTemplateLayout." /><div class="caption-text">Various configurations of MSMessageTemplateLayout.</div></div>
@@ -749,9 +753,9 @@ Messages iPad Pro: 74x55pt @2x</p>
 
 <h4 id="mssticker">MSSticker</h4>
 
-<p><code class="highlighter-rouge">MSSticker</code> is the model class for stickers.</p>
+<p><code class="language-plaintext highlighter-rouge">MSSticker</code> is the model class for stickers.</p>
 
-<p>Create <code class="highlighter-rouge">MSSticker</code> by passing in a <code class="highlighter-rouge">fileURL</code> and <code class="highlighter-rouge">localizedDescription</code> of the sticker contents. The initializer can throw an <code class="highlighter-rouge">NSError</code>. From the docs:</p>
+<p>Create <code class="language-plaintext highlighter-rouge">MSSticker</code> by passing in a <code class="language-plaintext highlighter-rouge">fileURL</code> and <code class="language-plaintext highlighter-rouge">localizedDescription</code> of the sticker contents. The initializer can throw an <code class="language-plaintext highlighter-rouge">NSError</code>. From the docs:</p>
 
 <ul>
   <li>The file must have a maximum size of 500KB.</li>
@@ -761,11 +765,11 @@ Messages iPad Pro: 74x55pt @2x</p>
 
 <h4 id="msstickerview">MSStickerView</h4>
 
-<p>The drop-in <code class="highlighter-rouge">UIView</code> subclass for stickers is <code class="highlighter-rouge">MSStickerView</code>. Initialize it with an <code class="highlighter-rouge">MSSticker</code> or set the <code class="highlighter-rouge">sticker</code> property later.</p>
+<p>The drop-in <code class="language-plaintext highlighter-rouge">UIView</code> subclass for stickers is <code class="language-plaintext highlighter-rouge">MSStickerView</code>. Initialize it with an <code class="language-plaintext highlighter-rouge">MSSticker</code> or set the <code class="language-plaintext highlighter-rouge">sticker</code> property later.</p>
 
 <p>This class provides drag and drop behavior for pulling stickers from the collapsed view of an extension into the main conversation. It also provides outlets for inspecting and controlling animation of GIFs:</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="c1">// MSStickerView.swift (abridged)</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="c1">// MSStickerView.swift (abridged)</span>
 <span class="kd">public</span> <span class="k">var</span> <span class="nv">animationDuration</span><span class="p">:</span> <span class="kt">TimeInterval</span> <span class="p">{</span> <span class="k">get</span> <span class="p">}</span>
 <span class="kd">public</span> <span class="kd">func</span> <span class="nf">startAnimating</span><span class="p">()</span>
 <span class="kd">public</span> <span class="kd">func</span> <span class="nf">stopAnimating</span><span class="p">()</span>
@@ -793,7 +797,7 @@ Messages iPad Pro: 74x55pt @2x</p>
 
 <h3 id="changes-to-insertmessage">Changes to insertMessage</h3>
 
-<p>The function signature of <code class="highlighter-rouge">MSConversation.insertMessage</code> has changed (beta1 -&gt; beta2) for an unknown reason. The <code class="highlighter-rouge">localizedChangeDescription</code> parameter was removed. There is currently no way that I can determine to create a change description. The documentation is also out of line with the function itself.</p>
+<p>The function signature of <code class="language-plaintext highlighter-rouge">MSConversation.insertMessage</code> has changed (beta1 -&gt; beta2) for an unknown reason. The <code class="language-plaintext highlighter-rouge">localizedChangeDescription</code> parameter was removed. There is currently no way that I can determine to create a change description. The documentation is also out of line with the function itself.</p>
 
 <h2 id="wrap-up-1">Wrap Up</h2>
 

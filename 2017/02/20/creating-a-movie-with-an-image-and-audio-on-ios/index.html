@@ -10,7 +10,7 @@
   <meta name="description" content="I’m going to cover a few data conversions in this post:">
 
   <link rel="stylesheet" href="/css/main.css">
-  <link rel="canonical" href="http://twocentstudios.com/2017/02/20/creating-a-movie-with-an-image-and-audio-on-ios/">
+  <link rel="canonical" href="http://twocentstudios.com/2017/02/20/Creating-a-Movie-with-an-Image-and-Audio-on-iOS/">
   <link rel="alternate" type="application/rss+xml" title="twocentstudios" href="http://twocentstudios.com/feed.xml" />
 </head>
 
@@ -50,6 +50,10 @@
           <a class="page-link" href="/portfolio/">Portfolio</a>
           
         
+          
+        
+          
+          <a class="page-link" href="/apps/countbiki/privacy-policy/">Count Biki Privacy Policy</a>
           
         
           
@@ -133,8 +137,8 @@
     <p>I’m going to cover a few data conversions in this post:</p>
 
 <ul>
-  <li><code class="highlighter-rouge">UIImage</code>/<code class="highlighter-rouge">CGImage</code> to <code class="highlighter-rouge">CVPixelBuffer</code></li>
-  <li><code class="highlighter-rouge">UIImage</code> to QuickTimeMovie (.mov)</li>
+  <li><code class="language-plaintext highlighter-rouge">UIImage</code>/<code class="language-plaintext highlighter-rouge">CGImage</code> to <code class="language-plaintext highlighter-rouge">CVPixelBuffer</code></li>
+  <li><code class="language-plaintext highlighter-rouge">UIImage</code> to QuickTimeMovie (.mov)</li>
   <li>Adding an audio track to a QuickTimeMovie</li>
 </ul>
 
@@ -144,7 +148,7 @@
 
 <h2 id="overview">Overview</h2>
 
-<p>Our goal is to generate a movie with the contents of a single <code class="highlighter-rouge">UIImage</code> and an audio file. The movie file will have the length of the audio file.</p>
+<p>Our goal is to generate a movie with the contents of a single <code class="language-plaintext highlighter-rouge">UIImage</code> and an audio file. The movie file will have the length of the audio file.</p>
 
 <p>We’re going to create a wrapper function to perform the full video creation.</p>
 
@@ -152,7 +156,7 @@
   <li>Image + Audio -&gt; Movie</li>
 </ul>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="kd">func</span> <span class="nf">createMovieWithSingleImageAndMusic</span><span class="p">(</span><span class="nv">image</span><span class="p">:</span> <span class="kt">UIImage</span><span class="p">,</span> <span class="nv">audioFileURL</span><span class="p">:</span> <span class="kt">URL</span><span class="p">,</span> <span class="k">as</span><span class="nv">setExportPresetQuality</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="nv">outputVideoFileURL</span><span class="p">:</span> <span class="kt">URL</span><span class="p">,</span> <span class="nv">completion</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="p">(</span><span class="kt">Error</span><span class="p">?)</span> <span class="o">-&gt;</span> <span class="p">())</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">func</span> <span class="nf">createMovieWithSingleImageAndMusic</span><span class="p">(</span><span class="nv">image</span><span class="p">:</span> <span class="kt">UIImage</span><span class="p">,</span> <span class="nv">audioFileURL</span><span class="p">:</span> <span class="kt">URL</span><span class="p">,</span> <span class="k">as</span><span class="nv">setExportPresetQuality</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="nv">outputVideoFileURL</span><span class="p">:</span> <span class="kt">URL</span><span class="p">,</span> <span class="nv">completion</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="p">(</span><span class="kt">Error</span><span class="p">?)</span> <span class="o">-&gt;</span> <span class="p">())</span>
 </code></pre>
 </div>
 
@@ -163,19 +167,19 @@
   <li>Movie + Audio -&gt; Movie</li>
 </ul>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="kd">func</span> <span class="nf">writeSingleImageToMovie</span><span class="p">(</span><span class="nv">image</span><span class="p">:</span> <span class="kt">UIImage</span><span class="p">,</span> <span class="nv">movieLength</span><span class="p">:</span> <span class="kt">TimeInterval</span><span class="p">,</span> <span class="nv">outputFileURL</span><span class="p">:</span> <span class="kt">URL</span><span class="p">,</span> <span class="nv">completion</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="p">(</span><span class="kt">Error</span><span class="p">?)</span> <span class="o">-&gt;</span> <span class="p">())</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">func</span> <span class="nf">writeSingleImageToMovie</span><span class="p">(</span><span class="nv">image</span><span class="p">:</span> <span class="kt">UIImage</span><span class="p">,</span> <span class="nv">movieLength</span><span class="p">:</span> <span class="kt">TimeInterval</span><span class="p">,</span> <span class="nv">outputFileURL</span><span class="p">:</span> <span class="kt">URL</span><span class="p">,</span> <span class="nv">completion</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="p">(</span><span class="kt">Error</span><span class="p">?)</span> <span class="o">-&gt;</span> <span class="p">())</span>
 
 <span class="kd">func</span> <span class="nf">addAudioToMovie</span><span class="p">(</span><span class="nv">audioAsset</span><span class="p">:</span> <span class="kt">AVURLAsset</span><span class="p">,</span> <span class="nv">inputVideoAsset</span><span class="p">:</span> <span class="kt">AVURLAsset</span><span class="p">,</span> <span class="nv">outputVideoFileURL</span><span class="p">:</span> <span class="kt">URL</span><span class="p">,</span> <span class="nv">quality</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="nv">completion</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="p">(</span><span class="kt">Error</span><span class="p">?)</span> <span class="o">-&gt;</span> <span class="p">())</span>
 </code></pre>
 </div>
 
-<p>And finally one utility function to turn the image into a usable buffer for <code class="highlighter-rouge">AVAssetWriterInputPixelBufferAdaptor</code>.</p>
+<p>And finally one utility function to turn the image into a usable buffer for <code class="language-plaintext highlighter-rouge">AVAssetWriterInputPixelBufferAdaptor</code>.</p>
 
 <ul>
-  <li><code class="highlighter-rouge">CGImage</code> -&gt; <code class="highlighter-rouge">CVPixelBuffer</code></li>
+  <li><code class="language-plaintext highlighter-rouge">CGImage</code> -&gt; <code class="language-plaintext highlighter-rouge">CVPixelBuffer</code></li>
 </ul>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="kd">func</span> <span class="nf">pixelBuffer</span><span class="p">(</span><span class="n">fromImage</span> <span class="nv">image</span><span class="p">:</span> <span class="kt">CGImage</span><span class="p">,</span> <span class="nv">size</span><span class="p">:</span> <span class="kt">CGSize</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">CVPixelBuffer</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">func</span> <span class="nf">pixelBuffer</span><span class="p">(</span><span class="n">fromImage</span> <span class="nv">image</span><span class="p">:</span> <span class="kt">CGImage</span><span class="p">,</span> <span class="nv">size</span><span class="p">:</span> <span class="kt">CGSize</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">CVPixelBuffer</span>
 </code></pre>
 </div>
 
@@ -185,7 +189,7 @@
 
 <h3 id="cgimage---cvpixelbuffer">CGImage -&gt; CVPixelBuffer</h3>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="kd">static</span> <span class="kd">func</span> <span class="nf">pixelBuffer</span><span class="p">(</span><span class="n">fromImage</span> <span class="nv">image</span><span class="p">:</span> <span class="kt">CGImage</span><span class="p">,</span> <span class="nv">size</span><span class="p">:</span> <span class="kt">CGSize</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">CVPixelBuffer</span> <span class="p">{</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">static</span> <span class="kd">func</span> <span class="nf">pixelBuffer</span><span class="p">(</span><span class="n">fromImage</span> <span class="nv">image</span><span class="p">:</span> <span class="kt">CGImage</span><span class="p">,</span> <span class="nv">size</span><span class="p">:</span> <span class="kt">CGSize</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">CVPixelBuffer</span> <span class="p">{</span>
     <span class="k">let</span> <span class="nv">options</span><span class="p">:</span> <span class="kt">CFDictionary</span> <span class="o">=</span> <span class="p">[</span><span class="n">kCVPixelBufferCGImageCompatibilityKey</span> <span class="k">as</span> <span class="kt">String</span><span class="p">:</span> <span class="kc">true</span><span class="p">,</span> <span class="n">kCVPixelBufferCGBitmapContextCompatibilityKey</span> <span class="k">as</span> <span class="kt">String</span><span class="p">:</span> <span class="kc">true</span><span class="p">]</span> <span class="k">as</span> <span class="kt">CFDictionary</span>
     <span class="k">var</span> <span class="nv">pxbuffer</span><span class="p">:</span> <span class="kt">CVPixelBuffer</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span>
     <span class="k">let</span> <span class="nv">status</span> <span class="o">=</span> <span class="kt">CVPixelBufferCreate</span><span class="p">(</span><span class="n">kCFAllocatorDefault</span><span class="p">,</span> <span class="kt">Int</span><span class="p">(</span><span class="n">size</span><span class="o">.</span><span class="n">width</span><span class="p">),</span> <span class="kt">Int</span><span class="p">(</span><span class="n">size</span><span class="o">.</span><span class="n">height</span><span class="p">),</span> <span class="n">kCVPixelFormatType_32ARGB</span><span class="p">,</span> <span class="n">options</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">pxbuffer</span><span class="p">)</span>
@@ -210,14 +214,14 @@
 <p>The above function does a few things.</p>
 
 <ul>
-  <li>Create a <code class="highlighter-rouge">CVPixelBuffer</code> with attributes that allow us to write into it with a <code class="highlighter-rouge">CGContext</code>.</li>
-  <li>Create a <code class="highlighter-rouge">CGContext</code> that targets the empty buffer we just created.</li>
+  <li>Create a <code class="language-plaintext highlighter-rouge">CVPixelBuffer</code> with attributes that allow us to write into it with a <code class="language-plaintext highlighter-rouge">CGContext</code>.</li>
+  <li>Create a <code class="language-plaintext highlighter-rouge">CGContext</code> that targets the empty buffer we just created.</li>
   <li>Draw the image into the buffer.</li>
 </ul>
 
 <h3 id="image---movie">Image -&gt; Movie</h3>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="kd">static</span> <span class="kd">func</span> <span class="nf">writeSingleImageToMovie</span><span class="p">(</span><span class="nv">image</span><span class="p">:</span> <span class="kt">UIImage</span><span class="p">,</span> <span class="nv">movieLength</span><span class="p">:</span> <span class="kt">TimeInterval</span><span class="p">,</span> <span class="nv">outputFileURL</span><span class="p">:</span> <span class="kt">URL</span><span class="p">,</span> <span class="nv">completion</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="p">(</span><span class="kt">Error</span><span class="p">?)</span> <span class="o">-&gt;</span> <span class="p">())</span> <span class="p">{</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">static</span> <span class="kd">func</span> <span class="nf">writeSingleImageToMovie</span><span class="p">(</span><span class="nv">image</span><span class="p">:</span> <span class="kt">UIImage</span><span class="p">,</span> <span class="nv">movieLength</span><span class="p">:</span> <span class="kt">TimeInterval</span><span class="p">,</span> <span class="nv">outputFileURL</span><span class="p">:</span> <span class="kt">URL</span><span class="p">,</span> <span class="nv">completion</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="p">(</span><span class="kt">Error</span><span class="p">?)</span> <span class="o">-&gt;</span> <span class="p">())</span> <span class="p">{</span>
     <span class="k">do</span> <span class="p">{</span>
         <span class="k">let</span> <span class="nv">imageSize</span> <span class="o">=</span> <span class="n">image</span><span class="o">.</span><span class="n">size</span>
         <span class="k">let</span> <span class="nv">videoWriter</span> <span class="o">=</span> <span class="k">try</span> <span class="kt">AVAssetWriter</span><span class="p">(</span><span class="nv">outputURL</span><span class="p">:</span> <span class="n">outputFileURL</span><span class="p">,</span> <span class="nv">fileType</span><span class="p">:</span> <span class="kt">AVFileTypeQuickTimeMovie</span><span class="p">)</span>
@@ -258,19 +262,19 @@
 
 <p>I’ve wrapped everything in a do/catch block for more convenient error handling. I’m undecided whether I like this style or not.</p>
 
-<p>You may want to pass in options for the <code class="highlighter-rouge">fileType</code> or <code class="highlighter-rouge">AVVideoCodecKey</code>. I’ve hardcoded them to <code class="highlighter-rouge">AVFileTypeQuickTimeMovie</code> and <code class="highlighter-rouge">AVVideoCodecH264</code>, respectfully.</p>
+<p>You may want to pass in options for the <code class="language-plaintext highlighter-rouge">fileType</code> or <code class="language-plaintext highlighter-rouge">AVVideoCodecKey</code>. I’ve hardcoded them to <code class="language-plaintext highlighter-rouge">AVFileTypeQuickTimeMovie</code> and <code class="language-plaintext highlighter-rouge">AVVideoCodecH264</code>, respectfully.</p>
 
 <p>The first half of this function is getting settings created and ensuring our writers are set up correctly.</p>
 
-<p><code class="highlighter-rouge">AVAssetWriter</code> assumes your frames will be the same length (this info is probably in the documentation somewhere, but I had to find it by trial and error). In order to get our movie to be the correct length, we’ll use the same image as the first and last frame. The start frame will start a time 0 and the end frame will start at half our desired length. <code class="highlighter-rouge">AVAssetWriter</code> will write the frames as equal length.</p>
+<p><code class="language-plaintext highlighter-rouge">AVAssetWriter</code> assumes your frames will be the same length (this info is probably in the documentation somewhere, but I had to find it by trial and error). In order to get our movie to be the correct length, we’ll use the same image as the first and last frame. The start frame will start a time 0 and the end frame will start at half our desired length. <code class="language-plaintext highlighter-rouge">AVAssetWriter</code> will write the frames as equal length.</p>
 
-<p>Next, we convert the image to a pixel buffer using the function we created earlier. We’re supposed to wait for the <code class="highlighter-rouge">assetWriterInput</code> to be ready to write, so we’ll spin with a short sleep (in my anecdotal experience, the <code class="highlighter-rouge">assetWriterInput</code> keeps up fine in this situation and never needs to spin at all).</p>
+<p>Next, we convert the image to a pixel buffer using the function we created earlier. We’re supposed to wait for the <code class="language-plaintext highlighter-rouge">assetWriterInput</code> to be ready to write, so we’ll spin with a short sleep (in my anecdotal experience, the <code class="language-plaintext highlighter-rouge">assetWriterInput</code> keeps up fine in this situation and never needs to spin at all).</p>
 
 <p>Finally, we’ll call the completion block when the video has finished writing.</p>
 
 <h3 id="movie--audio---movie">Movie + Audio -&gt; Movie</h3>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="kd">static</span> <span class="kd">func</span> <span class="nf">addAudioToMovie</span><span class="p">(</span><span class="nv">audioAsset</span><span class="p">:</span> <span class="kt">AVURLAsset</span><span class="p">,</span> <span class="nv">inputVideoAsset</span><span class="p">:</span> <span class="kt">AVURLAsset</span><span class="p">,</span> <span class="nv">outputVideoFileURL</span><span class="p">:</span> <span class="kt">URL</span><span class="p">,</span> <span class="nv">quality</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="nv">completion</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="p">(</span><span class="kt">Error</span><span class="p">?)</span> <span class="o">-&gt;</span> <span class="p">())</span> <span class="p">{</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">static</span> <span class="kd">func</span> <span class="nf">addAudioToMovie</span><span class="p">(</span><span class="nv">audioAsset</span><span class="p">:</span> <span class="kt">AVURLAsset</span><span class="p">,</span> <span class="nv">inputVideoAsset</span><span class="p">:</span> <span class="kt">AVURLAsset</span><span class="p">,</span> <span class="nv">outputVideoFileURL</span><span class="p">:</span> <span class="kt">URL</span><span class="p">,</span> <span class="nv">quality</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="nv">completion</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="p">(</span><span class="kt">Error</span><span class="p">?)</span> <span class="o">-&gt;</span> <span class="p">())</span> <span class="p">{</span>
     <span class="k">do</span> <span class="p">{</span>
         <span class="k">let</span> <span class="nv">composition</span> <span class="o">=</span> <span class="kt">AVMutableComposition</span><span class="p">()</span>
         
@@ -297,15 +301,15 @@
 </code></pre>
 </div>
 
-<p>We’ll first extract the video asset track from <code class="highlighter-rouge">inputVideoAsset</code> and add it to an <code class="highlighter-rouge">AVMutableComposition</code>. Then we’ll do the same for the audio track from the <code class="highlighter-rouge">audioAsset</code>. It’s assumed that the input assets have one and only one track.</p>
+<p>We’ll first extract the video asset track from <code class="language-plaintext highlighter-rouge">inputVideoAsset</code> and add it to an <code class="language-plaintext highlighter-rouge">AVMutableComposition</code>. Then we’ll do the same for the audio track from the <code class="language-plaintext highlighter-rouge">audioAsset</code>. It’s assumed that the input assets have one and only one track.</p>
 
-<p>Next, we’ll create an <code class="highlighter-rouge">AVAssetExportSession</code> and begin the export.</p>
+<p>Next, we’ll create an <code class="language-plaintext highlighter-rouge">AVAssetExportSession</code> and begin the export.</p>
 
 <h3 id="image--audio---movie">Image + Audio -&gt; Movie</h3>
 
 <p>Finally we can write the wrapper function to tie the inputs and outputs together from functions we just wrote.</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="c1">// See AVAssetExportSession.h for quality presets.</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="c1">// See AVAssetExportSession.h for quality presets.</span>
 <span class="kd">static</span> <span class="kd">func</span> <span class="nf">createMovieWithSingleImageAndMusic</span><span class="p">(</span><span class="nv">image</span><span class="p">:</span> <span class="kt">UIImage</span><span class="p">,</span> <span class="nv">audioFileURL</span><span class="p">:</span> <span class="kt">URL</span><span class="p">,</span> <span class="k">as</span><span class="nv">setExportPresetQuality</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="nv">outputVideoFileURL</span><span class="p">:</span> <span class="kt">URL</span><span class="p">,</span> <span class="nv">completion</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="p">(</span><span class="kt">Error</span><span class="p">?)</span> <span class="o">-&gt;</span> <span class="p">())</span> <span class="p">{</span>
     <span class="k">let</span> <span class="nv">audioAsset</span> <span class="o">=</span> <span class="kt">AVURLAsset</span><span class="p">(</span><span class="nv">url</span><span class="p">:</span> <span class="n">audioFileURL</span><span class="p">)</span>
     <span class="k">let</span> <span class="nv">length</span> <span class="o">=</span> <span class="kt">TimeInterval</span><span class="p">(</span><span class="n">audioAsset</span><span class="o">.</span><span class="n">duration</span><span class="o">.</span><span class="n">seconds</span><span class="p">)</span>
@@ -324,7 +328,7 @@
 </code></pre>
 </div>
 
-<p>I don’t like the completion handler nesting, but since it’s only one level deep I consider it acceptable in this case. Using a reactive wrapper or <code class="highlighter-rouge">NSOperation</code> would be cleaner and allow cancellation too.</p>
+<p>I don’t like the completion handler nesting, but since it’s only one level deep I consider it acceptable in this case. Using a reactive wrapper or <code class="language-plaintext highlighter-rouge">NSOperation</code> would be cleaner and allow cancellation too.</p>
 
 <p>Another consideration would be to either allow the caller to provide a output URL for the intermediate video so that it can be cleaned up if necessary or to just perform the cleanup ourselves at the end of the operation after the final video has been created. In my specific situation, I was writing all the files to a temporary directory anyway.</p>
 

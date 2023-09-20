@@ -53,6 +53,10 @@
           
         
           
+          <a class="page-link" href="/apps/countbiki/privacy-policy/">Count Biki Privacy Policy</a>
+          
+        
+          
         
           
         
@@ -147,7 +151,7 @@
   <li><a href="#end">End</a></li>
 </ul>
 
-<h2 id="ideaididea"><a href="id:idea">Idea</a></h2>
+<h2 id="idea"><a href="id:idea">Idea</a></h2>
 
 <p>I recently came across an awesome app called <a href="http://timehop.com">TimeHop</a> that compiles your past posts from Facebook, Twitter, etc. and shows you what you posted on that day one year ago. I love reminiscing through my old things, so this concept was right up my alley.</p>
 
@@ -155,7 +159,7 @@
 
 <p>And so the idea of combining Last.fm and TimeHop was born.</p>
 
-<h2 id="planningidplanning"><a href="id:planning">Planning</a></h2>
+<h2 id="planning"><a href="id:planning">Planning</a></h2>
 
 <h3 id="getting-a-feel-for-the-data">Getting a feel for the data</h3>
 
@@ -187,7 +191,7 @@
 
 <ul>
   <li>take the current date</li>
-  <li>subtract <code class="highlighter-rouge">n</code> years (1 year ago to start)</li>
+  <li>subtract <code class="language-plaintext highlighter-rouge">n</code> years (1 year ago to start)</li>
   <li>figure out where that date is within the bounds of the Last.fm weeks</li>
   <li>request the charts for the username and date range</li>
   <li>display the data</li>
@@ -201,7 +205,7 @@
 
 <ul>
   <li>We’ll support only one last.fm user.</li>
-  <li>The user can view charts from the week range exactly <code class="highlighter-rouge">n</code> years ago (with the lower bound provided by Last.fm).</li>
+  <li>The user can view charts from the week range exactly <code class="language-plaintext highlighter-rouge">n</code> years ago (with the lower bound provided by Last.fm).</li>
   <li>The user cannot view any charts newer than one year ago.</li>
   <li>The app has a chart view and a settings view (keeping it very simple).</li>
 </ul>
@@ -292,7 +296,7 @@
 
 <div class="caption-wrapper"><img class="caption" src="/images/vinylogue-settings.jpg" width="" height="" alt="Settings view wireframe" title="Settings view wireframe" /><div class="caption-text">Settings view wireframe</div></div>
 
-<h2 id="developmentiddevelopment1"><a href="id:development1">Development</a></h2>
+<h2 id="development"><a href="id:development1">Development</a></h2>
 
 <p>Finally time to dig into some coding (for real)! Well, almost time…</p>
 
@@ -361,13 +365,13 @@
   <li>We’re subclassing <a href="http://afnetworking.github.com/AFNetworking/Classes/AFHTTPClient.html">AFHTTPClient</a>.</li>
   <li>A client instance is specific to a last.fm user.</li>
   <li>We can request data from two API endpoints as discussed in the planning section.</li>
-  <li>The <code class="highlighter-rouge">fetchWeeklyChartList</code> method only requires a username.</li>
-  <li>the <code class="highlighter-rouge">fetchWeeklyAlbumChartForChart:</code> method requires a username and a WeeklyChart object returned by the former method. A WeeklyChart object simply holds an NSDate for <code class="highlighter-rouge">from</code> and <code class="highlighter-rouge">to</code>.</li>
+  <li>The <code class="language-plaintext highlighter-rouge">fetchWeeklyChartList</code> method only requires a username.</li>
+  <li>the <code class="language-plaintext highlighter-rouge">fetchWeeklyAlbumChartForChart:</code> method requires a username and a WeeklyChart object returned by the former method. A WeeklyChart object simply holds an NSDate for <code class="language-plaintext highlighter-rouge">from</code> and <code class="language-plaintext highlighter-rouge">to</code>.</li>
 </ul>
 
-<p>I want to focus on the <code class="highlighter-rouge">RACSignal</code> return types. I say in the comments that the methods “return an NSArray…” when what I mean is that they immediately return an <code class="highlighter-rouge">RACSignal</code>. Subscribing to that signal will (usually) result in an <code class="highlighter-rouge">NSArray</code> being sent to the subscriber in the <code class="highlighter-rouge">sendNext</code> method.</p>
+<p>I want to focus on the <code class="language-plaintext highlighter-rouge">RACSignal</code> return types. I say in the comments that the methods “return an NSArray…” when what I mean is that they immediately return an <code class="language-plaintext highlighter-rouge">RACSignal</code>. Subscribing to that signal will (usually) result in an <code class="language-plaintext highlighter-rouge">NSArray</code> being sent to the subscriber in the <code class="language-plaintext highlighter-rouge">sendNext</code> method.</p>
 
-<p>It’s probably not immediately clear why I wouldn’t just return the <code class="highlighter-rouge">NSArray</code>, but bear with me.</p>
+<p>It’s probably not immediately clear why I wouldn’t just return the <code class="language-plaintext highlighter-rouge">NSArray</code>, but bear with me.</p>
 
 <h4 id="enqueuerequest">enqueueRequest</h4>
 
@@ -491,16 +495,16 @@
 
 <p>So it might look a little hairy, but it’s essentially just a few processing steps chained together and all in once place.</p>
 
-<p>We introduced the <code class="highlighter-rouge">RACSequence</code> at the end there to iterate through the array. There are more standard <code class="highlighter-rouge">NSArray</code> ways to do this, but <code class="highlighter-rouge">RACSequence</code>s are a subclass of <code class="highlighter-rouge">RACStream</code>s, which have a bunch of cool operators like <code class="highlighter-rouge">map</code>, <code class="highlighter-rouge">flatten</code>, <code class="highlighter-rouge">filter</code>, etc.</p>
+<p>We introduced the <code class="language-plaintext highlighter-rouge">RACSequence</code> at the end there to iterate through the array. There are more standard <code class="language-plaintext highlighter-rouge">NSArray</code> ways to do this, but <code class="language-plaintext highlighter-rouge">RACSequence</code>s are a subclass of <code class="language-plaintext highlighter-rouge">RACStream</code>s, which have a bunch of cool operators like <code class="language-plaintext highlighter-rouge">map</code>, <code class="language-plaintext highlighter-rouge">flatten</code>, <code class="language-plaintext highlighter-rouge">filter</code>, etc.</p>
 
-<p>The main point to get out of this is that our API endpoint method defines several processing steps for a stream, then hands the stream off to its assumed subscriber. At the point the API endpoint method is called, none of this work will actually be done. It’s not until the subscriber has called <code class="highlighter-rouge">subscribeNext</code> on the returned signal that the network request and subsequent processing be done. The subscriber doesn’t even have to know that the original signal’s <code class="highlighter-rouge">next</code> values are being modified.</p>
+<p>The main point to get out of this is that our API endpoint method defines several processing steps for a stream, then hands the stream off to its assumed subscriber. At the point the API endpoint method is called, none of this work will actually be done. It’s not until the subscriber has called <code class="language-plaintext highlighter-rouge">subscribeNext</code> on the returned signal that the network request and subsequent processing be done. The subscriber doesn’t even have to know that the original signal’s <code class="language-plaintext highlighter-rouge">next</code> values are being modified.</p>
 
 <p>That about does it for the API client. To summarize, the data flow is as follows:</p>
 
 <ul>
-  <li>The client object’s owner (we’ll assume it’s a controller) requests a signal from a public API endpoint method like <code class="highlighter-rouge">fetchWeeklyChartList</code>.</li>
-  <li>The API endpoint method asks the <code class="highlighter-rouge">enqueue</code> method for a new signal for a specific network request.</li>
-  <li>The <code class="highlighter-rouge">enqueue</code> method creates a new manually controlled signal, sets up the signal so that it will send responses when the network call completes, and then passes the signal to the API endpoint method.</li>
+  <li>The client object’s owner (we’ll assume it’s a controller) requests a signal from a public API endpoint method like <code class="language-plaintext highlighter-rouge">fetchWeeklyChartList</code>.</li>
+  <li>The API endpoint method asks the <code class="language-plaintext highlighter-rouge">enqueue</code> method for a new signal for a specific network request.</li>
+  <li>The <code class="language-plaintext highlighter-rouge">enqueue</code> method creates a new manually controlled signal, sets up the signal so that it will send responses when the network call completes, and then passes the signal to the API endpoint method.</li>
   <li>The API endpoint method sets up a list of processing steps that must be done with responses that are known to be good.</li>
   <li>The API endpoint passes the signal back to the controller.</li>
 </ul>
@@ -511,7 +515,7 @@
 
 <h3 id="tcsweeklyalbumchartviewcontroller">TCSWeeklyAlbumChartViewController</h3>
 
-<p>Our primary view controller is called <code class="highlighter-rouge">TCSWeeklyAlbumChartViewController</code>. Its function is to request the weekly album charts for a particular user and display them in a table view. It also facilitates moving forward and backward in time to view charts from other years.</p>
+<p>Our primary view controller is called <code class="language-plaintext highlighter-rouge">TCSWeeklyAlbumChartViewController</code>. Its function is to request the weekly album charts for a particular user and display them in a table view. It also facilitates moving forward and backward in time to view charts from other years.</p>
 
 <p>It was originally imagined that this would be, for lack of a better term, the root controller of the app. In its original implementation, it had many more responsibilities and had to be more mutable. During the coding process, the app architecture changed, allowing me to assume that the controller would have an immutable user, and simplifying things a bit.</p>
 
@@ -598,12 +602,12 @@
 <p>I’ll reprint our data flow from the planning section above adding some detail and variable names. Variables related to the step are in [brackets].</p>
 
 <ul>
-  <li>take the current date [<code class="highlighter-rouge">now</code>]</li>
-  <li>subtract <code class="highlighter-rouge">n</code> years (1 year ago to start) [<code class="highlighter-rouge">displayingDate</code> &amp; <code class="highlighter-rouge">displayingYearsAgo</code> along with a convenience reference to the Gregorian <code class="highlighter-rouge">calendar</code>]</li>
-  <li>figure out where that date is within the bounds of the Last.fm weeks [<code class="highlighter-rouge">weeklyCharts</code> &amp; <code class="highlighter-rouge">displayingWeeklyChart</code>]</li>
-  <li>request the charts for the username and date range [<code class="highlighter-rouge">rawAlbumChartsForWeek</code>]</li>
-  <li>filter the charts based on play count and display the data [<code class="highlighter-rouge">albumChartsForWeek</code>]</li>
-  <li>We also need to calculate the date bounds we can show charts for [<code class="highlighter-rouge">earliestScrobbleDate</code> &amp; <code class="highlighter-rouge">latestScrobbleDate</code>]</li>
+  <li>take the current date [<code class="language-plaintext highlighter-rouge">now</code>]</li>
+  <li>subtract <code class="language-plaintext highlighter-rouge">n</code> years (1 year ago to start) [<code class="language-plaintext highlighter-rouge">displayingDate</code> &amp; <code class="language-plaintext highlighter-rouge">displayingYearsAgo</code> along with a convenience reference to the Gregorian <code class="language-plaintext highlighter-rouge">calendar</code>]</li>
+  <li>figure out where that date is within the bounds of the Last.fm weeks [<code class="language-plaintext highlighter-rouge">weeklyCharts</code> &amp; <code class="language-plaintext highlighter-rouge">displayingWeeklyChart</code>]</li>
+  <li>request the charts for the username and date range [<code class="language-plaintext highlighter-rouge">rawAlbumChartsForWeek</code>]</li>
+  <li>filter the charts based on play count and display the data [<code class="language-plaintext highlighter-rouge">albumChartsForWeek</code>]</li>
+  <li>We also need to calculate the date bounds we can show charts for [<code class="language-plaintext highlighter-rouge">earliestScrobbleDate</code> &amp; <code class="language-plaintext highlighter-rouge">latestScrobbleDate</code>]</li>
 </ul>
 
 <p>We store a lastFMClient instance to call on as our source of external data.</p>
@@ -662,7 +666,7 @@
     <span class="p">[</span><span class="n">self</span><span class="p">.</span><span class="n">slideSelectView</span><span class="p">.</span><span class="n">frontView</span> <span class="nf">addGestureRecognizer</span><span class="p">:</span><span class="n">doubleTap</span><span class="p">];</span>
 <span class="p">}</span></code></pre></figure>
 
-<p>All view attributes are defined in the view getters section. I’ve taken up this habit to keep my controllers a bit more tidy. The views are created at the first <code class="highlighter-rouge">self.[viewname]</code> call in loadView.</p>
+<p>All view attributes are defined in the view getters section. I’ve taken up this habit to keep my controllers a bit more tidy. The views are created at the first <code class="language-plaintext highlighter-rouge">self.[viewname]</code> call in loadView.</p>
 
 <blockquote>
   <p>(TCSWeeklyAlbumChartViewController.m)</p>
@@ -727,7 +731,7 @@
 
 <h5 id="weakify--strongify">@weakify &amp; @strongify</h5>
 
-<p>Because RAC is heavily block-based, we can use the <code class="highlighter-rouge">EXTScope</code> preprocessor definitions within the companion <code class="highlighter-rouge">libextobjc</code> library to save our sanity when passing variables into blocks. Simply throw a <code class="highlighter-rouge">@weakify(my_variable)</code> before your RAC blocks to avoid the retain cycles, and then <code class="highlighter-rouge">@strongify(my_variable)</code> within each block to ensure the variable is not released during the block’s execution. See the definitions <a href="https://github.com/jspahrsummers/libextobjc/blob/master/extobjc/EXTScope.h">here</a>.</p>
+<p>Because RAC is heavily block-based, we can use the <code class="language-plaintext highlighter-rouge">EXTScope</code> preprocessor definitions within the companion <code class="language-plaintext highlighter-rouge">libextobjc</code> library to save our sanity when passing variables into blocks. Simply throw a <code class="language-plaintext highlighter-rouge">@weakify(my_variable)</code> before your RAC blocks to avoid the retain cycles, and then <code class="language-plaintext highlighter-rouge">@strongify(my_variable)</code> within each block to ensure the variable is not released during the block’s execution. See the definitions <a href="https://github.com/jspahrsummers/libextobjc/blob/master/extobjc/EXTScope.h">here</a>.</p>
 
 <h5 id="racable--racablewithstart">RACAble(…) &amp; RACAbleWithStart(…)</h5>
 
@@ -776,19 +780,19 @@
 
 <span class="p">}</span></code></pre></figure>
 
-<p>Let’s deconstruct this. <code class="highlighter-rouge">RACAbleWithStart(self.userName)</code> creates an <code class="highlighter-rouge">RACSignal</code>. Again, an <code class="highlighter-rouge">RACSignal</code> can send <code class="highlighter-rouge">next</code> (with a value) and <code class="highlighter-rouge">error</code> or <code class="highlighter-rouge">complete</code> messages to its subscribers.</p>
+<p>Let’s deconstruct this. <code class="language-plaintext highlighter-rouge">RACAbleWithStart(self.userName)</code> creates an <code class="language-plaintext highlighter-rouge">RACSignal</code>. Again, an <code class="language-plaintext highlighter-rouge">RACSignal</code> can send <code class="language-plaintext highlighter-rouge">next</code> (with a value) and <code class="language-plaintext highlighter-rouge">error</code> or <code class="language-plaintext highlighter-rouge">complete</code> messages to its subscribers.</p>
 
-<p>The <code class="highlighter-rouge">WithStart</code> part sends the current value of <code class="highlighter-rouge">self.userName</code> when it subscribed to. Without this, the block in <code class="highlighter-rouge">subscribeNext</code> would not be executed until <code class="highlighter-rouge">self.userName</code> changes for the first time after this subscription is created. In our case, because <code class="highlighter-rouge">self.userName</code> is only set once in the controller’s <code class="highlighter-rouge">init</code> method (before the signal is created), it would never be called with a normal <code class="highlighter-rouge">RACAble</code>.</p>
+<p>The <code class="language-plaintext highlighter-rouge">WithStart</code> part sends the current value of <code class="language-plaintext highlighter-rouge">self.userName</code> when it subscribed to. Without this, the block in <code class="language-plaintext highlighter-rouge">subscribeNext</code> would not be executed until <code class="language-plaintext highlighter-rouge">self.userName</code> changes for the first time after this subscription is created. In our case, because <code class="language-plaintext highlighter-rouge">self.userName</code> is only set once in the controller’s <code class="language-plaintext highlighter-rouge">init</code> method (before the signal is created), it would never be called with a normal <code class="language-plaintext highlighter-rouge">RACAble</code>.</p>
 
-<p>(At this point you may be wondering, “Why even observe the userName property if it’s guaranteed to never change within the controller?” That’s a good question. It’s partly vestigial from when the value could change. It would very much be possible to transplant the code from within the <code class="highlighter-rouge">subscribeNext</code> block to <code class="highlighter-rouge">viewDidLoad</code>, but as you’ll see it fits pretty well with the rest of the more dynamic view code.)</p>
+<p>(At this point you may be wondering, “Why even observe the userName property if it’s guaranteed to never change within the controller?” That’s a good question. It’s partly vestigial from when the value could change. It would very much be possible to transplant the code from within the <code class="language-plaintext highlighter-rouge">subscribeNext</code> block to <code class="language-plaintext highlighter-rouge">viewDidLoad</code>, but as you’ll see it fits pretty well with the rest of the more dynamic view code.)</p>
 
-<p>The next statement, <code class="highlighter-rouge">deliverOn:</code>, ~~modifies~~ transforms the signal into a new RACSignal on the specified thread to ensure <code class="highlighter-rouge">next</code> values are delivered on the main thread. This is a necessary because UIKit requires user interface changes to be done on the <a href="http://developer.apple.com/library/ios/#documentation/uikit/reference/UIKit_Framework/Introduction/Introduction.html#//apple_ref/doc/uid/TP40006955-CH1-SW1">main thread</a>. Like all other signal transformations, it only takes effect if the result is used.</p>
+<p>The next statement, <code class="language-plaintext highlighter-rouge">deliverOn:</code>, <del>modifies</del> transforms the signal into a new RACSignal on the specified thread to ensure <code class="language-plaintext highlighter-rouge">next</code> values are delivered on the main thread. This is a necessary because UIKit requires user interface changes to be done on the <a href="http://developer.apple.com/library/ios/#documentation/uikit/reference/UIKit_Framework/Introduction/Introduction.html#//apple_ref/doc/uid/TP40006955-CH1-SW1">main thread</a>. Like all other signal transformations, it only takes effect if the result is used.</p>
 
-<p><code class="highlighter-rouge">subscribeNext</code> is where our reaction code goes. Basically saying, “When the value of <code class="highlighter-rouge">self.userName</code> changes, execute the following block with the new value.” In this example, we’re going to change a label to show the userName. If it’s <code class="highlighter-rouge">nil</code>, we’ll throw up the error view.</p>
+<p><code class="language-plaintext highlighter-rouge">subscribeNext</code> is where our reaction code goes. Basically saying, “When the value of <code class="language-plaintext highlighter-rouge">self.userName</code> changes, execute the following block with the new value.” In this example, we’re going to change a label to show the userName. If it’s <code class="language-plaintext highlighter-rouge">nil</code>, we’ll throw up the error view.</p>
 
-<p>I could have also used another variation of the <code class="highlighter-rouge">subscribeNext</code> method like <code class="highlighter-rouge">subscribeNext:complete:</code> to also add a block to execute when the signal completes. We don’t really need to do anything on completion, so we’ll just add a block for <code class="highlighter-rouge">next:</code>.</p>
+<p>I could have also used another variation of the <code class="language-plaintext highlighter-rouge">subscribeNext</code> method like <code class="language-plaintext highlighter-rouge">subscribeNext:complete:</code> to also add a block to execute when the signal completes. We don’t really need to do anything on completion, so we’ll just add a block for <code class="language-plaintext highlighter-rouge">next:</code>.</p>
 
-<p>Instead of the <code class="highlighter-rouge">if/else</code>, we could have used two separate subscriptions that first <code class="highlighter-rouge">filter</code> for <code class="highlighter-rouge">nil</code> or empty userName. To keep it simple though, we’ll just mix in the iterative style for now.</p>
+<p>Instead of the <code class="language-plaintext highlighter-rouge">if/else</code>, we could have used two separate subscriptions that first <code class="language-plaintext highlighter-rouge">filter</code> for <code class="language-plaintext highlighter-rouge">nil</code> or empty userName. To keep it simple though, we’ll just mix in the iterative style for now.</p>
 
 <p>Alright, so one signal down. Let’s look at another common pattern: combining multiple signals.</p>
 
@@ -834,13 +838,13 @@
 
 <p>I’ve separated out the expressions again, and I’ve replaced a bunch of tedious date calculation code and view updating code with comments in order to focus on what’s happening with RAC. You can see everything in the source.</p>
 
-<p>The slideSelectView has a couple components that depend on <code class="highlighter-rouge">displayingDate</code>, <code class="highlighter-rouge">earliestScrobbleDate</code>, and <code class="highlighter-rouge">latestScrobbleDate</code>. I want to update this view when any of these values change. Luckily, there’s an RACSignal constructor for this.</p>
+<p>The slideSelectView has a couple components that depend on <code class="language-plaintext highlighter-rouge">displayingDate</code>, <code class="language-plaintext highlighter-rouge">earliestScrobbleDate</code>, and <code class="language-plaintext highlighter-rouge">latestScrobbleDate</code>. I want to update this view when any of these values change. Luckily, there’s an RACSignal constructor for this.</p>
 
-<p><code class="highlighter-rouge">[RACSignal combineLatest:]</code> allows you to combine several signals into one signal. The new signal sends a <code class="highlighter-rouge">next:</code> message any time one of its component signals sends <code class="highlighter-rouge">next:</code>. There are a few variations of <code class="highlighter-rouge">combineLatest:</code> but the one we’ll use in this example will combine all the latest <code class="highlighter-rouge">next:</code> values of our three component signals into a single <a href="https://github.com/ReactiveCocoa/ReactiveCocoa/blob/master/ReactiveCocoaFramework/ReactiveCocoa/RACTuple.h">RACTuple</a> object. If you haven’t heard of a tuple before, you can think of it like an array for now.</p>
+<p><code class="language-plaintext highlighter-rouge">[RACSignal combineLatest:]</code> allows you to combine several signals into one signal. The new signal sends a <code class="language-plaintext highlighter-rouge">next:</code> message any time one of its component signals sends <code class="language-plaintext highlighter-rouge">next:</code>. There are a few variations of <code class="language-plaintext highlighter-rouge">combineLatest:</code> but the one we’ll use in this example will combine all the latest <code class="language-plaintext highlighter-rouge">next:</code> values of our three component signals into a single <a href="https://github.com/ReactiveCocoa/ReactiveCocoa/blob/master/ReactiveCocoaFramework/ReactiveCocoa/RACTuple.h">RACTuple</a> object. If you haven’t heard of a tuple before, you can think of it like an array for now.</p>
 
-<p><code class="highlighter-rouge">combineLatest</code> takes an array of signals, which we’ll generate on-the-fly with <code class="highlighter-rouge">RACAbleWithStart</code>.</p>
+<p><code class="language-plaintext highlighter-rouge">combineLatest</code> takes an array of signals, which we’ll generate on-the-fly with <code class="language-plaintext highlighter-rouge">RACAbleWithStart</code>.</p>
 
-<p>When we subscribe, we expect a single <code class="highlighter-rouge">RACTuple</code> object to be delivered with the latest values of our component signals in the order we placed them in the original array. We can use the <code class="highlighter-rouge">RACTuple</code> helper methods <code class="highlighter-rouge">.first</code>, <code class="highlighter-rouge">.second</code>, etc. to break out the values we need.</p>
+<p>When we subscribe, we expect a single <code class="language-plaintext highlighter-rouge">RACTuple</code> object to be delivered with the latest values of our component signals in the order we placed them in the original array. We can use the <code class="language-plaintext highlighter-rouge">RACTuple</code> helper methods <code class="language-plaintext highlighter-rouge">.first</code>, <code class="language-plaintext highlighter-rouge">.second</code>, etc. to break out the values we need.</p>
 
 <p>Within the block, we calculate some booleans and set some labels. This could be broken up into multiple methods, but in this case, it made the most sense to do these calculations and assignments in the same place because they depend on the same set of signals.</p>
 
@@ -874,15 +878,15 @@
     
 <span class="p">}</span></code></pre></figure>
 
-<p>Here we’re observing the <code class="highlighter-rouge">showingLoading</code> state variable. This variable will presumably be set by the data subscribers when they’re about to do something with the network or process data.</p>
+<p>Here we’re observing the <code class="language-plaintext highlighter-rouge">showingLoading</code> state variable. This variable will presumably be set by the data subscribers when they’re about to do something with the network or process data.</p>
 
 <p>This time I left the signal creation, modification, and subscription all in one call.</p>
 
-<p><code class="highlighter-rouge">RACAble(self.showingLoading)</code> creates the signal. <code class="highlighter-rouge">distinctUntilChanged</code> modifies the signal to only send a <code class="highlighter-rouge">next:</code> value to subscribers when that value is different from the last one. For example, let’s assume <code class="highlighter-rouge">showingLoading</code> is <code class="highlighter-rouge">YES</code>. If somewhere in our controller, a method sets <code class="highlighter-rouge">showingLoading</code> to <code class="highlighter-rouge">NO</code>, then it is also set to <code class="highlighter-rouge">NO</code> later, the <code class="highlighter-rouge">subscribeNext:</code> block will only be executed on the first change from <code class="highlighter-rouge">YES</code> to <code class="highlighter-rouge">NO</code>.</p>
+<p><code class="language-plaintext highlighter-rouge">RACAble(self.showingLoading)</code> creates the signal. <code class="language-plaintext highlighter-rouge">distinctUntilChanged</code> modifies the signal to only send a <code class="language-plaintext highlighter-rouge">next:</code> value to subscribers when that value is different from the last one. For example, let’s assume <code class="language-plaintext highlighter-rouge">showingLoading</code> is <code class="language-plaintext highlighter-rouge">YES</code>. If somewhere in our controller, a method sets <code class="language-plaintext highlighter-rouge">showingLoading</code> to <code class="language-plaintext highlighter-rouge">NO</code>, then it is also set to <code class="language-plaintext highlighter-rouge">NO</code> later, the <code class="language-plaintext highlighter-rouge">subscribeNext:</code> block will only be executed on the first change from <code class="language-plaintext highlighter-rouge">YES</code> to <code class="language-plaintext highlighter-rouge">NO</code>.</p>
 
-<p>We’ve seen <code class="highlighter-rouge">deliverOn:</code> a few times now. No surprises there.</p>
+<p>We’ve seen <code class="language-plaintext highlighter-rouge">deliverOn:</code> a few times now. No surprises there.</p>
 
-<p>Now for the subscription. You can see that the <code class="highlighter-rouge">next:</code> value is delivered as an <code class="highlighter-rouge">NSNumber</code> object even though <code class="highlighter-rouge">self.showingLoading</code> is a primitive <code class="highlighter-rouge">BOOL</code>. RAC will wrap primitives and structs in objects for us. So before we compare against the value, I’ll use <code class="highlighter-rouge">[showingLoading boolValue]</code> to get the primitive back.</p>
+<p>Now for the subscription. You can see that the <code class="language-plaintext highlighter-rouge">next:</code> value is delivered as an <code class="language-plaintext highlighter-rouge">NSNumber</code> object even though <code class="language-plaintext highlighter-rouge">self.showingLoading</code> is a primitive <code class="language-plaintext highlighter-rouge">BOOL</code>. RAC will wrap primitives and structs in objects for us. So before we compare against the value, I’ll use <code class="language-plaintext highlighter-rouge">[showingLoading boolValue]</code> to get the primitive back.</p>
 
 <p>You can check out the rest of the view signals and subscriptions in the source.</p>
 
@@ -890,7 +894,7 @@
 
 <p>We’ll introduce a couple new RAC concepts in this method. But first, here’s an ugly ascii variable dependency graph. We’ll use this to set up our signals.</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code>    userName            now         displayingYearsAgo
+<div class="language-plaintext highlighter-rouge"><pre class="highlight"><code>    userName            now         displayingYearsAgo
         |                \              /
     lastFMClient          displayingDate
         |                       /
@@ -908,7 +912,7 @@
 
 <p>When any of these variables change, they trigger a change upstream (downstream?) to the variables that depend on them.</p>
 
-<p>For example, if the user changes <code class="highlighter-rouge">displayingDate</code> (moving to a past year), a change will be triggered in <code class="highlighter-rouge">displayingWeeklyChart</code>, which will trigger a change in <code class="highlighter-rouge">rawAlbumChartsForWeek</code> and so on. If our data was more time sensitive (by-the-minute instead of by-the-week), we could set up a signal for <code class="highlighter-rouge">now</code> that would trigger a change down the line every minute. Or if we decided to reuse our controller with different users, a <code class="highlighter-rouge">userName</code> change would trigger a change down the line.</p>
+<p>For example, if the user changes <code class="language-plaintext highlighter-rouge">displayingDate</code> (moving to a past year), a change will be triggered in <code class="language-plaintext highlighter-rouge">displayingWeeklyChart</code>, which will trigger a change in <code class="language-plaintext highlighter-rouge">rawAlbumChartsForWeek</code> and so on. If our data was more time sensitive (by-the-minute instead of by-the-week), we could set up a signal for <code class="language-plaintext highlighter-rouge">now</code> that would trigger a change down the line every minute. Or if we decided to reuse our controller with different users, a <code class="language-plaintext highlighter-rouge">userName</code> change would trigger a change down the line.</p>
 
 <p>We’ll start with the userName observer.</p>
 
@@ -934,9 +938,9 @@
 </span>  
 <span class="p">}</span></code></pre></figure>
 
-<p>We’ve seen the <code class="highlighter-rouge">RACAbleWithStart</code> pattern. We’re going to use <code class="highlighter-rouge">filter:</code> to act only on non-nil values of <code class="highlighter-rouge">userName</code>. Filter takes a block with an argument of the same type as is sent in <code class="highlighter-rouge">next:</code>. In this case, we don’t need to cast it directly, we just know it shouldn’t be nil. <code class="highlighter-rouge">filter</code>’s block returns a <code class="highlighter-rouge">BOOL</code> that indicates whether it should pass the <code class="highlighter-rouge">next</code> value to subscribers. Returning <code class="highlighter-rouge">YES</code> passes the value. Returning <code class="highlighter-rouge">NO</code> blocks it and the <code class="highlighter-rouge">subscribeNext</code> block will never see it. <code class="highlighter-rouge">filter</code> is a operation defined by <code class="highlighter-rouge">RACStream</code> like <code class="highlighter-rouge">map</code> which we saw earlier.</p>
+<p>We’ve seen the <code class="language-plaintext highlighter-rouge">RACAbleWithStart</code> pattern. We’re going to use <code class="language-plaintext highlighter-rouge">filter:</code> to act only on non-nil values of <code class="language-plaintext highlighter-rouge">userName</code>. Filter takes a block with an argument of the same type as is sent in <code class="language-plaintext highlighter-rouge">next:</code>. In this case, we don’t need to cast it directly, we just know it shouldn’t be nil. <code class="language-plaintext highlighter-rouge">filter</code>’s block returns a <code class="language-plaintext highlighter-rouge">BOOL</code> that indicates whether it should pass the <code class="language-plaintext highlighter-rouge">next</code> value to subscribers. Returning <code class="language-plaintext highlighter-rouge">YES</code> passes the value. Returning <code class="language-plaintext highlighter-rouge">NO</code> blocks it and the <code class="language-plaintext highlighter-rouge">subscribeNext</code> block will never see it. <code class="language-plaintext highlighter-rouge">filter</code> is a operation defined by <code class="language-plaintext highlighter-rouge">RACStream</code> like <code class="language-plaintext highlighter-rouge">map</code> which we saw earlier.</p>
 
-<p>Next is another RAC pattern. You can automatically assign a property to the latest <code class="highlighter-rouge">next</code> value sent by a signal by using <code class="highlighter-rouge">RAC(my_property) = my_signal</code>. There are actually a couple other ways to accomplish this too. Here’s an example from Vinylogue.</p>
+<p>Next is another RAC pattern. You can automatically assign a property to the latest <code class="language-plaintext highlighter-rouge">next</code> value sent by a signal by using <code class="language-plaintext highlighter-rouge">RAC(my_property) = my_signal</code>. There are actually a couple other ways to accomplish this too. Here’s an example from Vinylogue.</p>
 
 <blockquote>
   <p>(TCSWeeklyAlbumChartViewController.m)</p>
@@ -967,17 +971,17 @@
   
 <span class="p">}</span></code></pre></figure>
 
-<p>This one is a little tricky so let’s step through it. First thing we’re doing is setting up the <code class="highlighter-rouge">RAC(property)</code> assignment. <code class="highlighter-rouge">self.displayingDate</code> will be assigned to whatever <code class="highlighter-rouge">next</code> value comes out of our complicated signal on the other side of the equals sign.</p>
+<p>This one is a little tricky so let’s step through it. First thing we’re doing is setting up the <code class="language-plaintext highlighter-rouge">RAC(property)</code> assignment. <code class="language-plaintext highlighter-rouge">self.displayingDate</code> will be assigned to whatever <code class="language-plaintext highlighter-rouge">next</code> value comes out of our complicated signal on the other side of the equals sign.</p>
 
-<p>We’re creating a signal that combines our <code class="highlighter-rouge">self.now</code> and <code class="highlighter-rouge">self.displayingYearsAgo</code> signalified properties. Remember, they’re not just regular properties. We’ve made them into signals by wrapping them with <code class="highlighter-rouge">RACAble</code>, and they send their values each time they’re changed.</p>
+<p>We’re creating a signal that combines our <code class="language-plaintext highlighter-rouge">self.now</code> and <code class="language-plaintext highlighter-rouge">self.displayingYearsAgo</code> signalified properties. Remember, they’re not just regular properties. We’ve made them into signals by wrapping them with <code class="language-plaintext highlighter-rouge">RACAble</code>, and they send their values each time they’re changed.</p>
 
-<p>We’re injecting a <code class="highlighter-rouge">deliverOn</code> with the default background scheduler <code class="highlighter-rouge">[RACScheduler scheduler]</code> before doing any work on the next values to make sure the work will be done off the main thread (ensuring a snappy UI).</p>
+<p>We’re injecting a <code class="language-plaintext highlighter-rouge">deliverOn</code> with the default background scheduler <code class="language-plaintext highlighter-rouge">[RACScheduler scheduler]</code> before doing any work on the next values to make sure the work will be done off the main thread (ensuring a snappy UI).</p>
 
 <p>Edit: Doing this on a background thread is probably overkill and most likely not the best idea since we’re now changing controller properties off the main thread.</p>
 
-<p>Remember that <code class="highlighter-rouge">combineLatest</code> creates an <code class="highlighter-rouge">RACTuple</code> with the <code class="highlighter-rouge">next</code> values of each signal it wraps. We break that tuple out into an <code class="highlighter-rouge">NSDate</code> and an <code class="highlighter-rouge">NSNumber</code> and use those to calculate a date in the past. Remember that <code class="highlighter-rouge">map</code> just modifies <code class="highlighter-rouge">next</code> values. It has to return a value to pass to subscribers. It doesn’t have to be the same type; our input is an <code class="highlighter-rouge">RACTuple</code> and our output is an <code class="highlighter-rouge">NSDate</code> in this case.</p>
+<p>Remember that <code class="language-plaintext highlighter-rouge">combineLatest</code> creates an <code class="language-plaintext highlighter-rouge">RACTuple</code> with the <code class="language-plaintext highlighter-rouge">next</code> values of each signal it wraps. We break that tuple out into an <code class="language-plaintext highlighter-rouge">NSDate</code> and an <code class="language-plaintext highlighter-rouge">NSNumber</code> and use those to calculate a date in the past. Remember that <code class="language-plaintext highlighter-rouge">map</code> just modifies <code class="language-plaintext highlighter-rouge">next</code> values. It has to return a value to pass to subscribers. It doesn’t have to be the same type; our input is an <code class="language-plaintext highlighter-rouge">RACTuple</code> and our output is an <code class="language-plaintext highlighter-rouge">NSDate</code> in this case.</p>
 
-<p>Our last operation is a filter for nil. It’s useless to assign nil to our displayingDate. If this returns <code class="highlighter-rouge">YES</code>, then our <code class="highlighter-rouge">next</code> date returned from <code class="highlighter-rouge">map</code> will automatically be assigned to <code class="highlighter-rouge">self.displayingDate</code>.</p>
+<p>Our last operation is a filter for nil. It’s useless to assign nil to our displayingDate. If this returns <code class="language-plaintext highlighter-rouge">YES</code>, then our <code class="language-plaintext highlighter-rouge">next</code> date returned from <code class="language-plaintext highlighter-rouge">map</code> will automatically be assigned to <code class="language-plaintext highlighter-rouge">self.displayingDate</code>.</p>
 
 <p>We’ll do one expression in order to show how we use the Last.fm client functions we wrote earlier.</p>
 
@@ -1018,15 +1022,15 @@
 </span>
 <span class="p">}</span></code></pre></figure>
 
-<p>Once we have a specific time period to request charts for, we’ll get a signal from the client by supplying the displayingWeeklyChart. We have a signal within a signal in this block. As soon as we <code class="highlighter-rouge">subscribeNext</code> to the signal that was returned from the client, it will request data from the network and do the processing.</p>
+<p>Once we have a specific time period to request charts for, we’ll get a signal from the client by supplying the displayingWeeklyChart. We have a signal within a signal in this block. As soon as we <code class="language-plaintext highlighter-rouge">subscribeNext</code> to the signal that was returned from the client, it will request data from the network and do the processing.</p>
 
-<p>We also subscribed with an error block this time so we can pass the error along to the user. By setting <code class="highlighter-rouge">showingError</code> and <code class="highlighter-rouge">showingErrorMessage</code>, the view signal subscriptions we created earlier are triggered. Remember that in this subscription, we’re still on a background thread. Changing these properties on a background thread will still trigger the view updates on the main thread. Pretty cool.</p>
+<p>We also subscribed with an error block this time so we can pass the error along to the user. By setting <code class="language-plaintext highlighter-rouge">showingError</code> and <code class="language-plaintext highlighter-rouge">showingErrorMessage</code>, the view signal subscriptions we created earlier are triggered. Remember that in this subscription, we’re still on a background thread. Changing these properties on a background thread will still trigger the view updates on the main thread. Pretty cool.</p>
 
-<p>The rest of our <code class="highlighter-rouge">setUpDataSignals</code> method uses similar tricks with RAC, observing properties as outlined in our simple ascii chart. Check out the source to decipher the rest.</p>
+<p>The rest of our <code class="language-plaintext highlighter-rouge">setUpDataSignals</code> method uses similar tricks with RAC, observing properties as outlined in our simple ascii chart. Check out the source to decipher the rest.</p>
 
 <p>You should be at the point now where you can start picking through the signal operations in <a href="https://github.com/ReactiveCocoa/ReactiveCocoa/blob/master/ReactiveCocoaFramework/ReactiveCocoa/RACSignal%2BOperations.h">RACSignal+Operations.h</a>. <a href="https://github.com/ReactiveCocoa/ReactiveCocoa/blob/master/ReactiveCocoaFramework/ReactiveCocoa/RACStream.h">RACStream.h</a> also has some operations you should be aware of.</p>
 
-<p>In the next section we’ll also briefly cover <code class="highlighter-rouge">RACCommand</code>s.</p>
+<p>In the next section we’ll also briefly cover <code class="language-plaintext highlighter-rouge">RACCommand</code>s.</p>
 
 <h3 id="tcsslideselectview">TCSSlideSelectView</h3>
 
@@ -1077,7 +1081,7 @@
 
 <p>Although our view will have defaults for the pull offsets and commands, we’ll allow outside classes to change or replace them at will.</p>
 
-<p>The pull offsets are values that answer the question, “How far do I have to pull the scroll view to the right or left before an action is triggered?” The commands are <code class="highlighter-rouge">RACSignal</code> subclasses that are designed to send <code class="highlighter-rouge">next</code> values triggered off of an action, usually from the UI. We’ll use these constructs instead of the delegate pattern to pass messages from our custom view to the controller that owns it.</p>
+<p>The pull offsets are values that answer the question, “How far do I have to pull the scroll view to the right or left before an action is triggered?” The commands are <code class="language-plaintext highlighter-rouge">RACSignal</code> subclasses that are designed to send <code class="language-plaintext highlighter-rouge">next</code> values triggered off of an action, usually from the UI. We’ll use these constructs instead of the delegate pattern to pass messages from our custom view to the controller that owns it.</p>
 
 <h4 id="implementation">Implementation</h4>
 
@@ -1095,7 +1099,7 @@
 </span>
 <span class="k">@end</span></code></pre></figure>
 
-<p>We’ll define the view hierarchy and create defaults in <code class="highlighter-rouge">init</code>.</p>
+<p>We’ll define the view hierarchy and create defaults in <code class="language-plaintext highlighter-rouge">init</code>.</p>
 
 <blockquote>
   <p>(TCSSlideSelectView.m)</p>
@@ -1131,11 +1135,11 @@
 
 <p>Logically, the buttons would be behind the scrollView, but I was having trouble getting taps to get forwarded from the invisible scrollview to the button below it (maybe I should have just made the scrollView narrower?). Instead, the buttons sit above the scrollview and disappear when scrolling begins.</p>
 
-<p>We also define defaults for the pull offsets and set up generic <code class="highlighter-rouge">RACCommand</code>s.</p>
+<p>We also define defaults for the pull offsets and set up generic <code class="language-plaintext highlighter-rouge">RACCommand</code>s.</p>
 
-<p>I use <code class="highlighter-rouge">layoutSubviews</code> to resize the views and lay them out. This is mostly self explanatory and tedious to explain. Feel free to read the source to see how I do that.</p>
+<p>I use <code class="language-plaintext highlighter-rouge">layoutSubviews</code> to resize the views and lay them out. This is mostly self explanatory and tedious to explain. Feel free to read the source to see how I do that.</p>
 
-<p>We’ll move on to the more interesting part: using <code class="highlighter-rouge">RACCommand</code>s to pass messages.</p>
+<p>We’ll move on to the more interesting part: using <code class="language-plaintext highlighter-rouge">RACCommand</code>s to pass messages.</p>
 
 <blockquote>
   <p>(TCSSlideSelectView.m)</p>
@@ -1159,7 +1163,7 @@
 
 <p>Like I just mentioned before, we’ll hide the buttons when scrolling starts and show them again when scrolling ends.</p>
 
-<p>When scrolling ends, we check the x offset of the scrollview. If it’s past the offsets that were set earlier, we use the <code class="highlighter-rouge">execute</code> method of the <code class="highlighter-rouge">RACCommand</code>. An <code class="highlighter-rouge">RACCommand</code> is just a subclass of an <code class="highlighter-rouge">RACSignal</code> with a few behavior modifications. <code class="highlighter-rouge">execute:</code> sends its argument in a <code class="highlighter-rouge">next</code> message to subscribers. In our example, we don’t need to send any particular object, just the message is enough. We could have alternatively only had one command object and sent the direction as the message object. That’s a little confusing though.</p>
+<p>When scrolling ends, we check the x offset of the scrollview. If it’s past the offsets that were set earlier, we use the <code class="language-plaintext highlighter-rouge">execute</code> method of the <code class="language-plaintext highlighter-rouge">RACCommand</code>. An <code class="language-plaintext highlighter-rouge">RACCommand</code> is just a subclass of an <code class="language-plaintext highlighter-rouge">RACSignal</code> with a few behavior modifications. <code class="language-plaintext highlighter-rouge">execute:</code> sends its argument in a <code class="language-plaintext highlighter-rouge">next</code> message to subscribers. In our example, we don’t need to send any particular object, just the message is enough. We could have alternatively only had one command object and sent the direction as the message object. That’s a little confusing though.</p>
 
 <p>This design pattern works for a few reasons. If the command has no subscribers, the message will be ignored, no harm done. So far though, it isn’t really that much different than creating a protocol and holding a reference to a delegate. I’ll show you the interesting part in a second.</p>
 
@@ -1181,7 +1185,7 @@
 
 <p>The buttons trigger the same action as the scrollView.</p>
 
-<p>Another way to interface <code class="highlighter-rouge">UIControl</code>s with RAC is to use the <code class="highlighter-rouge">RACSignalSupport</code> category:</p>
+<p>Another way to interface <code class="language-plaintext highlighter-rouge">UIControl</code>s with RAC is to use the <code class="language-plaintext highlighter-rouge">RACSignalSupport</code> category:</p>
 
 <blockquote>
   <p>(UIControl+RACSignalSupport.h)</p>
@@ -1195,7 +1199,7 @@
 
 <span class="k">@end</span></code></pre></figure>
 
-<p>Let’s quickly jump back to the <code class="highlighter-rouge">TCSWeeklyAlbumChartViewController</code> to show how we interface with this custom control.</p>
+<p>Let’s quickly jump back to the <code class="language-plaintext highlighter-rouge">TCSWeeklyAlbumChartViewController</code> to show how we interface with this custom control.</p>
 
 <blockquote>
   <p>(TCSWeeklyAlbumChartViewController.m)</p>
@@ -1223,13 +1227,13 @@
 
 <p>We’re creating signals (commands) and assigning them to the slideSelectView. The slideSelectView will own these signals, but before the controller hands them over, it will add a special “canExecuteSignal” and then subscription instructions for each.</p>
 
-<p>The command will check the latest value of its canExecute signal (which should be a <code class="highlighter-rouge">BOOL</code>) to decide whether it should fire before executing its <code class="highlighter-rouge">next</code> block. In the example, we don’t want to let the user move to the past unless there are weeks to show there. We create a signal from our <code class="highlighter-rouge">BOOL</code> property <code class="highlighter-rouge">canMoveBackOneYear</code> and assign it to the command. Our <code class="highlighter-rouge">canMove</code> properties will now govern the actions of the slideSelectView for us.</p>
+<p>The command will check the latest value of its canExecute signal (which should be a <code class="language-plaintext highlighter-rouge">BOOL</code>) to decide whether it should fire before executing its <code class="language-plaintext highlighter-rouge">next</code> block. In the example, we don’t want to let the user move to the past unless there are weeks to show there. We create a signal from our <code class="language-plaintext highlighter-rouge">BOOL</code> property <code class="language-plaintext highlighter-rouge">canMoveBackOneYear</code> and assign it to the command. Our <code class="language-plaintext highlighter-rouge">canMove</code> properties will now govern the actions of the slideSelectView for us.</p>
 
-<p>When these commands are allowed to fire, they’ll update our <code class="highlighter-rouge">displayingYearsAgo</code> property, and the changes will propagate through our ascii dependency chart.</p>
+<p>When these commands are allowed to fire, they’ll update our <code class="language-plaintext highlighter-rouge">displayingYearsAgo</code> property, and the changes will propagate through our ascii dependency chart.</p>
 
 <p>That’s about it for the slideSelectView. Now that we have the skeleton of our app created, time to start thinking about the design.</p>
 
-<h2 id="designiddesign"><a href="id:design">Design</a></h2>
+<h2 id="design"><a href="id:design">Design</a></h2>
 
 <p>Alright, so we’ve now done a fair amount of development. There’s at least enough for a prototype using built in controls. Now it’s time to get a feel for how everything is going to look.</p>
 
@@ -1281,9 +1285,9 @@
 
 <p>We’ll keep a reference to the model object we’re displaying. There’s some debate about the best way to implement the model/view relationship. Sometimes I borrow the concept of a “decorator” object from Rails that owns the model object and transforms its values into something displayable. I decided to keep this app simple this time and have the cell assign its own view attributes directly from the model object. If we didn’t have a one-to-one relationship between views and model objects, I would definitely reconsider this.</p>
 
-<p>Ignore <code class="highlighter-rouge">refreshImage</code> for now. That tackles a problem we’ll run into later.</p>
+<p>Ignore <code class="language-plaintext highlighter-rouge">refreshImage</code> for now. That tackles a problem we’ll run into later.</p>
 
-<p><code class="highlighter-rouge">heightForObject</code> is our class object that does a height calculation for an object before an instance of the cell is actually allocated. Part of the UITableView protocols is knowing the height of a cell before it is actually laid out. I have yet to figure out a good way to do this without doubling up on some layout calculation code, but alas I’ve gotten used to writing it.</p>
+<p><code class="language-plaintext highlighter-rouge">heightForObject</code> is our class object that does a height calculation for an object before an instance of the cell is actually allocated. Part of the UITableView protocols is knowing the height of a cell before it is actually laid out. I have yet to figure out a good way to do this without doubling up on some layout calculation code, but alas I’ve gotten used to writing it.</p>
 
 <h4 id="implementation-1">Implementation</h4>
 
@@ -1304,9 +1308,9 @@
 
 <span class="k">@end</span></code></pre></figure>
 
-<p>I’m reusing <code class="highlighter-rouge">UITableViewCell</code>’s <code class="highlighter-rouge">textLabel</code> and <code class="highlighter-rouge">detailTextLabel</code> for my artist and album labels, and reusing the <code class="highlighter-rouge">imageView</code> for the album image. Our cells aren’t currently selectable, so the cell only has a normal background view and not a selected one.</p>
+<p>I’m reusing <code class="language-plaintext highlighter-rouge">UITableViewCell</code>’s <code class="language-plaintext highlighter-rouge">textLabel</code> and <code class="language-plaintext highlighter-rouge">detailTextLabel</code> for my artist and album labels, and reusing the <code class="language-plaintext highlighter-rouge">imageView</code> for the album image. Our cells aren’t currently selectable, so the cell only has a normal background view and not a selected one.</p>
 
-<p>I’ll come back to that <code class="highlighter-rouge">imageURLCache</code> string in a moment.</p>
+<p>I’ll come back to that <code class="language-plaintext highlighter-rouge">imageURLCache</code> string in a moment.</p>
 
 <blockquote>
   <p>(TCSAlbumArtistPlayCountCell.m)</p>
@@ -1361,7 +1365,7 @@
   <span class="p">}</span>
 <span class="p">}</span></code></pre></figure>
 
-<p>Our custom object setter is in charge of properly assigning model object data to our views. The interesting problem we come across is the albumImage. Let’s look at the <code class="highlighter-rouge">refreshImage</code> instance method:</p>
+<p>Our custom object setter is in charge of properly assigning model object data to our views. The interesting problem we come across is the albumImage. Let’s look at the <code class="language-plaintext highlighter-rouge">refreshImage</code> instance method:</p>
 
 <blockquote>
   <p>(TCSAlbumArtistPlayCountCell.m)</p>
@@ -1380,7 +1384,7 @@
   <span class="p">}</span>
 <span class="p">}</span></code></pre></figure>
 
-<p>What do we know about the image at this point? When our WeeklyAlbumChart object is originally created, it does not have an album image URLl The Last.fm API does not return that data with the call we’re using. If we want that image URL, we have to request it using a separate <code class="highlighter-rouge">album.getInfo</code> API call. And it may not even exist for a particular album.</p>
+<p>What do we know about the image at this point? When our WeeklyAlbumChart object is originally created, it does not have an album image URLl The Last.fm API does not return that data with the call we’re using. If we want that image URL, we have to request it using a separate <code class="language-plaintext highlighter-rouge">album.getInfo</code> API call. And it may not even exist for a particular album.</p>
 
 <p>But getting that URL isn’t the cell’s responsibility. We don’t want to create or pass in a copy of the lastFMAPIClient to each cell. That seems like the controller/datasource’s responsibility.</p>
 
@@ -1401,11 +1405,11 @@
   <span class="p">}</span>
 <span class="p">}</span></code></pre></figure>
 
-<p>In the controller, if the model object does not have an albumImageURL we request it using a new API client method (that returns an <code class="highlighter-rouge">RACSignal</code> of course). We subscribe, so when it’s done we can refresh the cell and load the new image using <code class="highlighter-rouge">AFNetworking</code>’s <code class="highlighter-rouge">UIImageView</code> category that loads images asynchronously from a URL.</p>
+<p>In the controller, if the model object does not have an albumImageURL we request it using a new API client method (that returns an <code class="language-plaintext highlighter-rouge">RACSignal</code> of course). We subscribe, so when it’s done we can refresh the cell and load the new image using <code class="language-plaintext highlighter-rouge">AFNetworking</code>’s <code class="language-plaintext highlighter-rouge">UIImageView</code> category that loads images asynchronously from a URL.</p>
 
-<p>While we’re waiting for our response, the user could possibly have scrolled past the cell, and the cell could be reassigned a new object. No problems though, because <code class="highlighter-rouge">refreshImage</code> will just fall through without doing anything and the URL will be saved and loaded the next time the object is assigned to the cell.</p>
+<p>While we’re waiting for our response, the user could possibly have scrolled past the cell, and the cell could be reassigned a new object. No problems though, because <code class="language-plaintext highlighter-rouge">refreshImage</code> will just fall through without doing anything and the URL will be saved and loaded the next time the object is assigned to the cell.</p>
 
-<p>The last thing we should do is clear out our <code class="highlighter-rouge">imageURLCache</code> in <code class="highlighter-rouge">prepareForReuse</code>, although technically everything will still work without doing so.</p>
+<p>The last thing we should do is clear out our <code class="language-plaintext highlighter-rouge">imageURLCache</code> in <code class="language-plaintext highlighter-rouge">prepareForReuse</code>, although technically everything will still work without doing so.</p>
 
 <p>All of this work seems like exactly the thing that RAC would excel at. Unfortunately, I wrestled with several such implementations but could not get things to work out as I wanted. On my to-do list is to try again and see if something unrelated was the problem.</p>
 
@@ -1498,7 +1502,7 @@
 
 <div class="caption-wrapper"><img class="caption" src="/images/vinylogue-settings2.png" width="" height="" alt="Settings controller with no user name" title="Settings controller with no user name" /><div class="caption-text">Settings controller with no user name</div></div>
 
-<h2 id="back-to-developmentiddevelopment2"><a href="id:development2">Back to development</a></h2>
+<h2 id="back-to-development"><a href="id:development2">Back to development</a></h2>
 
 <p>Alright, we totally skipped the implementation of the users controller. Let’s touch on that and see if RAC has anything to do with it.</p>
 
@@ -1547,14 +1551,14 @@
 
 <h3 id="moving-data-around">Moving data around</h3>
 
-<p><code class="highlighter-rouge">TCSFavoriteUsersController</code> has a by-the-book table view delegate and datasource implementation. It includes adding, removing, and rearranging elements in one section only.</p>
+<p><code class="language-plaintext highlighter-rouge">TCSFavoriteUsersController</code> has a by-the-book table view delegate and datasource implementation. It includes adding, removing, and rearranging elements in one section only.</p>
 
-<p>An instance of <code class="highlighter-rouge">TCSFavoriteUsersController</code> is a spring board for 3 other controllers.</p>
+<p>An instance of <code class="language-plaintext highlighter-rouge">TCSFavoriteUsersController</code> is a spring board for 3 other controllers.</p>
 
 <ul>
-  <li><code class="highlighter-rouge">TCSSettingsViewController</code> - users can change the value of playCountFilter.</li>
-  <li><code class="highlighter-rouge">TCSUserNameViewController</code> - used to add a new friend or edit an existing friend.</li>
-  <li><code class="highlighter-rouge">TCSWeeklyAlbumChartViewController</code> - used to display charts.</li>
+  <li><code class="language-plaintext highlighter-rouge">TCSSettingsViewController</code> - users can change the value of playCountFilter.</li>
+  <li><code class="language-plaintext highlighter-rouge">TCSUserNameViewController</code> - used to add a new friend or edit an existing friend.</li>
+  <li><code class="language-plaintext highlighter-rouge">TCSWeeklyAlbumChartViewController</code> - used to display charts.</li>
 </ul>
 
 <p>We need to keep a connection to the Settings &amp; UserName controllers we create and display because we need to know when they change values. Normally this is accomplished through the delegate pattern. Our parent controller will get a message with the new data and dismiss its child. We’re going to try a different pattern using RAC.</p>
@@ -1614,7 +1618,7 @@
 
 <p>What do I gain by doing it with RAC? Not much in this particular implementation. I can keep the response behavior localized in the controller definition, and expand it to its own method if it happens in multiple places.  I also could have done some filtering on the sending or receiving side or sent an error signal.</p>
 
-<p>To make this work on the <code class="highlighter-rouge">TCSUserNameController.m</code> side, I first created a public property for the <code class="highlighter-rouge">userSignal</code>. Then, I created a new <code class="highlighter-rouge">RACSubject</code> in the designated <code class="highlighter-rouge">init</code> method of the controller. Remember, an <code class="highlighter-rouge">RACSubject</code> is capable of sending next, complete, or error values whenever we want.</p>
+<p>To make this work on the <code class="language-plaintext highlighter-rouge">TCSUserNameController.m</code> side, I first created a public property for the <code class="language-plaintext highlighter-rouge">userSignal</code>. Then, I created a new <code class="language-plaintext highlighter-rouge">RACSubject</code> in the designated <code class="language-plaintext highlighter-rouge">init</code> method of the controller. Remember, an <code class="language-plaintext highlighter-rouge">RACSubject</code> is capable of sending next, complete, or error values whenever we want.</p>
 
 <p>We’ll use a done button or textField’s return button as our confirm button.</p>
 
@@ -1641,7 +1645,7 @@
 
 <p>I initially implemented this by simply returning whatever userName the user entered in the box without any checking. As an additional feature, I implemented a network call into this step that checks the userName with Last.fm before returning it. The side effect is that the name gets formatted as it was intended.</p>
 
-<h2 id="releaseidend"><a href="id:end">Release</a></h2>
+<h2 id="release"><a href="id:end">Release</a></h2>
 
 <p>We’re skipping a few steps at the end here (testing, analyzing, prepping for the App Store), but this post is long enough as it is.</p>
 

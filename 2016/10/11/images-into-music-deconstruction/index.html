@@ -53,6 +53,10 @@
           
         
           
+          <a class="page-link" href="/apps/countbiki/privacy-policy/">Count Biki Privacy Policy</a>
+          
+        
+          
         
           
         
@@ -150,20 +154,20 @@
 
 <p>Since most of our image data representations are bounded, and we know those bounds ahead of time, we can “normalize” this data to any scale we wish. Normalization is a bit of a loaded term, but in our case we’ll define it as a percentage inclusive of the minimum and maximum values:</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="c1">// Expresses a percentage 0...1 inclusive</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="c1">// Expresses a percentage 0...1 inclusive</span>
 <span class="kd">typealias</span> <span class="kt">Normalized</span> <span class="o">=</span> <span class="kt">Double</span>
 </code></pre>
 </div>
 
 <h3 id="input-types">Input types</h3>
 
-<p>In the Cocoa world, our inputs will be <code class="highlighter-rouge">UIImage</code> or <code class="highlighter-rouge">NSImage</code>. We can further genericize by using <code class="highlighter-rouge">CGImage</code> as our common system image container, which if necessary can be converted back to a <code class="highlighter-rouge">UIImage</code> or converted to a <code class="highlighter-rouge">CIImage</code> for use in the Core Image framework.</p>
+<p>In the Cocoa world, our inputs will be <code class="language-plaintext highlighter-rouge">UIImage</code> or <code class="language-plaintext highlighter-rouge">NSImage</code>. We can further genericize by using <code class="language-plaintext highlighter-rouge">CGImage</code> as our common system image container, which if necessary can be converted back to a <code class="language-plaintext highlighter-rouge">UIImage</code> or converted to a <code class="language-plaintext highlighter-rouge">CIImage</code> for use in the Core Image framework.</p>
 
 <h3 id="colors">Colors</h3>
 
 <p>Color spaces can be represented by one or more sets of normalized numbers. We’ll need to create structs for each.</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">RGB</span> <span class="p">{</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">RGB</span> <span class="p">{</span>
     <span class="k">let</span> <span class="nv">red</span><span class="p">:</span> <span class="kt">Normalized</span>
     <span class="k">let</span> <span class="nv">green</span><span class="p">:</span> <span class="kt">Normalized</span>
     <span class="k">let</span> <span class="nv">blue</span><span class="p">:</span> <span class="kt">Normalized</span>
@@ -185,7 +189,7 @@
 
 <p>Looking ahead, it’s probably a good idea to conform these to a protocol so we don’t have to write the same algorithm for each color space later.</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="kd">protocol</span> <span class="kt">ComponentRepresentable</span> <span class="p">{</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">protocol</span> <span class="kt">ComponentRepresentable</span> <span class="p">{</span>
     <span class="k">var</span> <span class="nv">components</span><span class="p">:</span> <span class="p">[</span><span class="kt">Normalized</span><span class="p">]</span> <span class="p">{</span> <span class="k">get</span> <span class="p">}</span>
     
     <span class="nf">init</span><span class="p">(</span><span class="nv">components</span><span class="p">:</span> <span class="p">[</span><span class="kt">Normalized</span><span class="p">])</span>
@@ -195,9 +199,9 @@
 
 <h3 id="image-data">Image data</h3>
 
-<p>Our desired output will mostly be normalized numbers. <code class="highlighter-rouge">CGImage</code> isn’t particularly easy to pull these numbers out every time, so we’ll use a struct to store the raw color data instead.</p>
+<p>Our desired output will mostly be normalized numbers. <code class="language-plaintext highlighter-rouge">CGImage</code> isn’t particularly easy to pull these numbers out every time, so we’ll use a struct to store the raw color data instead.</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">ImageData</span> <span class="p">{</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">ImageData</span> <span class="p">{</span>
     <span class="k">let</span> <span class="nv">rowCount</span><span class="p">:</span> <span class="kt">Int</span>
     <span class="k">let</span> <span class="nv">colCount</span><span class="p">:</span> <span class="kt">Int</span>
     <span class="k">let</span> <span class="nv">rgbValues</span><span class="p">:</span> <span class="p">[</span><span class="kt">RGB</span><span class="p">]</span>
@@ -205,15 +209,15 @@
 </code></pre>
 </div>
 
-<p>Note <code class="highlighter-rouge">colCount</code> can be calculated lazily from <code class="highlighter-rouge">rowCount</code> and <code class="highlighter-rouge">rgbValues.count</code>.</p>
+<p>Note <code class="language-plaintext highlighter-rouge">colCount</code> can be calculated lazily from <code class="language-plaintext highlighter-rouge">rowCount</code> and <code class="language-plaintext highlighter-rouge">rgbValues.count</code>.</p>
 
-<p><code class="highlighter-rouge">RGB</code> was arbitrarily chosen as the canonical color space. Other colorspaces can be converted to through <code class="highlighter-rouge">UIColor</code>. Another valid implementation would be to use <code class="highlighter-rouge">CGColor</code> as the canonical colorspace representation and convert to others from there.</p>
+<p><code class="language-plaintext highlighter-rouge">RGB</code> was arbitrarily chosen as the canonical color space. Other colorspaces can be converted to through <code class="language-plaintext highlighter-rouge">UIColor</code>. Another valid implementation would be to use <code class="language-plaintext highlighter-rouge">CGColor</code> as the canonical colorspace representation and convert to others from there.</p>
 
 <h3 id="to-image-data">To image data</h3>
 
-<p>Our first transformation will be from <code class="highlighter-rouge">CGImage</code> to <code class="highlighter-rouge">ImageData</code>. Our function has the signature:</p>
+<p>Our first transformation will be from <code class="language-plaintext highlighter-rouge">CGImage</code> to <code class="language-plaintext highlighter-rouge">ImageData</code>. Our function has the signature:</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="kd">extension</span> <span class="kt">CGImage</span> <span class="p">{</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">extension</span> <span class="kt">CGImage</span> <span class="p">{</span>
     <span class="kd">func</span> <span class="nf">imageData</span><span class="p">()</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">ImageData</span> <span class="p">{</span> <span class="p">}</span>
 <span class="p">}</span>
 </code></pre>
@@ -221,7 +225,7 @@
 
 <p>However, we might need to preprocess the image to normalize its size.</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="kd">extension</span> <span class="kt">CGImage</span> <span class="p">{</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">extension</span> <span class="kt">CGImage</span> <span class="p">{</span>
     <span class="kd">func</span> <span class="nf">resize</span><span class="p">(</span><span class="n">_</span> <span class="nv">size</span><span class="p">:</span> <span class="kt">CGSize</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">CGImage</span> <span class="p">{</span> <span class="p">}</span>
 <span class="p">}</span>
 </code></pre>
@@ -235,7 +239,7 @@
 
 <p>Let’s allow movement to some other color spaces.</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="kd">extension</span> <span class="kt">ImageData</span> <span class="p">{</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">extension</span> <span class="kt">ImageData</span> <span class="p">{</span>
     <span class="k">var</span> <span class="nv">hsvValues</span><span class="p">:</span> <span class="p">[</span><span class="kt">HSV</span><span class="p">]</span> <span class="p">{</span>
         <span class="k">return</span> <span class="n">rgbValues</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="kt">HSV</span><span class="p">(</span><span class="nv">rgb</span><span class="p">:</span> <span class="nv">$0</span><span class="p">)</span> <span class="p">}</span>
     <span class="p">}</span>
@@ -255,7 +259,7 @@
 
 <p>Let’s allow transformation to rows or columns as an array of arrays.</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="kd">extension</span> <span class="kt">ImageData</span> <span class="p">{</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">extension</span> <span class="kt">ImageData</span> <span class="p">{</span>
     <span class="k">var</span> <span class="nv">rgbRows</span><span class="p">:</span> <span class="p">[[</span><span class="kt">RGB</span><span class="p">]]</span> <span class="p">{</span> <span class="p">}</span>
     <span class="k">var</span> <span class="nv">rgbCols</span><span class="p">:</span> <span class="p">[[</span><span class="kt">RGB</span><span class="p">]]</span> <span class="p">{</span> <span class="p">}</span>
     <span class="k">var</span> <span class="nv">hsvRows</span><span class="p">:</span> <span class="p">[[</span><span class="kt">HSV</span><span class="p">]]</span> <span class="p">{</span> <span class="p">}</span>
@@ -268,7 +272,7 @@
 
 <p>Our most basic lossy data deconstruction is averages. We can average an entire image down to one value.</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="kd">extension</span> <span class="kt">ImageData</span> <span class="p">{</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">extension</span> <span class="kt">ImageData</span> <span class="p">{</span>
     <span class="kd">func</span> <span class="nf">averageHSV</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">HSV</span> <span class="p">{</span> <span class="p">}</span>
     <span class="kd">func</span> <span class="nf">averageRGB</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">RGB</span> <span class="p">{</span> <span class="p">}</span>
     <span class="kd">func</span> <span class="nf">averageGray</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">Gray</span> <span class="p">{</span> <span class="p">}</span>
@@ -278,7 +282,7 @@
 
 <p>Or we can get larger groups of data by averaging rows or columns.</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="kd">extension</span> <span class="kt">ImageData</span> <span class="p">{</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">extension</span> <span class="kt">ImageData</span> <span class="p">{</span>
     <span class="kd">func</span> <span class="nf">rowAverageHSVs</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">HSV</span><span class="p">]</span> <span class="p">{</span> <span class="p">}</span>
     <span class="kd">func</span> <span class="nf">rowAverageRGBs</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">RGB</span><span class="p">]</span> <span class="p">{</span> <span class="p">}</span>
     <span class="kd">func</span> <span class="nf">colAverageHSVs</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">HSV</span><span class="p">]</span> <span class="p">{</span> <span class="p">}</span>
@@ -291,7 +295,7 @@
 
 <p>Representative colors refers to the set of colors that appear most often in an image and therefore “represent” it best. It’s an interesting field on its own and I’m currently using the thoroughly researched <a href="https://github.com/indragiek/DominantColor">DominantColor</a> library. DominantColor uses k-means clustering to produce an array of around a dozen or so colors.</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="kd">extension</span> <span class="kt">CGImage</span> <span class="p">{</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">extension</span> <span class="kt">CGImage</span> <span class="p">{</span>
     <span class="kd">func</span> <span class="nf">representativeHSVs</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">HSV</span><span class="p">]</span> <span class="p">{</span> <span class="p">}</span>
     <span class="kd">func</span> <span class="nf">representativeRGBs</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">RGB</span><span class="p">]</span> <span class="p">{</span> <span class="p">}</span>
 <span class="p">}</span>
@@ -306,7 +310,7 @@
 
 <p>Note this this deconstructor uses Core Image, and works best when used on the original resolution of the image.</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="kd">extension</span> <span class="kt">CIImage</span> <span class="p">{</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">extension</span> <span class="kt">CIImage</span> <span class="p">{</span>
     <span class="kd">func</span> <span class="nf">faceCount</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">Int</span> <span class="p">{</span> <span class="p">}</span>
     <span class="kd">func</span> <span class="nf">areaOfFaces</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">Normalized</span> <span class="p">{</span> <span class="p">}</span>
 <span class="p">}</span>
@@ -321,11 +325,11 @@
 
 <p>Although Core Image is a very well supported framework on both iOS and macOS, there are a few reasons it doesn’t work well for this project.</p>
 
-<p>Most importantly, Core Image expects all functions to be of the form <code class="highlighter-rouge">CIImage -&gt; [String: Any] -&gt; CIImage</code>. Or in other words, an input image, an arbitrary input dictionary of keys and values, and an output image. We usually want our output to be normalized numbers, sometimes grouped. It’s more convenient for us to work in the numbers world rather than the image world.</p>
+<p>Most importantly, Core Image expects all functions to be of the form <code class="language-plaintext highlighter-rouge">CIImage -&gt; [String: Any] -&gt; CIImage</code>. Or in other words, an input image, an arbitrary input dictionary of keys and values, and an output image. We usually want our output to be normalized numbers, sometimes grouped. It’s more convenient for us to work in the numbers world rather than the image world.</p>
 
 <p>Next, part of the reason for Core Image’s existence is its “recipe” architecture, which assumes you’re composing several transforms, then using the framework to efficiently apply all of these transforms at once to get your final image. In our case, we’ll be using multiple transforms (aka deconstructors) in parallel, and thus would be sacrificing the benefits of the framework.</p>
 
-<p>Lastly, the <code class="highlighter-rouge">[String: Any]</code> input unnecessarily loses a lot of type information. One of the primary disadvantages of using Core Image in general is the amount of time spent in the documentation looking for the available parameter names and hoping you don’t make any typos. The (sometimes) numerical bounds of the prebaked transforms aren’t usually provided, and require lots of guess and check. I personally wouldn’t want to move more of the API into static documentation than I absolutely have to.</p>
+<p>Lastly, the <code class="language-plaintext highlighter-rouge">[String: Any]</code> input unnecessarily loses a lot of type information. One of the primary disadvantages of using Core Image in general is the amount of time spent in the documentation looking for the available parameter names and hoping you don’t make any typos. The (sometimes) numerical bounds of the prebaked transforms aren’t usually provided, and require lots of guess and check. I personally wouldn’t want to move more of the API into static documentation than I absolutely have to.</p>
 
 <h2 id="performance-implications">Performance implications</h2>
 

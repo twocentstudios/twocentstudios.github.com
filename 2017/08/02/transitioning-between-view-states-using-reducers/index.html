@@ -10,7 +10,7 @@
   <meta name="description" content="In this post we’ll take a look at a technique to model transitions between view states in Swift. We’ll also look at how to model the commands that will initi...">
 
   <link rel="stylesheet" href="/css/main.css">
-  <link rel="canonical" href="http://twocentstudios.com/2017/08/02/transitioning-between-view-states-using-reducers/">
+  <link rel="canonical" href="http://twocentstudios.com/2017/08/02/Transitioning-Between-View-States-Using-Reducers/">
   <link rel="alternate" type="application/rss+xml" title="twocentstudios" href="http://twocentstudios.com/feed.xml" />
 </head>
 
@@ -50,6 +50,10 @@
           <a class="page-link" href="/portfolio/">Portfolio</a>
           
         
+          
+        
+          
+          <a class="page-link" href="/apps/countbiki/privacy-policy/">Count Biki Privacy Policy</a>
           
         
           
@@ -138,7 +142,7 @@
 
 <h2 id="background">Background</h2>
 
-<p>In the last post, we ended up with a user profile screen that encapsulated two separate pieces of information: the user’s profile data and the user’s posts. Each has its own associated view states including <code class="highlighter-rouge">initialized</code>, <code class="highlighter-rouge">loading</code>, <code class="highlighter-rouge">loaded</code>, and <code class="highlighter-rouge">failed</code>.</p>
+<p>In the last post, we ended up with a user profile screen that encapsulated two separate pieces of information: the user’s profile data and the user’s posts. Each has its own associated view states including <code class="language-plaintext highlighter-rouge">initialized</code>, <code class="language-plaintext highlighter-rouge">loading</code>, <code class="language-plaintext highlighter-rouge">loaded</code>, and <code class="language-plaintext highlighter-rouge">failed</code>.</p>
 
 <div class="caption-wrapper"><img class="caption" src="/images/modeling_view_state-06.png" width="" height="" alt="" title="" /><div class="caption-text"></div></div>
 
@@ -147,9 +151,9 @@
 <p>Let’s look at a technique we can use to formalize these view state transitions. We’ll call this technique a <strong>reducer</strong>. A reducer will:</p>
 
 <ul>
-  <li>List all commands that can <em>change</em> the view model state (<code class="highlighter-rouge">Command</code>).</li>
-  <li>List all effects that describe <em>side-effects</em> of view model state transitions (<code class="highlighter-rouge">Effect</code>).</li>
-  <li>Determine all valid transitions between view model states (<code class="highlighter-rouge">ViewModel.State</code> &amp; <code class="highlighter-rouge">State</code>).</li>
+  <li>List all commands that can <em>change</em> the view model state (<code class="language-plaintext highlighter-rouge">Command</code>).</li>
+  <li>List all effects that describe <em>side-effects</em> of view model state transitions (<code class="language-plaintext highlighter-rouge">Effect</code>).</li>
+  <li>Determine all valid transitions between view model states (<code class="language-plaintext highlighter-rouge">ViewModel.State</code> &amp; <code class="language-plaintext highlighter-rouge">State</code>).</li>
 </ul>
 
 <p>There is lots of prior art on reducers, mostly from the functional programming world (I’ve included several links at the end of this post). In the context of finite state machines they’re called <em>transducers</em>. We’re going to use <em>reducer</em> in this post because of the rising popularity of Redux, Elm, ReSwift, etc. The name itself is just a name, and we’ll focus as much as possible on the attributes and the responsibilities of reducers.</p>
@@ -160,7 +164,7 @@
 
 <ul>
   <li>Often the previous view state is not consulted before transitioning to a view state, the result of which can be invalid view states, confusing transitions, or unwanted side-effects.</li>
-  <li>Sometimes it’s not even possible to determine a cohesive representation of the view state because it must be derived from the property values of several unrelated <code class="highlighter-rouge">UIKit</code> controls (e.g. <code class="highlighter-rouge">UISwitch.isOn</code>, <code class="highlighter-rouge">UILabel.text</code>, etc.).</li>
+  <li>Sometimes it’s not even possible to determine a cohesive representation of the view state because it must be derived from the property values of several unrelated <code class="language-plaintext highlighter-rouge">UIKit</code> controls (e.g. <code class="language-plaintext highlighter-rouge">UISwitch.isOn</code>, <code class="language-plaintext highlighter-rouge">UILabel.text</code>, etc.).</li>
   <li>The code for making view state transitions is scattered throughout a view controller and mixed in with unrelated static view configuration code.</li>
   <li>Updating the model (and any additional overhead) must be done on the main thread, or a complex system of locking must be mixed in with the view code.</li>
   <li>There is no way to unit test the logic (or lack thereof) that controls view state transitions, especially because it is mixed in with asynchronous operations.</li>
@@ -187,23 +191,23 @@
 
 <h3 id="command">Command</h3>
 
-<p><code class="highlighter-rouge">Command</code> lists the valid events that can cause transitions between view states. Alongside the view model and effect, it is one of the inputs of the reducer function.</p>
+<p><code class="language-plaintext highlighter-rouge">Command</code> lists the valid events that can cause transitions between view states. Alongside the view model and effect, it is one of the inputs of the reducer function.</p>
 
 <h3 id="effect">Effect</h3>
 
-<p><code class="highlighter-rouge">Effect</code> lists the valid side-effects that occur alongside a view state transition. It is primarily used as an output of the reducer, but due mostly to implementation details, it is also provided as an input to the reducer. There may be some rare situation where knowing the last effect would be useful in making a view state transition, but usually it will be ignored as an input.</p>
+<p><code class="language-plaintext highlighter-rouge">Effect</code> lists the valid side-effects that occur alongside a view state transition. It is primarily used as an output of the reducer, but due mostly to implementation details, it is also provided as an input to the reducer. There may be some rare situation where knowing the last effect would be useful in making a view state transition, but usually it will be ignored as an input.</p>
 
 <h3 id="state">State</h3>
 
-<p><code class="highlighter-rouge">State</code> combines a view model and an optional effect. One input and the output of the reducer are of type State. Note that <code class="highlighter-rouge">Reducer.State</code> is a different concept than <code class="highlighter-rouge">ViewModel.State</code>.</p>
+<p><code class="language-plaintext highlighter-rouge">State</code> combines a view model and an optional effect. One input and the output of the reducer are of type State. Note that <code class="language-plaintext highlighter-rouge">Reducer.State</code> is a different concept than <code class="language-plaintext highlighter-rouge">ViewModel.State</code>.</p>
 
 <h3 id="reducer">Reducer</h3>
 
-<p>The general definition of a reducer is a function that takes a <code class="highlighter-rouge">Command</code> and a <code class="highlighter-rouge">State</code> and produces a new <code class="highlighter-rouge">State</code>.</p>
+<p>The general definition of a reducer is a function that takes a <code class="language-plaintext highlighter-rouge">Command</code> and a <code class="language-plaintext highlighter-rouge">State</code> and produces a new <code class="language-plaintext highlighter-rouge">State</code>.</p>
 
 <div class="caption-wrapper"><img class="caption" src="/images/transitioning_view_states-01.png" width="" height="" alt="" title="" /><div class="caption-text"></div></div>
 
-<p>Our reducer’s <code class="highlighter-rouge">State</code> combines both <code class="highlighter-rouge">ViewModel</code> and <code class="highlighter-rouge">Effect</code>. So it’s better for us to look at the reducer’s inputs and outputs more like this:</p>
+<p>Our reducer’s <code class="language-plaintext highlighter-rouge">State</code> combines both <code class="language-plaintext highlighter-rouge">ViewModel</code> and <code class="language-plaintext highlighter-rouge">Effect</code>. So it’s better for us to look at the reducer’s inputs and outputs more like this:</p>
 
 <div class="caption-wrapper"><img class="caption" src="/images/transitioning_view_states-02.png" width="" height="" alt="" title="" /><div class="caption-text"></div></div>
 
@@ -213,7 +217,7 @@
 
 <p>Another goal of this technique is that it can be used as a template throughout an app. The contents of each view model, effect, and command will be different, but the structure will be the same.</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">ViewModelReducer</span> <span class="p">{</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">ViewModelReducer</span> <span class="p">{</span>
     <span class="kd">enum</span> <span class="kt">Command</span> <span class="p">{</span> 
         <span class="c1">// cases:</span>
         <span class="c1">// what events can cause this view model to change? </span>
@@ -238,17 +242,17 @@
 
 <p>The benefit here is that the process of writing new reducers is formalized around designing a well-specified state machine. Once you’ve designed the system, writing the code becomes the easy part.</p>
 
-<p>Notice that the <code class="highlighter-rouge">ViewModelReducer</code> struct acts as a namespace. It has no properties or initializers. (It might be more syntactically correct for it to be an <code class="highlighter-rouge">enum</code> instead with no cases, but for now we’ll keep it as a struct).</p>
+<p>Notice that the <code class="language-plaintext highlighter-rouge">ViewModelReducer</code> struct acts as a namespace. It has no properties or initializers. (It might be more syntactically correct for it to be an <code class="language-plaintext highlighter-rouge">enum</code> instead with no cases, but for now we’ll keep it as a struct).</p>
 
 <h2 id="profile-implementation">Profile Implementation</h2>
 
-<p>Let’s implement the <code class="highlighter-rouge">ProfileViewModel</code>: the top half of the user view.</p>
+<p>Let’s implement the <code class="language-plaintext highlighter-rouge">ProfileViewModel</code>: the top half of the user view.</p>
 
 <div class="caption-wrapper"><img class="caption" src="/images/modeling_view_state-06.png" width="" height="" alt="" title="" /><div class="caption-text"></div></div>
 
 <p>The view model we created last time:</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">ProfileViewModel</span> <span class="p">{</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">ProfileViewModel</span> <span class="p">{</span>
     <span class="kd">enum</span> <span class="kt">State</span> <span class="p">{</span>
         <span class="k">case</span> <span class="n">initialized</span>
         <span class="k">case</span> <span class="n">loading</span>
@@ -267,11 +271,11 @@
 </code></pre>
 </div>
 
-<p>At the moment, we’re only concerned with the <code class="highlighter-rouge">state</code> part as it’s the input to <code class="highlighter-rouge">ProfileViewModel</code>. The <code class="highlighter-rouge">viewModels</code> property is the output used by the view layer.</p>
+<p>At the moment, we’re only concerned with the <code class="language-plaintext highlighter-rouge">state</code> part as it’s the input to <code class="language-plaintext highlighter-rouge">ProfileViewModel</code>. The <code class="language-plaintext highlighter-rouge">viewModels</code> property is the output used by the view layer.</p>
 
 <p>First, we’ll copy/paste the template struct from above.</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="c1">// Skeleton implementation</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="c1">// Skeleton implementation</span>
 <span class="kd">struct</span> <span class="kt">ProfileViewModelReducer</span> <span class="p">{</span>
     <span class="kd">enum</span> <span class="kt">Command</span> <span class="p">{</span> 
         <span class="c1">// TODO</span>
@@ -293,15 +297,15 @@
 </code></pre>
 </div>
 
-<p>Next, let’s map out the state from <code class="highlighter-rouge">ProfileViewModel.State</code>.</p>
+<p>Next, let’s map out the state from <code class="language-plaintext highlighter-rouge">ProfileViewModel.State</code>.</p>
 
 <div class="caption-wrapper"><img class="caption" src="/images/transitioning_view_states-03.png" width="" height="" alt="" title="" /><div class="caption-text"></div></div>
 
 <ul>
-  <li>Our entry point is <code class="highlighter-rouge">Initialized</code>.</li>
-  <li><code class="highlighter-rouge">Initialized</code> can only go to <code class="highlighter-rouge">Loading</code>.</li>
-  <li><code class="highlighter-rouge">Loading</code> can transition to either <code class="highlighter-rouge">Loaded</code> or <code class="highlighter-rouge">Failed</code>.</li>
-  <li><code class="highlighter-rouge">Loaded</code> or <code class="highlighter-rouge">Failed</code> may transition back through <code class="highlighter-rouge">Loading</code>.</li>
+  <li>Our entry point is <code class="language-plaintext highlighter-rouge">Initialized</code>.</li>
+  <li><code class="language-plaintext highlighter-rouge">Initialized</code> can only go to <code class="language-plaintext highlighter-rouge">Loading</code>.</li>
+  <li><code class="language-plaintext highlighter-rouge">Loading</code> can transition to either <code class="language-plaintext highlighter-rouge">Loaded</code> or <code class="language-plaintext highlighter-rouge">Failed</code>.</li>
+  <li><code class="language-plaintext highlighter-rouge">Loaded</code> or <code class="language-plaintext highlighter-rouge">Failed</code> may transition back through <code class="language-plaintext highlighter-rouge">Loading</code>.</li>
 </ul>
 
 <p>Next, let’s name the commands that will trigger these transitions.</p>
@@ -309,13 +313,13 @@
 <div class="caption-wrapper"><img class="caption" src="/images/transitioning_view_states-04.png" width="" height="" alt="" title="" /><div class="caption-text"></div></div>
 
 <ul>
-  <li>The <code class="highlighter-rouge">Load</code> command can be issued from three states.</li>
-  <li><code class="highlighter-rouge">Loaded</code> and <code class="highlighter-rouge">Failed</code> commands are only valid when the current state is <code class="highlighter-rouge">Loading</code>.</li>
+  <li>The <code class="language-plaintext highlighter-rouge">Load</code> command can be issued from three states.</li>
+  <li><code class="language-plaintext highlighter-rouge">Loaded</code> and <code class="language-plaintext highlighter-rouge">Failed</code> commands are only valid when the current state is <code class="language-plaintext highlighter-rouge">Loading</code>.</li>
 </ul>
 
 <p>Let’s go ahead and add these commands to our implementation.</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="c1">// Added `Command`</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="c1">// Added `Command`</span>
 <span class="kd">struct</span> <span class="kt">ProfileViewModelReducer</span> <span class="p">{</span>
     <span class="kd">enum</span> <span class="kt">Command</span> <span class="p">{</span> 
         <span class="k">case</span> <span class="n">load</span>
@@ -341,19 +345,19 @@
 
 <p>Effect is next.</p>
 
-<p>When we receive <code class="highlighter-rouge">Command.load</code>, we want to both change the view state to <code class="highlighter-rouge">.loading</code> <em>and</em> kick off an asynchronous network request to load the data. Our reducer is synchronous though, so we’ll use the <code class="highlighter-rouge">Effect</code> mechanism to specify exactly what asynchronous operation should be carried out on the reducer’s behalf.</p>
+<p>When we receive <code class="language-plaintext highlighter-rouge">Command.load</code>, we want to both change the view state to <code class="language-plaintext highlighter-rouge">.loading</code> <em>and</em> kick off an asynchronous network request to load the data. Our reducer is synchronous though, so we’ll use the <code class="language-plaintext highlighter-rouge">Effect</code> mechanism to specify exactly what asynchronous operation should be carried out on the reducer’s behalf.</p>
 
-<p>In this case, it’s enough to simply define <code class="highlighter-rouge">Effect.load</code> with no enum case associated values.</p>
+<p>In this case, it’s enough to simply define <code class="language-plaintext highlighter-rouge">Effect.load</code> with no enum case associated values.</p>
 
-<p>There’s are no other asynchronous requests we need to make in order to make all the other possible transitions, so the <code class="highlighter-rouge">Effect</code> enum will only have one case this time.</p>
+<p>There’s are no other asynchronous requests we need to make in order to make all the other possible transitions, so the <code class="language-plaintext highlighter-rouge">Effect</code> enum will only have one case this time.</p>
 
-<p>Below is a diagram of one state transition from <code class="highlighter-rouge">.initialized</code> to <code class="highlighter-rouge">.loading</code>.</p>
+<p>Below is a diagram of one state transition from <code class="language-plaintext highlighter-rouge">.initialized</code> to <code class="language-plaintext highlighter-rouge">.loading</code>.</p>
 
 <div class="caption-wrapper"><img class="caption" src="/images/transitioning_view_states-05.png" width="" height="" alt="" title="" /><div class="caption-text"></div></div>
 
 <p>And our updated reducer code:</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="c1">// Added `Effect`</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="c1">// Added `Effect`</span>
 <span class="kd">struct</span> <span class="kt">ProfileViewModelReducer</span> <span class="p">{</span>
     <span class="kd">enum</span> <span class="kt">Command</span> <span class="p">{</span> 
         <span class="k">case</span> <span class="n">load</span>
@@ -377,13 +381,13 @@
 </code></pre>
 </div>
 
-<p>We’re finally ready to implement the <code class="highlighter-rouge">reduce</code> function.</p>
+<p>We’re finally ready to implement the <code class="language-plaintext highlighter-rouge">reduce</code> function.</p>
 
-<p>In the <code class="highlighter-rouge">reduce</code> function we’ll see that Swift’s enums really shine. <code class="highlighter-rouge">switch</code>ing over <code class="highlighter-rouge">ViewModel.State</code> and <code class="highlighter-rouge">Command</code> allows the compiler to help us out and ensure we’ve covered all possible combinations (however, if you’re in a rush, you can always specify the known states and use a <code class="highlighter-rouge">default</code> case to cover the rest).</p>
+<p>In the <code class="language-plaintext highlighter-rouge">reduce</code> function we’ll see that Swift’s enums really shine. <code class="language-plaintext highlighter-rouge">switch</code>ing over <code class="language-plaintext highlighter-rouge">ViewModel.State</code> and <code class="language-plaintext highlighter-rouge">Command</code> allows the compiler to help us out and ensure we’ve covered all possible combinations (however, if you’re in a rush, you can always specify the known states and use a <code class="language-plaintext highlighter-rouge">default</code> case to cover the rest).</p>
 
-<p>It’s possible to <code class="highlighter-rouge">switch</code> through the cases as <code class="highlighter-rouge">Command</code> then <code class="highlighter-rouge">ViewModel.State</code> or the reverse <code class="highlighter-rouge">ViewModel.State</code> then <code class="highlighter-rouge">Command</code>. At the moment I prefer the former (and have written it below as such), but the latter may be easier to read after some time away from the code.</p>
+<p>It’s possible to <code class="language-plaintext highlighter-rouge">switch</code> through the cases as <code class="language-plaintext highlighter-rouge">Command</code> then <code class="language-plaintext highlighter-rouge">ViewModel.State</code> or the reverse <code class="language-plaintext highlighter-rouge">ViewModel.State</code> then <code class="language-plaintext highlighter-rouge">Command</code>. At the moment I prefer the former (and have written it below as such), but the latter may be easier to read after some time away from the code.</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code><span class="kd">static</span> <span class="kd">func</span> <span class="nf">reduce</span><span class="p">(</span><span class="nv">state</span><span class="p">:</span> <span class="kt">State</span><span class="p">,</span> <span class="nv">command</span><span class="p">:</span> <span class="kt">Command</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">State</span> <span class="p">{</span>
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">static</span> <span class="kd">func</span> <span class="nf">reduce</span><span class="p">(</span><span class="nv">state</span><span class="p">:</span> <span class="kt">State</span><span class="p">,</span> <span class="nv">command</span><span class="p">:</span> <span class="kt">Command</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">State</span> <span class="p">{</span>
 
     <span class="c1">// Unpack the arguments (we intentionally don't use `Effect` as an input).</span>
     <span class="k">let</span> <span class="nv">viewModel</span><span class="p">:</span> <span class="kt">ProfileViewModel</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">viewModel</span>
@@ -423,21 +427,21 @@
 <p>In the above implementation:</p>
 
 <ul>
-  <li>We covered all combinations of the 3 <code class="highlighter-rouge">Command</code>s and 4 <code class="highlighter-rouge">ViewModel.State</code>s.</li>
-  <li>Invalid transitions are handled by not changing the view model and performing no side-effects (<code class="highlighter-rouge">noChange</code>). You may also consider adding <code class="highlighter-rouge">assertionFailure</code>s to catch these attempted transitions during development if you believe they should never happen.</li>
+  <li>We covered all combinations of the 3 <code class="language-plaintext highlighter-rouge">Command</code>s and 4 <code class="language-plaintext highlighter-rouge">ViewModel.State</code>s.</li>
+  <li>Invalid transitions are handled by not changing the view model and performing no side-effects (<code class="language-plaintext highlighter-rouge">noChange</code>). You may also consider adding <code class="language-plaintext highlighter-rouge">assertionFailure</code>s to catch these attempted transitions during development if you believe they should never happen.</li>
 </ul>
 
-<p><code class="highlighter-rouge">ProfileViewModelReducer</code> is fully implemented and can be used in a dedicated interactor which will complete the state machine.</p>
+<p><code class="language-plaintext highlighter-rouge">ProfileViewModelReducer</code> is fully implemented and can be used in a dedicated interactor which will complete the state machine.</p>
 
-<p>The above combination of <code class="highlighter-rouge">Command</code>s and <code class="highlighter-rouge">ViewModel.State</code>s is quite common and covers a lot of cases in every day iOS development. However, you’ll find plenty of subtle differences when implementing different screens. I’d like to cover some more complicated cases in an advanced post in the future.</p>
+<p>The above combination of <code class="language-plaintext highlighter-rouge">Command</code>s and <code class="language-plaintext highlighter-rouge">ViewModel.State</code>s is quite common and covers a lot of cases in every day iOS development. However, you’ll find plenty of subtle differences when implementing different screens. I’d like to cover some more complicated cases in an advanced post in the future.</p>
 
 <h2 id="why-use-effect">Why use Effect?</h2>
 
-<p>You may be wondering why we need <code class="highlighter-rouge">Effect</code> at all. Why not just derive side-effects directly from the view model’s state?</p>
+<p>You may be wondering why we need <code class="language-plaintext highlighter-rouge">Effect</code> at all. Why not just derive side-effects directly from the view model’s state?</p>
 
 <p>It’s sometimes possible to use view model directly, but in my experience mixing <a href="https://en.wikipedia.org/wiki/Idempotence#Computer_science_meaning">idempotent</a> state changes with non-idempotent side-effects ends up being more complex than treating them separately.</p>
 
-<p>In the example above, let’s say we decide to kick off a network operation if the view model state becomes <code class="highlighter-rouge">loading</code> (this operation happens outside of the reducer). If a <code class="highlighter-rouge">Command.load</code> is processed by the reducer once, then again, the output state will become <code class="highlighter-rouge">loading</code> then remain <code class="highlighter-rouge">loading</code>. With our simple logic, we will kick off two network requests. Is that what we want in all cases? Probably not.</p>
+<p>In the example above, let’s say we decide to kick off a network operation if the view model state becomes <code class="language-plaintext highlighter-rouge">loading</code> (this operation happens outside of the reducer). If a <code class="language-plaintext highlighter-rouge">Command.load</code> is processed by the reducer once, then again, the output state will become <code class="language-plaintext highlighter-rouge">loading</code> then remain <code class="language-plaintext highlighter-rouge">loading</code>. With our simple logic, we will kick off two network requests. Is that what we want in all cases? Probably not.</p>
 
 <p>In order to solve this problem, we would have to introduce more state checking in the code that kicks off the network operation. We’re now comparing the old state to the new state, but we’re already doing that inside the reducer! We’re now spreading business logic outside the reducer when our goal was the opposite.</p>
 
@@ -447,7 +451,7 @@
 
 <p>It may be a little difficult to understand how the asynchronous network request fits into this reducer, especially after seeing that the reducer itself is synchronous. The short answer is that we’ll see in the next post about interactors.</p>
 
-<p>But to give a brief preview, the way we’ll handle asynchronous operations is by separating the request from its response. In the eyes of the reducer, the network request is just another <code class="highlighter-rouge">Effect</code>. In the eyes of the reducer, the response to that network request is just another <code class="highlighter-rouge">Command</code> that will potentially change the view state <em>depending on when that <code class="highlighter-rouge">Command</code> is received</em>. Anything could have happened to the view state while the asynchronous request was being made. Any situation like this will be handled in the same way: as just another input at some point in time.</p>
+<p>But to give a brief preview, the way we’ll handle asynchronous operations is by separating the request from its response. In the eyes of the reducer, the network request is just another <code class="language-plaintext highlighter-rouge">Effect</code>. In the eyes of the reducer, the response to that network request is just another <code class="language-plaintext highlighter-rouge">Command</code> that will potentially change the view state <em>depending on when that <code class="language-plaintext highlighter-rouge">Command</code> is received</em>. Anything could have happened to the view state while the asynchronous request was being made. Any situation like this will be handled in the same way: as just another input at some point in time.</p>
 
 <p>In a simple view model like our example, it may seem like overkill to split the request and response. But think about a recent occasion when you’ve had to change some state based on multiple asynchronous requests triggered from multiple places in your view controller. How easy was it to make these changes in a performant and thread-safe manner? How sure were you that you had handled all the edge cases? How easy was it to test? How easy would it be to change this code based on new requirements?</p>
 
@@ -478,7 +482,7 @@
 
 <p>In this post, we discussed using reducers as a single location to describe view state transitions and any side-effects based on those transitions.</p>
 
-<p>We looked at a reusable skeleton implementation for a reducer and its four parts: <code class="highlighter-rouge">Command</code>, <code class="highlighter-rouge">ViewModel</code>, <code class="highlighter-rouge">Effect</code>, and <code class="highlighter-rouge">State</code>. We looked at the reducer function itself and the way we can use <code class="highlighter-rouge">switch</code> to handle all transitions (both valid and invalid) of the state machine.</p>
+<p>We looked at a reusable skeleton implementation for a reducer and its four parts: <code class="language-plaintext highlighter-rouge">Command</code>, <code class="language-plaintext highlighter-rouge">ViewModel</code>, <code class="language-plaintext highlighter-rouge">Effect</code>, and <code class="language-plaintext highlighter-rouge">State</code>. We looked at the reducer function itself and the way we can use <code class="language-plaintext highlighter-rouge">switch</code> to handle all transitions (both valid and invalid) of the state machine.</p>
 
 <h3 id="further-reading">Further reading</h3>
 

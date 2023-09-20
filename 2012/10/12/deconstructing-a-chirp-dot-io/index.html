@@ -53,6 +53,10 @@
           
         
           
+          <a class="page-link" href="/apps/countbiki/privacy-policy/">Count Biki Privacy Policy</a>
+          
+        
+          
         
           
         
@@ -130,7 +134,7 @@
   </header>
 
   <article class="post-content">
-    <h4 id="update-101312-the-kind-folks-at-chirpio-pointed-me-to-their-tech-pagehttpchirpiotech-read-more-at-the-end-of-the-post">UPDATE (10/13/12): The kind folks at chirp.io pointed me to their <a href="http://chirp.io/tech">tech page</a>. Read more at the end of the post.</h4>
+    <h4 id="update-101312-the-kind-folks-at-chirpio-pointed-me-to-their-tech-page-read-more-at-the-end-of-the-post">UPDATE (10/13/12): The kind folks at chirp.io pointed me to their <a href="http://chirp.io/tech">tech page</a>. Read more at the end of the post.</h4>
 
 <p><em>TL;DR: I tried to figure out the chirp.io sound-&gt;URL protocol but failed.</em></p>
 
@@ -150,7 +154,7 @@
 
 <p>I downloaded the app and played a few of the example chirps. I noticed that they were relatively high pitched and seemed to be the same length. I also noticed they were monophonic - only one frequency was played at a time.</p>
 
-<p>By tapping on a chirp, it shows what is basically a short URL for that resource. An example is <code class="highlighter-rouge">chirp.io/gsm2h88c7u</code> which links back to <code class="highlighter-rouge">chirp.io/blog</code>. You can also share images and text.</p>
+<p>By tapping on a chirp, it shows what is basically a short URL for that resource. An example is <code class="language-plaintext highlighter-rouge">chirp.io/gsm2h88c7u</code> which links back to <code class="language-plaintext highlighter-rouge">chirp.io/blog</code>. You can also share images and text.</p>
 
 <p>I did some similar DSP and frequency detection projects in college, so I decided to see if I could reverse engineer the protocol that chirp.io uses. I’m definitely no codebreaker or cryptographer, but we’ll see how far we can get.</p>
 
@@ -160,7 +164,7 @@
 
 <p>The first thing I needed to do was record the waveform. I could have direct connected into my sound card using a 3.5mm to 3.5mm jack, but I didn’t have one of those handy. I did have my Shure KSM27 set up, so I decided to record it through the air instead.</p>
 
-<p>The first chirp I analyzed was <code class="highlighter-rouge">chirp.io/gsm2h88c7u</code>. If you notice, the short URL is only 10 characters long. We may be able assume that it uses lowercase characters a-z and 0-9.</p>
+<p>The first chirp I analyzed was <code class="language-plaintext highlighter-rouge">chirp.io/gsm2h88c7u</code>. If you notice, the short URL is only 10 characters long. We may be able assume that it uses lowercase characters a-z and 0-9.</p>
 
 <div class="caption-wrapper"><img class="caption" src="/images/chirp-1.png" width="" height="" alt="The full waveform of a single chirp" title="The full waveform of a single chirp" /><div class="caption-text">The full waveform of a single chirp</div></div>
 <div class="caption-wrapper"><img class="caption" src="/images/chirp-2.png" width="" height="" alt="One monophonic segment of the chirp" title="One monophonic segment of the chirp" /><div class="caption-text">One monophonic segment of the chirp</div></div>
@@ -175,7 +179,7 @@
 
 <p>I recorded the data for this first chirp:</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code>chirp1 = [4717, 5300, 4453, 8981, 6324, 
+<div class="language-plaintext highlighter-rouge"><pre class="highlight"><code>chirp1 = [4717, 5300, 4453, 8981, 6324, 
 			1976, 4717, 2797, 2797, 3522, 
 			2640, 10000, 3737, 9400, 6660, 
 			3965, 4189, 2220, 7131, 5613]
@@ -191,9 +195,9 @@
   <li>The unique URL part is 10 characters so maybe that’s sections 10-19 and 20 is the stop bit.</li>
 </ul>
 
-<p>I can’t do much with only one data point, so I analyzed a second chirp. This one is a short text block with the URL <code class="highlighter-rouge">chirp.io/mnac2dvevb</code>.</p>
+<p>I can’t do much with only one data point, so I analyzed a second chirp. This one is a short text block with the URL <code class="language-plaintext highlighter-rouge">chirp.io/mnac2dvevb</code>.</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code>chirp2 = [4717, 5300, 6324, 6660, 3143, 
+<div class="language-plaintext highlighter-rouge"><pre class="highlight"><code>chirp2 = [4717, 5300, 6324, 6660, 3143, 
 			3522, 1976, 3737, 10844, 3965, 
 			10844, 3329, 5000, 4717, 2797, 
 			6660, 4189, 2098, 3965, 2220]
@@ -202,7 +206,7 @@
 
 <p>Hmm… not as much correlation as I expected. Let’s look at them side by side.</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code>1	4717	4717
+<div class="language-plaintext highlighter-rouge"><pre class="highlight"><code>1	4717	4717
 2	5300	5300
 3	4453	6324
 4	8981	6660
@@ -229,7 +233,7 @@
 
 <p>Let’s combine these two sets, sort them, then discard the duplicates.</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code>uniq_freqs = [1976, 2098, 2220, 2640, 2797, 
+<div class="language-plaintext highlighter-rouge"><pre class="highlight"><code>uniq_freqs = [1976, 2098, 2220, 2640, 2797, 
 				3143, 3329, 3522, 3737, 3965, 
 				4189, 4453, 4717, 5000, 5300, 
 				5613, 6324, 6660, 7131, 8981, 
@@ -241,7 +245,7 @@
 
 <p>Now let’s subtract the neighbors to try to figure out how many we’re missing.</p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code>diff_freqs = [122, 122, 420, 157, 346, 
+<div class="language-plaintext highlighter-rouge"><pre class="highlight"><code>diff_freqs = [122, 122, 420, 157, 346, 
 				186, 193, 215, 228, 224, 
 				264, 264, 283, 300, 313, 
 				711, 336, 471, 1850, 419, 
@@ -253,9 +257,9 @@
 
 <p>It seems like we’re kind of stuck. My initial hypothesis is mostly wrong. It doesn’t look like frequencies map directly to letters. Let’s do one more chirp before we give up.</p>
 
-<p>Flower Picture: <code class="highlighter-rouge">chirp.io/9gf6q9ltu3</code></p>
+<p>Flower Picture: <code class="language-plaintext highlighter-rouge">chirp.io/9gf6q9ltu3</code></p>
 
-<div class="highlighter-rouge"><pre class="highlight"><code>chirp3 = [4717, 5300, 2963, 4453, 4189, 
+<div class="language-plaintext highlighter-rouge"><pre class="highlight"><code>chirp3 = [4717, 5300, 2963, 4453, 4189, 
 			2490, 7922, 2963, 5945, 9400, 
 			10000, 2098, 7922, 5945, 7521, 
 			3965, 8981, 5000, 4717, 2098] 
@@ -343,8 +347,11 @@ diff_freqs = [122, 122, 270, 150, 157,
   <li>[0-9, a-v] characters - I assumed they’d use up through ‘z’, and that it would start with letters and end with numbers.</li>
   <li>[startcode][shortcode][error-correction] - I’m not sure why I didn’t think the shortcode would be at the front.</li>
   <li>Pitch detection algorithm - nothing specific is mentioned yet, although the site says they’ll be publishing more on the topic soon.</li>
-  <li>Error-correction with <a href="http://en.wikipedia.org/wiki/Reed%E2%80%93Solomon_error_correction">Reed-Solomon</a> - I don’t have enough experience with error correction algorithms that I could have made a prediction on this one. But my lack of understanding did cause me to overestimate how good the pitch detection algorithm needs to be to recover the signal.<br />
-&gt; Error correction means that Chirp transmissions are resilient to noise. A code can be reconstituted when over 25% of it is missing or misheard.</li>
+  <li>Error-correction with <a href="http://en.wikipedia.org/wiki/Reed%E2%80%93Solomon_error_correction">Reed-Solomon</a> - I don’t have enough experience with error correction algorithms that I could have made a prediction on this one. But my lack of understanding did cause me to overestimate how good the pitch detection algorithm needs to be to recover the signal.
+    <blockquote>
+      <p>Error correction means that Chirp transmissions are resilient to noise. A code can be reconstituted when over 25% of it is missing or misheard.</p>
+    </blockquote>
+  </li>
 </ul>
 
 <p>Overall, it was a fun exercise and taught (or re-taught) me a little bit about DSP, coding &amp; protocols, and I even got to play around with some Ruby.</p>
