@@ -4,31 +4,6 @@
 
 I wrote a post when I first converted from Octopress to Jekyll, but it assumes that I'll never need to fix anything. Therefore, this readme.
 
-## How this blog works
-
-Every file and folder that's not in `_site` folder or the `excludes` list in `_config.yml` is processed and overwritten into `_site`.
-
-The outer directory and inner `_site` directory have separate git repos that each have their origin set to the same GitHub repo, but each remains on a different branch.
-
-The outer directory's branch is `source`. `_site` directory's branch is `master`. **These branches should never switch.** Only the directory should be changed (and even then
-
-`_site`'s git repo is not overwritten when the folder's contents are replaced by Jekyll's build function. This allows git to track the changes, create commits, and push to `origin/master`, which is the branch that is served to the live site on GitHub pages.
-
-## The deploy script
-
-The deploy script has a few assumptions:
-
-1. You're in the outer directory.
-2. You're on the `source` branch.
-3. The `source` branch is allowed to have uncommitted changes.
-
-Then the following happens:
-
-1. The site is regenerated into the `_site` directory.
-2. The terminal is automatically switched the `_site` directory. Again, the separate git repo within this folder should be pointing to its `master` branch.
-3. A new commit is created with all the changes since the last deploy, with the current timestamp as the message.
-4. This commit is pushed to master, kicking off a job on GitHub pages.
-5. The terminal is automatically switched back to the root directory.
 
 ## Making a new post
 
@@ -57,6 +32,45 @@ Use `standalone` for a page that shouldn't include the header or footer.
 Use `page` for a page that includes the header and footer.
 
 HTML pages can be processed, have a layout, and include front matter and templating. See `blog.html`.
+
+## Development
+
+```zsh
+bundle exec jekyll build
+bundle exec jekyll serve --livereload
+```
+
+## Deployment
+
+```zsh
+./deploy.sh
+```
+
+## How this blog works
+
+Every file and folder that's not in `_site` folder or the `excludes` list in `_config.yml` is processed and overwritten into `_site`.
+
+The outer directory and inner `_site` directory have separate git repos that each have their origin set to the same GitHub repo, but each remains on a different branch.
+
+The outer directory's branch is `source`. `_site` directory's branch is `master`. **These branches should never switch.** Only the directory should be changed (and even then
+
+`_site`'s git repo is not overwritten when the folder's contents are replaced by Jekyll's build function. This allows git to track the changes, create commits, and push to `origin/master`, which is the branch that is served to the live site on GitHub pages.
+
+### The deploy script
+
+The deploy script has a few assumptions:
+
+1. You're in the outer directory.
+2. You're on the `source` branch.
+3. The `source` branch is allowed to have uncommitted changes.
+
+Then the following happens:
+
+1. The site is regenerated into the `_site` directory.
+2. The terminal is automatically switched the `_site` directory. Again, the separate git repo within this folder should be pointing to its `master` branch.
+3. A new commit is created with all the changes since the last deploy, with the current timestamp as the message.
+4. This commit is pushed to master, kicking off a job on GitHub pages.
+5. The terminal is automatically switched back to the root directory.
 
 ## Analytics
 
