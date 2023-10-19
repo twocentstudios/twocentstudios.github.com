@@ -4,7 +4,6 @@
 
 I wrote a post when I first converted from Octopress to Jekyll, but it assumes that I'll never need to fix anything. Therefore, this readme.
 
-
 ## Making a new post
 
 There's a new post script `./new.sh`, but it doesn't correctly format the post.
@@ -32,6 +31,12 @@ Use `standalone` for a page that shouldn't include the header or footer.
 Use `page` for a page that includes the header and footer.
 
 HTML pages can be processed, have a layout, and include front matter and templating. See `blog.html`.
+
+## Post formatting
+
+Images go in the `images` folder. Raw references are like `![An image](/images/some-image.jpg)`. Captioned variant uses a plugin and special syntax like `{% caption_img /images/photophono-screens.png w200 h200 Walkthrough %}`.
+
+Links to posts in this blog look like `[Timehop: A Retrospective](/2015/11/03/timehop-a-retrospective/)`.
 
 ## Development
 
