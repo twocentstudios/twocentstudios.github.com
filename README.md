@@ -79,4 +79,6 @@ Then the following happens:
 
 ## Analytics
 
-Google Analytics probably stopped working recently, so that should be fixed.
+Google Analytics pre v4 was sunsetted in August 2023 and did not record page visits between then and when I upgraded the tracking code in October 2023.
+
+At some point it'd be nice to update to a more privacy-centered analytics provider, but for my current low traffic numbers I think GA is okay.
