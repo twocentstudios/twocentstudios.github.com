@@ -5,14 +5,20 @@ header: true
 permalink: /about/
 ---
 
-Hi, I'm Chris. I'm a software developer originally from Chicago, Illinois.
+<img width="250" src="/images/about-headshot.jpg">
 
-I like designing and developing products, usually for iOS devices, but sometimes for the web.
+**Hi, I'm Chris.** I'm a software developer living in Yokohama, Japan but originally from Chicago, Illinois.
 
-I'm interested in functional programming, app architecture, and UI and UX design.
+I like designing and developing products, usually for iOS devices, but sometimes for macOS and the web. I started developing for iOS a little before the release of iOS 3.0 in 2009.
 
-My most recent app is a research project called [Phono/Photo](https://itunes.apple.com/us/app/photo-phono/id1202606014?mt=8). It turns your photos into original music compositions.
+I'm interested in app architecture, UI and UX design, animation, and augmented reality.
 
-Previously, I worked at [Timehop](http://timehop.com) and [Klein Tools](http://kleintools.com). I also worked on my own iOS apps [Vinylogue](/apps/vinylogue), [BrightBus](/apps/brightbuscu), and several other [projects](/portfolio). I have a bachelor's degree in Electrical Engineering from the [University of Illinois at Urbana-Champaign](http://www.ece.illinois.edu/).
+I've alternated between company work and releasing apps independently. Several of my apps are open source on [GitHub](https://github.com/twocentstudios).
 
-You can contact me via [email](mailto:chris@twocentstudios.com) or [twitter](http://twitter.com/twocentstudios). Check out my open source projects on [github](http://github.com/twocentstudios). I wouldn't bother with [linkedin](http://www.linkedin.com/pub/christopher-trott/19/b64/1b2).
+I've worked at recipe-sharing service [Cookpad](https://cookpad.com), social media nostalgia app [Timehop](https://timehop.com), and revered hand-tool maker [Klein Tools](https://kleintools.com).
+
+A few of my recent independent apps are [Count Biki](https://apps.apple.com/us/app/count-biki/id6463796779), for drilling numbers in Japanese; [Goalie](https://github.com/twocentstudios/goalie), a bespoke timetracking macOS app; and [Vinylogue](/apps/vinylogue/), a listening history app for [last.fm](https://last.fm).
+
+I have a bachelor's degree in Electrical Engineering from the [University of Illinois at Urbana-Champaign](http://www.ece.illinois.edu/).
+
+You can contact me via [email](mailto:chris@twocentstudios.com) or [Mastodon](https://hachyderm.io/@twocentstudios) or [Twitter](https://twitter.com/twocentstudios). Check out my open source projects on [GitHub](https://github.com/twocentstudios). I wouldn't bother with [LinkedIn](https://www.linkedin.com/pub/christopher-trott/19/b64/1b2), but I may respond to messages there some day.
