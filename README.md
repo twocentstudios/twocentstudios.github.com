@@ -22,6 +22,8 @@ Check out the `apps` folder for how to include random non-processed files.
 
 For pages that should be included in the header, add `header: true` to the front matter.
 
+Add an image to open graph tag by adding to the front matter `image: /images/my-image.png`.
+
 ### Layouts
 
 In the page front matter, a layout can be specified.
