@@ -11,11 +11,11 @@ permalink: /portfolio/
 
 An iOS app for drilling numbers in Japanese.
 
-#### Goalie - [releases](https://github.com/twocentstudios/goalie/releases) | [source](https://github.com/twocentstudios/goalie)
+#### Goalie - [releases](https://github.com/twocentstudios/goalie/releases) | [source](https://github.com/twocentstudios/goalie) | [post](/2023/10/20/goalie-time-tracking-macos/)
 
 A bespoke macOS app for time tracking.
 
-#### Vinylogue - [landing page](/apps/vinylogue) | [appstore](http://itunes.apple.com/us/app/vinylogue-for-last.fm/id617471119?ls=1&mt=8) | [source](https://github.com/twocentstudios/vinylogue)
+#### Vinylogue - [landing page](/apps/vinylogue) | [appstore](http://itunes.apple.com/us/app/vinylogue-for-last.fm/id617471119?ls=1&mt=8) | [source](https://github.com/twocentstudios/vinylogue) | [post](/2013/04/03/the-making-of-vinylogue/)
 
 An iOS app for your [last.fm](https://last.fm) listening history.
 
