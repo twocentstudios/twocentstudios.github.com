@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>Asynchronous Changes to View Models Using Interactors</title>
+
+  <meta property="og:type" content="article" />
+  <meta property="og:title" content="Asynchronous Changes to View Models Using Interactors" />
+  <meta property="og:url" content="https://twocentstudios.com/2017/11/06/interactors/" />
+  
+    <meta property="og:article:published_time" content="2017-11-06T02:08:47+09:00" />
+  
+  
+  
+  <link href='https://fonts.googleapis.com/css2?family=Work+Sans:wght@300;350;400;600' rel='stylesheet' type='text/css'>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="canonical" href="https://twocentstudios.com/2017/11/06/interactors/">
+  <link rel="alternate" type="application/rss+xml" title="twocentstudios" href="https://twocentstudios.com/feed.xml" />
+</head>
+
+  <!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-NE82N02W8S"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-NE82N02W8S');
+</script>
+
+  <body>
+
+    <header class="site-header">
+
+  <div class="wrapper">
+
+    <a class="site-title" href="/">twocentstudios</a>
+
+    <nav class="site-nav">
+      <a href="#" class="menu-icon">
+        <svg viewBox="0 0 18 15">
+          <path fill="#424242" d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.031C17.335,0,18,0.665,18,1.484L18,1.484z"/>
+          <path fill="#424242" d="M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0c0-0.82,0.665-1.484,1.484-1.484 h15.031C17.335,6.031,18,6.696,18,7.516L18,7.516z"/>
+          <path fill="#424242" d="M18,13.516C18,14.335,17.335,15,16.516,15H1.484C0.665,15,0,14.335,0,13.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.031C17.335,12.031,18,12.696,18,13.516L18,13.516z"/>
+        </svg>
+      </a>
+
+      <div class="trigger">
+        
+          
+          <a class="page-link" href="/about/">About</a>
+          
+        
+          
+          <a class="page-link" href="/blog/">Blog</a>
+          
+        
+          
+        
+          
+        
+          
+          <a class="page-link" href="/portfolio/">Portfolio</a>
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      </div>
+    </nav>
+
+  </div>
+
+</header>
+
+
+    <div class="page-content">
+      <div class="wrapper">
+        <div class="post">
+
+  <header class="post-header">
+    <h1 class="post-title">Asynchronous Changes to View Models Using Interactors</h1>
+    <p class="post-meta">Nov 6, 2017</p>
+  </header>
+
+  <article class="post-content">
+    <p>In this post we’ll take a look at a technique to facilitate the changes to our view states in Swift, as well as how to incorporate asynchronous behavior into this system. I’ll refer to this system by the name <em>interactor</em> throughout this post.</p>
+
+<p>This will be the longest post in the series. It builds on the previous posts about <a href="/2017/07/24/modeling-view-state/">view models</a> and <a href="/2017/08/02/transitioning-between-view-states-using-reducers/">reducers</a> so please read those posts before continuing.</p>
+
+<p>In the next post, we’ll look at how we can use the interactor we’ve created in this post to drive our view layer.</p>
+
+<h2 id="background">Background</h2>
+
+<p>So far, we’ve been working with stateless value types (view models) and a stateless function (reducer). Since our view layer is inherently stateful, we need a reference type to manage the current state (view model) and its changes over time.</p>
+
+<p>In the last post about reducers, we mentioned finite state machines a few times. Our interactor will be the implementation of the finite state machine for our view state.</p>
+
+<blockquote>
+  <p>Note that in this post, I’ll be using <a href="https://github.com/ReactiveCocoa/ReactiveSwift">ReactiveSwift</a> in my reference implementation.</p>
+</blockquote>
+
+<h2 id="architecture">Architecture</h2>
+
+<p>I need to make a quick aside about how this architecture relates to prior art. The interactor, reducer, and view model I’ve discussed all belong to a middle layer between the view layer and the model layer, in many standard MVVM architectures called the view model layer.</p>
+
+<p>In the architecture I’m presenting, there is a difference in nomenclature between a stateless view model and a stateful view model, whereas in classic MVVM, this distinction isn’t made.</p>
+
+<p>Going forward, an <strong>interactor</strong> will be a reference type that holds representations of state over time (variables, signals, data sources). A <em>view model</em> will be a value type that holds a representation of state at one moment in time.</p>
+
+<h2 id="goal">Goal</h2>
+
+<p>Our goal for the interactor is to:</p>
+
+<ol>
+  <li>accept events from the view layer.</li>
+  <li>expose the current view state to the view layer.</li>
+  <li>expose view state change events to the view layer.</li>
+  <li>expose side-effect events to the parent layer (coordinator).</li>
+</ol>
+
+<h3 id="template">Template</h3>
+
+<p>This can be expressed in a template interface (we’ll fill this in more later).</p>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">ReactiveSwift</span>
+<span class="kd">import</span> <span class="kt">Result</span>
+
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">Interactor</span> <span class="p">{</span>
+    <span class="kd">enum</span> <span class="kt">Command</span> <span class="p">{</span> <span class="p">}</span>
+    <span class="kd">enum</span> <span class="kt">Effect</span> <span class="p">{</span> <span class="p">}</span>
+    
+    <span class="c1">// Inputs</span>
+    <span class="k">let</span> <span class="nv">commandSink</span><span class="p">:</span> <span class="kt">Signal</span><span class="o">&lt;</span><span class="kt">Command</span><span class="p">,</span> <span class="kt">NoError</span><span class="o">&gt;.</span><span class="kt">Observer</span> <span class="c1">// 1</span>
+    
+    <span class="c1">// Outputs</span>
+    <span class="k">let</span> <span class="nv">viewModel</span><span class="p">:</span> <span class="kt">Property</span><span class="o">&lt;</span><span class="kt">ViewModel</span><span class="o">&gt;</span> <span class="c1">// 2, 3</span>
+    <span class="k">let</span> <span class="nv">effect</span><span class="p">:</span> <span class="kt">Signal</span><span class="o">&lt;</span><span class="kt">Effect</span><span class="p">,</span> <span class="kt">NoError</span><span class="o">&gt;</span> <span class="c1">// 4</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p>The template above is common to all interactors. It covers all possible scenarios (and is quite testable too!).</p>
+
+<div class="caption-wrapper"><img class="caption" src="/images/interactors-public-interface.png" width="" height="" alt="" title="" /><div class="caption-text"></div></div>
+
+<p>Let’s take a look at each goal in detail.</p>
+
+<h3 id="1-accept-events-from-the-view-layer">1. Accept events from the view layer</h3>
+
+<p>Just like we introduced <code class="language-plaintext highlighter-rouge">Reducer.Command</code> in the last post, we’ll also have <code class="language-plaintext highlighter-rouge">Interactor.Command</code>. <code class="language-plaintext highlighter-rouge">Interactor.Command</code> is an enum that lists <em>all the events from the view layer that can cause the view model to change</em>.</p>
+
+<p>You may be wondering why we need both <code class="language-plaintext highlighter-rouge">Reducer.Command</code> and <code class="language-plaintext highlighter-rouge">Interactor.Command</code>. <code class="language-plaintext highlighter-rouge">Reducer.Command</code> will include entries from <code class="language-plaintext highlighter-rouge">Interactor.Command</code> and additional entries from the results of internal asynchronous events.</p>
+
+<p><code class="language-plaintext highlighter-rouge">commandSink</code> is a signal observer. It’s a write-only entry point into the reactive world. The way you would place events onto it from the view layer would be e.g. <code class="language-plaintext highlighter-rouge">interactor.commandSink.send(value: Interactor.Command.loadPosts)</code>. This is the reactive equivalent of calling something like <code class="language-plaintext highlighter-rouge">interactor.loadPosts()</code>.</p>
+
+<h3 id="2-expose-the-current-view-state-to-the-view-layer">2. Expose the current view state to the view layer</h3>
+
+<p>Interactors are tailored to working with <code class="language-plaintext highlighter-rouge">UITableView</code> and <code class="language-plaintext highlighter-rouge">UICollectionView</code> APIs which require access to the current state throughout their data source callbacks. Therefore our interactor must allow <code class="language-plaintext highlighter-rouge">get</code> access to the view model at any given time on the main thread.</p>
+
+<p>Using ReactiveSwift’s <code class="language-plaintext highlighter-rouge">Property</code> type gives us imperative access to its current value from the view layer e.g. <code class="language-plaintext highlighter-rouge">let currentViewModel = interactor.viewModel.value</code>.</p>
+
+<h3 id="3-expose-view-state-change-events-to-the-view-layer">3. Expose view state change events to the view layer</h3>
+
+<p>The sort of view state change events that the view layer requires will differ depending on the desired view implementation. In the simplest version, our view layer only needs change events it can use to trigger calls to <code class="language-plaintext highlighter-rouge">tableView.reloadData()</code>.</p>
+
+<p>We can get this behavior from ReactiveSwift’s <code class="language-plaintext highlighter-rouge">Property</code> type as well subscribing to its <code class="language-plaintext highlighter-rouge">producer</code> or <code class="language-plaintext highlighter-rouge">signal</code>.</p>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="c1">// In view controller</span>
+<span class="n">interactor</span><span class="o">.</span><span class="n">viewModel</span><span class="o">.</span><span class="n">producer</span>
+    <span class="o">.</span><span class="n">startWithValues</span> <span class="p">{</span> <span class="p">[</span><span class="k">weak</span> <span class="k">self</span><span class="p">]</span> <span class="n">_</span> <span class="k">in</span>
+        <span class="k">self</span><span class="p">?</span><span class="o">.</span><span class="n">tableView</span><span class="o">.</span><span class="nf">reloadData</span><span class="p">()</span>
+    <span class="p">}</span>
+</code></pre>
+</div>
+
+<h3 id="4-expose-side-effect-events-to-the-parent-layer-coordinator">4. expose side-effect events to the parent layer (coordinator)</h3>
+
+<p>In this architecture, the view layer is not responsible for navigation. Navigation-related side effects are determined by the interactor and exposed to its parent coordinator.</p>
+
+<p>Similar to how was saw <code class="language-plaintext highlighter-rouge">Reducer.Effect</code> in the last post, we also have an <code class="language-plaintext highlighter-rouge">Interactor.Effect</code>. <code class="language-plaintext highlighter-rouge">Interactor.Effect</code> lists all the possible side effects that can occur as a result of events in the view layer and view state changes within the interactor.</p>
+
+<p>The coordinator can subscribe to these side effects.</p>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="c1">// In coordinator</span>
+<span class="n">interactor</span><span class="o">.</span><span class="n">effect</span>
+    <span class="o">.</span><span class="n">observeValues</span> <span class="p">{</span> <span class="p">(</span><span class="nv">effect</span><span class="p">:</span> <span class="kt">Interactor</span><span class="o">.</span><span class="kt">Effect</span><span class="p">)</span> <span class="k">in</span>
+        <span class="c1">// present a new view controller based on `effect`        </span>
+    <span class="p">}</span>
+</code></pre>
+</div>
+
+<h2 id="implementation">Implementation</h2>
+
+<p>In our example, there will be two interactors <code class="language-plaintext highlighter-rouge">ProfileInteractor</code> and <code class="language-plaintext highlighter-rouge">PostsInteractor</code> nested within <code class="language-plaintext highlighter-rouge">UserInteractor</code>.</p>
+
+<p>View the full code for <a href="https://github.com/twocentstudios/ViewState/blob/8b7b75654baa5fcd4c0a41857fc948380641b6fd/viewstate/View%20Model/ProfileInteractor.swift"><code class="language-plaintext highlighter-rouge">ProfileInteractor</code></a>, <a href="https://github.com/twocentstudios/ViewState/blob/8b7b75654baa5fcd4c0a41857fc948380641b6fd/viewstate/View%20Model/PostsInteractor.swift"><code class="language-plaintext highlighter-rouge">PostsInteractor</code></a>, and <a href="https://github.com/twocentstudios/ViewState/blob/8b7b75654baa5fcd4c0a41857fc948380641b6fd/viewstate/View%20Model/UserInteractor.swift"><code class="language-plaintext highlighter-rouge">UserInteractor</code></a> in the `<a href="https://github.com/twocentstudios/ViewState">example project</a>.</p>
+
+<h3 id="profileinteractor">ProfileInteractor</h3>
+
+<p>Let’s start with <code class="language-plaintext highlighter-rouge">ProfileInteractor</code> by copying our template from above.</p>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">final</span> <span class="kd">class</span> <span class="kt">ProfileInteractor</span> <span class="p">{</span>
+    <span class="kd">enum</span> <span class="kt">Command</span> <span class="p">{</span> 
+        <span class="c1">// TODO: what external messages must we support?</span>
+    <span class="p">}</span>
+    <span class="kd">enum</span> <span class="kt">Effect</span> <span class="p">{</span> 
+        <span class="c1">// TODO: what effects will we produce?</span>
+    <span class="p">}</span>
+    
+    <span class="c1">// Inputs</span>
+    <span class="k">let</span> <span class="nv">commandSink</span><span class="p">:</span> <span class="kt">Signal</span><span class="o">&lt;</span><span class="kt">Command</span><span class="p">,</span> <span class="kt">NoError</span><span class="o">&gt;.</span><span class="kt">Observer</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">commandSignal</span><span class="p">:</span> <span class="kt">Signal</span><span class="o">&lt;</span><span class="kt">Command</span><span class="p">,</span> <span class="kt">NoError</span><span class="o">&gt;</span>
+    
+    <span class="c1">// Outputs</span>
+    <span class="k">let</span> <span class="nv">viewModel</span><span class="p">:</span> <span class="kt">Property</span><span class="o">&lt;</span><span class="kt">ProfileViewModel</span><span class="o">&gt;</span>
+    <span class="k">let</span> <span class="nv">effect</span><span class="p">:</span> <span class="kt">Signal</span><span class="o">&lt;</span><span class="kt">Effect</span><span class="p">,</span> <span class="kt">NoError</span><span class="o">&gt;</span>
+    
+    <span class="c1">// ...</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p>We need to determine what messages/data <code class="language-plaintext highlighter-rouge">ProfileInteractor</code> can receive from the outside world and what effects it produces. Our current design of <code class="language-plaintext highlighter-rouge">ProfileInteractor</code> is read-only, so the <code class="language-plaintext highlighter-rouge">Command</code> and <code class="language-plaintext highlighter-rouge">Effect</code> are straightforward:</p>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">final</span> <span class="kd">class</span> <span class="kt">ProfileInteractor</span> <span class="p">{</span>
+    <span class="kd">enum</span> <span class="kt">Command</span> <span class="p">{</span> 
+        <span class="k">case</span> <span class="n">load</span>
+    <span class="p">}</span>
+    <span class="kd">enum</span> <span class="kt">Effect</span> <span class="p">{</span> <span class="p">}</span>
+</code></pre>
+</div>
+
+<p>The only way the outside world can change <code class="language-plaintext highlighter-rouge">ProfileViewModel</code> is through <code class="language-plaintext highlighter-rouge">Command.load</code>. <code class="language-plaintext highlighter-rouge">ProfileInteractor</code> produces no side-effects.</p>
+
+<p>Notice that we also added <code class="language-plaintext highlighter-rouge">commandSignal</code> above as an internal implementation detail. <code class="language-plaintext highlighter-rouge">commandSignal</code> is the read-only tap of the write-only <code class="language-plaintext highlighter-rouge">commandSink</code> <code class="language-plaintext highlighter-rouge">ProfileInteractor</code> exposes to the outside world.</p>
+
+<p><code class="language-plaintext highlighter-rouge">ProfileInteractor</code> has 1 initializer and 3 functions.</p>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">final</span> <span class="kd">class</span> <span class="kt">ProfileInteractor</span> <span class="p">{</span>
+    <span class="c1">// ...</span>
+    
+    <span class="nf">init</span><span class="p">(</span><span class="nv">userId</span><span class="p">:</span> <span class="kt">Int</span><span class="p">,</span> <span class="nv">service</span><span class="p">:</span> <span class="kt">ProfileServiceType</span><span class="p">,</span> <span class="nv">scheduler</span><span class="p">:</span> <span class="kt">SchedulerContext</span> <span class="o">=</span> <span class="kt">SchedulerContext</span><span class="p">())</span> <span class="p">{</span>
+        <span class="c1">// TODO: set up the entire system.</span>
+        <span class="c1">//</span>
+        <span class="c1">// This will be the most complex part of the class, but also</span>
+        <span class="c1">// the most templated across all interactors.</span>
+    <span class="p">}</span>
+    
+    <span class="kd">static</span> <span class="kd">private</span> <span class="kd">func</span> <span class="nf">toCommand</span><span class="p">(</span><span class="n">_</span> <span class="nv">command</span><span class="p">:</span> <span class="kt">Command</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Reducer</span><span class="o">.</span><span class="kt">Command</span> <span class="p">{</span>
+        <span class="c1">// TODO: convert a `Command` from the interactor's domain to</span>
+        <span class="c1">// an `Command` in the reducer's domain.</span>
+        <span class="c1">//</span>
+        <span class="c1">// This function has no side-effects.</span>
+    <span class="p">}</span>
+    
+    <span class="kd">static</span> <span class="kd">private</span> <span class="kd">func</span> <span class="nf">toEffect</span><span class="p">(</span><span class="n">_</span> <span class="nv">effect</span><span class="p">:</span> <span class="kt">Reducer</span><span class="o">.</span><span class="kt">Effect</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Effect</span><span class="p">?</span> <span class="p">{</span>
+        <span class="c1">// TODO: convert an `Effect` from the reducer's domain to an</span>
+        <span class="c1">// `Effect` in the interactor's domain.</span>
+        <span class="c1">//</span>
+        <span class="c1">// This function has no side-effects.</span>
+    <span class="p">}</span>
+    
+    <span class="kd">static</span> <span class="kd">private</span> <span class="kd">func</span> <span class="nf">toSignalProducer</span><span class="p">(</span><span class="nv">effect</span><span class="p">:</span> <span class="kt">Reducer</span><span class="o">.</span><span class="kt">Effect</span><span class="p">,</span> <span class="nv">userId</span><span class="p">:</span> <span class="kt">Int</span><span class="p">,</span> <span class="nv">service</span><span class="p">:</span> <span class="kt">ProfileServiceType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">SignalProducer</span><span class="o">&lt;</span><span class="kt">Reducer</span><span class="o">.</span><span class="kt">Command</span><span class="p">,</span> <span class="kt">NoError</span><span class="o">&gt;</span> <span class="p">{</span>
+        <span class="c1">// TODO: produce a description of asynchronous work based on</span>
+        <span class="c1">// an `Effect` provided by the reducer.</span>
+        <span class="c1">//</span>
+        <span class="c1">// The `SignalProducer` returns a new `Command` in the reducer's</span>
+        <span class="c1">// domain.</span>
+        <span class="c1">//</span>
+        <span class="c1">// This function allows the reducer to be synchronous.</span>
+    <span class="p">}</span>
+</code></pre>
+</div>
+
+<p>The entire <em>state</em> of this class is set up in <code class="language-plaintext highlighter-rouge">init</code> as a network of static <code class="language-plaintext highlighter-rouge">Signal</code>s.</p>
+
+<h4 id="init">Init</h4>
+
+<p><code class="language-plaintext highlighter-rouge">init</code> contains mostly boilerplate of creating signals and wiring them together with pure transformation functions. In this post I’ll explain which parts must be changed for <code class="language-plaintext highlighter-rouge">ProfileInteractor</code>. In a subsequent post, I’ll explain how the system itself is designed.</p>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code>    <span class="nf">init</span><span class="p">(</span><span class="nv">userId</span><span class="p">:</span> <span class="kt">Int</span><span class="p">,</span> <span class="nv">service</span><span class="p">:</span> <span class="kt">ProfileServiceType</span><span class="p">,</span> <span class="nv">scheduler</span><span class="p">:</span> <span class="kt">SchedulerContext</span> <span class="o">=</span> <span class="kt">SchedulerContext</span><span class="p">())</span> <span class="p">{</span> <span class="c1">// 1 </span>
+        <span class="p">(</span><span class="k">self</span><span class="o">.</span><span class="n">commandSignal</span><span class="p">,</span> <span class="k">self</span><span class="o">.</span><span class="n">commandSink</span><span class="p">)</span> <span class="o">=</span> <span class="kt">Signal</span><span class="o">&lt;</span><span class="kt">Command</span><span class="p">,</span> <span class="kt">NoError</span><span class="o">&gt;.</span><span class="nf">pipe</span><span class="p">()</span>
+        
+        <span class="k">let</span> <span class="nv">initialViewModel</span> <span class="o">=</span> <span class="kt">ProfileViewModel</span><span class="p">(</span><span class="nv">state</span><span class="p">:</span> <span class="o">.</span><span class="n">initialized</span><span class="p">)</span> <span class="c1">// 2</span>
+        <span class="k">let</span> <span class="nv">initialEffect</span><span class="p">:</span> <span class="kt">Reducer</span><span class="o">.</span><span class="kt">Effect</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span> <span class="c1">// 3</span>
+        <span class="k">let</span> <span class="nv">initialState</span> <span class="o">=</span> <span class="kt">Reducer</span><span class="o">.</span><span class="kt">State</span><span class="p">(</span><span class="nv">viewModel</span><span class="p">:</span> <span class="n">initialViewModel</span><span class="p">,</span> <span class="nv">effect</span><span class="p">:</span> <span class="n">initialEffect</span><span class="p">)</span>
+        
+        <span class="k">let</span> <span class="nv">externalCommandSignal</span> <span class="o">=</span> <span class="n">commandSignal</span><span class="o">.</span><span class="nf">map</span><span class="p">(</span><span class="kt">ProfileInteractor</span><span class="o">.</span><span class="n">toCommand</span><span class="p">)</span> <span class="c1">// 4</span>
+        <span class="nf">let</span> <span class="p">(</span><span class="n">internalCommandSignal</span><span class="p">,</span> <span class="n">internalCommandSink</span><span class="p">)</span> <span class="o">=</span> <span class="kt">Signal</span><span class="o">&lt;</span><span class="kt">Reducer</span><span class="o">.</span><span class="kt">Command</span><span class="p">,</span> <span class="kt">NoError</span><span class="o">&gt;.</span><span class="nf">pipe</span><span class="p">()</span>
+        <span class="k">let</span> <span class="nv">allCommandsSignal</span> <span class="o">=</span> <span class="kt">Signal</span><span class="o">.</span><span class="nf">merge</span><span class="p">([</span><span class="n">externalCommandSignal</span><span class="p">,</span> <span class="n">internalCommandSignal</span><span class="p">])</span>
+        
+        <span class="k">let</span> <span class="nv">stateReducer</span> <span class="o">=</span> <span class="n">allCommandsSignal</span>
+            <span class="o">.</span><span class="nf">observe</span><span class="p">(</span><span class="nv">on</span><span class="p">:</span> <span class="n">scheduler</span><span class="o">.</span><span class="n">state</span><span class="p">)</span>
+            <span class="o">.</span><span class="nf">scan</span><span class="p">(</span><span class="n">initialState</span><span class="p">)</span> <span class="p">{</span> <span class="p">(</span><span class="nv">state</span><span class="p">:</span> <span class="kt">Reducer</span><span class="o">.</span><span class="kt">State</span><span class="p">,</span> <span class="nv">command</span><span class="p">:</span> <span class="kt">Reducer</span><span class="o">.</span><span class="kt">Command</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Reducer</span><span class="o">.</span><span class="kt">State</span> <span class="k">in</span>
+                <span class="k">return</span> <span class="kt">Reducer</span><span class="o">.</span><span class="nf">reduce</span><span class="p">(</span><span class="nv">state</span><span class="p">:</span> <span class="n">state</span><span class="p">,</span> <span class="nv">command</span><span class="p">:</span> <span class="n">command</span><span class="p">)</span>
+            <span class="p">}</span>
+        
+        <span class="k">let</span> <span class="nv">viewModelSignal</span> <span class="o">=</span> <span class="n">stateReducer</span>
+            <span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="n">viewModel</span> <span class="p">}</span>
+            <span class="o">.</span><span class="nf">skipRepeats</span><span class="p">()</span>
+            <span class="o">.</span><span class="nf">observe</span><span class="p">(</span><span class="nv">on</span><span class="p">:</span> <span class="n">scheduler</span><span class="o">.</span><span class="n">output</span><span class="p">)</span>
+        
+        <span class="k">let</span> <span class="nv">effectSignal</span> <span class="o">=</span> <span class="n">stateReducer</span>
+            <span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="n">effect</span> <span class="p">}</span>
+            <span class="o">.</span><span class="nf">skipNil</span><span class="p">()</span>
+            <span class="o">.</span><span class="nf">map</span><span class="p">(</span><span class="kt">ProfileInteractor</span><span class="o">.</span><span class="n">toEffect</span><span class="p">)</span> <span class="c1">// 5</span>
+            <span class="o">.</span><span class="nf">skipNil</span><span class="p">()</span>
+            <span class="o">.</span><span class="nf">observe</span><span class="p">(</span><span class="nv">on</span><span class="p">:</span> <span class="n">scheduler</span><span class="o">.</span><span class="n">output</span><span class="p">)</span>
+        
+        <span class="n">stateReducer</span>
+            <span class="o">.</span><span class="nf">observe</span><span class="p">(</span><span class="nv">on</span><span class="p">:</span> <span class="n">scheduler</span><span class="o">.</span><span class="n">work</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="n">effect</span> <span class="p">}</span>
+            <span class="o">.</span><span class="nf">skipNil</span><span class="p">()</span>
+            <span class="o">.</span><span class="nf">flatMap</span><span class="p">(</span><span class="kt">FlattenStrategy</span><span class="o">.</span><span class="n">merge</span><span class="p">)</span> <span class="p">{</span> <span class="p">(</span><span class="nv">effect</span><span class="p">:</span> <span class="kt">Reducer</span><span class="o">.</span><span class="kt">Effect</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">SignalProducer</span><span class="o">&lt;</span><span class="kt">Reducer</span><span class="o">.</span><span class="kt">Command</span><span class="p">,</span> <span class="kt">NoError</span><span class="o">&gt;</span> <span class="k">in</span>
+                <span class="k">return</span> <span class="kt">ProfileInteractor</span><span class="o">.</span><span class="nf">toSignalProducer</span><span class="p">(</span><span class="nv">effect</span><span class="p">:</span> <span class="n">effect</span><span class="p">,</span> <span class="nv">userId</span><span class="p">:</span> <span class="n">userId</span><span class="p">,</span> <span class="nv">service</span><span class="p">:</span> <span class="n">service</span><span class="p">)</span> <span class="c1">// 6</span>
+            <span class="p">}</span>
+            <span class="o">.</span><span class="nf">observe</span><span class="p">(</span><span class="n">internalCommandSink</span><span class="p">)</span>
+        
+        <span class="n">viewModel</span> <span class="o">=</span> <span class="kt">Property</span><span class="p">(</span><span class="nv">initial</span><span class="p">:</span> <span class="n">initialViewModel</span><span class="p">,</span> <span class="nv">then</span><span class="p">:</span> <span class="n">viewModelSignal</span><span class="p">)</span>
+        <span class="n">effect</span> <span class="o">=</span> <span class="n">effectSignal</span>
+    <span class="p">}</span>
+</code></pre>
+</div>
+
+<ol>
+  <li>Our initializer signature may need different types of static input data and data services.</li>
+  <li>An interactor must always have a view model after it has finished initialization. It’s up to us to choose. It’s an easy choice because we already created an <code class="language-plaintext highlighter-rouge">initialized</code> state definition for our view model.</li>
+  <li>Because <code class="language-plaintext highlighter-rouge">Effect</code> is part of our reducer state, we must also choose an initial effect emitted during initialization. It will almost always be nil.</li>
+  <li>Target <code class="language-plaintext highlighter-rouge">ProfileInteractor.toCommand</code>.</li>
+  <li>Target <code class="language-plaintext highlighter-rouge">ProfileInteractor.toEffect</code>.</li>
+  <li>Target <code class="language-plaintext highlighter-rouge">ProfileInteractor.toSignalProducer</code>. You may need to provide different data or services in order to create the asynchronous jobs.</li>
+</ol>
+
+<p>The rest of the <code class="language-plaintext highlighter-rouge">init</code> implementation is essentially the same across all interactors.</p>
+
+<p>Now we’ll fill in the implementations for the other 3 functions.</p>
+
+<h4 id="tocommand">toCommand</h4>
+
+<p>In <code class="language-plaintext highlighter-rouge">toCommand</code> we only need to convert from <code class="language-plaintext highlighter-rouge">Interactor.Command</code> to <code class="language-plaintext highlighter-rouge">Reducer.Command</code>, and they’re already straightforwardly aligned.</p>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">final</span> <span class="kd">class</span> <span class="kt">ProfileInteractor</span> <span class="p">{</span>
+    <span class="c1">// ...</span>
+    
+    <span class="kd">static</span> <span class="kd">private</span> <span class="kd">func</span> <span class="nf">toCommand</span><span class="p">(</span><span class="n">_</span> <span class="nv">command</span><span class="p">:</span> <span class="kt">Command</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Reducer</span><span class="o">.</span><span class="kt">Command</span> <span class="p">{</span>
+        <span class="k">switch</span> <span class="n">command</span> <span class="p">{</span>
+        <span class="k">case</span> <span class="o">.</span><span class="nv">load</span><span class="p">:</span> <span class="k">return</span> <span class="o">.</span><span class="n">load</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    
+    <span class="c1">// ...</span>
+</code></pre>
+</div>
+
+<h4 id="toeffect">toEffect</h4>
+
+<p>In <code class="language-plaintext highlighter-rouge">toEffect</code> we’re converting from <code class="language-plaintext highlighter-rouge">Reducer.Effect</code> to <code class="language-plaintext highlighter-rouge">Interactor.Effect</code>. However, <code class="language-plaintext highlighter-rouge">Interactor.Effect</code> is an empty <code class="language-plaintext highlighter-rouge">enum</code>: all effects from the reducer are handled internally by the interactor (in <code class="language-plaintext highlighter-rouge">toSignalProducer</code>). In more complex implementations, you’ll see many types of effects here.</p>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">final</span> <span class="kd">class</span> <span class="kt">ProfileInteractor</span> <span class="p">{</span>
+    <span class="c1">// ...</span>
+    
+    <span class="kd">static</span> <span class="kd">private</span> <span class="kd">func</span> <span class="nf">toEffect</span><span class="p">(</span><span class="n">_</span> <span class="nv">effect</span><span class="p">:</span> <span class="kt">Reducer</span><span class="o">.</span><span class="kt">Effect</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Effect</span><span class="p">?</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="kc">nil</span>
+    <span class="p">}</span>
+    
+    <span class="c1">// ...</span>
+</code></pre>
+</div>
+
+<h4 id="tosignalproducer">toSignalProducer</h4>
+
+<p>In <code class="language-plaintext highlighter-rouge">toSignalProducer</code> we’re handling effects from the reducer. If the reducer’s message was <code class="language-plaintext highlighter-rouge">load</code>, we’ll use <code class="language-plaintext highlighter-rouge">ProfileServiceType</code> to make an asynchronous request. The data we receive, either a <code class="language-plaintext highlighter-rouge">User</code> or an <code class="language-plaintext highlighter-rouge">NSError</code>, is returned from the signal as a <code class="language-plaintext highlighter-rouge">Reducer.Command</code> that will be fed back into the reducer.</p>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">final</span> <span class="kd">class</span> <span class="kt">ProfileInteractor</span> <span class="p">{</span>
+    <span class="c1">// ...</span>
+    
+    <span class="kd">static</span> <span class="kd">private</span> <span class="kd">func</span> <span class="nf">toSignalProducer</span><span class="p">(</span><span class="nv">effect</span><span class="p">:</span> <span class="kt">Reducer</span><span class="o">.</span><span class="kt">Effect</span><span class="p">,</span> <span class="nv">userId</span><span class="p">:</span> <span class="kt">Int</span><span class="p">,</span> <span class="nv">service</span><span class="p">:</span> <span class="kt">ProfileServiceType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">SignalProducer</span><span class="o">&lt;</span><span class="kt">Reducer</span><span class="o">.</span><span class="kt">Command</span><span class="p">,</span> <span class="kt">NoError</span><span class="o">&gt;</span> <span class="p">{</span>
+        <span class="k">switch</span> <span class="n">effect</span> <span class="p">{</span>
+        <span class="k">case</span> <span class="o">.</span><span class="nv">load</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">service</span><span class="o">.</span><span class="nf">readProfile</span><span class="p">(</span><span class="nv">userId</span><span class="p">:</span> <span class="n">userId</span><span class="p">)</span>
+                <span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="p">(</span><span class="nv">user</span><span class="p">:</span> <span class="kt">User</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Reducer</span><span class="o">.</span><span class="kt">Command</span> <span class="k">in</span>
+                    <span class="k">return</span> <span class="kt">Reducer</span><span class="o">.</span><span class="kt">Command</span><span class="o">.</span><span class="nf">loaded</span><span class="p">(</span><span class="n">user</span><span class="p">)</span>
+                <span class="p">}</span>
+                <span class="o">.</span><span class="n">flatMapError</span> <span class="p">{</span> <span class="p">(</span><span class="nv">error</span><span class="p">:</span> <span class="kt">NSError</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">SignalProducer</span><span class="o">&lt;</span><span class="kt">Reducer</span><span class="o">.</span><span class="kt">Command</span><span class="p">,</span> <span class="kt">NoError</span><span class="o">&gt;</span> <span class="k">in</span>
+                    <span class="k">return</span> <span class="kt">SignalProducer</span><span class="p">(</span><span class="nv">value</span><span class="p">:</span> <span class="kt">Reducer</span><span class="o">.</span><span class="kt">Command</span><span class="o">.</span><span class="nf">failed</span><span class="p">(</span><span class="n">error</span><span class="p">))</span>
+                <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    
+    <span class="c1">// ...</span>
+</code></pre>
+</div>
+
+<h3 id="postsinteractor">PostsInteractor</h3>
+
+<p><code class="language-plaintext highlighter-rouge">PostsInteractor</code> is similar to <code class="language-plaintext highlighter-rouge">ProfileInteractor</code> so we’ll skip the detailed explanation. View the code <a href="">here</a>.</p>
+
+<h3 id="userinteractor">UserInteractor</h3>
+
+<p><code class="language-plaintext highlighter-rouge">UserInteractor</code> is a second type of interactor. It will compose <code class="language-plaintext highlighter-rouge">ProfileInteractor</code> and <code class="language-plaintext highlighter-rouge">PostsInteractor</code>, wiring them up and exposing <code class="language-plaintext highlighter-rouge">UserViewModel</code> to the outside world.</p>
+
+<p><code class="language-plaintext highlighter-rouge">UserInteractor</code> has some of the same elements of our interactor template, but does not require a dedicated reducer, and does not have any infrastructure for making asynchronous requests.</p>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">final</span> <span class="kd">class</span> <span class="kt">UserInteractor</span> <span class="p">{</span>
+    <span class="kd">enum</span> <span class="kt">Command</span> <span class="p">{</span>
+        <span class="k">case</span> <span class="n">loadProfile</span>
+        <span class="k">case</span> <span class="n">loadPosts</span>
+    <span class="p">}</span>
+    <span class="kd">enum</span> <span class="kt">Effect</span> <span class="p">{</span> <span class="p">}</span>
+    
+    <span class="k">let</span> <span class="nv">commandSink</span><span class="p">:</span> <span class="kt">Signal</span><span class="o">&lt;</span><span class="kt">Command</span><span class="p">,</span> <span class="kt">NoError</span><span class="o">&gt;.</span><span class="kt">Observer</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">commandSignal</span><span class="p">:</span> <span class="kt">Signal</span><span class="o">&lt;</span><span class="kt">Command</span><span class="p">,</span> <span class="kt">NoError</span><span class="o">&gt;</span>
+    
+    <span class="k">let</span> <span class="nv">viewModel</span><span class="p">:</span> <span class="kt">Property</span><span class="o">&lt;</span><span class="kt">UserViewModel</span><span class="o">&gt;</span>
+    <span class="k">let</span> <span class="nv">effect</span><span class="p">:</span> <span class="kt">Signal</span><span class="o">&lt;</span><span class="kt">Effect</span><span class="p">,</span> <span class="kt">NoError</span><span class="o">&gt;</span>
+
+    <span class="c1">// ...</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p>As the public interface to both child interactors <code class="language-plaintext highlighter-rouge">ProfileInteractor</code> and <code class="language-plaintext highlighter-rouge">PostsInteractor</code>, <code class="language-plaintext highlighter-rouge">UserInteractor</code> needs the <code class="language-plaintext highlighter-rouge">Command</code>s of each.</p>
+
+<p>Its child interactors have no external effects, and therefore <code class="language-plaintext highlighter-rouge">UserInteractor</code> doesn’t need to define any.</p>
+
+<p>The rest of the interface looks the same as our other interactors, with <code class="language-plaintext highlighter-rouge">UserViewModel</code> exposed as in the <code class="language-plaintext highlighter-rouge">Property</code>.</p>
+
+<p>Let’s walk through <code class="language-plaintext highlighter-rouge">UserInteractor.init</code> to see how it compares to <code class="language-plaintext highlighter-rouge">ProfileInteractor</code>’s implementation.</p>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">final</span> <span class="kd">class</span> <span class="kt">UserInteractor</span> <span class="p">{</span>
+    <span class="nf">init</span><span class="p">(</span><span class="nv">userId</span><span class="p">:</span> <span class="kt">Int</span><span class="p">,</span> <span class="nv">profileService</span><span class="p">:</span> <span class="kt">ProfileServiceType</span><span class="p">,</span> <span class="nv">postsService</span><span class="p">:</span> <span class="kt">PostsServiceType</span><span class="p">,</span> <span class="nv">scheduler</span><span class="p">:</span> <span class="kt">SchedulerContext</span> <span class="o">=</span> <span class="kt">SchedulerContext</span><span class="p">())</span> <span class="p">{</span> <span class="c1">// 1        </span>
+        <span class="p">(</span><span class="k">self</span><span class="o">.</span><span class="n">commandSignal</span><span class="p">,</span> <span class="k">self</span><span class="o">.</span><span class="n">commandSink</span><span class="p">)</span> <span class="o">=</span> <span class="kt">Signal</span><span class="o">&lt;</span><span class="kt">Command</span><span class="p">,</span> <span class="kt">NoError</span><span class="o">&gt;.</span><span class="nf">pipe</span><span class="p">()</span>
+        
+        <span class="c1">// 2</span>
+        <span class="k">let</span> <span class="nv">profileInteractor</span> <span class="o">=</span> <span class="kt">ProfileInteractor</span><span class="p">(</span><span class="nv">userId</span><span class="p">:</span> <span class="n">userId</span><span class="p">,</span> <span class="nv">service</span><span class="p">:</span> <span class="n">profileService</span><span class="p">)</span>
+        <span class="k">let</span> <span class="nv">postsInteractor</span> <span class="o">=</span> <span class="kt">PostsInteractor</span><span class="p">(</span><span class="nv">userId</span><span class="p">:</span> <span class="n">userId</span><span class="p">,</span> <span class="nv">service</span><span class="p">:</span> <span class="n">postsService</span><span class="p">)</span>
+        
+        <span class="c1">// 3</span>
+        <span class="k">let</span> <span class="nv">initialViewModel</span> <span class="o">=</span> <span class="kt">UserViewModel</span><span class="p">(</span><span class="nv">profileViewModel</span><span class="p">:</span> <span class="n">profileInteractor</span><span class="o">.</span><span class="n">viewModel</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="nv">postsViewModel</span><span class="p">:</span> <span class="n">postsInteractor</span><span class="o">.</span><span class="n">viewModel</span><span class="o">.</span><span class="n">value</span><span class="p">)</span>
+        
+        <span class="c1">// 4</span>
+        <span class="k">let</span> <span class="nv">viewModelSignal</span> <span class="o">=</span> <span class="kt">Signal</span>
+            <span class="o">.</span><span class="nf">combineLatest</span><span class="p">(</span><span class="n">profileInteractor</span><span class="o">.</span><span class="n">viewModel</span><span class="o">.</span><span class="n">signal</span><span class="p">,</span> <span class="n">postsInteractor</span><span class="o">.</span><span class="n">viewModel</span><span class="o">.</span><span class="n">signal</span><span class="p">)</span>
+            <span class="o">.</span><span class="nf">map</span><span class="p">(</span><span class="kt">UserViewModel</span><span class="o">.</span><span class="kd">init</span><span class="p">)</span>
+        
+        <span class="n">viewModel</span> <span class="o">=</span> <span class="kt">Property</span><span class="p">(</span><span class="nv">initial</span><span class="p">:</span> <span class="n">initialViewModel</span><span class="p">,</span> <span class="nv">then</span><span class="p">:</span> <span class="n">viewModelSignal</span><span class="p">)</span>
+        
+        <span class="c1">// 5</span>
+        <span class="n">commandSignal</span><span class="o">.</span><span class="nf">map</span><span class="p">(</span><span class="kt">ProfileInteractor</span><span class="o">.</span><span class="n">fromCommand</span><span class="p">)</span><span class="o">.</span><span class="nf">skipNil</span><span class="p">()</span><span class="o">.</span><span class="nf">observe</span><span class="p">(</span><span class="n">profileInteractor</span><span class="o">.</span><span class="n">commandSink</span><span class="p">)</span>
+        <span class="n">commandSignal</span><span class="o">.</span><span class="nf">map</span><span class="p">(</span><span class="kt">PostsInteractor</span><span class="o">.</span><span class="n">fromCommand</span><span class="p">)</span><span class="o">.</span><span class="nf">skipNil</span><span class="p">()</span><span class="o">.</span><span class="nf">observe</span><span class="p">(</span><span class="n">postsInteractor</span><span class="o">.</span><span class="n">commandSink</span><span class="p">)</span>
+        
+        <span class="c1">// 6</span>
+        <span class="n">effect</span> <span class="o">=</span> <span class="kt">Signal</span><span class="o">.</span><span class="nf">merge</span><span class="p">([</span>
+            <span class="n">profileInteractor</span><span class="o">.</span><span class="n">effect</span><span class="o">.</span><span class="nf">map</span><span class="p">(</span><span class="kt">UserInteractor</span><span class="o">.</span><span class="n">toEffect</span><span class="p">)</span><span class="o">.</span><span class="nf">skipNil</span><span class="p">(),</span>
+            <span class="n">postsInteractor</span><span class="o">.</span><span class="n">effect</span><span class="o">.</span><span class="nf">map</span><span class="p">(</span><span class="kt">UserInteractor</span><span class="o">.</span><span class="n">toEffect</span><span class="p">)</span><span class="o">.</span><span class="nf">skipNil</span><span class="p">()</span>
+            <span class="p">])</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<ol>
+  <li>The initializer signature contains all objects required to create its child interactors.</li>
+  <li>Create the child interactors!</li>
+  <li>Like always, we need to make sure our view model <code class="language-plaintext highlighter-rouge">Property</code> is initialized with a valid view model. We do so by manually combining the initial values of the child interactors’ view models.</li>
+  <li><code class="language-plaintext highlighter-rouge">combineLatest</code> is our makeshift reducer. It always combines the latest values of our two child view models and creates a brand new <code class="language-plaintext highlighter-rouge">UserViewModel</code>.</li>
+  <li>Map commands of the parent interactor type to commands of the child interactor types.</li>
+  <li>Merge effects from both child interactors into one stream.</li>
+</ol>
+
+<h2 id="summary">Summary</h2>
+
+<p>In this post, we discussed the design of a generic <code class="language-plaintext highlighter-rouge">Interactor</code> component.</p>
+
+<p>The goal of the interactor is to accept events from the view layer, expose the current state of and changes to the view model, and expose side-effects generated alongside view model changes.</p>
+
+<p>Communication into and out of all interactors is done through 3 dedicated channels: <code class="language-plaintext highlighter-rouge">Command</code> input, <code class="language-plaintext highlighter-rouge">Effect</code> output, and <code class="language-plaintext highlighter-rouge">ViewModel</code> <code class="language-plaintext highlighter-rouge">Property</code> output which includes state and change events. Communication through these channels is done through dedicated <code class="language-plaintext highlighter-rouge">struct</code>s or <code class="language-plaintext highlighter-rouge">enum</code>s.</p>
+
+<p>In subsequent posts, we’ll discuss:</p>
+
+<ul>
+  <li>How the interactor is used by the view layer.</li>
+  <li>A detailed look at how the reactive system created in <code class="language-plaintext highlighter-rouge">init</code> works.</li>
+  <li>How to test an interactor.</li>
+</ul>
+
+<h3 id="further-reading">Further reading</h3>
+
+<ul>
+  <li><a href="https://github.com/kzaher/RxFeedback">RxFeedback</a> - feedback architecture for <a href="https://github.com/ReactiveX/RxSwift">RxSwift</a></li>
+  <li><a href="https://github.com/Babylonpartners/ReactiveFeedback">ReactiveFeedback</a> - feedback architecture for <a href="https://github.com/ReactiveCocoa/ReactiveSwift">ReactiveSwift</a></li>
+  <li><a href="https://github.com/inamiy/ReactiveAutomaton">inamiy: ReactiveAutomaton</a></li>
+  <li><a href="https://github.com/ReSwift/ReSwift">ReSwift</a></li>
+</ul>
+
+<p>Thanks for reading this post, and please let me know your thoughts and suggestions. I’m <a href="https://twitter.com/twocentstudios">@twocentstudios</a> on Twitter.</p>
+
+  </article>
+
+</div>
+
+      </div>
+    </div>
+
+    <footer class="site-footer">
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">twocentstudios</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col  footer-col-1">
+        <ul class="contact-list">
+          <li><a href="mailto:chris@twocentstudios.com">chris@twocentstudios.com</a></li>
+          
+          <li>
+            <a href="https://github.com/twocentstudios">
+              <span class="icon  icon--github">
+                <svg viewBox="0 0 16 16">
+                  <path fill="#828282" d="M7.999,0.431c-4.285,0-7.76,3.474-7.76,7.761 c0,3.428,2.223,6.337,5.307,7.363c0.388,0.071,0.53-0.168,0.53-0.374c0-0.184-0.007-0.672-0.01-1.32 c-2.159,0.469-2.614-1.04-2.614-1.04c-0.353-0.896-0.862-1.135-0.862-1.135c-0.705-0.481,0.053-0.472,0.053-0.472 c0.779,0.055,1.189,0.8,1.189,0.8c0.692,1.186,1.816,0.843,2.258,0.645c0.071-0.502,0.271-0.843,0.493-1.037 C4.86,11.425,3.049,10.76,3.049,7.786c0-0.847,0.302-1.54,0.799-2.082C3.768,5.507,3.501,4.718,3.924,3.65 c0,0,0.652-0.209,2.134,0.796C6.677,4.273,7.34,4.187,8,4.184c0.659,0.003,1.323,0.089,1.943,0.261 c1.482-1.004,2.132-0.796,2.132-0.796c0.423,1.068,0.157,1.857,0.077,2.054c0.497,0.542,0.798,1.235,0.798,2.082 c0,2.981-1.814,3.637-3.543,3.829c0.279,0.24,0.527,0.713,0.527,1.437c0,1.037-0.01,1.874-0.01,2.129 c0,0.208,0.14,0.449,0.534,0.373c3.081-1.028,5.302-3.935,5.302-7.362C15.76,3.906,12.285,0.431,7.999,0.431z"/>
+                </svg>
+              </span>
+
+              <span class="username">twocentstudios</span>
+            </a>
+          </li>
+          
+
+          <li>
+            <a href="https://hackyderm.io/@twocentstudios">
+              <span class="icon">
+                <svg viewBox="0 0 24 24">
+                  <path fill="#828282" d="M21.327 8.566c0-4.339-2.843-5.61-2.843-5.61-1.433-.658-3.894-.935-6.451-.956h-.063c-2.557.021-5.016.298-6.45.956 0 0-2.843 1.272-2.843 5.61 0 .993-.019 2.181.012 3.441.103 4.243.778 8.425 4.701 9.463 1.809.479 3.362.579 4.612.51 2.268-.126 3.541-.809 3.541-.809l-.075-1.646s-1.621.511-3.441.449c-1.804-.062-3.707-.194-3.999-2.409a4.523 4.523 0 0 1-.04-.621s1.77.433 4.014.536c1.372.063 2.658-.08 3.965-.236 2.506-.299 4.688-1.843 4.962-3.254.434-2.223.398-5.424.398-5.424zm-3.353 5.59h-2.081V9.057c0-1.075-.452-1.62-1.357-1.62-1 0-1.501.647-1.501 1.927v2.791h-2.069V9.364c0-1.28-.501-1.927-1.502-1.927-.905 0-1.357.546-1.357 1.62v5.099H6.026V8.903c0-1.074.273-1.927.823-2.558.566-.631 1.307-.955 2.228-.955 1.065 0 1.872.409 2.405 1.228l.518.869.519-.869c.533-.819 1.34-1.228 2.405-1.228.92 0 1.662.324 2.228.955.549.631.822 1.484.822 2.558v5.253z"/>
+                </svg>
+              </span>
+
+              <span class="username">twocentstudios</span>
+            </a>
+          </li>
+
+          
+          <li>
+            <a href="https://twitter.com/twocentstudios">
+              <span class="icon  icon--twitter">
+                <svg viewBox="0 0 16 16">
+                  <path fill="#828282" d="M15.969,3.058c-0.586,0.26-1.217,0.436-1.878,0.515c0.675-0.405,1.194-1.045,1.438-1.809
+                  c-0.632,0.375-1.332,0.647-2.076,0.793c-0.596-0.636-1.446-1.033-2.387-1.033c-1.806,0-3.27,1.464-3.27,3.27 c0,0.256,0.029,0.506,0.085,0.745C5.163,5.404,2.753,4.102,1.14,2.124C0.859,2.607,0.698,3.168,0.698,3.767 c0,1.134,0.577,2.135,1.455,2.722C1.616,6.472,1.112,6.325,0.671,6.08c0,0.014,0,0.027,0,0.041c0,1.584,1.127,2.906,2.623,3.206 C3.02,9.402,2.731,9.442,2.433,9.442c-0.211,0-0.416-0.021-0.615-0.059c0.416,1.299,1.624,2.245,3.055,2.271 c-1.119,0.877-2.529,1.4-4.061,1.4c-0.264,0-0.524-0.015-0.78-0.046c1.447,0.928,3.166,1.469,5.013,1.469 c6.015,0,9.304-4.983,9.304-9.304c0-0.142-0.003-0.283-0.009-0.423C14.976,4.29,15.531,3.714,15.969,3.058z"/>
+                </svg>
+              </span>
+
+              <span class="username">twocentstudios</span>
+            </a>
+          </li>
+          
+        </ul>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+
+
+  </body>
+
+</html>
