@@ -38,6 +38,12 @@ HTML pages can be processed, have a layout, and include front matter and templat
 
 Images go in the `images` folder. Raw references are like `![An image](/images/some-image.jpg)`. Captioned variant uses a plugin and special syntax like `{% caption_img /images/photophono-screens.png w200 h200 Walkthrough %}`.
 
+Video links look like this and should also include a poster image:
+
+```html
+<video src="/images/some-video.mov" controls preload="none" poster="/images/some-video-poster.png" height="600"></video>
+```
+
 Links to posts in this blog look like `[Timehop: A Retrospective](/2015/11/03/timehop-a-retrospective/)`.
 
 ## Development
