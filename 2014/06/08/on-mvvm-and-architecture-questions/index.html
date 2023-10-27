@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>On MVVM, and Architecture Questions</title>
+
+  <meta property="og:type" content="article" />
+  <meta property="og:title" content="On MVVM, and Architecture Questions" />
+  <meta property="og:url" content="https://twocentstudios.com/2014/06/08/on-mvvm-and-architecture-questions/" />
+  
+    <meta property="og:article:published_time" content="2014-06-08T15:31:52-05:00" />
+  
+  
+  
+  <link href='https://fonts.googleapis.com/css2?family=Work+Sans:wght@300;350;400;600' rel='stylesheet' type='text/css'>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="canonical" href="https://twocentstudios.com/2014/06/08/on-mvvm-and-architecture-questions/">
+  <link rel="alternate" type="application/rss+xml" title="twocentstudios" href="https://twocentstudios.com/feed.xml" />
+</head>
+
+  <!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-NE82N02W8S"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-NE82N02W8S');
+</script>
+
+  <body>
+
+    <header class="site-header">
+
+  <div class="wrapper">
+
+    <a class="site-title" href="/">twocentstudios</a>
+
+    <nav class="site-nav">
+      <a href="#" class="menu-icon">
+        <svg viewBox="0 0 18 15">
+          <path fill="#424242" d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.031C17.335,0,18,0.665,18,1.484L18,1.484z"/>
+          <path fill="#424242" d="M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0c0-0.82,0.665-1.484,1.484-1.484 h15.031C17.335,6.031,18,6.696,18,7.516L18,7.516z"/>
+          <path fill="#424242" d="M18,13.516C18,14.335,17.335,15,16.516,15H1.484C0.665,15,0,14.335,0,13.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.031C17.335,12.031,18,12.696,18,13.516L18,13.516z"/>
+        </svg>
+      </a>
+
+      <div class="trigger">
+        
+          
+          <a class="page-link" href="/about/">About</a>
+          
+        
+          
+          <a class="page-link" href="/blog/">Blog</a>
+          
+        
+          
+        
+          
+        
+          
+          <a class="page-link" href="/portfolio/">Portfolio</a>
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      </div>
+    </nav>
+
+  </div>
+
+</header>
+
+
+    <div class="page-content">
+      <div class="wrapper">
+        <div class="post">
+
+  <header class="post-header">
+    <h1 class="post-title">On MVVM, and Architecture Questions</h1>
+    <p class="post-meta">Jun 8, 2014</p>
+  </header>
+
+  <article class="post-content">
+    <blockquote>
+  <p>This post is something like a mini-walkthrough/tutorial, but it stops about half way from being complete. The goal is to elicit some discussion about the architecture of iOS apps from those experienced with both MVVM and MVC patterns.</p>
+</blockquote>
+
+<p>There have been several converging iOS topics I’ve been interested in as of late. Each of these topics has influenced my approach to what I would consider a grand refactor of the Timehop app.</p>
+
+<h2 id="a-bit-of-background">A Bit of Background</h2>
+
+<p>Our architecture has remained more or less unchanged in the 1.5 years the app has been available on the App Store. The app is primarily backed by Core Data behind a legacy version of RestKit. We also use standard serialized files as well as NSUserDefaults in various modules of the app.</p>
+
+<p>As Core Data often demands (via NSFetchedResultsController) our view controllers have classically been highly coupled with our data source layer. We often use UIImageView+Networking type categories to do fetching directly from the view layer. We use various techniques (within and without Rest Kit) to serialize, fetch, and map data. It’s a mess.</p>
+
+<p>But at the end of the day, this architecture has allowed us to move fast and try any number of features and enhancements in every corner of the app, and it’s got us to the point where we are today: growing.</p>
+
+<p>With millions of daily opens, our goal is an architecture that is performant, crash-free, and <em>very</em> light on maintenance.</p>
+
+<h2 id="new-techniques">New Techniques</h2>
+
+<p>In order to achieve our architecture goals, we’ve been evaluating new techniques outside the mainstream iOS realm. The rest of this post will detail how we’ve attempted to incorporate these techniques into the app.</p>
+
+<h3 id="reactivecocoa">ReactiveCocoa</h3>
+
+<p>I’ve been experimenting with <a href="https://github.com/ReactiveCocoa/ReactiveCocoa">ReactiveCocoa</a> on a few <a href="http://twocentstudios.com/blog/2013/04/03/the-making-of-vinylogue/">past projects</a>, and even used it to implement a recent Timehop experiment called “Throwbacks”. ReactiveCocoa is awesome. Its benefits deserve their own post, but suffice to say the team here is becoming comfortable enough with ReactiveCocoa techniques that it will play a major role in whatever the next version of Timehop becomes.</p>
+
+<h3 id="mvvm">MVVM</h3>
+
+<p>ReactiveCocoa goes hand in hand with the <a href="http://en.wikipedia.org/wiki/Model_View_ViewModel">MVVM</a> architecture pattern. My only exposure to MVVM has been through the ReactiveCocoa ecosystem. MVVM is a difficult pattern without the aid of the concise binding framework like ReactiveCocoa to synchronize the view and view model layers.</p>
+
+<h3 id="testing--dependency-injection">Testing &amp; Dependency Injection</h3>
+
+<p>And the third component I’ve been dabbling in is automated testing. We haven’t chosen a particular library yet, but most of the options are similar enough to fulfill our requirements of ensuring stability and future refactorability. Going along with testing, I’ve been reading about dependency injection as a way to ensure testability and keep components as modular as possible.</p>
+
+<h2 id="fitting-the-pieces-together">Fitting the Pieces Together</h2>
+
+<p>So far, my friend and co-worker <a href="https://twitter.com/biasedbit">Bruno</a> and I have written a couple components of our architecture from scratch with the goal of slowly replacing the tightly coupled components of our current app. Specifically, we’ve started with the Timehop settings screen. The settings screen primarily holds the logic for connecting and disconnecting the various social services from which we import data. There are also several various preference and contact screens.</p>
+
+<p>This is where I’ll start asking questions and positing solutions for how to architect an MVVM module that is testable and doesn’t trip over its own layers of indirection.</p>
+
+<h2 id="my-understanding-of-mvvm">My Understanding of MVVM</h2>
+
+<p>MVVM is often introduced in this <a href="https://github.com/ReactiveCocoa/ReactiveViewModel#model-view-viewmodel">simple diagram</a>:</p>
+
+<figure class="highlight"><pre><code class="language-text" data-lang="text">View =&gt; View Model =&gt; Model
+     &lt;-            &lt;-</code></pre></figure>
+
+<p>Where <code class="language-plaintext highlighter-rouge">=&gt;</code> represents some combination of ownership, strong references, direct observation, and events. <code class="language-plaintext highlighter-rouge">&lt;-</code> represents the flow of data (but not direct references, weak or strong).</p>
+
+<p>In Cocoa-land/objc-world:</p>
+
+<ul>
+  <li>The view layer is comprised primarily of <code class="language-plaintext highlighter-rouge">UIView</code>s and <code class="language-plaintext highlighter-rouge">UIViewController</code>s.</li>
+  <li>The view model layer is comprised of plain <code class="language-plaintext highlighter-rouge">NSObject</code>s.</li>
+  <li>The model layer is comprised of what I’ll actually call controllers, but could also be known as clients, data sources, etc. The roles are more important to keep in mind than the names. Controllers are also usually <code class="language-plaintext highlighter-rouge">NSObject</code> subclasses.</li>
+  <li>Model objects are the fourth role and raw models are the fifth.
+    <ul>
+      <li>We’ll define model objects as simple dumb stores of data in properties on <code class="language-plaintext highlighter-rouge">NSObject</code>s.</li>
+      <li>We’ll define raw models as a representation of data in a non-native format (e.g. JSON string, <code class="language-plaintext highlighter-rouge">NSDictionary</code>, <code class="language-plaintext highlighter-rouge">NSManagedObject</code>, etc.).</li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="rules">Rules</h3>
+
+<p>I’ve introduced the rules of each role in order to clarify the separation of concerns. Below are the rules that separate the concerns of each of the previous roles. Without context, the rules are somewhat abstract, so I’ll introduce examples immediately afterwards.</p>
+
+<h4 id="views">Views</h4>
+
+<ul>
+  <li>Views are allowed to access views and view models.</li>
+  <li>Views are <em>not</em> allowed to access controllers or model objects.</li>
+  <li>Views bind their display properties directly to view model properties.</li>
+  <li>Views pass user events to view models via <code class="language-plaintext highlighter-rouge">RACCommand</code>s/<code class="language-plaintext highlighter-rouge">RACAction</code>s, or alternatively by calling methods on the view models.</li>
+</ul>
+
+<h4 id="view-models">View Models</h4>
+
+<ul>
+  <li>View models are allowed to access view models, controllers, and model objects.</li>
+  <li>View models are <em>not</em> allowed to access views or raw models.</li>
+  <li>View models convert model objects from controllers into observable properties on <code class="language-plaintext highlighter-rouge">self</code>, or other view models.</li>
+  <li>View models accept inputs from views or other view models which trigger actions on <code class="language-plaintext highlighter-rouge">self</code>, other view models, or controllers.</li>
+</ul>
+
+<h4 id="controllers">Controllers</h4>
+
+<ul>
+  <li>Controllers are allowed to access other controllers, model objects, and raw models.</li>
+  <li>Controllers are <em>not</em> allowed to access view models or views.</li>
+  <li>Controllers coordinate model object access from other controllers or directly from system level raw data stores (network, file system, database, etc.).</li>
+  <li>Controllers vend asynchronous (or maybe better put <em>time-agnostic</em>) data (via <code class="language-plaintext highlighter-rouge">RACSignal</code>s) to view models or other controllers.</li>
+  <li>Have to stress again that these are <em>not</em> view controllers!</li>
+</ul>
+
+<h3 id="the-mvvm-diagram-again">The MVVM Diagram Again</h3>
+
+<p>Let’s make a more detailed version of that MVVM diagram for Cocoa specifically.</p>
+
+<figure class="highlight"><pre><code class="language-text" data-lang="text">View ========&gt; View Model ========&gt; Controller ========&gt; Data Store
+  |                |                    |
+View           View Model           Controller</code></pre></figure>
+
+<p>To clarify, <code class="language-plaintext highlighter-rouge">===&gt;</code> represents an ownership as stated above. <code class="language-plaintext highlighter-rouge">|</code> also represents an ownership of the bottom object by the top object. A view could spawn one or more subviews, present other view controllers, and also bind to a view model. Similarly, a view model could keep a collection of view models for its owning view to distribute to that view’s subviews. That view model can also have a controller and connect controllers to its sub-view models.</p>
+
+<p>Secondly, here is the flow of objects between the roles.</p>
+
+<figure class="highlight"><pre><code class="language-text" data-lang="text">View &lt;-------- View Model &lt;-------- Controller &lt;-------- Data Store
+    (view model)        (model object)        (raw model)</code></pre></figure>
+
+<p>Notice from the first chart that all relationships are unidirectional. Thus there is only direct coupling at one interface and in one direction. It’s now possible to replace our view layer with a testing apparatus and test the interface between the view and view model directly. It’s also possible to test the interface between the view model and controller layer.</p>
+
+<p>Notice from the second chart that each role transforms one class of objects into another class. Our role graph starts to look like <strong>a pipeline for transforming data from right to left, and pipeline for transforming user intentions from left to right.</strong></p>
+
+<h4 id="an-aside-about-synchronousasynchronous">An Aside About Synchronous/Asynchronous</h4>
+
+<p>In most apps, there’s an implicit distinction between methods that do synchronous work versus those that do asynchronous work. One best-practice is to write synchronous methods that are wrapped by asynchronous methods.</p>
+
+<p>With ReactiveCocoa, synchronous and asynchronous are both treated as asynchronous. By treating everything as asynchronous, you would normally be committing your project upfront to an unnecessary burden of delegate or block callbacks strewn about the calling object. However, using a system with chainable operations, sane processing semantics (including built-in thread routing operations), and concise bindings makes it significantly easier to work with asynchronous data. Thus, treating all operations as asynchronous becomes a win when synchronous and asynchronous operations can be processed in the same ways (and combined). It is also a win because consumers of operations no longer require unnecessary knowledge of how expensive an operation might be.</p>
+
+<h3 id="a-simple-example">A Simple Example</h3>
+
+<p>Let’s start with a simple example that will quickly spiral out of control. Imagine a view that represents a user’s profile. It should show a photo of the user, a label with the user’s name, a label with the number of friends the user has, and a refresh button because the user’s friend count changes <em>a lot</em> in this example.</p>
+
+<blockquote>
+  <p>This code was not written in an IDE, so please bear with typos.</p>
+</blockquote>
+
+<h4 id="view">View</h4>
+
+<p>The view is pretty simple.</p>
+
+<figure class="highlight"><pre><code class="language-objc" data-lang="objc"><span class="k">@class</span> <span class="nc">HOPProfileViewModel</span>
+
+<span class="k">@interface</span> <span class="nc">HOPProfileView</span> <span class="p">:</span> <span class="nc">UIView</span>
+
+<span class="k">@property</span> <span class="p">(</span><span class="n">nonatomic</span><span class="p">,</span> <span class="n">strong</span><span class="p">)</span> <span class="n">HOPProfileViewModel</span> <span class="o">*</span><span class="n">viewModel</span><span class="p">;</span>
+
+<span class="k">@end</span>
+
+<span class="err">@inteface</span> <span class="n">ProfileView</span> <span class="p">()</span>
+
+<span class="k">@property</span> <span class="p">(</span><span class="n">nonatomic</span><span class="p">,</span> <span class="n">strong</span><span class="p">)</span> <span class="n">UIImageView</span> <span class="o">*</span><span class="n">avatarView</span><span class="p">;</span>
+<span class="k">@property</span> <span class="p">(</span><span class="n">nonatomic</span><span class="p">,</span> <span class="n">strong</span><span class="p">)</span> <span class="n">UILabel</span> <span class="o">*</span><span class="n">nameLabel</span><span class="p">;</span>
+<span class="k">@property</span> <span class="p">(</span><span class="n">nonatomic</span><span class="p">,</span> <span class="n">strong</span><span class="p">)</span> <span class="n">UILabel</span> <span class="o">*</span><span class="n">friendCountLabel</span><span class="p">;</span>
+<span class="k">@property</span> <span class="p">(</span><span class="n">nonatomic</span><span class="p">,</span> <span class="n">strong</span><span class="p">)</span> <span class="n">UIButton</span> <span class="o">*</span><span class="n">refreshButton</span><span class="p">;</span>
+
+<span class="k">@end</span>
+
+<span class="k">@implementation</span> <span class="nc">ProfileView</span>
+
+<span class="k">-</span> <span class="p">(</span><span class="n">instancetype</span><span class="p">)</span><span class="nf">initWithFrame</span><span class="p">:(</span><span class="n">CGRect</span><span class="p">)</span><span class="nv">frame</span> <span class="p">{</span>
+    <span class="n">self</span> <span class="o">=</span> <span class="p">[</span><span class="n">super</span> <span class="nf">initWithFrame</span><span class="p">:</span><span class="n">frame</span><span class="p">];</span>
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">self</span><span class="p">)</span> <span class="k">return</span> <span class="nb">nil</span><span class="p">;</span>
+    
+    <span class="n">_avatarView</span> <span class="o">=</span> <span class="p">[[</span><span class="n">UIImageView</span> <span class="nf">alloc</span><span class="p">]</span> <span class="nf">init</span><span class="p">];</span>
+    <span class="p">[</span><span class="n">self</span> <span class="nf">addSubview</span><span class="p">:</span><span class="n">_avatarView</span><span class="p">];</span>
+    
+    <span class="c1">// ... create and add the other views as subviews
+</span>    
+    <span class="n">RAC</span><span class="p">(</span><span class="n">self</span><span class="p">.</span><span class="n">avatarView</span><span class="p">,</span> <span class="n">image</span><span class="p">)</span> <span class="o">=</span> <span class="n">RACObserve</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">viewModel</span><span class="p">.</span><span class="n">avatarImage</span><span class="p">);</span>
+    <span class="n">RAC</span><span class="p">(</span><span class="n">self</span><span class="p">.</span><span class="n">nameLabel</span><span class="p">,</span> <span class="n">text</span><span class="p">)</span> <span class="o">=</span> <span class="n">RACObserve</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">viewModel</span><span class="p">.</span><span class="n">nameString</span><span class="p">);</span>
+    <span class="n">RAC</span><span class="p">(</span><span class="n">self</span><span class="p">.</span><span class="n">friendCountLabel</span><span class="p">,</span> <span class="n">text</span><span class="p">)</span> <span class="o">=</span> <span class="n">RACObserve</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">viewModel</span><span class="p">.</span><span class="n">friendCountString</span><span class="p">);</span>
+    <span class="n">RAC</span><span class="p">(</span><span class="n">self</span><span class="p">.</span><span class="n">refreshButton</span><span class="p">,</span> <span class="n">rac_command</span><span class="p">)</span> <span class="o">=</span> <span class="n">RACObserve</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">viewModel</span><span class="p">.</span><span class="n">refreshCommand</span><span class="p">);</span> 
+    
+    <span class="k">return</span> <span class="n">self</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="k">-</span> <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="n">layoutSubviews</span> <span class="p">{</span> <span class="cm">/* ... */</span> <span class="p">}</span>
+
+<span class="k">@end</span></code></pre></figure>
+
+<p>A few things going on here:</p>
+
+<ul>
+  <li>The view is not bound to a view model for its entire lifecycle. This case is more rare. Most views should be bound to a particular view model for their entire lifecycle. Less mutability reduces view complexity greatly. You would normally require the view model be passed into the receiver on <code class="language-plaintext highlighter-rouge">init</code>. However, in this case we’re allowing the view model to be swapped out during this view’s life, and we therefore must reconfigure its data properly. You’d typically see this pattern in reusable views such as <code class="language-plaintext highlighter-rouge">UITableViewCell</code>s.</li>
+  <li>We’re creating a one way binding using ReactiveCocoa from our view model properties to view properties. Notice there is no data transformation at this stage.</li>
+  <li>The ReactiveCocoa will ensure <code class="language-plaintext highlighter-rouge">self.avatarView.image</code> is set with the current image in the <code class="language-plaintext highlighter-rouge">self.viewModel.avatarImage</code> property. It will ensure this even if the <code class="language-plaintext highlighter-rouge">viewModel</code> object itself changes during this view’s lifecycle. If our view was initialized with a view model, we could write <code class="language-plaintext highlighter-rouge">RAC(self.avatarView, image) = RACObserve(self.viewModel, avatarImage)</code> instead and only the <code class="language-plaintext highlighter-rouge">avatarImage</code> property will be observed.</li>
+  <li>The label properties work the same way as the imageView’s.</li>
+  <li><code class="language-plaintext highlighter-rouge">RACCommand</code> is a somewhat magical object that transparently manages state between an action and its asynchronous results. The important part to notice here is that the view model owns and configures the <code class="language-plaintext highlighter-rouge">RACCommand</code> object in question. Behind the scenes, the <code class="language-plaintext highlighter-rouge">rac_command</code> helper category on <code class="language-plaintext highlighter-rouge">UIButton</code> performs three tasks (heavily simplified):
+    <ul>
+      <li>Calls <code class="language-plaintext highlighter-rouge">-[execute:]</code> on the view model’s <code class="language-plaintext highlighter-rouge">RACCommand</code> on the touchUpInside action.</li>
+      <li>Disables itself while the <code class="language-plaintext highlighter-rouge">RACCommand</code> is executing.</li>
+      <li>Re-enables itself when the <code class="language-plaintext highlighter-rouge">RACCommand</code> finishes executing.</li>
+    </ul>
+  </li>
+  <li>Imagine that there are standard <code class="language-plaintext highlighter-rouge">layoutSubviews</code> and <code class="language-plaintext highlighter-rouge">sizeThatFits:</code> methods.</li>
+</ul>
+
+<p>You may be asking what this buys us so far over the typical pattern of passing in a model object to our view via a setter like <code class="language-plaintext highlighter-rouge">-[setData:(HOPUser *)]</code>.</p>
+
+<ul>
+  <li>It’s straightforward to add functionality to this view/view model pair. Need to load a low res cached image after a placeholder image followed by a high res network image? The view layer doesn’t change. It will automatically adopt whatever image is currently stored by the view model. There will never be a sprawl of callbacks originating from views hitting the network.</li>
+  <li>Our friend count is stored in our model as an <code class="language-plaintext highlighter-rouge">NSNumber</code> but our label needs a formatted <code class="language-plaintext highlighter-rouge">NSString</code>. The view layer isn’t bothered with the conversion, whether it be a simple @25 -&gt; “25” or @25 -&gt; “This user has 25 friends”.</li>
+  <li>We can test the view model directly by allowing the test bench to compare <code class="language-plaintext highlighter-rouge">UIImage</code>s and <code class="language-plaintext highlighter-rouge">NSString</code>s.</li>
+  <li>In a more proper version of this view, a superview would bind a view model to a more generic subview, and thus enable a set of ultra-reusable content blocks to be used throughout the app with one or more various view models. The glue code is simple one-to-one bindings.</li>
+</ul>
+
+<p>In short, we’ve separated the data manipulation stage from the presentation.</p>
+
+<h4 id="view-model">View Model</h4>
+
+<p>Now let’s tackle the view model. The interface should look pretty familiar.</p>
+
+<figure class="highlight"><pre><code class="language-objc" data-lang="objc"><span class="k">@class</span> <span class="nc">HOPUser</span><span class="p">;</span>
+
+<span class="k">@interface</span> <span class="nc">HOPProfileViewModel</span> <span class="p">:</span> <span class="nc">NSObject</span>
+
+<span class="k">@property</span> <span class="p">(</span><span class="n">nonatomic</span><span class="p">,</span> <span class="n">strong</span><span class="p">,</span> <span class="n">readonly</span><span class="p">)</span> <span class="n">UIImage</span> <span class="o">*</span><span class="n">avatarImage</span><span class="p">;</span>
+<span class="k">@property</span> <span class="p">(</span><span class="n">nonatomic</span><span class="p">,</span> <span class="n">copy</span><span class="p">,</span> <span class="n">readonly</span><span class="p">)</span> <span class="n">NSString</span> <span class="o">*</span><span class="n">nameString</span><span class="p">;</span>
+<span class="k">@property</span> <span class="p">(</span><span class="n">nonatomic</span><span class="p">,</span> <span class="n">copy</span><span class="p">,</span> <span class="n">readonly</span><span class="p">)</span> <span class="n">NSString</span> <span class="o">*</span><span class="n">friendCountString</span><span class="p">;</span>
+<span class="k">@property</span> <span class="p">(</span><span class="n">nonatomic</span><span class="p">,</span> <span class="n">strong</span><span class="p">,</span> <span class="n">readonly</span><span class="p">)</span> <span class="n">RACCommand</span> <span class="o">*</span><span class="n">refreshCommand</span><span class="p">;</span>
+
+<span class="k">-</span> <span class="p">(</span><span class="n">instancetype</span><span class="p">)</span><span class="nf">initWithUser</span><span class="p">:(</span><span class="n">HOPUser</span> <span class="o">*</span><span class="p">)</span><span class="nv">user</span><span class="p">;</span>
+
+<span class="k">@end</span></code></pre></figure>
+
+<p>Notice all these properties are readonly. The view is free to observe all these properties and call <code class="language-plaintext highlighter-rouge">execute</code> on the <code class="language-plaintext highlighter-rouge">RACCommand</code>. The view model obscures all its internal operations and provides a limited window into its state to its observers (its view).</p>
+
+<p>There’s a designated initializer that accepts a <code class="language-plaintext highlighter-rouge">HOPUser</code> model object. For now, assume that another view model created this <code class="language-plaintext highlighter-rouge">HOPProfileViewModel</code> with a model object before it was bound to its view (I’ll come back this as my most glaring questions about MVVM).</p>
+
+<figure class="highlight"><pre><code class="language-objc" data-lang="objc"><span class="k">@interface</span> <span class="nc">HOPProfileViewModel</span> <span class="p">()</span>
+    
+<span class="k">@property</span> <span class="p">(</span><span class="n">nonatomic</span><span class="p">,</span> <span class="n">strong</span><span class="p">)</span> <span class="n">UIImage</span> <span class="o">*</span><span class="n">avatarImage</span><span class="p">;</span>
+<span class="k">@property</span> <span class="p">(</span><span class="n">nonatomic</span><span class="p">,</span> <span class="n">copy</span><span class="p">)</span> <span class="n">NSString</span> <span class="o">*</span><span class="n">nameString</span><span class="p">;</span>
+<span class="k">@property</span> <span class="p">(</span><span class="n">nonatomic</span><span class="p">,</span> <span class="n">copy</span><span class="p">)</span> <span class="n">NSString</span> <span class="o">*</span><span class="n">friendCountString</span><span class="p">;</span>
+<span class="k">@property</span> <span class="p">(</span><span class="n">nonatomic</span><span class="p">,</span> <span class="n">strong</span><span class="p">)</span> <span class="n">RACCommand</span> <span class="o">*</span><span class="n">refreshCommand</span><span class="p">;</span>
+
+<span class="k">@end</span>
+
+<span class="k">@implementation</span> <span class="nc">HOPProfileViewModel</span>
+
+<span class="k">-</span> <span class="p">(</span><span class="n">instancetype</span><span class="p">)</span><span class="nf">initWithUser</span><span class="p">:(</span><span class="n">HOPUser</span> <span class="o">*</span><span class="p">)</span><span class="nv">user</span> <span class="p">{</span>
+    <span class="n">self</span> <span class="o">=</span> <span class="p">[</span><span class="n">super</span> <span class="nf">init</span><span class="p">]</span>
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">self</span><span class="p">)</span> <span class="k">return</span> <span class="nb">nil</span><span class="p">;</span>
+            
+    <span class="n">RAC</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">avatarImage</span><span class="p">)</span> <span class="o">=</span> 
+        <span class="p">[[[[[</span><span class="n">RACObserve</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">user</span><span class="p">.</span><span class="n">avatarURL</span><span class="p">)</span>
+            <span class="nf">ignore</span><span class="p">:</span><span class="nb">nil</span><span class="p">]</span>
+            <span class="nf">flattenMap</span><span class="p">:(</span><span class="n">RACSignal</span> <span class="o">*</span><span class="p">)</span><span class="o">^</span><span class="p">(</span><span class="n">NSURL</span> <span class="o">*</span><span class="n">avatarURL</span><span class="p">)</span> <span class="p">{</span>
+                <span class="k">return</span> <span class="p">[[</span><span class="n">HOPImageController</span> <span class="nf">sharedController</span><span class="p">]</span> <span class="nf">imageSignalForURL</span><span class="p">:</span><span class="n">avatarURL</span><span class="p">]</span><span class="err">;</span>
+            <span class="p">}]</span>
+            <span class="nf">startWith</span><span class="p">:[</span><span class="n">UIImage</span> <span class="nf">imageNamed</span><span class="p">:</span><span class="s">@"avatar-placeholder"</span><span class="p">]]</span>
+            <span class="nf">deliverOn</span><span class="p">:[</span><span class="n">RACScheduler</span> <span class="nf">mainThreadScheduler</span><span class="p">]]</span><span class="err">;</span>
+    
+    <span class="n">RAC</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">nameString</span><span class="p">)</span> <span class="o">=</span> 
+        <span class="p">[[</span><span class="n">RACObserve</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">user</span><span class="p">.</span><span class="n">name</span><span class="p">)</span>
+            <span class="nf">ignore</span><span class="p">:</span><span class="nb">nil</span><span class="p">]</span>
+            <span class="nf">map</span><span class="p">:(</span><span class="n">NSString</span> <span class="o">*</span><span class="p">)</span><span class="o">^</span><span class="p">(</span><span class="n">NSString</span> <span class="o">*</span><span class="n">name</span><span class="p">)</span> <span class="p">{</span>
+                <span class="k">return</span> <span class="p">[</span><span class="n">name</span> <span class="nf">uppercaseString</span><span class="p">]</span><span class="err">;</span>
+            <span class="p">}]</span><span class="err">;</span>
+    
+    <span class="n">RAC</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">friendCountString</span><span class="p">)</span> <span class="o">=</span> 
+        <span class="p">[[</span><span class="n">RACObserve</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">user</span><span class="p">.</span><span class="n">friendCount</span><span class="p">)</span>
+            <span class="nf">ignore</span><span class="p">:</span><span class="nb">nil</span><span class="p">]</span>
+            <span class="nf">map</span><span class="p">:(</span><span class="n">NSString</span> <span class="o">*</span><span class="p">)</span><span class="o">^</span><span class="p">(</span><span class="n">NSNumber</span> <span class="o">*</span><span class="n">friendCount</span><span class="p">)</span> <span class="p">{</span>
+                <span class="k">return</span> <span class="p">[</span><span class="n">NSString</span> <span class="nf">stringWithFormat</span><span class="p">:</span><span class="s">@"This user has %@ friends"</span><span class="p">,</span> <span class="n">friendCount</span><span class="p">]</span><span class="err">;</span>
+            <span class="p">}]</span><span class="err">;</span>
+            
+    <span class="err">@weakify</span><span class="p">(</span><span class="n">self</span><span class="p">)</span><span class="err">;</span>
+    <span class="n">_refreshCommand</span> <span class="o">=</span> <span class="p">[[</span><span class="n">RACCommand</span> <span class="nf">alloc</span><span class="p">]</span> <span class="nf">initWithSignalBlock</span><span class="p">:(</span><span class="n">RACSignal</span> <span class="o">*</span><span class="p">)</span><span class="o">^</span><span class="p">(</span><span class="n">id</span> <span class="n">_</span><span class="p">)</span> <span class="p">{</span>
+        <span class="err">@strongify</span><span class="p">(</span><span class="n">self</span><span class="p">)</span><span class="err">;</span>
+        <span class="k">return</span> <span class="p">[[</span><span class="n">HOPNetworkController</span> <span class="nf">sharedController</span><span class="p">]</span> <span class="nf">fetchUserWithId</span><span class="p">:</span><span class="n">self</span><span class="p">.</span><span class="n">user</span><span class="p">.</span><span class="n">userId</span><span class="p">]</span><span class="err">;</span>
+    <span class="p">}</span>
+    
+    <span class="n">RAC</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">user</span><span class="p">)</span> <span class="o">=</span> 
+        <span class="p">[[[</span><span class="n">_refreshCommand</span> <span class="nf">executionSignals</span><span class="p">]</span> 
+            <span class="nf">switchToLatest</span><span class="p">]</span> 
+            <span class="nf">startWith</span><span class="p">:</span><span class="n">user</span><span class="p">]</span><span class="err">;</span>
+<span class="p">}</span>
+
+<span class="k">@end</span></code></pre></figure>
+
+<p>Alright, there’s a lot more going on in this view model than there was the view. And that’s a good thing. There’s some slightly advanced ReactiveCocoa, but don’t get hung up on it. The goal is to understand the relationship between the view, view model, and controllers.</p>
+
+<ul>
+  <li>First, we redeclare our outward-facing properties as readwrite internally.</li>
+  <li>Our first property binding is the <code class="language-plaintext highlighter-rouge">avatarImage</code>. We see that our image is represented as a URL in the <code class="language-plaintext highlighter-rouge">HOPUser</code> model. We first observe the <code class="language-plaintext highlighter-rouge">avatarURL</code> property on whatever the view model’s current user model is. Each time it changes, we take that URL and feed it into our singleton <code class="language-plaintext highlighter-rouge">HOPImageController</code>. The image controller is responsible for caching thumbnails, full images, and also fetching images from the network. This signal will send up to three different images which will eventually be assigned to <code class="language-plaintext highlighter-rouge">self.avatarImage</code>. The images may be fetched on background thread, so we make sure they’re delivered to their eventual destination imageView on the main thread.</li>
+  <li>The next property binding is <code class="language-plaintext highlighter-rouge">nameString</code>. We’re only performing one mapping operation on this string: uppercasing.</li>
+  <li>We map the friend count to a human-readable string.</li>
+  <li>The <code class="language-plaintext highlighter-rouge">refreshCommand</code> is created from scratch. It subscribes to the signal block each time the command is executed (in our case, when the button is pressed). The command automatically keeps track of the state of our signal and will not execute again until the inner signal has completed. In this case, we’re assuming our data comes from a shared <code class="language-plaintext highlighter-rouge">HOPNetworkController</code> which sends a <code class="language-plaintext highlighter-rouge">HOPUser</code> object and completes.</li>
+  <li>The <code class="language-plaintext highlighter-rouge">self.user</code> mapping first assigns the <code class="language-plaintext highlighter-rouge">user</code> object passed into the <code class="language-plaintext highlighter-rouge">init</code> method, then takes the latest result from the command’s execution.</li>
+</ul>
+
+<p>There was a lot to digest in that example. Things to notice:</p>
+
+<ul>
+  <li>All of the code was incredibly declarative. We stated exactly what each of our properties should be at any given time. They’re all only set from one place.</li>
+  <li>We have a lot of flexibility changing the operations on our model object’s properties in response to product changes.</li>
+  <li>It’s incredibly easy to mock this object for our view. It only has four external properties. For example, our fake implementation could map our <code class="language-plaintext highlighter-rouge">self.avatarImage</code> property to <code class="language-plaintext highlighter-rouge">[[[RACSignal return:[UIImage imageNamed:@"final"]] delay:4] startWith:[UIImage imageNamed:@"placeholder"]];</code> which would simulate a placeholder image, a four second fake network delay, and a final image.</li>
+  <li>I’ll leave error handling for another post, but as a quick summary is the <code class="language-plaintext highlighter-rouge">RACSignal</code> contract makes it almost trivial to bubble up errors to the view model layer and present them in the proper way.</li>
+</ul>
+
+<h4 id="controller">Controller</h4>
+
+<p>I have more questions than answers when it comes to the controller layer. I’ll present the header files for the two classes we used above and we’ll go from there.</p>
+
+<figure class="highlight"><pre><code class="language-objc" data-lang="objc"><span class="k">@interface</span> <span class="nc">HOPImageController</span> <span class="p">:</span> <span class="nc">NSObject</span>
+
+<span class="c1">// The shared instance of this class.
+// Inside it has three functions:
+// * It maintains a separate network client for fetching raw image data.
+// * It maintains a key/value store of imageURLs and images on disk.
+// * It adds images from the network to the cache.
+</span><span class="k">+</span> <span class="p">(</span><span class="n">instancetype</span><span class="p">)</span><span class="n">sharedController</span><span class="p">;</span>
+
+<span class="c1">// The returned signal sends an image from the cache if available,
+// then an image from the network, then completes.
+// The signal sends an error if there was a network error.
+</span><span class="k">-</span> <span class="p">(</span><span class="n">RACSignal</span> <span class="o">*</span><span class="p">)</span><span class="nf">imageSignalForURL</span><span class="p">:(</span><span class="n">NSURL</span> <span class="o">*</span><span class="p">)</span><span class="nv">URL</span><span class="p">;</span>
+
+<span class="k">@end</span>
+
+
+<span class="k">@interface</span> <span class="nc">HOPNetworkController</span> <span class="p">:</span> <span class="nc">NSObject</span>
+
+<span class="c1">// The shared instance of this class.
+// Inside it manages a network session.
+</span><span class="k">+</span> <span class="p">(</span><span class="n">instancetype</span><span class="p">)</span><span class="n">sharedController</span><span class="p">;</span>
+
+<span class="c1">// The returned signal sends a HOPUser, then completes.
+// The signal sends an error if there was a network error.
+</span><span class="k">-</span> <span class="p">(</span><span class="n">RACSignal</span> <span class="o">*</span><span class="p">)</span><span class="nf">fetchUserWithUserId</span><span class="p">:(</span><span class="n">NSNumber</span> <span class="o">*</span><span class="p">)</span><span class="nv">userId</span><span class="p">;</span>
+
+<span class="k">@end</span></code></pre></figure>
+
+<h3 id="questions">Questions</h3>
+
+<p>I tried to include some non-trivial aspects to this view/view model/controller set up, but at the end of the day this set of objects has to exist in a much broader application.</p>
+
+<p>In something run-of-the-mill like a <code class="language-plaintext highlighter-rouge">UITableView</code> system, there could quickly be a large graph of view models that each held arrays of view models which then have to be mapped to sections and reusable cells, and it can quickly become a mess of mapping view model class names to views, all while handling changing intermediary objects, refreshing, and errors at the individual cell level.</p>
+
+<p>I left a lot of hanging questions in the system I’ve presented above (only somewhat purposefully). I’m hoping someone with more experience in MVVM can shed some light on these.</p>
+
+<h4 id="where-is-the-top-of-the-object-graph">Where is the top of the object graph?</h4>
+
+<p>I stared off talking about testing, but by the end I was embedding singleton controllers deep within my view model implementation. In the interest of dependency injection, they should be specified at initialization. Being available as parameters for <code class="language-plaintext highlighter-rouge">init</code> is great for testing, but in the actual app, which view or view model should be responsible for creating the view model in question along with knowing exactly which controllers to provide?</p>
+
+<p>At a certain point, <em>some</em> object is going to have to connect all the dots and assemble the entire object graph. And at that point it may well be creating objects of all three roles (views, view models, and controllers). On one hand, it seems very offputting to allow one god object to have the entire map of the application. But on the other hand, that’s sort of like an extreme form of composition: all lower level objects are very dumb with very specific inputs and outputs.</p>
+
+<p>Is this what the router is in Rails? It starts stateless and uses its request input parameters to assemble the object graph, produce a response, then tear it down.</p>
+
+<p>Are there other examples or patterns in other languages? I’m curious if this would all be more clear if I was more versed in Haskell, or enterprise Java, or any other number of languages.</p>
+
+<p>Is the right answer for testing to have designated “testing” initializer that accepts a <code class="language-plaintext highlighter-rouge">HOPImageController</code> instance and a <code class="language-plaintext highlighter-rouge">HOPNetworkController</code> instance that can be mocks, while the application version is initialized with no parameters and configures its own controllers?</p>
+
+<h4 id="when-should-controllers-be-singletons">When should controllers be singletons?</h4>
+
+<p>Is there a hard and fast rule in MVVM for when a controller should be a singleton? When a resource starts storing state amongst disparate objects is that cause for being a singleton? Maybe the goal is actually on the opposite end: every controller should be a singleton to keep all services completely autonomous and interchangeable.</p>
+
+<p>My first hunch on this was that controllers that sat adjacent to system raw object producers (e.g. the network interface, an SQLite db, the file system, <code class="language-plaintext highlighter-rouge">NSUserDefaults</code>, etc.) would be singletons. But I also saw, for example, a controller that reads a single file should be configurable with a file URL by a parent object. Maybe it just depends on where you draw the line between needing lots of helper controllers and doing all the fetching directly from the view model.</p>
+
+<h4 id="what-are-a-view-controllers-responsibilities">What are a view controller’s responsibilities?</h4>
+
+<p>Don’t get me wrong, doing some OS X development for the first time gave me a deep appreciation for <code class="language-plaintext highlighter-rouge">UIViewController</code>. But there’s still a lot of API cruft that’s developed on <code class="language-plaintext highlighter-rouge">UIViewController</code> that makes certain things difficult.</p>
+
+<p>When you’re trying to express your app as declaratively as possible, it’s sometimes easy to get lost in what the view controller hierarchy looks like, and how the imperative view controller changes can really put a stick in your tires.</p>
+
+<p>I don’t have as many examples yet since I’m still sort of getting a lay of the land with MVVM, but maybe I’m wondering whether there’s a two-tiered view system: the bottom tier is very dumb and just gets bound to view models, and then the top tier which does all the object graph assembly (and dependency injection) for the lower layers. Or is it a two-tiered view <em>and</em> view model system?</p>
+
+<h4 id="how-should-we-treat-the-current-user-and-the-users-session">How should we treat the current user and the user’s session?</h4>
+
+<p>In iOS apps, it’s taken for granted that we only have to handle one user session at at time. In the Timehop app, we use the currentUser object on almost every screen.</p>
+
+<p>Would it be The Right Way™ to pass this user object into a view model from the top of the object graph down to all the other view models/controllers that need it? Would this be a case where a singleton user session controller makes sense to store the currently logged in user? In either case, how can we react to a user logging out without depending on the way the view hierarchy is laid out?</p>
+
+<p>Maybe the user session would be stored at the top level of the application, and then changes to the current user would be pushed directly to the top level view models and these view models would react accordingly. This would seemingly become quite unwieldy if a large number of sub view models had already been spawned from the top level view model. The top level view model would either have to distribute the current user to every other object directly and keep pushing new current users, or it would distribute the current user once and treat it as immutable on sub view models from then on.</p>
+
+<p>Relatedly, what about the current user’s auth token? In our example application, we have a network controller that requires the user’s auth token to be sent in the header of nearly every request. Should the network controller be a singleton with a mutable <code class="language-plaintext highlighter-rouge">authToken</code> parameter maintained by the application? Should one network controller be created at the top level and passed directly from view model to view model? How do we propagate changes in the auth token? What does not using a singleton buy us in this situation?</p>
+
+<p>My initial solution to this problem was to have a userSessionController singleton that holds the currentUser object. This singleton creates a new immutable instance of the network controller, database controller, user defaults controller, etc. whenever the currentUser object changes. Almost all requests from other controllers or view models go through the userSessionController singleton. The user session quickly becomes another god object distinctively separate from the app delegate, and now almost every view model and controller is bound directly to the userSessionController singleton.</p>
+
+<p>I’ve talked myself in circles with this one. I can sort of see the pros and cons with each, and maybe the technique used is completely dependent on the individual product requirements for each app.</p>
+
+<h2 id="summary">Summary</h2>
+
+<p>I tried to explain MVVM at a high level the way I currently understand it. I wrote a flat example with a component from each role. I then explored several questions that arose from this exercise and a few other situations.</p>
+
+<p>I would greatly appreciate any feedback on this post. In particular, I’d really like to flesh out my understanding of MVVM in large architectures that can scale to multiple data sources, hundreds of views, and millions of users all while staying snappy and crash-free.</p>
+
+  </article>
+
+</div>
+
+      </div>
+    </div>
+
+    <footer class="site-footer">
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">twocentstudios</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col  footer-col-1">
+        <ul class="contact-list">
+          <li><a href="mailto:chris@twocentstudios.com">chris@twocentstudios.com</a></li>
+          
+          <li>
+            <a href="https://github.com/twocentstudios">
+              <span class="icon  icon--github">
+                <svg viewBox="0 0 16 16">
+                  <path fill="#828282" d="M7.999,0.431c-4.285,0-7.76,3.474-7.76,7.761 c0,3.428,2.223,6.337,5.307,7.363c0.388,0.071,0.53-0.168,0.53-0.374c0-0.184-0.007-0.672-0.01-1.32 c-2.159,0.469-2.614-1.04-2.614-1.04c-0.353-0.896-0.862-1.135-0.862-1.135c-0.705-0.481,0.053-0.472,0.053-0.472 c0.779,0.055,1.189,0.8,1.189,0.8c0.692,1.186,1.816,0.843,2.258,0.645c0.071-0.502,0.271-0.843,0.493-1.037 C4.86,11.425,3.049,10.76,3.049,7.786c0-0.847,0.302-1.54,0.799-2.082C3.768,5.507,3.501,4.718,3.924,3.65 c0,0,0.652-0.209,2.134,0.796C6.677,4.273,7.34,4.187,8,4.184c0.659,0.003,1.323,0.089,1.943,0.261 c1.482-1.004,2.132-0.796,2.132-0.796c0.423,1.068,0.157,1.857,0.077,2.054c0.497,0.542,0.798,1.235,0.798,2.082 c0,2.981-1.814,3.637-3.543,3.829c0.279,0.24,0.527,0.713,0.527,1.437c0,1.037-0.01,1.874-0.01,2.129 c0,0.208,0.14,0.449,0.534,0.373c3.081-1.028,5.302-3.935,5.302-7.362C15.76,3.906,12.285,0.431,7.999,0.431z"/>
+                </svg>
+              </span>
+
+              <span class="username">twocentstudios</span>
+            </a>
+          </li>
+          
+
+          <li>
+            <a href="https://hackyderm.io/@twocentstudios">
+              <span class="icon">
+                <svg viewBox="0 0 24 24">
+                  <path fill="#828282" d="M21.327 8.566c0-4.339-2.843-5.61-2.843-5.61-1.433-.658-3.894-.935-6.451-.956h-.063c-2.557.021-5.016.298-6.45.956 0 0-2.843 1.272-2.843 5.61 0 .993-.019 2.181.012 3.441.103 4.243.778 8.425 4.701 9.463 1.809.479 3.362.579 4.612.51 2.268-.126 3.541-.809 3.541-.809l-.075-1.646s-1.621.511-3.441.449c-1.804-.062-3.707-.194-3.999-2.409a4.523 4.523 0 0 1-.04-.621s1.77.433 4.014.536c1.372.063 2.658-.08 3.965-.236 2.506-.299 4.688-1.843 4.962-3.254.434-2.223.398-5.424.398-5.424zm-3.353 5.59h-2.081V9.057c0-1.075-.452-1.62-1.357-1.62-1 0-1.501.647-1.501 1.927v2.791h-2.069V9.364c0-1.28-.501-1.927-1.502-1.927-.905 0-1.357.546-1.357 1.62v5.099H6.026V8.903c0-1.074.273-1.927.823-2.558.566-.631 1.307-.955 2.228-.955 1.065 0 1.872.409 2.405 1.228l.518.869.519-.869c.533-.819 1.34-1.228 2.405-1.228.92 0 1.662.324 2.228.955.549.631.822 1.484.822 2.558v5.253z"/>
+                </svg>
+              </span>
+
+              <span class="username">twocentstudios</span>
+            </a>
+          </li>
+
+          
+          <li>
+            <a href="https://twitter.com/twocentstudios">
+              <span class="icon  icon--twitter">
+                <svg viewBox="0 0 16 16">
+                  <path fill="#828282" d="M15.969,3.058c-0.586,0.26-1.217,0.436-1.878,0.515c0.675-0.405,1.194-1.045,1.438-1.809
+                  c-0.632,0.375-1.332,0.647-2.076,0.793c-0.596-0.636-1.446-1.033-2.387-1.033c-1.806,0-3.27,1.464-3.27,3.27 c0,0.256,0.029,0.506,0.085,0.745C5.163,5.404,2.753,4.102,1.14,2.124C0.859,2.607,0.698,3.168,0.698,3.767 c0,1.134,0.577,2.135,1.455,2.722C1.616,6.472,1.112,6.325,0.671,6.08c0,0.014,0,0.027,0,0.041c0,1.584,1.127,2.906,2.623,3.206 C3.02,9.402,2.731,9.442,2.433,9.442c-0.211,0-0.416-0.021-0.615-0.059c0.416,1.299,1.624,2.245,3.055,2.271 c-1.119,0.877-2.529,1.4-4.061,1.4c-0.264,0-0.524-0.015-0.78-0.046c1.447,0.928,3.166,1.469,5.013,1.469 c6.015,0,9.304-4.983,9.304-9.304c0-0.142-0.003-0.283-0.009-0.423C14.976,4.29,15.531,3.714,15.969,3.058z"/>
+                </svg>
+              </span>
+
+              <span class="username">twocentstudios</span>
+            </a>
+          </li>
+          
+        </ul>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+
+
+  </body>
+
+</html>

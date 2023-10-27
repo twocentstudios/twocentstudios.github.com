@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>Creating a Movie with an Image and Audio on iOS</title>
+
+  <meta property="og:type" content="article" />
+  <meta property="og:title" content="Creating a Movie with an Image and Audio on iOS" />
+  <meta property="og:url" content="https://twocentstudios.com/2017/02/20/creating-a-movie-with-an-image-and-audio-on-ios/" />
+  
+    <meta property="og:article:published_time" content="2017-02-20T19:21:54-06:00" />
+  
+  
+  
+  <link href='https://fonts.googleapis.com/css2?family=Work+Sans:wght@300;350;400;600' rel='stylesheet' type='text/css'>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="canonical" href="https://twocentstudios.com/2017/02/20/creating-a-movie-with-an-image-and-audio-on-ios/">
+  <link rel="alternate" type="application/rss+xml" title="twocentstudios" href="https://twocentstudios.com/feed.xml" />
+</head>
+
+  <!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-NE82N02W8S"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-NE82N02W8S');
+</script>
+
+  <body>
+
+    <header class="site-header">
+
+  <div class="wrapper">
+
+    <a class="site-title" href="/">twocentstudios</a>
+
+    <nav class="site-nav">
+      <a href="#" class="menu-icon">
+        <svg viewBox="0 0 18 15">
+          <path fill="#424242" d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.031C17.335,0,18,0.665,18,1.484L18,1.484z"/>
+          <path fill="#424242" d="M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0c0-0.82,0.665-1.484,1.484-1.484 h15.031C17.335,6.031,18,6.696,18,7.516L18,7.516z"/>
+          <path fill="#424242" d="M18,13.516C18,14.335,17.335,15,16.516,15H1.484C0.665,15,0,14.335,0,13.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.031C17.335,12.031,18,12.696,18,13.516L18,13.516z"/>
+        </svg>
+      </a>
+
+      <div class="trigger">
+        
+          
+          <a class="page-link" href="/about/">About</a>
+          
+        
+          
+          <a class="page-link" href="/blog/">Blog</a>
+          
+        
+          
+        
+          
+        
+          
+          <a class="page-link" href="/portfolio/">Portfolio</a>
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      </div>
+    </nav>
+
+  </div>
+
+</header>
+
+
+    <div class="page-content">
+      <div class="wrapper">
+        <div class="post">
+
+  <header class="post-header">
+    <h1 class="post-title">Creating a Movie with an Image and Audio on iOS</h1>
+    <p class="post-meta">Feb 20, 2017</p>
+  </header>
+
+  <article class="post-content">
+    <p>I’m going to cover a few data conversions in this post:</p>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">UIImage</code>/<code class="language-plaintext highlighter-rouge">CGImage</code> to <code class="language-plaintext highlighter-rouge">CVPixelBuffer</code></li>
+  <li><code class="language-plaintext highlighter-rouge">UIImage</code> to QuickTimeMovie (.mov)</li>
+  <li>Adding an audio track to a QuickTimeMovie</li>
+</ul>
+
+<p>The code in this post targets Swift 3.0.1 and iOS 10.</p>
+
+<p>Let’s get started.</p>
+
+<h2 id="overview">Overview</h2>
+
+<p>Our goal is to generate a movie with the contents of a single <code class="language-plaintext highlighter-rouge">UIImage</code> and an audio file. The movie file will have the length of the audio file.</p>
+
+<p>We’re going to create a wrapper function to perform the full video creation.</p>
+
+<ul>
+  <li>Image + Audio -&gt; Movie</li>
+</ul>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">func</span> <span class="nf">createMovieWithSingleImageAndMusic</span><span class="p">(</span><span class="nv">image</span><span class="p">:</span> <span class="kt">UIImage</span><span class="p">,</span> <span class="nv">audioFileURL</span><span class="p">:</span> <span class="kt">URL</span><span class="p">,</span> <span class="k">as</span><span class="nv">setExportPresetQuality</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="nv">outputVideoFileURL</span><span class="p">:</span> <span class="kt">URL</span><span class="p">,</span> <span class="nv">completion</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="p">(</span><span class="kt">Error</span><span class="p">?)</span> <span class="o">-&gt;</span> <span class="p">())</span>
+</code></pre>
+</div>
+
+<p>We’ll need two more functions to perform the following conversions:</p>
+
+<ul>
+  <li>Image -&gt; Movie</li>
+  <li>Movie + Audio -&gt; Movie</li>
+</ul>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">func</span> <span class="nf">writeSingleImageToMovie</span><span class="p">(</span><span class="nv">image</span><span class="p">:</span> <span class="kt">UIImage</span><span class="p">,</span> <span class="nv">movieLength</span><span class="p">:</span> <span class="kt">TimeInterval</span><span class="p">,</span> <span class="nv">outputFileURL</span><span class="p">:</span> <span class="kt">URL</span><span class="p">,</span> <span class="nv">completion</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="p">(</span><span class="kt">Error</span><span class="p">?)</span> <span class="o">-&gt;</span> <span class="p">())</span>
+
+<span class="kd">func</span> <span class="nf">addAudioToMovie</span><span class="p">(</span><span class="nv">audioAsset</span><span class="p">:</span> <span class="kt">AVURLAsset</span><span class="p">,</span> <span class="nv">inputVideoAsset</span><span class="p">:</span> <span class="kt">AVURLAsset</span><span class="p">,</span> <span class="nv">outputVideoFileURL</span><span class="p">:</span> <span class="kt">URL</span><span class="p">,</span> <span class="nv">quality</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="nv">completion</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="p">(</span><span class="kt">Error</span><span class="p">?)</span> <span class="o">-&gt;</span> <span class="p">())</span>
+</code></pre>
+</div>
+
+<p>And finally one utility function to turn the image into a usable buffer for <code class="language-plaintext highlighter-rouge">AVAssetWriterInputPixelBufferAdaptor</code>.</p>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">CGImage</code> -&gt; <code class="language-plaintext highlighter-rouge">CVPixelBuffer</code></li>
+</ul>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">func</span> <span class="nf">pixelBuffer</span><span class="p">(</span><span class="n">fromImage</span> <span class="nv">image</span><span class="p">:</span> <span class="kt">CGImage</span><span class="p">,</span> <span class="nv">size</span><span class="p">:</span> <span class="kt">CGSize</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">CVPixelBuffer</span>
+</code></pre>
+</div>
+
+<h2 id="implementation">Implementation</h2>
+
+<p>Let’s start with the utility functions and work our way up.</p>
+
+<h3 id="cgimage---cvpixelbuffer">CGImage -&gt; CVPixelBuffer</h3>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">static</span> <span class="kd">func</span> <span class="nf">pixelBuffer</span><span class="p">(</span><span class="n">fromImage</span> <span class="nv">image</span><span class="p">:</span> <span class="kt">CGImage</span><span class="p">,</span> <span class="nv">size</span><span class="p">:</span> <span class="kt">CGSize</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">CVPixelBuffer</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">options</span><span class="p">:</span> <span class="kt">CFDictionary</span> <span class="o">=</span> <span class="p">[</span><span class="n">kCVPixelBufferCGImageCompatibilityKey</span> <span class="k">as</span> <span class="kt">String</span><span class="p">:</span> <span class="kc">true</span><span class="p">,</span> <span class="n">kCVPixelBufferCGBitmapContextCompatibilityKey</span> <span class="k">as</span> <span class="kt">String</span><span class="p">:</span> <span class="kc">true</span><span class="p">]</span> <span class="k">as</span> <span class="kt">CFDictionary</span>
+    <span class="k">var</span> <span class="nv">pxbuffer</span><span class="p">:</span> <span class="kt">CVPixelBuffer</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span>
+    <span class="k">let</span> <span class="nv">status</span> <span class="o">=</span> <span class="kt">CVPixelBufferCreate</span><span class="p">(</span><span class="n">kCFAllocatorDefault</span><span class="p">,</span> <span class="kt">Int</span><span class="p">(</span><span class="n">size</span><span class="o">.</span><span class="n">width</span><span class="p">),</span> <span class="kt">Int</span><span class="p">(</span><span class="n">size</span><span class="o">.</span><span class="n">height</span><span class="p">),</span> <span class="n">kCVPixelFormatType_32ARGB</span><span class="p">,</span> <span class="n">options</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">pxbuffer</span><span class="p">)</span>
+    <span class="k">guard</span> <span class="k">let</span> <span class="nv">buffer</span> <span class="o">=</span> <span class="n">pxbuffer</span><span class="p">,</span> <span class="n">status</span> <span class="o">==</span> <span class="n">kCVReturnSuccess</span> <span class="k">else</span> <span class="p">{</span> <span class="k">throw</span> <span class="kt">NSError</span><span class="o">.</span><span class="nf">app</span><span class="p">()</span> <span class="p">}</span>
+    
+    <span class="kt">CVPixelBufferLockBaseAddress</span><span class="p">(</span><span class="n">buffer</span><span class="p">,</span> <span class="p">[])</span>
+    <span class="k">guard</span> <span class="k">let</span> <span class="nv">pxdata</span> <span class="o">=</span> <span class="kt">CVPixelBufferGetBaseAddress</span><span class="p">(</span><span class="n">buffer</span><span class="p">)</span> <span class="k">else</span> <span class="p">{</span> <span class="k">throw</span> <span class="kt">NSError</span><span class="o">.</span><span class="nf">app</span><span class="p">()</span> <span class="p">}</span>
+    <span class="k">let</span> <span class="nv">bytesPerRow</span> <span class="o">=</span> <span class="kt">CVPixelBufferGetBytesPerRow</span><span class="p">(</span><span class="n">buffer</span><span class="p">)</span>
+    
+    <span class="k">let</span> <span class="nv">rgbColorSpace</span> <span class="o">=</span> <span class="kt">CGColorSpaceCreateDeviceRGB</span><span class="p">()</span>
+    <span class="k">guard</span> <span class="k">let</span> <span class="nv">context</span> <span class="o">=</span> <span class="kt">CGContext</span><span class="p">(</span><span class="nv">data</span><span class="p">:</span> <span class="n">pxdata</span><span class="p">,</span> <span class="nv">width</span><span class="p">:</span> <span class="kt">Int</span><span class="p">(</span><span class="n">size</span><span class="o">.</span><span class="n">width</span><span class="p">),</span> <span class="nv">height</span><span class="p">:</span> <span class="kt">Int</span><span class="p">(</span><span class="n">size</span><span class="o">.</span><span class="n">height</span><span class="p">),</span> <span class="nv">bitsPerComponent</span><span class="p">:</span> <span class="mi">8</span><span class="p">,</span> <span class="nv">bytesPerRow</span><span class="p">:</span> <span class="n">bytesPerRow</span><span class="p">,</span> <span class="nv">space</span><span class="p">:</span> <span class="n">rgbColorSpace</span><span class="p">,</span> <span class="nv">bitmapInfo</span><span class="p">:</span> <span class="kt">CGImageAlphaInfo</span><span class="o">.</span><span class="n">noneSkipFirst</span><span class="o">.</span><span class="n">rawValue</span><span class="p">)</span> <span class="k">else</span> <span class="p">{</span> <span class="k">throw</span> <span class="kt">NSError</span><span class="o">.</span><span class="nf">app</span><span class="p">()</span> <span class="p">}</span>
+    <span class="n">context</span><span class="o">.</span><span class="nf">concatenate</span><span class="p">(</span><span class="kt">CGAffineTransform</span><span class="p">(</span><span class="nv">rotationAngle</span><span class="p">:</span> <span class="mi">0</span><span class="p">))</span>
+    <span class="n">context</span><span class="o">.</span><span class="nf">draw</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="nv">in</span><span class="p">:</span> <span class="kt">CGRect</span><span class="p">(</span><span class="nv">x</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="nv">y</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="nv">width</span><span class="p">:</span> <span class="n">size</span><span class="o">.</span><span class="n">width</span><span class="p">,</span> <span class="nv">height</span><span class="p">:</span> <span class="n">size</span><span class="o">.</span><span class="n">height</span><span class="p">))</span>
+    
+    <span class="kt">CVPixelBufferUnlockBaseAddress</span><span class="p">(</span><span class="n">buffer</span><span class="p">,</span> <span class="p">[])</span>
+    
+    <span class="k">return</span> <span class="n">buffer</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p>The above function does a few things.</p>
+
+<ul>
+  <li>Create a <code class="language-plaintext highlighter-rouge">CVPixelBuffer</code> with attributes that allow us to write into it with a <code class="language-plaintext highlighter-rouge">CGContext</code>.</li>
+  <li>Create a <code class="language-plaintext highlighter-rouge">CGContext</code> that targets the empty buffer we just created.</li>
+  <li>Draw the image into the buffer.</li>
+</ul>
+
+<h3 id="image---movie">Image -&gt; Movie</h3>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">static</span> <span class="kd">func</span> <span class="nf">writeSingleImageToMovie</span><span class="p">(</span><span class="nv">image</span><span class="p">:</span> <span class="kt">UIImage</span><span class="p">,</span> <span class="nv">movieLength</span><span class="p">:</span> <span class="kt">TimeInterval</span><span class="p">,</span> <span class="nv">outputFileURL</span><span class="p">:</span> <span class="kt">URL</span><span class="p">,</span> <span class="nv">completion</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="p">(</span><span class="kt">Error</span><span class="p">?)</span> <span class="o">-&gt;</span> <span class="p">())</span> <span class="p">{</span>
+    <span class="k">do</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">imageSize</span> <span class="o">=</span> <span class="n">image</span><span class="o">.</span><span class="n">size</span>
+        <span class="k">let</span> <span class="nv">videoWriter</span> <span class="o">=</span> <span class="k">try</span> <span class="kt">AVAssetWriter</span><span class="p">(</span><span class="nv">outputURL</span><span class="p">:</span> <span class="n">outputFileURL</span><span class="p">,</span> <span class="nv">fileType</span><span class="p">:</span> <span class="kt">AVFileTypeQuickTimeMovie</span><span class="p">)</span>
+        <span class="k">let</span> <span class="nv">videoSettings</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">:</span> <span class="kt">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="kt">AVVideoCodecKey</span><span class="p">:</span> <span class="kt">AVVideoCodecH264</span><span class="p">,</span>
+                                            <span class="kt">AVVideoWidthKey</span><span class="p">:</span> <span class="n">imageSize</span><span class="o">.</span><span class="n">width</span><span class="p">,</span>
+                                            <span class="kt">AVVideoHeightKey</span><span class="p">:</span> <span class="n">imageSize</span><span class="o">.</span><span class="n">height</span><span class="p">]</span>
+        <span class="k">let</span> <span class="nv">videoWriterInput</span> <span class="o">=</span> <span class="kt">AVAssetWriterInput</span><span class="p">(</span><span class="nv">mediaType</span><span class="p">:</span> <span class="kt">AVMediaTypeVideo</span><span class="p">,</span> <span class="nv">outputSettings</span><span class="p">:</span> <span class="n">videoSettings</span><span class="p">)</span>
+        <span class="k">let</span> <span class="nv">adaptor</span> <span class="o">=</span> <span class="kt">AVAssetWriterInputPixelBufferAdaptor</span><span class="p">(</span><span class="k">as</span><span class="nv">setWriterInput</span><span class="p">:</span> <span class="n">videoWriterInput</span><span class="p">,</span> <span class="nv">sourcePixelBufferAttributes</span><span class="p">:</span> <span class="kc">nil</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="o">!</span><span class="n">videoWriter</span><span class="o">.</span><span class="nf">canAdd</span><span class="p">(</span><span class="n">videoWriterInput</span><span class="p">)</span> <span class="p">{</span> <span class="k">throw</span> <span class="kt">NSError</span><span class="o">.</span><span class="nf">app</span><span class="p">()</span> <span class="p">}</span>
+        <span class="n">videoWriterInput</span><span class="o">.</span><span class="n">expectsMediaDataInRealTime</span> <span class="o">=</span> <span class="kc">true</span>
+        <span class="n">videoWriter</span><span class="o">.</span><span class="nf">add</span><span class="p">(</span><span class="n">videoWriterInput</span><span class="p">)</span>
+        
+        <span class="n">videoWriter</span><span class="o">.</span><span class="nf">startWriting</span><span class="p">()</span>
+        <span class="k">let</span> <span class="nv">timeScale</span><span class="p">:</span> <span class="kt">Int32</span> <span class="o">=</span> <span class="mi">600</span> <span class="c1">// recommended in CMTime for movies.</span>
+        <span class="k">let</span> <span class="nv">halfMovieLength</span> <span class="o">=</span> <span class="kt">Float64</span><span class="p">(</span><span class="n">movieLength</span><span class="o">/</span><span class="mf">2.0</span><span class="p">)</span> <span class="c1">// videoWriter assumes frame lengths are equal.</span>
+        <span class="k">let</span> <span class="nv">startFrameTime</span> <span class="o">=</span> <span class="kt">CMTimeMake</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">timeScale</span><span class="p">)</span>
+        <span class="k">let</span> <span class="nv">endFrameTime</span> <span class="o">=</span> <span class="kt">CMTimeMakeWithSeconds</span><span class="p">(</span><span class="n">halfMovieLength</span><span class="p">,</span> <span class="n">timeScale</span><span class="p">)</span>
+        <span class="n">videoWriter</span><span class="o">.</span><span class="nf">startSession</span><span class="p">(</span><span class="nv">atSourceTime</span><span class="p">:</span> <span class="n">startFrameTime</span><span class="p">)</span>
+        
+        <span class="k">guard</span> <span class="k">let</span> <span class="nv">cgImage</span> <span class="o">=</span> <span class="n">image</span><span class="o">.</span><span class="n">cgImage</span> <span class="k">else</span> <span class="p">{</span> <span class="k">throw</span> <span class="kt">NSError</span><span class="o">.</span><span class="nf">app</span><span class="p">()</span> <span class="p">}</span>
+        <span class="k">let</span> <span class="nv">buffer</span><span class="p">:</span> <span class="kt">CVPixelBuffer</span> <span class="o">=</span> <span class="k">try</span> <span class="k">self</span><span class="o">.</span><span class="nf">pixelBuffer</span><span class="p">(</span><span class="nv">fromImage</span><span class="p">:</span> <span class="n">cgImage</span><span class="p">,</span> <span class="nv">size</span><span class="p">:</span> <span class="n">imageSize</span><span class="p">)</span>
+        <span class="k">while</span> <span class="o">!</span><span class="n">adaptor</span><span class="o">.</span><span class="k">as</span><span class="n">setWriterInput</span><span class="o">.</span><span class="n">isReadyForMoreMediaData</span> <span class="p">{</span> <span class="nf">usleep</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span> <span class="p">}</span>
+        <span class="n">adaptor</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">buffer</span><span class="p">,</span> <span class="nv">withPresentationTime</span><span class="p">:</span> <span class="n">startFrameTime</span><span class="p">)</span>
+        <span class="k">while</span> <span class="o">!</span><span class="n">adaptor</span><span class="o">.</span><span class="k">as</span><span class="n">setWriterInput</span><span class="o">.</span><span class="n">isReadyForMoreMediaData</span> <span class="p">{</span> <span class="nf">usleep</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span> <span class="p">}</span>
+        <span class="n">adaptor</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="n">buffer</span><span class="p">,</span> <span class="nv">withPresentationTime</span><span class="p">:</span> <span class="n">endFrameTime</span><span class="p">)</span>
+        
+        <span class="n">videoWriterInput</span><span class="o">.</span><span class="nf">markAsFinished</span><span class="p">()</span>
+        <span class="n">videoWriter</span><span class="o">.</span><span class="n">finishWriting</span> <span class="p">{</span>
+            <span class="nf">completion</span><span class="p">(</span><span class="n">videoWriter</span><span class="o">.</span><span class="n">error</span><span class="p">)</span>
+        <span class="p">}</span>
+    <span class="p">}</span> <span class="k">catch</span> <span class="p">{</span>
+        <span class="nf">completion</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p>I’ve wrapped everything in a do/catch block for more convenient error handling. I’m undecided whether I like this style or not.</p>
+
+<p>You may want to pass in options for the <code class="language-plaintext highlighter-rouge">fileType</code> or <code class="language-plaintext highlighter-rouge">AVVideoCodecKey</code>. I’ve hardcoded them to <code class="language-plaintext highlighter-rouge">AVFileTypeQuickTimeMovie</code> and <code class="language-plaintext highlighter-rouge">AVVideoCodecH264</code>, respectfully.</p>
+
+<p>The first half of this function is getting settings created and ensuring our writers are set up correctly.</p>
+
+<p><code class="language-plaintext highlighter-rouge">AVAssetWriter</code> assumes your frames will be the same length (this info is probably in the documentation somewhere, but I had to find it by trial and error). In order to get our movie to be the correct length, we’ll use the same image as the first and last frame. The start frame will start a time 0 and the end frame will start at half our desired length. <code class="language-plaintext highlighter-rouge">AVAssetWriter</code> will write the frames as equal length.</p>
+
+<p>Next, we convert the image to a pixel buffer using the function we created earlier. We’re supposed to wait for the <code class="language-plaintext highlighter-rouge">assetWriterInput</code> to be ready to write, so we’ll spin with a short sleep (in my anecdotal experience, the <code class="language-plaintext highlighter-rouge">assetWriterInput</code> keeps up fine in this situation and never needs to spin at all).</p>
+
+<p>Finally, we’ll call the completion block when the video has finished writing.</p>
+
+<h3 id="movie--audio---movie">Movie + Audio -&gt; Movie</h3>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">static</span> <span class="kd">func</span> <span class="nf">addAudioToMovie</span><span class="p">(</span><span class="nv">audioAsset</span><span class="p">:</span> <span class="kt">AVURLAsset</span><span class="p">,</span> <span class="nv">inputVideoAsset</span><span class="p">:</span> <span class="kt">AVURLAsset</span><span class="p">,</span> <span class="nv">outputVideoFileURL</span><span class="p">:</span> <span class="kt">URL</span><span class="p">,</span> <span class="nv">quality</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="nv">completion</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="p">(</span><span class="kt">Error</span><span class="p">?)</span> <span class="o">-&gt;</span> <span class="p">())</span> <span class="p">{</span>
+    <span class="k">do</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">composition</span> <span class="o">=</span> <span class="kt">AVMutableComposition</span><span class="p">()</span>
+        
+        <span class="k">guard</span> <span class="k">let</span> <span class="nv">videoAssetTrack</span> <span class="o">=</span> <span class="n">inputVideoAsset</span><span class="o">.</span><span class="nf">tracks</span><span class="p">(</span><span class="nv">withMediaType</span><span class="p">:</span> <span class="kt">AVMediaTypeVideo</span><span class="p">)</span><span class="o">.</span><span class="n">first</span> <span class="k">else</span> <span class="p">{</span> <span class="k">throw</span> <span class="kt">NSError</span><span class="o">.</span><span class="nf">app</span><span class="p">()</span> <span class="p">}</span>
+        <span class="k">let</span> <span class="nv">compositionVideoTrack</span> <span class="o">=</span> <span class="n">composition</span><span class="o">.</span><span class="nf">addMutableTrack</span><span class="p">(</span><span class="nv">withMediaType</span><span class="p">:</span> <span class="kt">AVMediaTypeVideo</span><span class="p">,</span> <span class="nv">preferredTrackID</span><span class="p">:</span> <span class="n">kCMPersistentTrackID_Invalid</span><span class="p">)</span>
+        <span class="k">try</span> <span class="n">compositionVideoTrack</span><span class="o">.</span><span class="nf">insertTimeRange</span><span class="p">(</span><span class="kt">CMTimeRangeMake</span><span class="p">(</span><span class="n">kCMTimeZero</span><span class="p">,</span> <span class="n">inputVideoAsset</span><span class="o">.</span><span class="n">duration</span><span class="p">),</span> <span class="nv">of</span><span class="p">:</span> <span class="n">videoAssetTrack</span><span class="p">,</span> <span class="nv">at</span><span class="p">:</span> <span class="n">kCMTimeZero</span><span class="p">)</span>
+        
+        <span class="k">let</span> <span class="nv">audioStartTime</span> <span class="o">=</span> <span class="n">kCMTimeZero</span>
+        <span class="k">guard</span> <span class="k">let</span> <span class="nv">audioAssetTrack</span> <span class="o">=</span> <span class="n">audioAsset</span><span class="o">.</span><span class="nf">tracks</span><span class="p">(</span><span class="nv">withMediaType</span><span class="p">:</span> <span class="kt">AVMediaTypeAudio</span><span class="p">)</span><span class="o">.</span><span class="n">first</span> <span class="k">else</span> <span class="p">{</span> <span class="k">throw</span> <span class="kt">NSError</span><span class="o">.</span><span class="nf">app</span><span class="p">()</span> <span class="p">}</span>
+        <span class="k">let</span> <span class="nv">compositionAudioTrack</span> <span class="o">=</span> <span class="n">composition</span><span class="o">.</span><span class="nf">addMutableTrack</span><span class="p">(</span><span class="nv">withMediaType</span><span class="p">:</span> <span class="kt">AVMediaTypeAudio</span><span class="p">,</span> <span class="nv">preferredTrackID</span><span class="p">:</span> <span class="n">kCMPersistentTrackID_Invalid</span><span class="p">)</span>
+        <span class="k">try</span> <span class="n">compositionAudioTrack</span><span class="o">.</span><span class="nf">insertTimeRange</span><span class="p">(</span><span class="kt">CMTimeRangeMake</span><span class="p">(</span><span class="n">kCMTimeZero</span><span class="p">,</span> <span class="n">audioAsset</span><span class="o">.</span><span class="n">duration</span><span class="p">),</span> <span class="nv">of</span><span class="p">:</span> <span class="n">audioAssetTrack</span><span class="p">,</span> <span class="nv">at</span><span class="p">:</span> <span class="n">audioStartTime</span><span class="p">)</span>
+        
+        <span class="k">guard</span> <span class="k">let</span> <span class="nv">assetExport</span> <span class="o">=</span> <span class="kt">AVAssetExportSession</span><span class="p">(</span><span class="k">as</span><span class="nv">set</span><span class="p">:</span> <span class="n">composition</span><span class="p">,</span> <span class="nv">presetName</span><span class="p">:</span> <span class="n">quality</span><span class="p">)</span> <span class="k">else</span> <span class="p">{</span> <span class="k">throw</span> <span class="kt">NSError</span><span class="o">.</span><span class="nf">app</span><span class="p">()</span> <span class="p">}</span>
+        <span class="k">as</span><span class="n">setExport</span><span class="o">.</span><span class="n">outputFileType</span> <span class="o">=</span> <span class="kt">AVFileTypeQuickTimeMovie</span>
+        <span class="k">as</span><span class="n">setExport</span><span class="o">.</span><span class="n">outputURL</span> <span class="o">=</span> <span class="n">outputVideoFileURL</span>
+        
+        <span class="k">as</span><span class="n">setExport</span><span class="o">.</span><span class="n">exportAsynchronously</span> <span class="p">{</span>
+            <span class="nf">completion</span><span class="p">(</span><span class="k">as</span><span class="n">setExport</span><span class="o">.</span><span class="n">error</span><span class="p">)</span>
+        <span class="p">}</span>
+    <span class="p">}</span> <span class="k">catch</span> <span class="p">{</span>
+        <span class="nf">completion</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p>We’ll first extract the video asset track from <code class="language-plaintext highlighter-rouge">inputVideoAsset</code> and add it to an <code class="language-plaintext highlighter-rouge">AVMutableComposition</code>. Then we’ll do the same for the audio track from the <code class="language-plaintext highlighter-rouge">audioAsset</code>. It’s assumed that the input assets have one and only one track.</p>
+
+<p>Next, we’ll create an <code class="language-plaintext highlighter-rouge">AVAssetExportSession</code> and begin the export.</p>
+
+<h3 id="image--audio---movie">Image + Audio -&gt; Movie</h3>
+
+<p>Finally we can write the wrapper function to tie the inputs and outputs together from functions we just wrote.</p>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="c1">// See AVAssetExportSession.h for quality presets.</span>
+<span class="kd">static</span> <span class="kd">func</span> <span class="nf">createMovieWithSingleImageAndMusic</span><span class="p">(</span><span class="nv">image</span><span class="p">:</span> <span class="kt">UIImage</span><span class="p">,</span> <span class="nv">audioFileURL</span><span class="p">:</span> <span class="kt">URL</span><span class="p">,</span> <span class="k">as</span><span class="nv">setExportPresetQuality</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="nv">outputVideoFileURL</span><span class="p">:</span> <span class="kt">URL</span><span class="p">,</span> <span class="nv">completion</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="p">(</span><span class="kt">Error</span><span class="p">?)</span> <span class="o">-&gt;</span> <span class="p">())</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">audioAsset</span> <span class="o">=</span> <span class="kt">AVURLAsset</span><span class="p">(</span><span class="nv">url</span><span class="p">:</span> <span class="n">audioFileURL</span><span class="p">)</span>
+    <span class="k">let</span> <span class="nv">length</span> <span class="o">=</span> <span class="kt">TimeInterval</span><span class="p">(</span><span class="n">audioAsset</span><span class="o">.</span><span class="n">duration</span><span class="o">.</span><span class="n">seconds</span><span class="p">)</span>
+    <span class="k">let</span> <span class="nv">videoOnlyURL</span> <span class="o">=</span> <span class="n">outputVideoFileURL</span><span class="o">.</span><span class="nf">appendingPathExtension</span><span class="p">(</span><span class="s">".tmp.mov"</span><span class="p">)</span>
+    <span class="k">self</span><span class="o">.</span><span class="nf">writeSingleImageToMovie</span><span class="p">(</span><span class="nv">image</span><span class="p">:</span> <span class="n">image</span><span class="p">,</span> <span class="nv">movieLength</span><span class="p">:</span> <span class="n">length</span><span class="p">,</span> <span class="nv">outputFileURL</span><span class="p">:</span> <span class="n">videoOnlyURL</span><span class="p">)</span> <span class="p">{</span> <span class="p">(</span><span class="nv">error</span><span class="p">:</span> <span class="kt">Error</span><span class="p">?)</span> <span class="k">in</span>
+        <span class="k">if</span> <span class="k">let</span> <span class="nv">error</span> <span class="o">=</span> <span class="n">error</span> <span class="p">{</span>
+            <span class="nf">completion</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
+            <span class="k">return</span>
+        <span class="p">}</span>
+        <span class="k">let</span> <span class="nv">videoAsset</span> <span class="o">=</span> <span class="kt">AVURLAsset</span><span class="p">(</span><span class="nv">url</span><span class="p">:</span> <span class="n">videoOnlyURL</span><span class="p">)</span>
+        <span class="k">self</span><span class="o">.</span><span class="nf">addAudioToMovie</span><span class="p">(</span><span class="nv">audioAsset</span><span class="p">:</span> <span class="n">audioAsset</span><span class="p">,</span> <span class="nv">inputVideoAsset</span><span class="p">:</span> <span class="n">videoAsset</span><span class="p">,</span> <span class="nv">outputVideoFileURL</span><span class="p">:</span> <span class="n">outputVideoFileURL</span><span class="p">,</span> <span class="nv">quality</span><span class="p">:</span> <span class="k">as</span><span class="n">setExportPresetQuality</span><span class="p">)</span> <span class="p">{</span> <span class="p">(</span><span class="nv">error</span><span class="p">:</span> <span class="kt">Error</span><span class="p">?)</span> <span class="k">in</span>
+            <span class="nf">completion</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p>I don’t like the completion handler nesting, but since it’s only one level deep I consider it acceptable in this case. Using a reactive wrapper or <code class="language-plaintext highlighter-rouge">NSOperation</code> would be cleaner and allow cancellation too.</p>
+
+<p>Another consideration would be to either allow the caller to provide a output URL for the intermediate video so that it can be cleaned up if necessary or to just perform the cleanup ourselves at the end of the operation after the final video has been created. In my specific situation, I was writing all the files to a temporary directory anyway.</p>
+
+<h2 id="wrap-up">Wrap up</h2>
+
+<p>These functions were adapted from <a href="http://stackoverflow.com/questions/5640657/avfoundation-assetwriter-generate-movie-with-images-and-audio">this Stack Overflow answer</a>. I’ve cleaned it up and fixed some bugs.</p>
+
+<p>Let me know if you have any improvements. I’m <a href="https://twitter.com/twocentstudios">@twocentstudios</a> on Twitter.</p>
+
+<p>See this code in the wild in my app <a href="https://itunes.apple.com/us/app/photo-phono/id1202606014?mt=8">Phono/Photo</a>.</p>
+
+  </article>
+
+</div>
+
+      </div>
+    </div>
+
+    <footer class="site-footer">
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">twocentstudios</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col  footer-col-1">
+        <ul class="contact-list">
+          <li><a href="mailto:chris@twocentstudios.com">chris@twocentstudios.com</a></li>
+          
+          <li>
+            <a href="https://github.com/twocentstudios">
+              <span class="icon  icon--github">
+                <svg viewBox="0 0 16 16">
+                  <path fill="#828282" d="M7.999,0.431c-4.285,0-7.76,3.474-7.76,7.761 c0,3.428,2.223,6.337,5.307,7.363c0.388,0.071,0.53-0.168,0.53-0.374c0-0.184-0.007-0.672-0.01-1.32 c-2.159,0.469-2.614-1.04-2.614-1.04c-0.353-0.896-0.862-1.135-0.862-1.135c-0.705-0.481,0.053-0.472,0.053-0.472 c0.779,0.055,1.189,0.8,1.189,0.8c0.692,1.186,1.816,0.843,2.258,0.645c0.071-0.502,0.271-0.843,0.493-1.037 C4.86,11.425,3.049,10.76,3.049,7.786c0-0.847,0.302-1.54,0.799-2.082C3.768,5.507,3.501,4.718,3.924,3.65 c0,0,0.652-0.209,2.134,0.796C6.677,4.273,7.34,4.187,8,4.184c0.659,0.003,1.323,0.089,1.943,0.261 c1.482-1.004,2.132-0.796,2.132-0.796c0.423,1.068,0.157,1.857,0.077,2.054c0.497,0.542,0.798,1.235,0.798,2.082 c0,2.981-1.814,3.637-3.543,3.829c0.279,0.24,0.527,0.713,0.527,1.437c0,1.037-0.01,1.874-0.01,2.129 c0,0.208,0.14,0.449,0.534,0.373c3.081-1.028,5.302-3.935,5.302-7.362C15.76,3.906,12.285,0.431,7.999,0.431z"/>
+                </svg>
+              </span>
+
+              <span class="username">twocentstudios</span>
+            </a>
+          </li>
+          
+
+          <li>
+            <a href="https://hackyderm.io/@twocentstudios">
+              <span class="icon">
+                <svg viewBox="0 0 24 24">
+                  <path fill="#828282" d="M21.327 8.566c0-4.339-2.843-5.61-2.843-5.61-1.433-.658-3.894-.935-6.451-.956h-.063c-2.557.021-5.016.298-6.45.956 0 0-2.843 1.272-2.843 5.61 0 .993-.019 2.181.012 3.441.103 4.243.778 8.425 4.701 9.463 1.809.479 3.362.579 4.612.51 2.268-.126 3.541-.809 3.541-.809l-.075-1.646s-1.621.511-3.441.449c-1.804-.062-3.707-.194-3.999-2.409a4.523 4.523 0 0 1-.04-.621s1.77.433 4.014.536c1.372.063 2.658-.08 3.965-.236 2.506-.299 4.688-1.843 4.962-3.254.434-2.223.398-5.424.398-5.424zm-3.353 5.59h-2.081V9.057c0-1.075-.452-1.62-1.357-1.62-1 0-1.501.647-1.501 1.927v2.791h-2.069V9.364c0-1.28-.501-1.927-1.502-1.927-.905 0-1.357.546-1.357 1.62v5.099H6.026V8.903c0-1.074.273-1.927.823-2.558.566-.631 1.307-.955 2.228-.955 1.065 0 1.872.409 2.405 1.228l.518.869.519-.869c.533-.819 1.34-1.228 2.405-1.228.92 0 1.662.324 2.228.955.549.631.822 1.484.822 2.558v5.253z"/>
+                </svg>
+              </span>
+
+              <span class="username">twocentstudios</span>
+            </a>
+          </li>
+
+          
+          <li>
+            <a href="https://twitter.com/twocentstudios">
+              <span class="icon  icon--twitter">
+                <svg viewBox="0 0 16 16">
+                  <path fill="#828282" d="M15.969,3.058c-0.586,0.26-1.217,0.436-1.878,0.515c0.675-0.405,1.194-1.045,1.438-1.809
+                  c-0.632,0.375-1.332,0.647-2.076,0.793c-0.596-0.636-1.446-1.033-2.387-1.033c-1.806,0-3.27,1.464-3.27,3.27 c0,0.256,0.029,0.506,0.085,0.745C5.163,5.404,2.753,4.102,1.14,2.124C0.859,2.607,0.698,3.168,0.698,3.767 c0,1.134,0.577,2.135,1.455,2.722C1.616,6.472,1.112,6.325,0.671,6.08c0,0.014,0,0.027,0,0.041c0,1.584,1.127,2.906,2.623,3.206 C3.02,9.402,2.731,9.442,2.433,9.442c-0.211,0-0.416-0.021-0.615-0.059c0.416,1.299,1.624,2.245,3.055,2.271 c-1.119,0.877-2.529,1.4-4.061,1.4c-0.264,0-0.524-0.015-0.78-0.046c1.447,0.928,3.166,1.469,5.013,1.469 c6.015,0,9.304-4.983,9.304-9.304c0-0.142-0.003-0.283-0.009-0.423C14.976,4.29,15.531,3.714,15.969,3.058z"/>
+                </svg>
+              </span>
+
+              <span class="username">twocentstudios</span>
+            </a>
+          </li>
+          
+        </ul>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+
+
+  </body>
+
+</html>

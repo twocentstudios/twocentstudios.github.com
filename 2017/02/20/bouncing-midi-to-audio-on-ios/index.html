@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>Bouncing MIDI to Audio on iOS</title>
+
+  <meta property="og:type" content="article" />
+  <meta property="og:title" content="Bouncing MIDI to Audio on iOS" />
+  <meta property="og:url" content="https://twocentstudios.com/2017/02/20/bouncing-midi-to-audio-on-ios/" />
+  
+    <meta property="og:article:published_time" content="2017-02-20T12:58:18-06:00" />
+  
+  
+  
+  <link href='https://fonts.googleapis.com/css2?family=Work+Sans:wght@300;350;400;600' rel='stylesheet' type='text/css'>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="canonical" href="https://twocentstudios.com/2017/02/20/bouncing-midi-to-audio-on-ios/">
+  <link rel="alternate" type="application/rss+xml" title="twocentstudios" href="https://twocentstudios.com/feed.xml" />
+</head>
+
+  <!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-NE82N02W8S"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-NE82N02W8S');
+</script>
+
+  <body>
+
+    <header class="site-header">
+
+  <div class="wrapper">
+
+    <a class="site-title" href="/">twocentstudios</a>
+
+    <nav class="site-nav">
+      <a href="#" class="menu-icon">
+        <svg viewBox="0 0 18 15">
+          <path fill="#424242" d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.031C17.335,0,18,0.665,18,1.484L18,1.484z"/>
+          <path fill="#424242" d="M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0c0-0.82,0.665-1.484,1.484-1.484 h15.031C17.335,6.031,18,6.696,18,7.516L18,7.516z"/>
+          <path fill="#424242" d="M18,13.516C18,14.335,17.335,15,16.516,15H1.484C0.665,15,0,14.335,0,13.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.031C17.335,12.031,18,12.696,18,13.516L18,13.516z"/>
+        </svg>
+      </a>
+
+      <div class="trigger">
+        
+          
+          <a class="page-link" href="/about/">About</a>
+          
+        
+          
+          <a class="page-link" href="/blog/">Blog</a>
+          
+        
+          
+        
+          
+        
+          
+          <a class="page-link" href="/portfolio/">Portfolio</a>
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      </div>
+    </nav>
+
+  </div>
+
+</header>
+
+
+    <div class="page-content">
+      <div class="wrapper">
+        <div class="post">
+
+  <header class="post-header">
+    <h1 class="post-title">Bouncing MIDI to Audio on iOS</h1>
+    <p class="post-meta">Feb 20, 2017</p>
+  </header>
+
+  <article class="post-content">
+    <p>This post shows one way to create an audio file from MIDI data and a soundfont (.sf2) file on iOS. It targets iOS 10.2 and Swift 3.0.1.</p>
+
+<p>I’ll first go into some background about the problem. Then I’ll detail the solution with some code in Swift. If you’re only interested in the solution, please skip to that section.</p>
+
+<h2 id="background">Background</h2>
+
+<p>iOS and macOS have an extensive set of audio/visual frameworks, both low level and high level.</p>
+
+<p>In my app Phono/Photo, there are two tasks (amongst a few others) that focus on MIDI.</p>
+
+<ol>
+  <li>Play MIDI data from the speaker.</li>
+  <li>Transform MIDI data into a suitable wave format for the purposes of playback outside the app.</li>
+</ol>
+
+<p>You might think these tasks would be similar, but, as of iOS 10, it turns out the former is trivial and the latter is a bit more complicated.</p>
+
+<h3 id="playing-midi-data-from-the-speaker">Playing MIDI Data from the Speaker</h3>
+
+<p>In iOS 8, Apple began adding some higher level components to AVFoundation that both wrap their lower level AudioToolbox relatives and provide solutions to common tasks.</p>
+
+<p><code class="language-plaintext highlighter-rouge">AVMIDIPlayer</code> was added in iOS 8, and solves MIDI playback elegantly.</p>
+
+<p>You can load MIDI from a file or from raw Data, provide a URL for a soundbank file, then control playback with a few straightforward methods. All the underlying components used to sequence the MIDI and synthesize it are encapsulated within.</p>
+
+<p>In order to gain access to the output bus tap that contains the raw audio data, we’ll essentially need to recreate <code class="language-plaintext highlighter-rouge">AVMIDIPlayer</code> using some other framework components.</p>
+
+<h3 id="strategy-and-limitations">Strategy and Limitations</h3>
+
+<p>Our strategy will be to set up a chain of components to:</p>
+
+<ol>
+  <li>Sequence the MIDI (send each MIDI event at the correct time).</li>
+  <li>Map a MIDI event to an audio file from the soundbank.</li>
+  <li>Record the audio that’s produced.</li>
+</ol>
+
+<p>Observing the output of this process limits us to real time processing speed. In other words, if the MIDI file is 60 seconds, it’ll take 60 seconds to produce the output audio file.</p>
+
+<blockquote>
+  <p>One strategy I haven’t tried would be to pitch shift the MIDI up one octave, play it back at 2x, record it at 88.2kHz, then downsample to 44.1kHz. <code class="language-plaintext highlighter-rouge">AVAudioSession</code> presumably can’t go past 48kHz though.</p>
+</blockquote>
+
+<h3 id="components-well-need">Components We’ll Need</h3>
+
+<p>We need to set up an <code class="language-plaintext highlighter-rouge">AVAudioEngine</code> with a few nodes. Conceptually, the chain will look something like this:</p>
+
+<div class="language-plaintext highlighter-rouge"><pre class="highlight"><code>                                     Output Tap
+                                         |                      
+AVAudioSequencer -&gt; AVAudioUnitMIDISynth -&gt; AVAudioMixerNode -&gt;
+</code></pre>
+</div>
+
+<blockquote>
+  <p>Technically, the <code class="language-plaintext highlighter-rouge">AVAudioSequencer</code> is connected directly to the <code class="language-plaintext highlighter-rouge">AVAudioEngine</code>. And the <code class="language-plaintext highlighter-rouge">AVAudioMixerNode</code> is managed by the <code class="language-plaintext highlighter-rouge">AVAudioEngine</code> too.</p>
+</blockquote>
+
+<p><code class="language-plaintext highlighter-rouge">AVAudioSequencer</code> provides a modern interface to <code class="language-plaintext highlighter-rouge">MusicSequence</code> from the <code class="language-plaintext highlighter-rouge">AudioToolbox</code> framework.</p>
+
+<p><code class="language-plaintext highlighter-rouge">AVAudioUnitMIDISynth</code> is an <code class="language-plaintext highlighter-rouge">AVAudioUnit</code> we’ll have to create ourselves by subclassing <code class="language-plaintext highlighter-rouge">AVAudioUnitMIDIInstrument</code>. The reason we can’t use Apple’s provided <code class="language-plaintext highlighter-rouge">AVAudioUnitSampler</code> (also a subclass of <code class="language-plaintext highlighter-rouge">AVAudioUnitMIDIInstrument</code>) is because our MIDI file is multi-timbral: it uses multiple instrument presets from the soundfont and plays notes simultaneously.</p>
+
+<p><code class="language-plaintext highlighter-rouge">AVAudioMixerNode</code> is the output of the <code class="language-plaintext highlighter-rouge">AVAudioEngine</code>, capable of combining multiple input nodes. In our case, we only need one.</p>
+
+<p>I decided I don’t want the user to hear the export progress, so the file output tap will go at the output of the <code class="language-plaintext highlighter-rouge">AVAudioUnitMIDISynth</code> and the output of the <code class="language-plaintext highlighter-rouge">AVAudioMixerNode</code> will be muted.</p>
+
+<p>Now that we have a general diagram of how these components will fit together, let’s get started on the implementation.</p>
+
+<h2 id="implementation">Implementation</h2>
+
+<p>The following targets Swift 3.0.1 and iOS 10.</p>
+
+<p>First let’s create <code class="language-plaintext highlighter-rouge">AVAudioUnitMIDISynth</code>.</p>
+
+<h3 id="avaudiounitmidisynth">AVAudioUnitMIDISynth</h3>
+
+<blockquote>
+  <p>Most of this code is adapted directly from <a href="http://www.rockhoppertech.com/blog/multi-timbral-avaudiounitmidiinstrument/">Gene De Lisa’s blog</a>. He’s prolific in writing about iOS and MIDI topics.</p>
+</blockquote>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">class</span> <span class="kt">AVAudioUnitMIDISynth</span><span class="p">:</span> <span class="kt">AVAudioUnitMIDIInstrument</span> <span class="p">{</span>
+    <span class="nf">init</span><span class="p">(</span><span class="nv">soundBankURL</span><span class="p">:</span> <span class="kt">URL</span><span class="p">)</span> <span class="k">throws</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">description</span> <span class="o">=</span> <span class="kt">AudioComponentDescription</span><span class="p">(</span>
+            <span class="nv">componentType</span><span class="p">:</span> <span class="n">kAudioUnitType_MusicDevice</span><span class="p">,</span>
+            <span class="nv">componentSubType</span><span class="p">:</span> <span class="n">kAudioUnitSubType_MIDISynth</span><span class="p">,</span>
+            <span class="nv">componentManufacturer</span><span class="p">:</span> <span class="n">kAudioUnitManufacturer_Apple</span><span class="p">,</span>
+            <span class="nv">componentFlags</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="nv">componentFlagsMask</span><span class="p">:</span> <span class="mi">0</span>
+        <span class="p">)</span>
+        
+        <span class="k">super</span><span class="o">.</span><span class="nf">init</span><span class="p">(</span><span class="nv">audioComponentDescription</span><span class="p">:</span> <span class="n">description</span><span class="p">)</span>
+        
+        <span class="k">var</span> <span class="nv">bankURL</span> <span class="o">=</span> <span class="n">soundBankURL</span>
+        
+        <span class="k">let</span> <span class="nv">status</span> <span class="o">=</span> <span class="kt">AudioUnitSetProperty</span><span class="p">(</span>
+            <span class="k">self</span><span class="o">.</span><span class="n">audioUnit</span><span class="p">,</span>
+            <span class="kt">AudioUnitPropertyID</span><span class="p">(</span><span class="n">kMusicDeviceProperty_SoundBankURL</span><span class="p">),</span>
+            <span class="kt">AudioUnitScope</span><span class="p">(</span><span class="n">kAudioUnitScope_Global</span><span class="p">),</span>
+            <span class="mi">0</span><span class="p">,</span>
+            <span class="o">&amp;</span><span class="n">bankURL</span><span class="p">,</span>
+            <span class="kt">UInt32</span><span class="p">(</span><span class="kt">MemoryLayout</span><span class="o">&lt;</span><span class="kt">URL</span><span class="o">&gt;.</span><span class="n">size</span><span class="p">))</span>
+        
+        <span class="k">if</span> <span class="n">status</span> <span class="o">!=</span> <span class="kt">OSStatus</span><span class="p">(</span><span class="n">noErr</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">throw</span> <span class="kt">NSError</span><span class="o">.</span><span class="nf">app</span><span class="p">(</span><span class="s">"</span><span class="se">\(</span><span class="n">status</span><span class="se">)</span><span class="s">"</span><span class="p">)</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    
+    <span class="kd">func</span> <span class="nf">setPreload</span><span class="p">(</span><span class="nv">enabled</span><span class="p">:</span> <span class="kt">Bool</span><span class="p">)</span> <span class="k">throws</span> <span class="p">{</span>
+        <span class="k">guard</span> <span class="k">let</span> <span class="nv">engine</span> <span class="o">=</span> <span class="k">self</span><span class="o">.</span><span class="n">engine</span> <span class="k">else</span> <span class="p">{</span> <span class="k">throw</span> <span class="kt">NSError</span><span class="o">.</span><span class="nf">app</span><span class="p">(</span><span class="s">"Synth must be connected to an engine."</span><span class="p">)</span> <span class="p">}</span>
+        <span class="k">if</span> <span class="o">!</span><span class="n">engine</span><span class="o">.</span><span class="n">isRunning</span> <span class="p">{</span> <span class="k">throw</span> <span class="kt">NSError</span><span class="o">.</span><span class="nf">app</span><span class="p">(</span><span class="s">"Engine must be running."</span><span class="p">)</span> <span class="p">}</span>
+        
+        <span class="k">var</span> <span class="nv">enabledBit</span> <span class="o">=</span> <span class="n">enabled</span> <span class="p">?</span> <span class="kt">UInt32</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="p">:</span> <span class="kt">UInt32</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        
+        <span class="k">let</span> <span class="nv">status</span> <span class="o">=</span> <span class="kt">AudioUnitSetProperty</span><span class="p">(</span>
+            <span class="k">self</span><span class="o">.</span><span class="n">audioUnit</span><span class="p">,</span>
+            <span class="kt">AudioUnitPropertyID</span><span class="p">(</span><span class="n">kAUMIDISynthProperty_EnablePreload</span><span class="p">),</span>
+            <span class="kt">AudioUnitScope</span><span class="p">(</span><span class="n">kAudioUnitScope_Global</span><span class="p">),</span>
+            <span class="mi">0</span><span class="p">,</span>
+            <span class="o">&amp;</span><span class="n">enabledBit</span><span class="p">,</span>
+            <span class="kt">UInt32</span><span class="p">(</span><span class="kt">MemoryLayout</span><span class="o">&lt;</span><span class="kt">UInt32</span><span class="o">&gt;.</span><span class="n">size</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">status</span> <span class="o">!=</span> <span class="n">noErr</span> <span class="p">{</span>
+            <span class="k">throw</span> <span class="kt">NSError</span><span class="o">.</span><span class="nf">app</span><span class="p">(</span><span class="s">"</span><span class="se">\(</span><span class="n">status</span><span class="se">)</span><span class="s">"</span><span class="p">)</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p>In <code class="language-plaintext highlighter-rouge">init</code>, we’re telling the AudioUnit that it’s a MIDISynth. Then we’ll set the soundbank that we want it to use.</p>
+
+<p>The <code class="language-plaintext highlighter-rouge">setPreload</code> function is the critical part that will allow faithful playback of the instruments in the MIDI data. The MIDISynth AudioUnit has a property that allows it to preload instrument banks from the soundfont we provided on initialization. While this flag is set to true, any MIDI events sent to the MIDISynth, instead of being played, will be parsed for their instrument/bank messages and those instruments’ samples will be loaded.</p>
+
+<p>A caveat is that the MIDISynth must be connected to the <code class="language-plaintext highlighter-rouge">AVAudioEngine</code> which must also be running when the preload message is sent.</p>
+
+<p>After we’re done sending messages intended for preloading, the MIDISynth should have preload mode disabled, after which it will play any incoming MIDI message normally.</p>
+
+<h3 id="midifilebouncer">MIDIFileBouncer</h3>
+
+<p>Let’s put it all together in the <code class="language-plaintext highlighter-rouge">MIDIFileBouncer</code>.</p>
+
+<p>Our inputs will be:</p>
+
+<ol>
+  <li>MIDI data</li>
+  <li>Soundbank URL</li>
+  <li>The AVAudioSession</li>
+</ol>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">class</span> <span class="kt">MIDIFileBouncer</span> <span class="p">{</span>
+    <span class="n">fileprivate</span> <span class="k">let</span> <span class="nv">audioSession</span><span class="p">:</span> <span class="kt">AVAudioSession</span>
+    
+    <span class="n">fileprivate</span> <span class="k">var</span> <span class="nv">engine</span><span class="p">:</span> <span class="kt">AVAudioEngine</span><span class="o">!</span>
+    <span class="n">fileprivate</span> <span class="k">var</span> <span class="nv">sampler</span><span class="p">:</span> <span class="kt">AVAudioUnitMIDISynth</span><span class="o">!</span>
+    <span class="n">fileprivate</span> <span class="k">var</span> <span class="nv">sequencer</span><span class="p">:</span> <span class="kt">AVAudioSequencer</span><span class="o">!</span>
+
+    <span class="kd">deinit</span> <span class="p">{</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">engine</span><span class="o">.</span><span class="nf">disconnectNodeInput</span><span class="p">(</span><span class="k">self</span><span class="o">.</span><span class="n">sampler</span><span class="p">,</span> <span class="nv">bus</span><span class="p">:</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">engine</span><span class="o">.</span><span class="nf">detach</span><span class="p">(</span><span class="k">self</span><span class="o">.</span><span class="n">sampler</span><span class="p">)</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">sequencer</span> <span class="o">=</span> <span class="kc">nil</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">sampler</span> <span class="o">=</span> <span class="kc">nil</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">engine</span> <span class="o">=</span> <span class="kc">nil</span>
+    <span class="p">}</span>
+    
+    <span class="nf">init</span><span class="p">(</span><span class="nv">midiFileData</span><span class="p">:</span> <span class="kt">Data</span><span class="p">,</span> <span class="nv">soundBankURL</span><span class="p">:</span> <span class="kt">URL</span><span class="p">,</span> <span class="nv">audioSession</span><span class="p">:</span> <span class="kt">AVAudioSession</span><span class="p">)</span> <span class="k">throws</span> <span class="p">{</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">audioSession</span> <span class="o">=</span> <span class="n">audioSession</span>
+                
+        <span class="k">self</span><span class="o">.</span><span class="n">engine</span> <span class="o">=</span> <span class="kt">AVAudioEngine</span><span class="p">()</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">sampler</span> <span class="o">=</span> <span class="k">try</span> <span class="kt">AVAudioUnitMIDISynth</span><span class="p">(</span><span class="nv">soundBankURL</span><span class="p">:</span> <span class="n">soundBankURL</span><span class="p">)</span>
+        
+        <span class="k">self</span><span class="o">.</span><span class="n">engine</span><span class="o">.</span><span class="nf">attach</span><span class="p">(</span><span class="k">self</span><span class="o">.</span><span class="n">sampler</span><span class="p">)</span>
+        
+        <span class="c1">// We'll tap the sampler output directly for recording</span>
+        <span class="c1">// and mute the mixer output so that bouncing is silent to the user.</span>
+        <span class="k">let</span> <span class="nv">audioFormat</span> <span class="o">=</span> <span class="kt">AVAudioFormat</span><span class="p">(</span><span class="nv">standardFormatWithSampleRate</span><span class="p">:</span> <span class="mi">44100</span><span class="p">,</span> <span class="nv">channels</span><span class="p">:</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="k">let</span> <span class="nv">mixer</span> <span class="o">=</span> <span class="k">self</span><span class="o">.</span><span class="n">engine</span><span class="o">.</span><span class="n">mainMixerNode</span>
+        <span class="n">mixer</span><span class="o">.</span><span class="n">outputVolume</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">engine</span><span class="o">.</span><span class="nf">connect</span><span class="p">(</span><span class="k">self</span><span class="o">.</span><span class="n">sampler</span><span class="p">,</span> <span class="nv">to</span><span class="p">:</span> <span class="n">mixer</span><span class="p">,</span> <span class="nv">format</span><span class="p">:</span> <span class="n">audioFormat</span><span class="p">)</span>
+        
+        <span class="k">self</span><span class="o">.</span><span class="n">sequencer</span> <span class="o">=</span> <span class="kt">AVAudioSequencer</span><span class="p">(</span><span class="nv">audioEngine</span><span class="p">:</span> <span class="k">self</span><span class="o">.</span><span class="n">engine</span><span class="p">)</span>
+        <span class="k">try</span> <span class="k">self</span><span class="o">.</span><span class="n">sequencer</span><span class="o">.</span><span class="nf">load</span><span class="p">(</span><span class="nv">from</span><span class="p">:</span> <span class="n">midiFileData</span><span class="p">,</span> <span class="nv">options</span><span class="p">:</span> <span class="p">[])</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">sequencer</span><span class="o">.</span><span class="nf">prepareToPlay</span><span class="p">()</span>
+    <span class="p">}</span>  
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<blockquote>
+  <p>Regarding the deinit, the reason we’re not declaring the engine, sampler, or sequencer as <code class="language-plaintext highlighter-rouge">let</code> (or non-optional) is because we need to specify their order of deallocation to avoid a crash (<code class="language-plaintext highlighter-rouge">audioEngine</code> is released before <code class="language-plaintext highlighter-rouge">sequencer</code> has finished with it). Please let me know if you know a more elegant way to avoid this crash.</p>
+</blockquote>
+
+<p>In <code class="language-plaintext highlighter-rouge">init</code>, we’re going to create an instance of our three required classes: <code class="language-plaintext highlighter-rouge">AVAudioEngine</code>, <code class="language-plaintext highlighter-rouge">AVAudioUnitMIDISynth</code>, and <code class="language-plaintext highlighter-rouge">AVAudioSequencer</code>. Then we’ll wire them together and get the sequencer ready for playback.</p>
+
+<p>Now onto our bounce function.</p>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">extension</span> <span class="kt">MIDIFileBouncer</span> <span class="p">{</span>
+    <span class="kd">func</span> <span class="nf">bounce</span><span class="p">(</span><span class="n">toFileURL</span> <span class="nv">fileURL</span><span class="p">:</span> <span class="kt">URL</span><span class="p">)</span> <span class="k">throws</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">outputNode</span> <span class="o">=</span> <span class="k">self</span><span class="o">.</span><span class="n">sampler</span><span class="o">!</span>
+        
+        <span class="k">let</span> <span class="nv">sequenceLength</span> <span class="o">=</span> <span class="k">self</span><span class="o">.</span><span class="n">sequencer</span><span class="o">.</span><span class="n">tracks</span><span class="o">.</span><span class="nf">map</span><span class="p">({</span> <span class="nv">$0</span><span class="o">.</span><span class="n">lengthInSeconds</span> <span class="p">})</span><span class="o">.</span><span class="nf">max</span><span class="p">()</span> <span class="p">??</span> <span class="mi">0</span>
+        <span class="k">var</span> <span class="nv">writeError</span><span class="p">:</span> <span class="kt">NSError</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span>
+        <span class="k">let</span> <span class="nv">outputFile</span> <span class="o">=</span> <span class="k">try</span> <span class="kt">AVAudioFile</span><span class="p">(</span><span class="nv">forWriting</span><span class="p">:</span> <span class="n">fileURL</span><span class="p">,</span> <span class="nv">settings</span><span class="p">:</span> <span class="n">outputNode</span><span class="o">.</span><span class="nf">outputFormat</span><span class="p">(</span><span class="nv">forBus</span><span class="p">:</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">settings</span><span class="p">)</span>
+        
+        <span class="k">try</span> <span class="k">self</span><span class="o">.</span><span class="n">audioSession</span><span class="o">.</span><span class="nf">setActive</span><span class="p">(</span><span class="kc">true</span><span class="p">)</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">engine</span><span class="o">.</span><span class="nf">prepare</span><span class="p">()</span>
+        <span class="k">try</span> <span class="k">self</span><span class="o">.</span><span class="n">engine</span><span class="o">.</span><span class="nf">start</span><span class="p">()</span>
+        
+        <span class="c1">// Load the patches by playing the sequence through in preload mode.</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">sequencer</span><span class="o">.</span><span class="n">rate</span> <span class="o">=</span> <span class="mf">100.0</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">sequencer</span><span class="o">.</span><span class="n">currentPositionInSeconds</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">sequencer</span><span class="o">.</span><span class="nf">prepareToPlay</span><span class="p">()</span>
+        <span class="k">try</span> <span class="k">self</span><span class="o">.</span><span class="n">sampler</span><span class="o">.</span><span class="nf">setPreload</span><span class="p">(</span><span class="nv">enabled</span><span class="p">:</span> <span class="kc">true</span><span class="p">)</span>
+        <span class="k">try</span> <span class="k">self</span><span class="o">.</span><span class="n">sequencer</span><span class="o">.</span><span class="nf">start</span><span class="p">()</span>
+        <span class="k">while</span> <span class="p">(</span><span class="k">self</span><span class="o">.</span><span class="n">sequencer</span><span class="o">.</span><span class="n">isPlaying</span>
+            <span class="o">&amp;&amp;</span> <span class="k">self</span><span class="o">.</span><span class="n">sequencer</span><span class="o">.</span><span class="n">currentPositionInSeconds</span> <span class="o">&lt;</span> <span class="n">sequenceLength</span><span class="p">)</span> <span class="p">{</span>
+                <span class="nf">usleep</span><span class="p">(</span><span class="mi">100000</span><span class="p">)</span>
+        <span class="p">}</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">sequencer</span><span class="o">.</span><span class="nf">stop</span><span class="p">()</span>
+        <span class="nf">usleep</span><span class="p">(</span><span class="mi">500000</span><span class="p">)</span> <span class="c1">// ensure all notes have rung out</span>
+        <span class="k">try</span> <span class="k">self</span><span class="o">.</span><span class="n">sampler</span><span class="o">.</span><span class="nf">setPreload</span><span class="p">(</span><span class="nv">enabled</span><span class="p">:</span> <span class="kc">false</span><span class="p">)</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">sequencer</span><span class="o">.</span><span class="n">rate</span> <span class="o">=</span> <span class="mf">1.0</span>
+        
+        <span class="c1">// Get sequencer ready again.</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">sequencer</span><span class="o">.</span><span class="n">currentPositionInSeconds</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">sequencer</span><span class="o">.</span><span class="nf">prepareToPlay</span><span class="p">()</span>
+                
+        <span class="c1">// Start recording.</span>
+        <span class="n">outputNode</span><span class="o">.</span><span class="nf">installTap</span><span class="p">(</span><span class="nv">onBus</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="nv">bufferSize</span><span class="p">:</span> <span class="mi">4096</span><span class="p">,</span> <span class="nv">format</span><span class="p">:</span> <span class="n">outputNode</span><span class="o">.</span><span class="nf">outputFormat</span><span class="p">(</span><span class="nv">forBus</span><span class="p">:</span> <span class="mi">0</span><span class="p">))</span> <span class="p">{</span> <span class="p">(</span><span class="nv">buffer</span><span class="p">:</span> <span class="kt">AVAudioPCMBuffer</span><span class="p">,</span> <span class="nv">time</span><span class="p">:</span> <span class="kt">AVAudioTime</span><span class="p">)</span> <span class="k">in</span>
+            <span class="k">do</span> <span class="p">{</span>
+                <span class="k">try</span> <span class="n">outputFile</span><span class="o">.</span><span class="nf">write</span><span class="p">(</span><span class="nv">from</span><span class="p">:</span> <span class="n">buffer</span><span class="p">)</span>
+            <span class="p">}</span> <span class="k">catch</span> <span class="p">{</span>
+                <span class="n">writeError</span> <span class="o">=</span> <span class="n">error</span> <span class="k">as</span> <span class="kt">NSError</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+        
+        <span class="c1">// Add silence to beginning.</span>
+        <span class="nf">usleep</span><span class="p">(</span><span class="mi">200000</span><span class="p">)</span>
+
+        <span class="c1">// Start playback.</span>
+        <span class="k">try</span> <span class="k">self</span><span class="o">.</span><span class="n">sequencer</span><span class="o">.</span><span class="nf">start</span><span class="p">()</span>
+        
+        <span class="c1">// Continuously check for track finished or error while looping.</span>
+        <span class="k">while</span> <span class="p">(</span><span class="k">self</span><span class="o">.</span><span class="n">sequencer</span><span class="o">.</span><span class="n">isPlaying</span>
+            <span class="o">&amp;&amp;</span> <span class="n">writeError</span> <span class="o">==</span> <span class="kc">nil</span>
+            <span class="o">&amp;&amp;</span> <span class="k">self</span><span class="o">.</span><span class="n">sequencer</span><span class="o">.</span><span class="n">currentPositionInSeconds</span> <span class="o">&lt;</span> <span class="n">sequenceLength</span><span class="p">)</span> <span class="p">{</span>
+            <span class="nf">usleep</span><span class="p">(</span><span class="mi">100000</span><span class="p">)</span>
+        <span class="p">}</span>
+        
+        <span class="c1">// Ensure playback is stopped.</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">sequencer</span><span class="o">.</span><span class="nf">stop</span><span class="p">()</span>
+        
+        <span class="c1">// Add silence to end.</span>
+        <span class="nf">usleep</span><span class="p">(</span><span class="mi">1000000</span><span class="p">)</span>
+
+        <span class="c1">// Stop recording.</span>
+        <span class="n">outputNode</span><span class="o">.</span><span class="nf">removeTap</span><span class="p">(</span><span class="nv">onBus</span><span class="p">:</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">engine</span><span class="o">.</span><span class="nf">stop</span><span class="p">()</span>
+        <span class="k">try</span> <span class="k">self</span><span class="o">.</span><span class="n">audioSession</span><span class="o">.</span><span class="nf">setActive</span><span class="p">(</span><span class="kc">false</span><span class="p">)</span>
+        
+        <span class="c1">// Return error if there was any issue during recording.</span>
+        <span class="k">if</span> <span class="k">let</span> <span class="nv">writeError</span> <span class="o">=</span> <span class="n">writeError</span> <span class="p">{</span>
+            <span class="k">throw</span> <span class="n">writeError</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p>The bounce function is synchronous. <code class="language-plaintext highlighter-rouge">AVAudioSequencer</code> is interesting in that it will play beyond the length of the MIDI track it’s playing. It will play until it’s told to stop or it’s interrupted. We don’t get a callback when the last MIDI event has rung out.</p>
+
+<p>The most straightforward solution, although not the most efficient or elegant, is to sleep the current thread until either the sequencer has stopped for some external reason or it has played past the length of its last MIDI event. This is also arguably the most robust solution without the knowledge of whether we can observe <code class="language-plaintext highlighter-rouge">isPlaying</code>.</p>
+
+<p>With that disclaimer in place, let’s walk through the code.</p>
+
+<ul>
+  <li>Calculate the sequence length for later use with help from <code class="language-plaintext highlighter-rouge">AVMusicTrack</code>.</li>
+  <li>Set up an <code class="language-plaintext highlighter-rouge">AVAudioFile</code> to write the output buffers to.</li>
+  <li>Start up the <code class="language-plaintext highlighter-rouge">AVAudioSession</code> and the <code class="language-plaintext highlighter-rouge">AVAudioEngine</code>.</li>
+  <li>Play the entire sequence through once with the <code class="language-plaintext highlighter-rouge">AVAudioUnitMIDISynth</code> in preload mode as discussed earlier. However, we can cheat a little bit and play it through at 100x normal speed since it simply needs to see all the events.</li>
+  <li>Reset everything for the real recording session playback.</li>
+  <li>Install a tap on the output of <code class="language-plaintext highlighter-rouge">AVAudioUnitMIDISynth</code> and write the output buffers to our <code class="language-plaintext highlighter-rouge">AVAudioFile</code>.</li>
+  <li>Start playback, wait for it to finish or error, then remove the bus.</li>
+</ul>
+
+<p>I’ve added a few pauses to ensure there’s adequate gaps of silence between the beginning and end of the file.</p>
+
+<p>Assuming the function doesn’t throw, a wave file will be written to the URL you provided to the function input as a <code class="language-plaintext highlighter-rouge">.caf</code> file. <code class="language-plaintext highlighter-rouge">AVFoundation</code> has additional facilities available to convert uncompressed audio to other formats.</p>
+
+<h2 id="wrap-up">Wrap Up</h2>
+
+<p>The majority of this post was gleaned from a few invaluable sources.</p>
+
+<ul>
+  <li><a href="http://www.rockhoppertech.com/blog/multi-timbral-avaudiounitmidiinstrument/">Multi-timbral AVAudioUnitMIDIInstrument</a></li>
+  <li><a href="http://www.rockhoppertech.com/blog/">Gene De Lisa’s blog</a></li>
+  <li><a href="https://lists.apple.com/archives/coreaudio-api/2016/Jan/msg00023.html">Apple Mailing List message about MIDISynth preload</a></li>
+  <li><a href="https://developer.apple.com/library/content/samplecode/AVAEMixerSample/Introduction/Intro.html#//apple_ref/doc/uid/TP40015134-Intro-DontLinkElementID_2">Using AVAudioEngine for Playback, Mixing and Recording (AVAEMixerSample)</a></li>
+</ul>
+
+<p>Please message me on Twitter <a href="https://twitter.com/twocentstudios">@twocentstudios</a> if you have ideas for improvements.</p>
+
+<p>Download my app <a href="https://itunes.apple.com/us/app/photo-phono/id1202606014?mt=8">Photo/Phono</a> and share a generated MIDI file to see this code in action.</p>
+
+
+  </article>
+
+</div>
+
+      </div>
+    </div>
+
+    <footer class="site-footer">
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">twocentstudios</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col  footer-col-1">
+        <ul class="contact-list">
+          <li><a href="mailto:chris@twocentstudios.com">chris@twocentstudios.com</a></li>
+          
+          <li>
+            <a href="https://github.com/twocentstudios">
+              <span class="icon  icon--github">
+                <svg viewBox="0 0 16 16">
+                  <path fill="#828282" d="M7.999,0.431c-4.285,0-7.76,3.474-7.76,7.761 c0,3.428,2.223,6.337,5.307,7.363c0.388,0.071,0.53-0.168,0.53-0.374c0-0.184-0.007-0.672-0.01-1.32 c-2.159,0.469-2.614-1.04-2.614-1.04c-0.353-0.896-0.862-1.135-0.862-1.135c-0.705-0.481,0.053-0.472,0.053-0.472 c0.779,0.055,1.189,0.8,1.189,0.8c0.692,1.186,1.816,0.843,2.258,0.645c0.071-0.502,0.271-0.843,0.493-1.037 C4.86,11.425,3.049,10.76,3.049,7.786c0-0.847,0.302-1.54,0.799-2.082C3.768,5.507,3.501,4.718,3.924,3.65 c0,0,0.652-0.209,2.134,0.796C6.677,4.273,7.34,4.187,8,4.184c0.659,0.003,1.323,0.089,1.943,0.261 c1.482-1.004,2.132-0.796,2.132-0.796c0.423,1.068,0.157,1.857,0.077,2.054c0.497,0.542,0.798,1.235,0.798,2.082 c0,2.981-1.814,3.637-3.543,3.829c0.279,0.24,0.527,0.713,0.527,1.437c0,1.037-0.01,1.874-0.01,2.129 c0,0.208,0.14,0.449,0.534,0.373c3.081-1.028,5.302-3.935,5.302-7.362C15.76,3.906,12.285,0.431,7.999,0.431z"/>
+                </svg>
+              </span>
+
+              <span class="username">twocentstudios</span>
+            </a>
+          </li>
+          
+
+          <li>
+            <a href="https://hackyderm.io/@twocentstudios">
+              <span class="icon">
+                <svg viewBox="0 0 24 24">
+                  <path fill="#828282" d="M21.327 8.566c0-4.339-2.843-5.61-2.843-5.61-1.433-.658-3.894-.935-6.451-.956h-.063c-2.557.021-5.016.298-6.45.956 0 0-2.843 1.272-2.843 5.61 0 .993-.019 2.181.012 3.441.103 4.243.778 8.425 4.701 9.463 1.809.479 3.362.579 4.612.51 2.268-.126 3.541-.809 3.541-.809l-.075-1.646s-1.621.511-3.441.449c-1.804-.062-3.707-.194-3.999-2.409a4.523 4.523 0 0 1-.04-.621s1.77.433 4.014.536c1.372.063 2.658-.08 3.965-.236 2.506-.299 4.688-1.843 4.962-3.254.434-2.223.398-5.424.398-5.424zm-3.353 5.59h-2.081V9.057c0-1.075-.452-1.62-1.357-1.62-1 0-1.501.647-1.501 1.927v2.791h-2.069V9.364c0-1.28-.501-1.927-1.502-1.927-.905 0-1.357.546-1.357 1.62v5.099H6.026V8.903c0-1.074.273-1.927.823-2.558.566-.631 1.307-.955 2.228-.955 1.065 0 1.872.409 2.405 1.228l.518.869.519-.869c.533-.819 1.34-1.228 2.405-1.228.92 0 1.662.324 2.228.955.549.631.822 1.484.822 2.558v5.253z"/>
+                </svg>
+              </span>
+
+              <span class="username">twocentstudios</span>
+            </a>
+          </li>
+
+          
+          <li>
+            <a href="https://twitter.com/twocentstudios">
+              <span class="icon  icon--twitter">
+                <svg viewBox="0 0 16 16">
+                  <path fill="#828282" d="M15.969,3.058c-0.586,0.26-1.217,0.436-1.878,0.515c0.675-0.405,1.194-1.045,1.438-1.809
+                  c-0.632,0.375-1.332,0.647-2.076,0.793c-0.596-0.636-1.446-1.033-2.387-1.033c-1.806,0-3.27,1.464-3.27,3.27 c0,0.256,0.029,0.506,0.085,0.745C5.163,5.404,2.753,4.102,1.14,2.124C0.859,2.607,0.698,3.168,0.698,3.767 c0,1.134,0.577,2.135,1.455,2.722C1.616,6.472,1.112,6.325,0.671,6.08c0,0.014,0,0.027,0,0.041c0,1.584,1.127,2.906,2.623,3.206 C3.02,9.402,2.731,9.442,2.433,9.442c-0.211,0-0.416-0.021-0.615-0.059c0.416,1.299,1.624,2.245,3.055,2.271 c-1.119,0.877-2.529,1.4-4.061,1.4c-0.264,0-0.524-0.015-0.78-0.046c1.447,0.928,3.166,1.469,5.013,1.469 c6.015,0,9.304-4.983,9.304-9.304c0-0.142-0.003-0.283-0.009-0.423C14.976,4.29,15.531,3.714,15.969,3.058z"/>
+                </svg>
+              </span>
+
+              <span class="username">twocentstudios</span>
+            </a>
+          </li>
+          
+        </ul>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+
+
+  </body>
+
+</html>

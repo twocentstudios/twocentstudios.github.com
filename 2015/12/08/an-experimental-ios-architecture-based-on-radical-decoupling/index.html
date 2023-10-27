@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>An Experimental iOS Architecture Based on Radical Decoupling</title>
+
+  <meta property="og:type" content="article" />
+  <meta property="og:title" content="An Experimental iOS Architecture Based on Radical Decoupling" />
+  <meta property="og:url" content="https://twocentstudios.com/2015/12/08/an-experimental-ios-architecture-based-on-radical-decoupling/" />
+  
+    <meta property="og:article:published_time" content="2015-12-08T21:49:49-06:00" />
+  
+  
+  
+  <link href='https://fonts.googleapis.com/css2?family=Work+Sans:wght@300;350;400;600' rel='stylesheet' type='text/css'>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="canonical" href="https://twocentstudios.com/2015/12/08/an-experimental-ios-architecture-based-on-radical-decoupling/">
+  <link rel="alternate" type="application/rss+xml" title="twocentstudios" href="https://twocentstudios.com/feed.xml" />
+</head>
+
+  <!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-NE82N02W8S"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-NE82N02W8S');
+</script>
+
+  <body>
+
+    <header class="site-header">
+
+  <div class="wrapper">
+
+    <a class="site-title" href="/">twocentstudios</a>
+
+    <nav class="site-nav">
+      <a href="#" class="menu-icon">
+        <svg viewBox="0 0 18 15">
+          <path fill="#424242" d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.031C17.335,0,18,0.665,18,1.484L18,1.484z"/>
+          <path fill="#424242" d="M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0c0-0.82,0.665-1.484,1.484-1.484 h15.031C17.335,6.031,18,6.696,18,7.516L18,7.516z"/>
+          <path fill="#424242" d="M18,13.516C18,14.335,17.335,15,16.516,15H1.484C0.665,15,0,14.335,0,13.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.031C17.335,12.031,18,12.696,18,13.516L18,13.516z"/>
+        </svg>
+      </a>
+
+      <div class="trigger">
+        
+          
+          <a class="page-link" href="/about/">About</a>
+          
+        
+          
+          <a class="page-link" href="/blog/">Blog</a>
+          
+        
+          
+        
+          
+        
+          
+          <a class="page-link" href="/portfolio/">Portfolio</a>
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      </div>
+    </nav>
+
+  </div>
+
+</header>
+
+
+    <div class="page-content">
+      <div class="wrapper">
+        <div class="post">
+
+  <header class="post-header">
+    <h1 class="post-title">An Experimental iOS Architecture Based on Radical Decoupling</h1>
+    <p class="post-meta">Dec 8, 2015</p>
+  </header>
+
+  <article class="post-content">
+    <p>This week I decided to do an experiment on a radically decoupled app architecture. The main thesis I wanted to explore was:</p>
+
+<blockquote>
+  <p>What if all communication within an app was done over one event stream?</p>
+</blockquote>
+
+<p>I built a Todo List app because that was the most original micro project I could think of in the heat of the moment. I’ll walk through the idea behind the organization of the app, show some code snippets from the implementation, and then give a few closing thoughts on the pros and cons.</p>
+
+<p>The whole project is on <a href="https://github.com/twocentstudios/todostream">Github</a>. This post targets the <a href="https://github.com/twocentstudios/todostream/releases/tag/0.1">0.1 tag</a> for reference.</p>
+
+<div class="caption-wrapper"><img class="caption" src="/images/event-mvvm-demo.gif" width="" height="" alt="Demo of the app" title="Demo of the app" /><div class="caption-text">Demo of the app</div></div>
+
+<h2 id="architecture-overview">Architecture Overview</h2>
+
+<p>I’ll call this architecture EventMVVM for the sake of having a name to reference. It uses bits of the <a href="https://en.wikipedia.org/wiki/Model%E2%80%93view%E2%80%93viewmodel">MVVM</a> (Model-View-ViewModel) paradigm. It uses <a href="https://github.com/ReactiveCocoa/ReactiveCocoa">ReactiveCocoa</a> as the plumbing for the event stream, but as I’ll discuss later many possible tools could be used instead. It is written in Swift, which turns out to be marginally important due to the enums with associated values feature, and its ease of defining and using value types.</p>
+
+<p>The best way I can explain the architecture is by naming and enumerating the actors involved, defining them, and listing the rules.</p>
+
+<ul>
+  <li>Event</li>
+  <li>EventsSignal &amp; EventsObserver</li>
+  <li>Server</li>
+  <li>Model</li>
+  <li>ViewModel</li>
+  <li>View</li>
+</ul>
+
+<h3 id="event">Event</h3>
+
+<p>An event is the building block of a message. It’s defined as an enum, and each case has up to one associated value (note: it’s different from a ReactiveCocoa Event). You can think of it as a strongly-typed <code class="language-plaintext highlighter-rouge">NSNotification</code>. Each case starts with <code class="language-plaintext highlighter-rouge">Request</code> or <code class="language-plaintext highlighter-rouge">Response</code> out of convention. Below are a few example cases.</p>
+
+<figure class="highlight"><pre><code class="language-swift" data-lang="swift"><span class="c1">/// Event.swift</span>
+<span class="kd">enum</span> <span class="kt">Event</span> <span class="p">{</span>
+    <span class="c1">// Model</span>
+    <span class="k">case</span> <span class="kt">RequestReadTodos</span>
+    <span class="k">case</span> <span class="kt">ResponseTodos</span><span class="p">(</span><span class="kt">Result</span><span class="o">&lt;</span><span class="p">[</span><span class="kt">Todo</span><span class="p">],</span> <span class="kt">NSError</span><span class="o">&gt;</span><span class="p">)</span>
+    <span class="k">case</span> <span class="kt">RequestWriteTodo</span><span class="p">(</span><span class="kt">Todo</span><span class="p">)</span>
+    
+    <span class="c1">// ...</span>
+    
+    <span class="c1">// ViewModel</span>
+    <span class="k">case</span> <span class="kt">RequestTodoViewModels</span>
+    <span class="k">case</span> <span class="kt">ResponseTodoViewModels</span><span class="p">(</span><span class="kt">Result</span><span class="o">&lt;</span><span class="p">[</span><span class="kt">TodoViewModel</span><span class="p">],</span> <span class="kt">NSError</span><span class="o">&gt;</span><span class="p">)</span>
+    <span class="k">case</span> <span class="kt">RequestDeleteTodoViewModel</span><span class="p">(</span><span class="kt">TodoViewModel</span><span class="p">)</span>
+    
+    <span class="c1">// ...</span>
+<span class="p">}</span></code></pre></figure>
+
+<ul>
+  <li>Model and ViewModel “type” events are both included in the <code class="language-plaintext highlighter-rouge">Event</code> enum.<sup id="fnref:1" role="doc-noteref"><a href="#fn:1" class="footnote" rel="footnote">1</a></sup></li>
+  <li><code class="language-plaintext highlighter-rouge">RequestReadTodos</code> does not have a parameter since this app has no per-view filtering or sorting that needs to happen.<sup id="fnref:2" role="doc-noteref"><a href="#fn:2" class="footnote" rel="footnote">2</a></sup></li>
+  <li>We’re using a <a href="https://github.com/antitypical/Result">Result</a> to encapsulate the response value or error.<sup id="fnref:3" role="doc-noteref"><a href="#fn:3" class="footnote" rel="footnote">3</a></sup></li>
+  <li>All enum case associated values are value types which is important in ensuring system integrity. The same Event may be received by many objects on any number of threads.</li>
+</ul>
+
+<h3 id="eventssignal--eventsobserver">EventsSignal &amp; EventsObserver</h3>
+
+<p><code class="language-plaintext highlighter-rouge">eventsSignal</code> and <code class="language-plaintext highlighter-rouge">eventsObserver</code> will be our shared event streams. We’ll inject them into classes and those classes will be able to attach observer blocks to <code class="language-plaintext highlighter-rouge">eventsSignal</code> and send new Events on <code class="language-plaintext highlighter-rouge">eventsObserver</code>.</p>
+
+<figure class="highlight"><pre><code class="language-swift" data-lang="swift"><span class="c1">/// AppContext.swift</span>
+<span class="kd">class</span> <span class="kt">AppContext</span> <span class="p">{</span>
+    <span class="nf">let</span> <span class="p">(</span><span class="n">eventsSignal</span><span class="p">,</span> <span class="n">eventsObserver</span><span class="p">)</span> <span class="o">=</span> <span class="kt">Signal</span><span class="o">&lt;</span><span class="kt">Event</span><span class="p">,</span> <span class="kt">NoError</span><span class="o">&gt;.</span><span class="nf">pipe</span><span class="p">()</span>
+    
+    <span class="c1">// ...</span>
+<span class="p">}</span></code></pre></figure>
+
+<p>We’ve located this pair in a class called <code class="language-plaintext highlighter-rouge">AppContext</code>. These are implemented using a ReactiveCocoa signal and observer pair created by <code class="language-plaintext highlighter-rouge">.pipe()</code>. There are a few implementation details that we’ll cover later.</p>
+
+<p>In simple terms though the syntax is as follows:</p>
+
+<figure class="highlight"><pre><code class="language-swift" data-lang="swift"><span class="c1">// Create a new observer on the stream.</span>
+<span class="n">eventsSignal</span><span class="o">.</span><span class="n">observeNext</span> <span class="p">{</span> <span class="n">event</span> <span class="k">in</span> <span class="nf">print</span><span class="p">(</span><span class="n">event</span><span class="p">)</span> <span class="p">}</span>
+
+<span class="c1">// Send a new Event on the stream.</span>
+<span class="n">eventsObserver</span><span class="o">.</span><span class="nf">sendNext</span><span class="p">(</span><span class="kt">Event</span><span class="o">.</span><span class="kt">RequestTodoViewModels</span><span class="p">)</span></code></pre></figure>
+
+<h3 id="server">Server</h3>
+
+<p>A server is a long-lived class that contains observers and may send messages. In our example app, there are two servers, <code class="language-plaintext highlighter-rouge">ViewModelServer</code> and <code class="language-plaintext highlighter-rouge">ModelServer</code>. These are created and retained by <code class="language-plaintext highlighter-rouge">AppDelegate</code>. From the names, you may posit that <code class="language-plaintext highlighter-rouge">ViewModelServer</code> sets up observers for the ViewModel-related duties of our application. For example, it is responsible for receiving requests for ViewModels and fulfilling them, either by transforming ViewModels provided in the event or by sending a new event requesting the data it needs.<sup id="fnref:4" role="doc-noteref"><a href="#fn:4" class="footnote" rel="footnote">4</a></sup><sup id="fnref:5" role="doc-noteref"><a href="#fn:5" class="footnote" rel="footnote">5</a></sup></p>
+
+<p>Servers represent the “smart” objects in our application. They’re the orchestrators. They create and manipulate our ViewModel and Model value types and communicate with other servers by creating Events and attaching values to them.</p>
+
+<h3 id="model">Model</h3>
+
+<p>A Model is a value type containing the base data. As in standard MVVM, it should not contain anything specific to an underlying database.</p>
+
+<p>In the example application, I have extensions to serialize the <code class="language-plaintext highlighter-rouge">Todo</code> model object into a <code class="language-plaintext highlighter-rouge">TodoObject</code> for our Realm database.</p>
+
+<p>The Model layer only knows about itself. It doesn’t know about ViewModels or Views.</p>
+
+<h3 id="viewmodel">ViewModel</h3>
+
+<p>A ViewModel is a value type containing properties directly consumable by the View layer. For example, text displayed by a <code class="language-plaintext highlighter-rouge">UILabel</code> should be a <code class="language-plaintext highlighter-rouge">String</code>. The ViewModel receives and stores a Model object in its <code class="language-plaintext highlighter-rouge">init</code> method and transforms it for consumption by the View layer. A ViewModel may expose other ViewModels for use by subviews, etc.</p>
+
+<p>In this interpretation<sup id="fnref:6" role="doc-noteref"><a href="#fn:6" class="footnote" rel="footnote">6</a></sup>, ViewModels are completely inert and cannot run asynchronous operations or send messages on the event stream. This ensures they can be passed around threads safely.</p>
+
+<p>ViewModels don’t know about the View layer. They can manipulate other ViewModels and Models.</p>
+
+<h3 id="view">View</h3>
+
+<p>Our View layer is UIKit, including <code class="language-plaintext highlighter-rouge">UIViewController</code>s and <code class="language-plaintext highlighter-rouge">UIView</code>s and their subclasses. Although my original intention was to explore the View layer also sending its own events through the event stream, in this simple implementation it would have been overkill and probably more distracting than anything.<sup id="fnref:7" role="doc-noteref"><a href="#fn:7" class="footnote" rel="footnote">7</a></sup></p>
+
+<p>The View layer is only allowed to interact with the View and ViewModel layers. That means it knows nothing about Models.</p>
+
+<h2 id="implementation">Implementation</h2>
+
+<p>So now that we’ve got a basic understanding of all the components of our system, lets dive into the code and see how it works.</p>
+
+<h3 id="the-spec">The Spec</h3>
+
+<p>What are the features of our Todo list? They end up being analogous to our <code class="language-plaintext highlighter-rouge">Event</code> cases. (For me, this was one of the coolest parts.) From <code class="language-plaintext highlighter-rouge">Event.swift</code>:</p>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">RequestTodoViewModels</code>: we want to be able to see all our todos in the default order with deleted items filtered out.</li>
+  <li><code class="language-plaintext highlighter-rouge">RequestToggleCompleteTodoViewModel</code>: we need to be able to mark todos as complete from the list view.</li>
+  <li><code class="language-plaintext highlighter-rouge">RequestDeleteTodoViewModel</code>: we’ll add the ability to delete them from the list view too.</li>
+  <li><code class="language-plaintext highlighter-rouge">RequestNewTodoDetailViewModel</code>: we need to be able to create new todos.</li>
+  <li><code class="language-plaintext highlighter-rouge">RequestTodoDetailViewModel</code>: we need to be able to view/edit a todo in all its glory.</li>
+  <li><code class="language-plaintext highlighter-rouge">RequestUpdateDetailViewModel</code>: we need to be able to commit our changes.</li>
+</ul>
+
+<p>Those are all of our requests. They’ll all originate from the View layer. Since these are just events/messages we’re broadcasting out, there won’t necessarily be a direct 1-1 response. This has both positive and negative consequences for us.</p>
+
+<p>One of the effects is that we need fewer types of response events. <code class="language-plaintext highlighter-rouge">RequestTodoViewModels</code> will have a 1-1 response with <code class="language-plaintext highlighter-rouge">ResponseTodoViewModels</code>, but <code class="language-plaintext highlighter-rouge">RequestToggleCompleteTodoViewModel</code>, <code class="language-plaintext highlighter-rouge">RequestDeleteTodoViewModel</code>, and <code class="language-plaintext highlighter-rouge">RequestUpdateDetailViewModel</code> will all respond with <code class="language-plaintext highlighter-rouge">ResponseTodoViewModel</code>. That simplifies our view code a bit, and it also ensures a view can get updates for a ViewModel that was changed from a different view with zero additional work by us.</p>
+
+<p>Both <code class="language-plaintext highlighter-rouge">RequestNewTodoDetailViewModel</code> and <code class="language-plaintext highlighter-rouge">RequestTodoDetailViewModel</code> (aka new and edit) will respond from <code class="language-plaintext highlighter-rouge">ResponseTodoDetailViewModel</code>.</p>
+
+<p>Interestingly enough, <code class="language-plaintext highlighter-rouge">RequestUpdateDetailViewModel</code> must respond from both <code class="language-plaintext highlighter-rouge">ResponseUpdateDetailViewModel</code> and <code class="language-plaintext highlighter-rouge">ResponseTodoViewModel</code> since their underlying todo Model changed. We’ll explore this scenario in more detail later on.</p>
+
+<p>In order to fill these requests from the View layer, the ViewModelServer will need to make its own requests for Model data. These are 1-to-1 request-response.</p>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">RequestReadTodos</code> -&gt; <code class="language-plaintext highlighter-rouge">ResponseTodos</code></li>
+  <li><code class="language-plaintext highlighter-rouge">RequestWriteTodo</code> -&gt; <code class="language-plaintext highlighter-rouge">ResponseTodo</code></li>
+</ul>
+
+<p>We implement deletes by setting a flag on our Todo model. This technique makes it significantly easier to coordinate changes between our application layers.</p>
+
+<p>Here is a very long diagram of how our four main objects send and observe events.</p>
+
+<div class="caption-wrapper"><img class="caption" src="/images/event-mvvm-diagram.png" width="" height="" alt="Events get sent to and observed by our four primary objects" title="Events get sent to and observed by our four primary objects" /><div class="caption-text">Events get sent to and observed by our four primary objects</div></div>
+
+<h3 id="setting-up-the-system">Setting Up the System</h3>
+
+<figure class="highlight"><pre><code class="language-swift" data-lang="swift"><span class="c1">/// AppDelegate.swift</span>
+<span class="kd">class</span> <span class="kt">AppDelegate</span><span class="p">:</span> <span class="kt">UIResponder</span><span class="p">,</span> <span class="kt">UIApplicationDelegate</span> <span class="p">{</span>
+
+    <span class="k">var</span> <span class="nv">appContext</span><span class="p">:</span> <span class="kt">AppContext</span><span class="o">!</span>
+    <span class="k">var</span> <span class="nv">modelServer</span><span class="p">:</span> <span class="kt">ModelServer</span><span class="o">!</span>
+    <span class="k">var</span> <span class="nv">viewModelServer</span><span class="p">:</span> <span class="kt">ViewModelServer</span><span class="o">!</span>
+
+    <span class="c1">// ...</span>
+
+    <span class="kd">func</span> <span class="nf">application</span><span class="p">(</span><span class="nv">application</span><span class="p">:</span> <span class="kt">UIApplication</span><span class="p">,</span> <span class="n">didFinishLaunchingWithOptions</span> <span class="nv">launchOptions</span><span class="p">:</span> <span class="p">[</span><span class="kt">NSObject</span><span class="p">:</span> <span class="kt">AnyObject</span><span class="p">]?)</span> <span class="o">-&gt;</span> <span class="kt">Bool</span> <span class="p">{</span>
+        
+        <span class="k">self</span><span class="o">.</span><span class="n">appContext</span> <span class="o">=</span> <span class="kt">AppContext</span><span class="p">()</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">modelServer</span> <span class="o">=</span> <span class="kt">ModelServer</span><span class="p">(</span><span class="nv">configuration</span><span class="p">:</span> <span class="kt">Realm</span><span class="o">.</span><span class="kt">Configuration</span><span class="o">.</span><span class="n">defaultConfiguration</span><span class="p">,</span> <span class="nv">appContext</span><span class="p">:</span> <span class="n">appContext</span><span class="p">)</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">viewModelServer</span> <span class="o">=</span> <span class="kt">ViewModelServer</span><span class="p">(</span><span class="nv">appContext</span><span class="p">:</span> <span class="n">appContext</span><span class="p">)</span>
+        
+        <span class="k">let</span> <span class="nv">todoListViewModel</span> <span class="o">=</span> <span class="kt">TodoListViewModel</span><span class="p">()</span>
+        <span class="k">let</span> <span class="nv">todoListViewController</span> <span class="o">=</span> <span class="kt">TodoListViewController</span><span class="p">(</span><span class="nv">viewModel</span><span class="p">:</span> <span class="n">todoListViewModel</span><span class="p">,</span> <span class="nv">appContext</span><span class="p">:</span> <span class="n">appContext</span><span class="p">)</span>
+        <span class="k">let</span> <span class="nv">navigationController</span> <span class="o">=</span> <span class="kt">UINavigationController</span><span class="p">(</span><span class="nv">rootViewController</span><span class="p">:</span> <span class="n">todoListViewController</span><span class="p">)</span>
+        
+        <span class="c1">// ...   </span>
+    <span class="p">}</span>
+<span class="p">}</span></code></pre></figure>
+
+<p>As previously mentioned, the <code class="language-plaintext highlighter-rouge">AppContext</code> contains our eventSignal and eventObserver pair. We’ll inject it into all of our other high-level components to allow them to communicate.</p>
+
+<p>We have to retain the <code class="language-plaintext highlighter-rouge">ModelServer</code> and <code class="language-plaintext highlighter-rouge">ViewModelServer</code> since they have no direct references to the view layer or to one another.<sup id="fnref:8" role="doc-noteref"><a href="#fn:8" class="footnote" rel="footnote">8</a></sup></p>
+
+<p>Remember <code class="language-plaintext highlighter-rouge">TodoListViewModel</code> is just an inert struct. Although for this simple app, we could have had the <code class="language-plaintext highlighter-rouge">TodoListViewController</code> create its own ViewModel, it’s better practice to inject it. You can easily imagine adding a “list of lists” feature to the app. In that case we (probably?) wouldn’t have to change any of our interfaces.</p>
+
+<h3 id="view-layer-list">View layer: List</h3>
+
+<p>It’s actually pretty straightforward to see the boundaries of our system. The View layer will be making all the ViewModel requests and observing all the ViewModel responses.</p>
+
+<p>Our subject of this section will be <code class="language-plaintext highlighter-rouge">TodoListViewController</code>. For reference:</p>
+
+<figure class="highlight"><pre><code class="language-swift" data-lang="swift"><span class="c1">// TodoListViewController.swift</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">TodoListViewController</span><span class="p">:</span> <span class="kt">UITableViewController</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">appContext</span><span class="p">:</span> <span class="kt">AppContext</span>
+    <span class="k">var</span> <span class="nv">viewModel</span><span class="p">:</span> <span class="kt">TodoListViewModel</span>
+    
+    <span class="c1">// ...</span>
+<span class="p">}</span></code></pre></figure>
+
+<p>We’ll send our first event to request <code class="language-plaintext highlighter-rouge">TodoViewModel</code>s to fill the table view when the view appears.</p>
+
+<figure class="highlight"><pre><code class="language-swift" data-lang="swift"><span class="c1">// TodoListViewController.swift</span>
+    <span class="k">override</span> <span class="kd">func</span> <span class="nf">viewWillAppear</span><span class="p">(</span><span class="nv">animated</span><span class="p">:</span> <span class="kt">Bool</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">super</span><span class="o">.</span><span class="nf">viewWillAppear</span><span class="p">(</span><span class="n">animated</span><span class="p">)</span>
+        
+        <span class="n">appContext</span><span class="o">.</span><span class="n">eventsObserver</span><span class="o">.</span><span class="nf">sendNext</span><span class="p">(</span><span class="kt">Event</span><span class="o">.</span><span class="kt">RequestTodoViewModels</span><span class="p">)</span>
+    <span class="p">}</span></code></pre></figure>
+
+<p>Now we need to set up an observer for the response event. Observers in the View layer will always be placed in <code class="language-plaintext highlighter-rouge">viewDidLoad</code> and mirror the lifecycle of the <code class="language-plaintext highlighter-rouge">UIViewController</code> itself.</p>
+
+<figure class="highlight"><pre><code class="language-swift" data-lang="swift">    <span class="k">override</span> <span class="kd">func</span> <span class="nf">viewDidLoad</span><span class="p">()</span> <span class="p">{</span>
+        <span class="c1">// ...</span>
+        
+        <span class="n">appContext</span><span class="o">.</span><span class="n">eventsSignal</span>
+            <span class="c1">// ...</span>
+            <span class="o">.</span><span class="n">observeNext</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span>
+               <span class="c1">// ...</span>
+            <span class="p">}</span>
+    <span class="p">}</span></code></pre></figure>
+
+<h4 id="anatomy-of-an-observer">Anatomy of an Observer</h4>
+
+<p>We’ll have to take a deep dive into syntax now.</p>
+
+<p>All of our observers have a very similar structure:</p>
+
+<ul>
+  <li>lifetime</li>
+  <li>filtering</li>
+  <li>unboxing</li>
+  <li>mapping</li>
+  <li>error handling</li>
+  <li>output</li>
+</ul>
+
+<p>For the View layer output is usually in the form of side effects (e.g. updating the view model or reloading the table view). For the other Servers, the output is usually sending another Event.</p>
+
+<p>Let’s take a look at <code class="language-plaintext highlighter-rouge">Event.ResponseTodoViewModels</code>.</p>
+
+<figure class="highlight"><pre><code class="language-swift" data-lang="swift">    <span class="n">appContext</span><span class="o">.</span><span class="n">eventsSignal</span>
+        <span class="o">.</span><span class="n">takeUntilNil</span> <span class="p">{</span> <span class="p">[</span><span class="k">weak</span> <span class="k">self</span><span class="p">]</span> <span class="k">in</span> <span class="k">self</span> <span class="p">}</span>  <span class="c1">// #1</span>
+        <span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="n">event</span> <span class="o">-&gt;</span> <span class="kt">Result</span><span class="o">&lt;</span><span class="p">[</span><span class="kt">TodoViewModel</span><span class="p">],</span> <span class="kt">NSError</span><span class="o">&gt;</span><span class="p">?</span> <span class="k">in</span>  <span class="c1">// #2</span>
+            <span class="k">if</span> <span class="k">case</span> <span class="kd">let</span> <span class="o">.</span><span class="kt">ResponseTodoViewModels</span><span class="p">(</span><span class="n">result</span><span class="p">)</span> <span class="o">=</span> <span class="n">event</span> <span class="p">{</span>
+                <span class="k">return</span> <span class="n">result</span>
+            <span class="p">}</span>
+            <span class="k">return</span> <span class="kc">nil</span>
+        <span class="p">}</span>
+        <span class="o">.</span><span class="nf">ignoreNil</span><span class="p">()</span>  <span class="c1">// #2</span>
+        <span class="o">.</span><span class="nf">promoteErrors</span><span class="p">(</span><span class="kt">NSError</span><span class="p">)</span>  <span class="c1">// #3</span>
+        <span class="o">.</span><span class="n">attemptMap</span> <span class="p">{</span> <span class="nv">$0</span> <span class="p">}</span>  <span class="c1">// #3</span>
+        <span class="o">.</span><span class="nf">observeOn</span><span class="p">(</span><span class="kt">UIScheduler</span><span class="p">())</span>  <span class="c1">// #4</span>
+        <span class="o">.</span><span class="n">flatMapError</span> <span class="p">{</span> <span class="p">[</span><span class="k">unowned</span> <span class="k">self</span><span class="p">]</span> <span class="n">error</span> <span class="o">-&gt;</span> <span class="kt">SignalProducer</span><span class="o">&lt;</span><span class="p">[</span><span class="kt">TodoViewModel</span><span class="p">],</span> <span class="kt">NoError</span><span class="o">&gt;</span> <span class="k">in</span>  <span class="c1">// #3</span>
+            <span class="k">self</span><span class="o">.</span><span class="nf">presentError</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
+            <span class="k">return</span> <span class="o">.</span><span class="n">empty</span>
+        <span class="p">}</span>
+        <span class="o">.</span><span class="n">observeNext</span> <span class="p">{</span> <span class="p">[</span><span class="k">unowned</span> <span class="k">self</span><span class="p">]</span> <span class="n">todoViewModels</span> <span class="k">in</span>  <span class="c1">// #5</span>
+            <span class="k">let</span> <span class="nv">change</span> <span class="o">=</span> <span class="k">self</span><span class="o">.</span><span class="n">viewModel</span><span class="o">.</span><span class="nf">incorporateTodoViewModels</span><span class="p">(</span><span class="n">todoViewModels</span><span class="p">)</span>
+            <span class="k">switch</span> <span class="n">change</span> <span class="p">{</span>
+            <span class="k">case</span> <span class="o">.</span><span class="kt">Reload</span><span class="p">:</span>
+                <span class="k">self</span><span class="o">.</span><span class="n">tableView</span><span class="o">.</span><span class="nf">reloadData</span><span class="p">()</span>
+            <span class="k">case</span> <span class="o">.</span><span class="kt">NoOp</span><span class="p">:</span>
+                <span class="k">break</span>
+            <span class="p">}</span>
+        <span class="p">}</span></code></pre></figure>
+
+<ul>
+  <li><strong>#1</strong>: This is an implementation detail of ReactiveCocoa that (kind of<sup id="fnref:9" role="doc-noteref"><a href="#fn:9" class="footnote" rel="footnote">9</a></sup>) limits the lifetime of our observer to the lifetime of <code class="language-plaintext highlighter-rouge">self</code>. In other words, stop processing this observer when this instance of <code class="language-plaintext highlighter-rouge">TodoListViewController</code> goes away.</li>
+  <li><strong>#2</strong>: This is where where we filter and unbox the value from the event if necessary. Remember, we’re observing the firehose of Events that are sent throughout the app. We only want <code class="language-plaintext highlighter-rouge">Event.ResponseTodoViewModels</code>, and if so, we want its value passed along. For all the other events that come through, they’ll be mapped to <code class="language-plaintext highlighter-rouge">nil</code> and discarded by the <code class="language-plaintext highlighter-rouge">ignoreNil()</code> operator.</li>
+  <li><strong>#3</strong>: This is our error handling. <code class="language-plaintext highlighter-rouge">promoteErrors</code> is an implementation detail of ReactiveCocoa which turns a signal incapable of erroring into one that can send errors of a certain type. <code class="language-plaintext highlighter-rouge">attemptMap</code> then unboxes the <code class="language-plaintext highlighter-rouge">Result</code> object and allows us to use ReactiveCocoa’s built in error processing. <code class="language-plaintext highlighter-rouge">flatMapError</code> is where we have our error side effects, in this case, presenting the error as an alert. If we used <code class="language-plaintext highlighter-rouge">observeError</code> instead, our observer would be disposed of after the first error event which is not what we want.<sup id="fnref:11" role="doc-noteref"><a href="#fn:11" class="footnote" rel="footnote">10</a></sup></li>
+  <li><strong>#4</strong>: Events can be delivered on any thread by the eventsSignal. Therefore, for any thread critical work we need to specify a target scheduler. In this case, our critical work is UI-related, thus we use the <code class="language-plaintext highlighter-rouge">UIScheduler</code>. Note that only the operators <em>after</em> <code class="language-plaintext highlighter-rouge">observeOn</code> will be executed on the <code class="language-plaintext highlighter-rouge">UIScheduler</code>.<sup id="fnref:12" role="doc-noteref"><a href="#fn:12" class="footnote" rel="footnote">11</a></sup></li>
+  <li><strong>#5</strong>: Finally, we have a non-error value from the correct event. We’ll use this to completely replace the TodoListViewModel and conditionally reload the table view if any change to the list was actually made.</li>
+</ul>
+
+<p>Keep in mind, this example is actually one of the trickier ones due to the error handling and multiple unwrapping stages.</p>
+
+<h4 id="more-actions">More Actions</h4>
+
+<p>We’ll use the <code class="language-plaintext highlighter-rouge">UITableViewRowAction</code> API to send events for marking todos as complete or deleting them.</p>
+
+<figure class="highlight"><pre><code class="language-swift" data-lang="swift"><span class="c1">// TodoListViewController.swift</span>
+    <span class="k">override</span> <span class="kd">func</span> <span class="nf">tableView</span><span class="p">(</span><span class="nv">tableView</span><span class="p">:</span> <span class="kt">UITableView</span><span class="p">,</span> <span class="n">editActionsForRowAtIndexPath</span> <span class="nv">indexPath</span><span class="p">:</span> <span class="kt">NSIndexPath</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">UITableViewRowAction</span><span class="p">]?</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">todoViewModel</span> <span class="o">=</span> <span class="n">viewModel</span><span class="o">.</span><span class="nf">viewModelAtIndexPath</span><span class="p">(</span><span class="n">indexPath</span><span class="p">)</span>
+        
+        <span class="k">let</span> <span class="nv">toggleCompleteAction</span> <span class="o">=</span> <span class="kt">UITableViewRowAction</span><span class="p">(</span><span class="nv">style</span><span class="p">:</span> <span class="kt">UITableViewRowActionStyle</span><span class="o">.</span><span class="kt">Normal</span><span class="p">,</span> <span class="nv">title</span><span class="p">:</span> <span class="n">todoViewModel</span><span class="o">.</span><span class="n">completeActionTitle</span><span class="p">)</span> <span class="p">{</span> <span class="p">[</span><span class="k">unowned</span> <span class="k">self</span><span class="p">]</span> <span class="p">(</span><span class="n">action</span><span class="p">,</span> <span class="n">path</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Void</span> <span class="k">in</span>
+            <span class="k">self</span><span class="o">.</span><span class="n">appContext</span><span class="o">.</span><span class="n">eventsObserver</span><span class="o">.</span><span class="nf">sendNext</span><span class="p">(</span><span class="kt">Event</span><span class="o">.</span><span class="kt">RequestToggleCompleteTodoViewModel</span><span class="p">(</span><span class="n">todoViewModel</span><span class="p">))</span>
+        <span class="p">}</span>
+        
+        <span class="c1">// ...</span>
+        
+        <span class="k">return</span> <span class="p">[</span><span class="n">deleteAction</span><span class="p">,</span> <span class="n">toggleCompleteAction</span><span class="p">]</span>
+    <span class="p">}</span></code></pre></figure>
+
+<p>Each of these Events are simply modifying a ViewModel. The View layer only cares about changes at the granularity level of TodoViewModel.</p>
+
+<p>We want to observe <code class="language-plaintext highlighter-rouge">ResponseTodoViewModel</code> so that our view is always showing the most accurate todos. We also want to animate changes because that’s nice.</p>
+
+<figure class="highlight"><pre><code class="language-swift" data-lang="swift"><span class="c1">// TodoListViewController.swift - viewDidLoad()</span>
+    <span class="n">appContext</span><span class="o">.</span><span class="n">eventsSignal</span>
+        <span class="c1">// Event.ResponseTodoViewModel</span>
+        <span class="c1">// ...</span>
+        <span class="o">.</span><span class="n">observeNext</span> <span class="p">{</span> <span class="p">[</span><span class="k">unowned</span> <span class="k">self</span><span class="p">]</span> <span class="n">todoViewModel</span> <span class="k">in</span>
+            <span class="k">let</span> <span class="nv">change</span> <span class="o">=</span> <span class="k">self</span><span class="o">.</span><span class="n">viewModel</span><span class="o">.</span><span class="nf">incorporateTodoViewModel</span><span class="p">(</span><span class="n">todoViewModel</span><span class="p">)</span>
+            <span class="k">switch</span> <span class="n">change</span> <span class="p">{</span>
+            <span class="k">case</span> <span class="kd">let</span> <span class="o">.</span><span class="kt">Insert</span><span class="p">(</span><span class="n">indexPath</span><span class="p">):</span>
+                <span class="k">self</span><span class="o">.</span><span class="n">tableView</span><span class="o">.</span><span class="nf">insertRowsAtIndexPaths</span><span class="p">([</span><span class="n">indexPath</span><span class="p">],</span> <span class="nv">withRowAnimation</span><span class="p">:</span> <span class="o">.</span><span class="kt">Top</span><span class="p">)</span>
+            <span class="k">case</span> <span class="kd">let</span> <span class="o">.</span><span class="kt">Delete</span><span class="p">(</span><span class="n">indexPath</span><span class="p">):</span>
+                <span class="k">self</span><span class="o">.</span><span class="n">tableView</span><span class="o">.</span><span class="nf">deleteRowsAtIndexPaths</span><span class="p">([</span><span class="n">indexPath</span><span class="p">],</span> <span class="nv">withRowAnimation</span><span class="p">:</span> <span class="o">.</span><span class="kt">Left</span><span class="p">)</span>
+            <span class="k">case</span> <span class="kd">let</span> <span class="o">.</span><span class="kt">Reload</span><span class="p">(</span><span class="n">indexPath</span><span class="p">):</span>
+                <span class="k">self</span><span class="o">.</span><span class="n">tableView</span><span class="o">.</span><span class="nf">reloadRowsAtIndexPaths</span><span class="p">([</span><span class="n">indexPath</span><span class="p">],</span> <span class="nv">withRowAnimation</span><span class="p">:</span> <span class="o">.</span><span class="kt">Fade</span><span class="p">)</span>
+            <span class="k">case</span> <span class="o">.</span><span class="kt">NoOp</span><span class="p">:</span>
+                <span class="k">break</span>
+            <span class="p">}</span>
+        <span class="p">}</span></code></pre></figure>
+
+<p>Those are the basics of the View layer. Let’s move to the <code class="language-plaintext highlighter-rouge">ViewModelServer</code> to see how we can respond to these request Events and issue new ones.</p>
+
+<h3 id="viewmodel-list">ViewModel: List</h3>
+
+<p><code class="language-plaintext highlighter-rouge">ViewModelServer</code> is one big init method for setting up observers.</p>
+
+<figure class="highlight"><pre><code class="language-swift" data-lang="swift"><span class="c1">// ViewModelServer.swift</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">ViewModelServer</span> <span class="p">{</span>   
+    <span class="nf">init</span><span class="p">(</span><span class="nv">appContext</span><span class="p">:</span> <span class="kt">AppContext</span><span class="p">)</span> <span class="p">{</span>
+        <span class="c1">// ... all observers go here    </span>
+    <span class="p">}</span>
+<span class="p">}</span></code></pre></figure>
+
+<h4 id="eventrequesttodoviewmodels">Event.RequestTodoViewModels</h4>
+
+<p><code class="language-plaintext highlighter-rouge">ViewModelServer</code> listens for ViewModel requests and sends ViewModel response Events.</p>
+
+<p><code class="language-plaintext highlighter-rouge">.RequestTodoViewModels</code> is pretty simple. It just creates a corresponding request from the model layer.<sup id="fnref:14" role="doc-noteref"><a href="#fn:14" class="footnote" rel="footnote">12</a></sup></p>
+
+<figure class="highlight"><pre><code class="language-swift" data-lang="swift">    <span class="n">appContext</span><span class="o">.</span><span class="n">eventsSignal</span>
+        <span class="c1">// ... Event.RequestTodoViewModels</span>
+        <span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span> <span class="kt">Event</span><span class="o">.</span><span class="kt">RequestReadTodos</span> <span class="p">}</span>
+        <span class="o">.</span><span class="nf">observeOn</span><span class="p">(</span><span class="n">appContext</span><span class="o">.</span><span class="n">scheduler</span><span class="p">)</span>
+        <span class="o">.</span><span class="nf">observe</span><span class="p">(</span><span class="n">appContext</span><span class="o">.</span><span class="n">eventsObserver</span><span class="p">)</span></code></pre></figure>
+
+<p>We’re sending this event back to the eventsObserver to dispatch our new Event. Notice we have to dispatch this event on a specific scheduler. If we don’t, we’ll hit a deadlock. It’s a ReactiveCocoa implementation detail and beyond the scope of this post, so for the time being, just notice we have to add that line to any observers that map to new events.</p>
+
+<h4 id="eventresponsetodos">Event.ResponseTodos</h4>
+
+<p>We can now expect a response to the Model event we just sent out.</p>
+
+<figure class="highlight"><pre><code class="language-swift" data-lang="swift">    <span class="n">appContext</span><span class="o">.</span><span class="n">eventsSignal</span>
+        <span class="c1">// ... Event.ResponseTodos</span>
+        <span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="n">result</span> <span class="o">-&gt;</span> <span class="kt">Result</span><span class="o">&lt;</span><span class="p">[</span><span class="kt">TodoViewModel</span><span class="p">],</span> <span class="kt">NSError</span><span class="o">&gt;</span> <span class="k">in</span>
+            <span class="k">return</span> <span class="n">result</span>
+                <span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="n">todos</span> <span class="k">in</span> <span class="n">todos</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="p">(</span><span class="nv">todo</span><span class="p">:</span> <span class="kt">Todo</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">TodoViewModel</span> <span class="k">in</span> <span class="kt">TodoViewModel</span><span class="p">(</span><span class="nv">todo</span><span class="p">:</span> <span class="n">todo</span><span class="p">)</span> <span class="p">}</span> <span class="p">}</span>
+                <span class="o">.</span><span class="n">mapError</span> <span class="p">{</span> <span class="nv">$0</span> <span class="p">}</span> <span class="c1">// placeholder for error mapping</span>
+        <span class="p">}</span>
+        <span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="kt">Event</span><span class="o">.</span><span class="kt">ResponseTodoViewModels</span><span class="p">(</span><span class="nv">$0</span><span class="p">)</span> <span class="p">}</span>
+        <span class="o">.</span><span class="nf">observeOn</span><span class="p">(</span><span class="n">appContext</span><span class="o">.</span><span class="n">scheduler</span><span class="p">)</span>
+        <span class="o">.</span><span class="nf">observe</span><span class="p">(</span><span class="n">appContext</span><span class="o">.</span><span class="n">eventsObserver</span><span class="p">)</span></code></pre></figure>
+
+<p>We’re mapping <code class="language-plaintext highlighter-rouge">Result&lt;[Todo], NSError&gt;</code> to <code class="language-plaintext highlighter-rouge">Result&lt;[TodoViewModel], NSError&gt;</code> and sending the result as a new Event. There’s a placeholder for where we could map the error from the Model layer to one more suited to show the user.<sup id="fnref:15" role="doc-noteref"><a href="#fn:15" class="footnote" rel="footnote">13</a></sup></p>
+
+<h4 id="other-viewmodel-events">Other ViewModel Events</h4>
+
+<p>In the view layer, we saw that two events, <code class="language-plaintext highlighter-rouge">RequestToggleCompleteTodoViewModel</code> and <code class="language-plaintext highlighter-rouge">RequestDeleteTodoViewModel</code>, could be sent to change individual ViewModels on the fly.</p>
+
+<p>The map block for delete is:</p>
+
+<figure class="highlight"><pre><code class="language-swift" data-lang="swift">    <span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="n">todoViewModel</span> <span class="o">-&gt;</span> <span class="kt">Event</span> <span class="k">in</span>
+        <span class="k">var</span> <span class="nv">todo</span> <span class="o">=</span> <span class="n">todoViewModel</span><span class="o">.</span><span class="n">todo</span>
+        <span class="n">todo</span><span class="o">.</span><span class="n">deleted</span> <span class="o">=</span> <span class="kc">true</span>
+        <span class="k">return</span> <span class="kt">Event</span><span class="o">.</span><span class="kt">RequestWriteTodo</span><span class="p">(</span><span class="n">todo</span><span class="p">)</span>
+    <span class="p">}</span></code></pre></figure>
+
+<p>The map block for complete is:</p>
+
+<figure class="highlight"><pre><code class="language-swift" data-lang="swift">    <span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="n">todoViewModel</span> <span class="o">-&gt;</span> <span class="kt">Event</span> <span class="k">in</span>
+        <span class="k">var</span> <span class="nv">todo</span> <span class="o">=</span> <span class="n">todoViewModel</span><span class="o">.</span><span class="n">todo</span>
+        <span class="n">todo</span><span class="o">.</span><span class="n">completedAt</span> <span class="o">=</span> <span class="n">todo</span><span class="o">.</span><span class="n">complete</span> <span class="p">?</span> <span class="nv">nil</span> <span class="p">:</span> <span class="kt">NSDate</span><span class="p">()</span>
+        <span class="k">return</span> <span class="kt">Event</span><span class="o">.</span><span class="kt">RequestWriteTodo</span><span class="p">(</span><span class="n">todo</span><span class="p">)</span>
+    <span class="p">}</span></code></pre></figure>
+
+<p>Straightforward transformations, then we fire off a message.</p>
+
+<p>Both events will receive responses on <code class="language-plaintext highlighter-rouge">Event.ResponseTodo</code>.</p>
+
+<figure class="highlight"><pre><code class="language-swift" data-lang="swift">    <span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="n">result</span> <span class="o">-&gt;</span> <span class="kt">Result</span><span class="o">&lt;</span><span class="kt">TodoViewModel</span><span class="p">,</span> <span class="kt">NSError</span><span class="o">&gt;</span> <span class="k">in</span>
+        <span class="k">return</span> <span class="n">result</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="n">todo</span> <span class="k">in</span> <span class="kt">TodoViewModel</span><span class="p">(</span><span class="nv">todo</span><span class="p">:</span> <span class="n">todo</span><span class="p">)</span> <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="kt">Event</span><span class="o">.</span><span class="kt">ResponseTodoViewModel</span><span class="p">(</span><span class="nv">$0</span><span class="p">)</span> <span class="p">}</span></code></pre></figure>
+
+<h3 id="other-highlights">Other Highlights</h3>
+
+<p>I won’t dive much deeper into the other events. I’ll only mention a few other highlights that were interesting.</p>
+
+<h4 id="tododetailviewmodel">TodoDetailViewModel</h4>
+
+<p>The <code class="language-plaintext highlighter-rouge">TodoDetailViewController</code> accepts a <code class="language-plaintext highlighter-rouge">TodoDetailViewModel</code> that allows the user to mutate its properties. When done is tapped, <code class="language-plaintext highlighter-rouge">TodoDetailViewController</code> will send a request to the <code class="language-plaintext highlighter-rouge">ViewModelServer</code> with its <code class="language-plaintext highlighter-rouge">TodoDetailViewModel</code>. The <code class="language-plaintext highlighter-rouge">ViewModelServer</code> will validate all the new parameters and send a response. The response event <code class="language-plaintext highlighter-rouge">Event.ResponseUpdateDetailViewModel</code> is interesting because it will be observed by three different objects.</p>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">TodoDetailViewController</code> will observe it for errors. If there are errors with the validation, it will present the error above the current context.</li>
+  <li><code class="language-plaintext highlighter-rouge">TodoListViewController</code> will observe it for non-errors, interpreting that as a sign that the user has finished editing the view model and it should dismiss the <code class="language-plaintext highlighter-rouge">TodoDetailViewController</code>.</li>
+  <li><code class="language-plaintext highlighter-rouge">ViewModelServer</code> will observe a message it itself will be sending because it has to now create an updated todo Model and send a write todo Event. The response to that will come back through the normal Event stream and be updated transparently by the <code class="language-plaintext highlighter-rouge">TodoListViewController</code>.</li>
+</ul>
+
+<h4 id="responseupdatedetailviewmodel">ResponseUpdateDetailViewModel</h4>
+
+<p>I sort of like how the common CRUD new and edit actions are rolled into one interface. Both previously saved and unsaved Todos can be treated similarly. Validation is treated as asynchronous, and could therefore easily be a server-side operation.</p>
+
+<h4 id="loading">Loading</h4>
+
+<p>I didn’t implement any loading indicators, but it would be trivial to do so. The ViewController would observe its own Request event and toggle a loading indicator on as a side effect. Then it would toggle the loading indicator off as a side effect of the Response event.</p>
+
+<h4 id="unique-identifiers">Unique Identifiers</h4>
+
+<p>One thing you may notice in the code base is that every value type must be equatable. Since requests and responses are not directly paired, having a unique identifier is critical to being able to filter and operate on responses. There are actually two concepts of equality that come into play. The first is normal equality, as in “do these two models have the exact same values for all of their parameters?”. The second is equal identity, as in “do these two models represent the same underlying resource?” (i.e. <code class="language-plaintext highlighter-rouge">lhs.id == rhs.id</code>). Equal identity is useful in operations where a model has been updated and you want to replace it.</p>
+
+<h4 id="testing">Testing</h4>
+
+<p>I’d consider testing to be straightforward in the ViewModelServer and ModelServer layers. Each of these Servers registers observers at are essentially pure functions in that they receive a single event and dispatch a single event. An example unit test:</p>
+
+<figure class="highlight"><pre><code class="language-swift" data-lang="swift"><span class="c1">// todostreamTests.swift</span>
+    <span class="c1">// ...</span>
+    
+    <span class="kd">func</span> <span class="nf">testRequestToggleCompleteTodoViewModel</span><span class="p">()</span> <span class="p">{</span>
+        <span class="n">viewModelServer</span> <span class="o">=</span> <span class="kt">ViewModelServer</span><span class="p">(</span><span class="nv">appContext</span><span class="p">:</span> <span class="n">appContext</span><span class="p">)</span>
+        <span class="k">let</span> <span class="nv">todo</span> <span class="o">=</span> <span class="kt">Todo</span><span class="p">()</span>
+        <span class="kt">XCTAssert</span><span class="p">(</span><span class="n">todo</span><span class="o">.</span><span class="n">complete</span> <span class="o">==</span> <span class="kc">false</span><span class="p">)</span>
+        <span class="k">let</span> <span class="nv">todoViewModel</span> <span class="o">=</span> <span class="kt">TodoViewModel</span><span class="p">(</span><span class="nv">todo</span><span class="p">:</span> <span class="n">todo</span><span class="p">)</span>
+        <span class="k">let</span> <span class="nv">event</span> <span class="o">=</span> <span class="kt">Event</span><span class="o">.</span><span class="kt">RequestToggleCompleteTodoViewModel</span><span class="p">(</span><span class="n">todoViewModel</span><span class="p">)</span>
+        
+        <span class="k">let</span> <span class="nv">expectation</span> <span class="o">=</span> <span class="nf">expectationWithDescription</span><span class="p">(</span><span class="s">""</span><span class="p">)</span>
+        <span class="n">appContext</span><span class="o">.</span><span class="n">eventsSignal</span><span class="o">.</span><span class="n">observeNext</span> <span class="p">{</span> <span class="p">(</span><span class="nv">e</span><span class="p">:</span> <span class="n">todostream</span><span class="o">.</span><span class="kt">Event</span><span class="p">)</span> <span class="k">in</span>
+            <span class="k">if</span> <span class="k">case</span> <span class="k">let</span> <span class="nv">todostream</span><span class="o">.</span><span class="kt">Event</span><span class="o">.</span><span class="kt">RequestWriteTodo</span><span class="p">(</span><span class="n">model</span><span class="p">)</span> <span class="o">=</span> <span class="n">e</span> <span class="p">{</span>
+                <span class="kt">XCTAssert</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">complete</span> <span class="o">==</span> <span class="kc">true</span><span class="p">)</span>
+                <span class="n">expectation</span><span class="o">.</span><span class="nf">fulfill</span><span class="p">()</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+        
+        <span class="n">appContext</span><span class="o">.</span><span class="n">eventsObserver</span><span class="o">.</span><span class="nf">sendNext</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
+        
+        <span class="nf">waitForExpectationsWithTimeout</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="nv">handler</span><span class="p">:</span> <span class="kc">nil</span><span class="p">)</span>
+    <span class="p">}</span></code></pre></figure>
+
+<p>The above section tests one observer in ViewModelServer and expects the result Event to be at the boundary between the ViewModelServer and ModelServer.</p>
+
+<p>Integration testing isn’t outside the realm of possibility either. Here’s an example integration test for the same event that instead waits at the boundary between the View and ViewModelServer layers:</p>
+
+<figure class="highlight"><pre><code class="language-swift" data-lang="swift"><span class="c1">// todostreamTests.swift</span>
+    <span class="c1">// ...</span>
+    
+    <span class="kd">func</span> <span class="nf">testIntegrationRequestToggleCompleteTodoViewModel</span><span class="p">()</span> <span class="p">{</span>
+        <span class="n">viewModelServer</span> <span class="o">=</span> <span class="kt">ViewModelServer</span><span class="p">(</span><span class="nv">appContext</span><span class="p">:</span> <span class="n">appContext</span><span class="p">)</span>
+        <span class="n">modelServer</span> <span class="o">=</span> <span class="kt">ModelServer</span><span class="p">(</span><span class="nv">configuration</span><span class="p">:</span> <span class="kt">Realm</span><span class="o">.</span><span class="kt">Configuration</span><span class="o">.</span><span class="n">defaultConfiguration</span><span class="p">,</span> <span class="nv">appContext</span><span class="p">:</span> <span class="n">appContext</span><span class="p">)</span>
+        <span class="k">let</span> <span class="nv">todo</span> <span class="o">=</span> <span class="kt">Todo</span><span class="p">()</span>
+        <span class="kt">XCTAssert</span><span class="p">(</span><span class="n">todo</span><span class="o">.</span><span class="n">complete</span> <span class="o">==</span> <span class="kc">false</span><span class="p">)</span>
+        <span class="k">let</span> <span class="nv">todoViewModel</span> <span class="o">=</span> <span class="kt">TodoViewModel</span><span class="p">(</span><span class="nv">todo</span><span class="p">:</span> <span class="n">todo</span><span class="p">)</span>
+        <span class="k">let</span> <span class="nv">event</span> <span class="o">=</span> <span class="kt">Event</span><span class="o">.</span><span class="kt">RequestToggleCompleteTodoViewModel</span><span class="p">(</span><span class="n">todoViewModel</span><span class="p">)</span>
+        
+        <span class="k">let</span> <span class="nv">expectation</span> <span class="o">=</span> <span class="nf">expectationWithDescription</span><span class="p">(</span><span class="s">""</span><span class="p">)</span>
+        <span class="n">appContext</span><span class="o">.</span><span class="n">eventsSignal</span><span class="o">.</span><span class="n">observeNext</span> <span class="p">{</span> <span class="p">(</span><span class="nv">e</span><span class="p">:</span> <span class="n">todostream</span><span class="o">.</span><span class="kt">Event</span><span class="p">)</span> <span class="k">in</span>
+            <span class="k">if</span> <span class="k">case</span> <span class="k">let</span> <span class="nv">todostream</span><span class="o">.</span><span class="kt">Event</span><span class="o">.</span><span class="kt">ResponseTodoViewModel</span><span class="p">(</span><span class="n">result</span><span class="p">)</span> <span class="o">=</span> <span class="n">e</span> <span class="p">{</span>
+                <span class="k">let</span> <span class="nv">model</span> <span class="o">=</span> <span class="n">result</span><span class="o">.</span><span class="n">value</span><span class="o">!.</span><span class="n">todo</span>
+                <span class="kt">XCTAssert</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">id</span> <span class="o">==</span> <span class="n">todo</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+                <span class="kt">XCTAssert</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">complete</span> <span class="o">==</span> <span class="kc">true</span><span class="p">)</span>
+                <span class="n">expectation</span><span class="o">.</span><span class="nf">fulfill</span><span class="p">()</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+        
+        <span class="n">appContext</span><span class="o">.</span><span class="n">eventsObserver</span><span class="o">.</span><span class="nf">sendNext</span><span class="p">(</span><span class="n">event</span><span class="p">)</span>
+        
+        <span class="nf">waitForExpectationsWithTimeout</span><span class="p">(</span><span class="mf">1.0</span><span class="p">,</span> <span class="nv">handler</span><span class="p">:</span> <span class="kc">nil</span><span class="p">)</span>
+    <span class="p">}</span></code></pre></figure>
+
+<p>In this case, behind the scenes there are two other events sent in the meantime, but we’re only waiting for the last one.</p>
+
+<p>Both servers are very shallow and only have the EventSignal as a dependency.</p>
+
+<h2 id="retrospective">Retrospective</h2>
+
+<p>Now that we’ve seen some of the implementation of a very basic app, let’s take a step back and look at the pros and cons we discovered along the way.</p>
+
+<ul>
+  <li><strong>PRO</strong> Some things that are hard in other paradigms are easier! :D</li>
+  <li><strong>CON</strong> Some things that are easy in other paradigms are harder! :(</li>
+  <li><strong>PRO</strong> It was actually a lot of fun writing in this style.</li>
+  <li><strong>CON</strong> There are probably performance implications that are currently unknown regarding having lots of observers alive, each receiving lots of events that must be filtered.</li>
+  <li><strong>PRO</strong> Threading seems to be very safe.</li>
+  <li><strong>CON</strong> Still a lot of unsolved problems. How to deal with image loading? Auth systems? Multi-step operations that must be ordered specifically? Re-sorting the list? More complicated view change types? Wrapping other asynchronous APIs? The list is endless. A half-baked todo app hardly pushes the bounds of system complexity.</li>
+  <li><strong>PRO</strong> All the code (minus UIKit) is all stylistically similar and very functional.</li>
+  <li><strong>CON</strong> All events are public (to the system) and therefore more unexpected consequences are likely to occur as the system grows in size and complexity.</li>
+  <li><strong>CON</strong> There’s a fair amount of boilerplate in observer declarations.</li>
+  <li><strong>PRO</strong> It’s easier to reason about ownership and lifetime of objects.</li>
+  <li><strong>CON</strong> Using Result for error handling doesn’t quite fit. I need to investigate another hunch I have about how to do it better.<sup id="fnref:13" role="doc-noteref"><a href="#fn:13" class="footnote" rel="footnote">14</a></sup></li>
+  <li><strong>PRO</strong> Testing is arguably a fairly painless process.</li>
+  <li><strong>PRO</strong> It would be possible to “playback” a user’s entire session by piping the serialized saved output from <code class="language-plaintext highlighter-rouge">eventsSignal</code> into the <code class="language-plaintext highlighter-rouge">eventsObserver</code> in a new session.</li>
+  <li><strong>PRO</strong> Analytics would be very easy to set up as a separate Server-type object that could listen into Events as they are placed onto the stream and transform them and POST them to a server as necessary.</li>
+</ul>
+
+<h2 id="library">Library</h2>
+
+<p>After I finished building this Todo app, I realized that ReactiveCocoa wasn’t necessarily the best tool for implementing EventMVVM. I don’t use a lot of its features and there are some quirks because I’m not using it as it was intended to be used.<sup id="fnref:10" role="doc-noteref"><a href="#fn:10" class="footnote" rel="footnote">15</a></sup></p>
+
+<p>I decided to see if I could write my own simple library that was tailored to implementing EventMVVM. It took a day of wrestling with the type system, but I have an alpha that I’m going to try to test out. It’s only about 100 lines of code. Unfortunately, it couldn’t automate all the things I wanted to so the observing process still has some warts. I’ll try to find some time to write something up about the library later.</p>
+
+<p>You can see my progress on <a href="https://github.com/twocentstudios/CircuitMVVM">Github</a>.</p>
+
+<h2 id="wrap-up">Wrap up</h2>
+
+<p>It was fun exploring the EventMVVM architecture paradigm. I might keep exploring it on the side. I would definitely not recommend implementing anything of consequence with it.</p>
+
+<p>Please let me know on <a href="https://twitter.com/twocentstudios">Twitter</a> if you have any thoughts about the EventMVVM. I’m sure there’s already a name for this style (maybe it’s just the <a href="https://en.wikipedia.org/wiki/Observer_pattern">observer pattern</a>?).</p>
+
+<p>How cool is it though that I could add this one observer to <code class="language-plaintext highlighter-rouge">AppDelegate</code> and get a log of every Event passed in the system?</p>
+
+<figure class="highlight"><pre><code class="language-swift" data-lang="swift"><span class="n">appContext</span><span class="o">.</span><span class="n">eventsSignal</span><span class="o">.</span><span class="n">observeNext</span> <span class="p">{</span> <span class="nf">print</span><span class="p">(</span><span class="nv">$0</span><span class="p">)</span> <span class="p">}</span></code></pre></figure>
+
+<hr />
+<div class="footnotes" role="doc-endnotes">
+  <ol>
+    <li id="fn:1" role="doc-endnote">
+      <p>A future expansion to EventMVVM could have a <code class="language-plaintext highlighter-rouge">ModelEvent</code> and <code class="language-plaintext highlighter-rouge">ViewModel</code> event, and a typed stream for each. That way, a View objects would only see the ViewModel stream, whereas ViewModelServers (I’ll cover this later) would see both ViewModel and Model streams. <a href="#fnref:1" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
+    </li>
+    <li id="fn:2" role="doc-endnote">
+      <p>In a more complex app, there would need to be a <code class="language-plaintext highlighter-rouge">ReadTodosRequest</code> struct to encapsulate a sort descriptor and predicate. Or better yet, a more thorough TodoListViewModel that contains all this information. <a href="#fnref:2" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
+    </li>
+    <li id="fn:3" role="doc-endnote">
+      <p>It turns out it would probably be better to embed an optional error parameter within the response itself. Otherwise, it becomes impossible to know which request the error is associated with. We’ll kick that problem down the road for now. <a href="#fnref:3" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
+    </li>
+    <li id="fn:4" role="doc-endnote">
+      <p>You could certainly combine <code class="language-plaintext highlighter-rouge">ViewModelServer</code> and <code class="language-plaintext highlighter-rouge">ModelServer</code> into one <code class="language-plaintext highlighter-rouge">Server</code> (or just dump everything in the AppDelegate), but MVVM helps us separate our concerns. <a href="#fnref:4" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
+    </li>
+    <li id="fn:5" role="doc-endnote">
+      <p>One of the biggest open questions I have is if and how Server objects spawn one another. In any decent sized application, it would be unwieldy to have one <code class="language-plaintext highlighter-rouge">ViewModelServer</code> with hundreds or thousands of observers on one stream. It may also use too many resources. If we split ViewModelServers per ViewModel type, how would the primary <code class="language-plaintext highlighter-rouge">ViewModelServer</code> know how to manage the lifecycles of them? <a href="#fnref:5" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
+    </li>
+    <li id="fn:6" role="doc-endnote">
+      <p>In most of my other work with MVVM, some ViewModels are classes and do the majority of the heavy lifting with regards to asynchronous work and organizing data flow within the app, while some are inert value types. The reasoning behind this is to make the ViewControllers a bit “dumber” by keeping that logic out of them. <a href="#fnref:6" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
+    </li>
+    <li id="fn:7" role="doc-endnote">
+      <p>Examples of these types of events would be <code class="language-plaintext highlighter-rouge">ViewControllerDidBecomeActive(UIViewController)</code> or <code class="language-plaintext highlighter-rouge">ButtonWasTapped(UIButton)</code>. As you can see, this would break our assumptions of only sending value types through the stream, which requires some more thought. And as I’ve learned from working with other frameworks, you can jump through a lot of hoops to avoid doing things the way UIKit wants you to do them, and you usually come out the other side worse off. <a href="#fnref:7" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
+    </li>
+    <li id="fn:8" role="doc-endnote">
+      <p>In “Classic” MVVM the View would own the ViewModel which would own the Model/Controller. <a href="#fnref:8" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
+    </li>
+    <li id="fn:9" role="doc-endnote">
+      <p>To be accurate, the observer will be triggered to complete when any event is sent and self is no longer alive. For our purposes, this shouldn’t be a huge deal. There are other ways to solve this problem, but they require a lot more syntactic baggage. <a href="#fnref:9" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
+    </li>
+    <li id="fn:11" role="doc-endnote">
+      <p>In retrospect, it may have been clearer to let the <code class="language-plaintext highlighter-rouge">Result</code> pass all the way through to <code class="language-plaintext highlighter-rouge">observeNext</code> and handle both success and error cases within the same block. <a href="#fnref:11" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
+    </li>
+    <li id="fn:12" role="doc-endnote">
+      <p><a href="https://github.com/ReactiveCocoa/ReactiveCocoa/blob/master/ReactiveCocoa/Swift/Scheduler.swift"><code class="language-plaintext highlighter-rouge">Scheduler</code></a> is a ReactiveCocoa primitive. It’s pretty slick. <a href="#fnref:12" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
+    </li>
+    <li id="fn:14" role="doc-endnote">
+      <p>If you are unfamiliar to MVVM, you may be wondering why the View layer didn’t simply issue a <code class="language-plaintext highlighter-rouge">RequestReadTodos</code> Event directly instead of relaying the <code class="language-plaintext highlighter-rouge">RequestTodoViewModels</code> Event through the ViewModelServer. It’s a welcome layer of indirection to have our View layer be unaware of all matters related to the Model layer. It introduces a predictability for yourself and others on the project that all types of objects and values obey the same set of rules with regards to what they’re allowed to do and which other objects they’re allowed to talk to. It is certainly overhead, and feels like it in the early stages of a project, but in large projects I’ve rarely found it to be unwarranted optimization. <a href="#fnref:14" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
+    </li>
+    <li id="fn:15" role="doc-endnote">
+      <p>It was lazy to not include a typed error enum from the Model layer. The transformation pipeline we have set up makes it easy to make our data available in the right representation for the right context. <a href="#fnref:15" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
+    </li>
+    <li id="fn:13" role="doc-endnote">
+      <p>Spoiler alert: it’s adding an <code class="language-plaintext highlighter-rouge">error</code> parameter to all models and view models. <a href="#fnref:13" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
+    </li>
+    <li id="fn:10" role="doc-endnote">
+      <p>It could probably be implemented with <code class="language-plaintext highlighter-rouge">NSNotificationCenter</code> (not that I’d ever try that). Or any of the other Reactive Swift libraries. <a href="#fnref:10" class="reversefootnote" role="doc-backlink">&#8617;</a></p>
+    </li>
+  </ol>
+</div>
+
+  </article>
+
+</div>
+
+      </div>
+    </div>
+
+    <footer class="site-footer">
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">twocentstudios</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col  footer-col-1">
+        <ul class="contact-list">
+          <li><a href="mailto:chris@twocentstudios.com">chris@twocentstudios.com</a></li>
+          
+          <li>
+            <a href="https://github.com/twocentstudios">
+              <span class="icon  icon--github">
+                <svg viewBox="0 0 16 16">
+                  <path fill="#828282" d="M7.999,0.431c-4.285,0-7.76,3.474-7.76,7.761 c0,3.428,2.223,6.337,5.307,7.363c0.388,0.071,0.53-0.168,0.53-0.374c0-0.184-0.007-0.672-0.01-1.32 c-2.159,0.469-2.614-1.04-2.614-1.04c-0.353-0.896-0.862-1.135-0.862-1.135c-0.705-0.481,0.053-0.472,0.053-0.472 c0.779,0.055,1.189,0.8,1.189,0.8c0.692,1.186,1.816,0.843,2.258,0.645c0.071-0.502,0.271-0.843,0.493-1.037 C4.86,11.425,3.049,10.76,3.049,7.786c0-0.847,0.302-1.54,0.799-2.082C3.768,5.507,3.501,4.718,3.924,3.65 c0,0,0.652-0.209,2.134,0.796C6.677,4.273,7.34,4.187,8,4.184c0.659,0.003,1.323,0.089,1.943,0.261 c1.482-1.004,2.132-0.796,2.132-0.796c0.423,1.068,0.157,1.857,0.077,2.054c0.497,0.542,0.798,1.235,0.798,2.082 c0,2.981-1.814,3.637-3.543,3.829c0.279,0.24,0.527,0.713,0.527,1.437c0,1.037-0.01,1.874-0.01,2.129 c0,0.208,0.14,0.449,0.534,0.373c3.081-1.028,5.302-3.935,5.302-7.362C15.76,3.906,12.285,0.431,7.999,0.431z"/>
+                </svg>
+              </span>
+
+              <span class="username">twocentstudios</span>
+            </a>
+          </li>
+          
+
+          <li>
+            <a href="https://hackyderm.io/@twocentstudios">
+              <span class="icon">
+                <svg viewBox="0 0 24 24">
+                  <path fill="#828282" d="M21.327 8.566c0-4.339-2.843-5.61-2.843-5.61-1.433-.658-3.894-.935-6.451-.956h-.063c-2.557.021-5.016.298-6.45.956 0 0-2.843 1.272-2.843 5.61 0 .993-.019 2.181.012 3.441.103 4.243.778 8.425 4.701 9.463 1.809.479 3.362.579 4.612.51 2.268-.126 3.541-.809 3.541-.809l-.075-1.646s-1.621.511-3.441.449c-1.804-.062-3.707-.194-3.999-2.409a4.523 4.523 0 0 1-.04-.621s1.77.433 4.014.536c1.372.063 2.658-.08 3.965-.236 2.506-.299 4.688-1.843 4.962-3.254.434-2.223.398-5.424.398-5.424zm-3.353 5.59h-2.081V9.057c0-1.075-.452-1.62-1.357-1.62-1 0-1.501.647-1.501 1.927v2.791h-2.069V9.364c0-1.28-.501-1.927-1.502-1.927-.905 0-1.357.546-1.357 1.62v5.099H6.026V8.903c0-1.074.273-1.927.823-2.558.566-.631 1.307-.955 2.228-.955 1.065 0 1.872.409 2.405 1.228l.518.869.519-.869c.533-.819 1.34-1.228 2.405-1.228.92 0 1.662.324 2.228.955.549.631.822 1.484.822 2.558v5.253z"/>
+                </svg>
+              </span>
+
+              <span class="username">twocentstudios</span>
+            </a>
+          </li>
+
+          
+          <li>
+            <a href="https://twitter.com/twocentstudios">
+              <span class="icon  icon--twitter">
+                <svg viewBox="0 0 16 16">
+                  <path fill="#828282" d="M15.969,3.058c-0.586,0.26-1.217,0.436-1.878,0.515c0.675-0.405,1.194-1.045,1.438-1.809
+                  c-0.632,0.375-1.332,0.647-2.076,0.793c-0.596-0.636-1.446-1.033-2.387-1.033c-1.806,0-3.27,1.464-3.27,3.27 c0,0.256,0.029,0.506,0.085,0.745C5.163,5.404,2.753,4.102,1.14,2.124C0.859,2.607,0.698,3.168,0.698,3.767 c0,1.134,0.577,2.135,1.455,2.722C1.616,6.472,1.112,6.325,0.671,6.08c0,0.014,0,0.027,0,0.041c0,1.584,1.127,2.906,2.623,3.206 C3.02,9.402,2.731,9.442,2.433,9.442c-0.211,0-0.416-0.021-0.615-0.059c0.416,1.299,1.624,2.245,3.055,2.271 c-1.119,0.877-2.529,1.4-4.061,1.4c-0.264,0-0.524-0.015-0.78-0.046c1.447,0.928,3.166,1.469,5.013,1.469 c6.015,0,9.304-4.983,9.304-9.304c0-0.142-0.003-0.283-0.009-0.423C14.976,4.29,15.531,3.714,15.969,3.058z"/>
+                </svg>
+              </span>
+
+              <span class="username">twocentstudios</span>
+            </a>
+          </li>
+          
+        </ul>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+
+
+  </body>
+
+</html>
