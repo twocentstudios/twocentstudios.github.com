@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>Count Biki - Developing the App for iOS</title>
+
+  <meta property="og:type" content="article" />
+  <meta property="og:title" content="Count Biki - Developing the App for iOS" />
+  <meta property="og:url" content="https://twocentstudios.com/2023/10/31/count-biki-developing-the-app-for-ios/" />
+  
+    <meta property="og:article:published_time" content="2023-10-31T14:16:28-05:00" />
+  
+  
+    <meta property="og:image" content="https://twocentstudios.com/images/count-biki-v1-quiz-settings-parent-child.png" />
+  
+  
+  <link href='https://fonts.googleapis.com/css2?family=Work+Sans:wght@300;350;400;600' rel='stylesheet' type='text/css'>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="canonical" href="https://twocentstudios.com/2023/10/31/count-biki-developing-the-app-for-ios/">
+  <link rel="alternate" type="application/rss+xml" title="twocentstudios" href="https://twocentstudios.com/feed.xml" />
+</head>
+
+  <!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-NE82N02W8S"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-NE82N02W8S');
+</script>
+
+  <body>
+
+    <header class="site-header">
+
+  <div class="wrapper">
+
+    <a class="site-title" href="/">twocentstudios</a>
+
+    <nav class="site-nav">
+      <a href="#" class="menu-icon">
+        <svg viewBox="0 0 18 15">
+          <path fill="#424242" d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.031C17.335,0,18,0.665,18,1.484L18,1.484z"/>
+          <path fill="#424242" d="M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0c0-0.82,0.665-1.484,1.484-1.484 h15.031C17.335,6.031,18,6.696,18,7.516L18,7.516z"/>
+          <path fill="#424242" d="M18,13.516C18,14.335,17.335,15,16.516,15H1.484C0.665,15,0,14.335,0,13.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.031C17.335,12.031,18,12.696,18,13.516L18,13.516z"/>
+        </svg>
+      </a>
+
+      <div class="trigger">
+        
+          
+          <a class="page-link" href="/about/">About</a>
+          
+        
+          
+          <a class="page-link" href="/blog/">Blog</a>
+          
+        
+          
+        
+          
+        
+          
+          <a class="page-link" href="/portfolio/">Portfolio</a>
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      </div>
+    </nav>
+
+  </div>
+
+</header>
+
+
+    <div class="page-content">
+      <div class="wrapper">
+        <div class="post">
+
+  <header class="post-header">
+    <h1 class="post-title">Count Biki - Developing the App for iOS</h1>
+    <p class="post-meta">Oct 31, 2023</p>
+  </header>
+
+  <article class="post-content">
+    <p>Continuing my series of posts about my latest iOS app, Count Biki, I’ll discuss the more interesting parts of app at version 1.1.</p>
+
+<div class="caption-wrapper"><img class="caption" src="/images/count-biki-app-icon.png" width="" height="300" alt="Count Biki app icon, featuring the character Count Biki" title="Count Biki app icon, featuring the character Count Biki" /><div class="caption-text">Count Biki app icon, featuring the character Count Biki</div></div>
+
+<p>Please check out the other posts in the series:</p>
+
+<ul>
+  <li><strong><a href="/2023/10/29/count-biki-japanese-numbers/">Count Biki - Drill Japanese Numbers</a></strong> - the motivation behind the app and the solution I’ve begun to explore from the learner (user) perspective</li>
+  <li><strong><a href="/2023/10/30/count-biki-app-and-character-design/">Count Biki - App and Character Design</a></strong> - the design process and specifics of creating the Count Biki character</li>
+  <li><strong>This post</strong> - a guided tour of the codebase and implementation details</li>
+</ul>
+
+<p>Japanese learners can download the app from the <a href="https://apps.apple.com/us/app/count-biki/id6463796779">App Store</a>.</p>
+
+<p>Like many of my other apps, Count Biki is open source on <a href="https://github.com/twocentstudios/count-biki">GitHub</a>.</p>
+
+<h2 id="stats">Stats</h2>
+
+<p>Before starting digging into the details, I’ll go over some stats about the app for context.</p>
+
+<ul>
+  <li>The app has 6 screens (5 with behavior).</li>
+  <li>The app has around 3600 lines of Swift code.</li>
+  <li>The app has a minimum deployment target of iOS 16.4.</li>
+  <li>The app supports only portrait mode and the iPhone form factor. There’s no technical reason for this. It was mostly to reduce complexity, promotional material requirements, and testing for the first release.</li>
+  <li>The app uses about 5 packages via Swift Package Manager: ComposableArchitecture, Collections, AsyncExtensions, DependenciesAdditions, ConfettiSwiftUI. ComposableArchitecture relies on several other pointfreeco packages, which I also use directly.</li>
+  <li>The app uses a basic xcodeproj file.</li>
+  <li>The app was archived with Xcode 17.0.1, which includes support for Swift 5.9, iOS 17, and (colloquially) SwiftUI 4, although I don’t use any iOS 17 specific APIs.</li>
+  <li>The app has a SwiftUI <code class="language-plaintext highlighter-rouge">App</code> entrypoint.</li>
+  <li>The only network requests made by the app are via StoreKit 2.</li>
+  <li>The app embeds an <code class="language-plaintext highlighter-rouge">scnassets</code> file for SceneKit-related files.</li>
+  <li>The app uses the <code class="language-plaintext highlighter-rouge">licenseplist</code> library installed via Homebrew for generating a license file for packages.</li>
+  <li>The app embeds no analytics framework.</li>
+</ul>
+
+<h2 id="architecture">Architecture</h2>
+
+<p>The app is built all-in with <a href="https://github.com/pointfreeco/swift-composable-architecture">The Composable Architecture (TCA) 1.0</a>. This includes passing and scoping <code class="language-plaintext highlighter-rouge">Store</code>s through the view layer, creating <code class="language-plaintext highlighter-rouge">Reducer</code>s with <code class="language-plaintext highlighter-rouge">State</code> and <code class="language-plaintext highlighter-rouge">Action</code>s for most screens, and creating dependencies in the style of the <a href="https://github.com/pointfreeco/swift-dependencies">swift-dependencies</a> library.</p>
+
+<p>This post is not a tutorial on using TCA. However, I will do my best to describe my experience learning TCA by writing this app, and mention the convenient points and the points that tripped me up while developing it.</p>
+
+<p>I started rewriting an existing app with TCA back in 2020, but never finished it. I got stuck due to performance problems and the rewrite fell off my radar. Since then I’ve used SwiftUI extensively for both production and prototyping. The architecture of most of those projects has been either loose MVVM or everything-in-the-view style. This includes <a href="https://github.com/twocentstudios/goalie">Goalie</a>, which I consider MVVM style.</p>
+
+<p>I started off development for Count Biki by prototyping the <a href="https://github.com/twocentstudios/count-biki/blob/8195c7fde3703166d5b3a41743c8a19486448a14/count/Feature/ListeningQuizFeature.swift">listening quiz feature</a>. This is the core of the app and the most complex feature (although the in app purchase support is arguably more complex).</p>
+
+<div class="caption-wrapper"><img class="caption" src="/images/count-biki-v1-listening-quiz.png" width="" height="700" alt="the listening quiz screen" title="the listening quiz screen" /><div class="caption-text">the listening quiz screen</div></div>
+
+<p>Even as the most complex screen, it’s not particularly complex. But getting started was relatively slow because I was referencing the TCA 1.0 <a href="https://www.pointfree.co/collections/composable-architecture/composable-architecture-1-0">guided tour videos</a> (as they were being released), the TCA <a href="https://github.com/pointfreeco/swift-composable-architecture/tree/main/Examples/CaseStudies/SwiftUICaseStudies">case studies</a>, and the OSS <a href="https://github.com/pointfreeco/isowords/">isowords</a> codebase.</p>
+
+<p>Even though TCA is more ergonomic than it was when I first started experimenting with it a few years ago, there were a lot more concepts to digest this time around, particularly around navigation. <code class="language-plaintext highlighter-rouge">BindableAction</code>, <code class="language-plaintext highlighter-rouge">@Bindable</code>, <code class="language-plaintext highlighter-rouge">@PresentationState</code>, the <code class="language-plaintext highlighter-rouge">Destination</code> reducer pattern.</p>
+
+<h3 id="shared-state">Shared state</h3>
+
+<p>The most difficult conceptual problem I had with TCA was the techniques for sharing state across an app.</p>
+
+<h4 id="parent-and-child-reducer-intercommunication">Parent and child reducer intercommunication</h4>
+
+<p>My preconception of Redux-like systems such as TCA was that there was one big bag of state and any reducer could grab any part of it. The scoping part of TCA – paring down the state and actions to hand off to a subsystem – tripped me up. It wasn’t clear to me whether changes to state made in child stores would change that same state in the parent part. In other words, I think it’s similar to the sort of implicit learning curve there was while learning SwiftUI, namely:</p>
+
+<ul>
+  <li>how does a parent communicate to a child?</li>
+  <li>how does a child communicate to a parent?</li>
+  <li>where is the source of truth for a piece of state?</li>
+</ul>
+
+<p>I know the answers to the SwiftUI variant of these questions much better than the TCA variant, but they were certainly hard-won answers.</p>
+
+<h4 id="quiz-and-settings-example--source-of-truth-in-parent-state">Quiz and settings example – source of truth in parent state</h4>
+
+<p>A simple example of my sharing state confusion is with my listening quiz and settings screen. The system has the following behavior:</p>
+
+<ul>
+  <li>The quiz screen needs read-only settings values.</li>
+  <li>The settings screen allows read/write access to settings values.</li>
+  <li>The quiz presents the settings screen modally.</li>
+  <li>The settings values are persisted to disk.</li>
+</ul>
+
+<div class="caption-wrapper"><img class="caption" src="/images/count-biki-v1-quiz-settings-parent-child.png" width="" height="" alt="The quiz and settings screens (parent and child)" title="The quiz and settings screens (parent and child)" /><div class="caption-text">The quiz and settings screens (parent and child)</div></div>
+
+<p>In view terms, the quiz screen is the parent and the settings screen is the child. But the quiz reducer needs access to the settings values immediately, which means that settings state can’t be modeled as optional view state. The “is the settings view visible?” part of the state and the “what are the settings?” part of the state can’t be combined in this case.</p>
+
+<p>I modeled this by:</p>
+
+<ol>
+  <li>having a full copy of the settings values owned by the quiz reducer.</li>
+  <li>keeping a copy of the settings values as optional destination state.</li>
+  <li>loading the settings values from the dependency on initialization of the quiz state.</li>
+  <li>copying the current settings values to the settings state when the settings button is tapped as representation that the view is presented.</li>
+  <li>updating the “source of truth” version of settings values when the settings reducer sends an updated version, and ensuring the latest value is persisted to disk.</li>
+</ol>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">ListeningQuizFeature</span><span class="p">:</span> <span class="kt">Reducer</span> <span class="p">{</span>
+    <span class="kd">struct</span> <span class="kt">State</span><span class="p">:</span> <span class="kt">Equatable</span> <span class="p">{</span>
+        <span class="k">var</span> <span class="nv">speechSettings</span><span class="p">:</span> <span class="kt">SpeechSynthesisSettings</span> <span class="c1">// 1</span>
+        <span class="kd">@PresentationState</span> <span class="k">var</span> <span class="nv">destination</span><span class="p">:</span> <span class="kt">Destination</span><span class="o">.</span><span class="kt">State</span><span class="p">?</span> <span class="c1">// 2</span>
+        <span class="c1">// ...</span>
+
+        <span class="nf">init</span><span class="p">()</span> <span class="p">{</span>
+            <span class="kd">@Dependency(\.speechSynthesisSettingsClient)</span> <span class="k">var</span> <span class="nv">speechSettingsClient</span>
+            <span class="k">self</span><span class="o">.</span><span class="n">speechSettings</span> <span class="o">=</span> <span class="n">speechSettingsClient</span><span class="o">.</span><span class="nf">get</span><span class="p">()</span> <span class="c1">// 3</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    
+    <span class="kd">struct</span> <span class="kt">Destination</span><span class="p">:</span> <span class="kt">Reducer</span> <span class="p">{</span>
+        <span class="kd">enum</span> <span class="kt">State</span><span class="p">:</span> <span class="kt">Equatable</span> <span class="p">{</span>
+            <span class="k">case</span> <span class="nf">settings</span><span class="p">(</span><span class="kt">SettingsFeature</span><span class="o">.</span><span class="kt">State</span><span class="p">)</span> <span class="c1">// 2</span>
+        <span class="p">}</span>
+        <span class="c1">// ...</span>
+    <span class="p">}</span>
+
+    <span class="k">var</span> <span class="nv">body</span><span class="p">:</span> <span class="n">some</span> <span class="kt">ReducerOf</span><span class="o">&lt;</span><span class="k">Self</span><span class="o">&gt;</span> <span class="p">{</span>
+        <span class="kt">Reduce</span> <span class="p">{</span> <span class="n">state</span><span class="p">,</span> <span class="n">action</span> <span class="k">in</span>
+            <span class="k">switch</span> <span class="n">action</span> <span class="p">{</span>
+
+            <span class="c1">// 4</span>
+            <span class="k">case</span> <span class="o">.</span><span class="nv">titleButtonTapped</span><span class="p">:</span>
+                <span class="n">state</span><span class="o">.</span><span class="n">destination</span> <span class="o">=</span> <span class="o">.</span><span class="nf">settings</span><span class="p">(</span><span class="o">.</span><span class="nf">init</span><span class="p">(</span>
+                    <span class="nv">topicID</span><span class="p">:</span> <span class="n">state</span><span class="o">.</span><span class="n">topicID</span><span class="p">,</span>
+                    <span class="nv">speechSettings</span><span class="p">:</span> <span class="n">state</span><span class="o">.</span><span class="n">speechSettings</span><span class="p">,</span>
+                    <span class="nv">sessionChallenges</span><span class="p">:</span> <span class="n">state</span><span class="o">.</span><span class="n">completedChallenges</span>
+                <span class="p">))</span>
+                <span class="k">return</span> <span class="o">.</span><span class="k">none</span>
+            
+            <span class="c1">// 5</span>
+            <span class="k">case</span> <span class="kd">let</span> <span class="o">.</span><span class="nf">destination</span><span class="p">(</span><span class="o">.</span><span class="nf">presented</span><span class="p">(</span><span class="o">.</span><span class="nf">settings</span><span class="p">(</span><span class="o">.</span><span class="nf">delegate</span><span class="p">(</span><span class="o">.</span><span class="nf">speechSettingsUpdated</span><span class="p">(</span><span class="n">newSpeechSettings</span><span class="p">))))):</span>
+                <span class="n">state</span><span class="o">.</span><span class="n">speechSettings</span> <span class="o">=</span> <span class="n">newSpeechSettings</span>
+                <span class="k">do</span> <span class="p">{</span>
+                    <span class="k">try</span> <span class="n">speechSettingsClient</span><span class="o">.</span><span class="nf">set</span><span class="p">(</span><span class="n">newSpeechSettings</span><span class="p">)</span>
+                <span class="p">}</span> <span class="k">catch</span> <span class="p">{</span>
+                    <span class="kt">XCTFail</span><span class="p">(</span><span class="s">"SpeechSettingsClient unexpectedly failed to write"</span><span class="p">)</span>
+                <span class="p">}</span>
+                <span class="k">return</span> <span class="o">.</span><span class="k">none</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="c1">// ...</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p>This strategy of keeping source-of-truth state in a parent, passing a copy to the child reducer, and playing back changes from child to parent to ensure the state is in sync is seemingly the strategy shared in the <a href="https://github.com/pointfreeco/swift-composable-architecture/blob/9b0f600253f467f61cbd53f60ccc243cc4ff27cd/Examples/SyncUps/SyncUps/AppFeature.swift#L28-L73">SyncUps</a> example app.</p>
+
+<p>I’m not 100% happy with my strategy. For this simple app, it’s fine. But it perhaps unnecessarily spreads responsibility for the settings across multiple reducers.</p>
+
+<h4 id="about-and-iap-example---source-of-truth-in-a-dependency">About and IAP example - source-of-truth in a dependency</h4>
+
+<p>Another way to go about sharing state between parent, child, or sibling reducers is:</p>
+
+<ul>
+  <li>keep the source-of-truth state in a dependency</li>
+  <li>mutating the state through the dependency</li>
+  <li>set up a one-way binding to copy the dependency state into the reducer state from any number of reducers</li>
+</ul>
+
+<p>My first impression of this strategy was that it goes against the ethos of TCA/Redux. Especially for cases where the state is <em>not</em> owned by an external subsystem under only loose control by the application, like from an Apple framework. However, reading <a href="https://github.com/pointfreeco/swift-composable-architecture/discussions/2320">this discussion</a> made me consider dependency-managed state as more often the preferred option.</p>
+
+<p>Concretely, this means a dependency with a get/set/observe interface. As a very generic example:</p>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">CurrentUserClient</span> <span class="p">{</span>
+  <span class="k">var</span> <span class="nv">currentUser</span><span class="p">:</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">User</span><span class="p">?</span>
+  <span class="k">var</span> <span class="nv">setCurrentUser</span><span class="p">:</span> <span class="p">(</span><span class="kt">User</span><span class="p">?)</span> <span class="k">as</span><span class="n">ync</span> <span class="o">-&gt;</span> <span class="kt">Void</span>
+  <span class="k">var</span> <span class="nv">currentUserStream</span><span class="p">:</span> <span class="p">()</span> <span class="k">as</span><span class="n">ync</span> <span class="o">-&gt;</span> <span class="kt">AsyncStream</span><span class="o">&lt;</span><span class="kt">User</span><span class="p">?</span><span class="o">&gt;</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p>Then each reducer that reads/writes/observes the current user can use <code class="language-plaintext highlighter-rouge">CurrentUserClient</code> like so:</p>
+
+<ol>
+  <li>Create a reducer-local derived copy of the state as <code class="language-plaintext highlighter-rouge">var currentUser: User?</code> in <code class="language-plaintext highlighter-rouge">UserReducer.State</code>.</li>
+  <li>In <code class="language-plaintext highlighter-rouge">State.init</code>, read in <code class="language-plaintext highlighter-rouge">currentUser</code> from the dependency.</li>
+  <li>Add a <code class="language-plaintext highlighter-rouge">Action.setCurrentUser(User)</code> action.</li>
+  <li>On receiving the <code class="language-plaintext highlighter-rouge">setCurrentUser</code> action, update the state iff the current user has changed.</li>
+  <li>Add a <code class="language-plaintext highlighter-rouge">.onChangeOf(\.currentUser)</code> modifier to the reducer to write updated values to the dependency’s setter.</li>
+  <li>In <code class="language-plaintext highlighter-rouge">Action.onTask</code>, set up a long running async stream that sends new values back into the system as actions through <code class="language-plaintext highlighter-rouge">Action.setCurrentUser</code>.</li>
+  <li>The reducer should make changes to its local copy of <code class="language-plaintext highlighter-rouge">State.currentUser</code>.</li>
+</ol>
+
+<p>The get/set/observe-style state allows both push and pull state management in reducers. For example, a pull-style read-only version would only need (1) (2), then an <code class="language-plaintext highlighter-rouge">Action.refreshButtonTapped</code> that copies the current value from the dependency into local reducer state.</p>
+
+<p>Unfortunately, I’ve yet to find a more automated version of encapsulating the read/write/observe system.</p>
+
+<p>The closest I got to implementing this type of system was while implementing my <code class="language-plaintext highlighter-rouge">About</code> and <code class="language-plaintext highlighter-rouge">TransylvaniaTier</code> (In app purchase) features.</p>
+
+<div class="caption-wrapper"><img class="caption" src="/images/count-biki-v1-about-tier-parent-child.png" width="" height="" alt="the about and IAP screens (as parent and child)" title="the about and IAP screens (as parent and child)" /><div class="caption-text">the about and IAP screens (as parent and child)</div></div>
+
+<p>The about screen is the parent. The IAP screen is the child. The about screen observes the purchases state from a dependency and updates its own state and its child state in response to changes. The key parts of the <a href="https://github.com/twocentstudios/count-biki/blob/8195c7fde3703166d5b3a41743c8a19486448a14/count/Feature/AboutFeature.swift">full reducer</a> are clipped out below:</p>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">AboutFeature</span><span class="p">:</span> <span class="kt">Reducer</span> <span class="p">{</span>
+    <span class="kd">struct</span> <span class="kt">State</span><span class="p">:</span> <span class="kt">Equatable</span> <span class="p">{</span>
+        <span class="k">var</span> <span class="nv">appIcon</span><span class="p">:</span> <span class="kt">AppIconFeature</span><span class="o">.</span><span class="kt">State</span>
+        <span class="k">var</span> <span class="nv">transylvaniaTier</span><span class="p">:</span> <span class="kt">TransylvaniaTierFeature</span><span class="o">.</span><span class="kt">State</span>
+
+        <span class="nf">init</span><span class="p">()</span> <span class="p">{</span>
+            <span class="kd">@Dependency(\.tierProductsClient.purchaseHistory)</span> <span class="k">var</span> <span class="nv">purchaseHistory</span>
+            <span class="n">appIcon</span> <span class="o">=</span> <span class="o">.</span><span class="nf">init</span><span class="p">(</span><span class="nv">isAppIconChangingAvailable</span><span class="p">:</span> <span class="nf">purchaseHistory</span><span class="p">()</span><span class="o">.</span><span class="n">status</span> <span class="o">==</span> <span class="o">.</span><span class="n">unlocked</span><span class="p">)</span>
+            <span class="n">transylvaniaTier</span> <span class="o">=</span> <span class="o">.</span><span class="nf">init</span><span class="p">(</span><span class="nv">tierHistory</span><span class="p">:</span> <span class="nf">purchaseHistory</span><span class="p">())</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="c1">// ...</span>
+
+    <span class="k">var</span> <span class="nv">body</span><span class="p">:</span> <span class="n">some</span> <span class="kt">ReducerOf</span><span class="o">&lt;</span><span class="k">Self</span><span class="o">&gt;</span> <span class="p">{</span>
+        <span class="c1">// ...</span>
+        <span class="kt">Reduce</span> <span class="p">{</span> <span class="n">state</span><span class="p">,</span> <span class="n">action</span> <span class="k">in</span>
+            <span class="k">switch</span> <span class="n">action</span> <span class="p">{</span>
+            <span class="k">case</span> <span class="kd">let</span> <span class="o">.</span><span class="nf">onPurchaseHistoryUpdated</span><span class="p">(</span><span class="n">newHistory</span><span class="p">):</span>
+                <span class="n">state</span><span class="o">.</span><span class="n">appIcon</span><span class="o">.</span><span class="n">isAppIconChangingAvailable</span> <span class="o">=</span> <span class="n">newHistory</span><span class="o">.</span><span class="n">status</span> <span class="o">==</span> <span class="o">.</span><span class="n">unlocked</span>
+                <span class="n">state</span><span class="o">.</span><span class="n">transylvaniaTier</span><span class="o">.</span><span class="n">tierHistory</span> <span class="o">=</span> <span class="n">newHistory</span>
+                <span class="k">return</span> <span class="o">.</span><span class="k">none</span>
+            <span class="k">case</span> <span class="o">.</span><span class="nv">onTask</span><span class="p">:</span>
+                <span class="k">return</span> <span class="o">.</span><span class="n">run</span> <span class="p">{</span> <span class="n">send</span> <span class="k">in</span>
+                    <span class="k">for</span> <span class="n">await</span> <span class="n">newHistory</span> <span class="k">in</span> <span class="nf">purchaseHistoryStream</span><span class="p">()</span> <span class="p">{</span>
+                        <span class="n">await</span> <span class="nf">send</span><span class="p">(</span><span class="o">.</span><span class="nf">onPurchaseHistoryUpdated</span><span class="p">(</span><span class="n">newHistory</span><span class="p">))</span>
+                    <span class="p">}</span>
+                <span class="p">}</span>
+            <span class="p">}</span>
+            <span class="c1">// ...</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p>I will probably refactor the about and IAP reducers to be more independent in the future. I will probably want to present the IAP screen from more places throughout the app, which will require it to handle its own purchase history state updates.</p>
+
+<h4 id="reducers-with-no-state-sharing">Reducers with no state sharing</h4>
+
+<p>For the record, I found writing TCA reducers without inter-system state sharing to be very straightforward and exhibit all the benefits of TCA (testability, side-effect isolation, previewability, etc.). Of course, this app has not had multiple contributors nor survived years of releases, so take my experience as you will.</p>
+
+<h4 id="sidebar-starting-with-one-reducer">Sidebar: starting with one reducer</h4>
+
+<p>During the exploratory phase of development, what I really wanted to do was have one reducer with one state and one action enum shared across all the views in my app. Of course this doesn’t scale and perhaps would cause performance problems sooner than later. But after I was more confident in the view structure, it’d be obvious how to split up the reducers and communicate state changes between them, avoiding a lot of rework. I’m sure there’s a way to do this, but while I was learning TCA I didn’t feel confident enough to stray from the case studies.</p>
+
+<h3 id="navigation">Navigation</h3>
+
+<p>Navigation was one of the later additions to the TCA 1.0 release. Since the app only has a few screens, and I did at least a little reconfiguration of the UX, I never felt like I put the navigation tools through their paces.</p>
+
+<h4 id="going-by-the-book">Going “by-the-book”</h4>
+
+<p>I consider navigation “by-the-book” as storing each piece of navigation state in the reducer, usually with a separate <code class="language-plaintext highlighter-rouge">Destination</code> reducer.</p>
+
+<p>I did this in a few places in the app that have obvious boundaries of behavior: The topics screen, the quiz screen, the settings screen, the about screen, etc.</p>
+
+<p>However, in a few places within <code class="language-plaintext highlighter-rouge">NavigationStack</code>, I decided to take the lazy way and use raw <code class="language-plaintext highlighter-rouge">NavigationLink</code>s. The obvious downside to this is that the navigation state can only be directly manipulated by the user and not programmatically (notably through deep linking). In practice, I haven’t found this to be an issue yet. I found the TCA <code class="language-plaintext highlighter-rouge">NavigationStack</code> modeling to feel <em>heavy</em> enough at the outset that I didn’t want to delay my release implementing it by-the-book.</p>
+
+<p>The topics screen in particular felt like there was little benefit in creating an additional reducer to handle a screen of static data. I wanted the flexibility to keep all that topic view structure and logic in one place, even though in reality it’s covering both <code class="language-plaintext highlighter-rouge">TopicCategory</code> and <code class="language-plaintext highlighter-rouge">Topic</code> entities. (Aside: it’s kind of similar how SwiftUI forms give you the ability to configure a picker as inline or as a completely separate screen added to the stack, and the presentation parts are abstracted away from the developer.)</p>
+
+<p>As I get more comfortable with TCA, I’ll probably go back and move some of the navigation primitives into the TCA world.</p>
+
+<h4 id="scoping-stores">Scoping stores</h4>
+
+<p>When implementing store scoping within the view layer, I found myself struggling a bit to craft the correct syntax to express the relationship between the parent and child features.</p>
+
+<p>When going by-the-book, the store scoping feels like boilerplate. But when I did want to play outside the sandbox a bit, I realized I was in over my head and couldn’t even get the scoping statement to compile.</p>
+
+<p>The frustrating part was that I knew I either had to:</p>
+
+<ul>
+  <li>look at a lot more store scoping examples as the raw syntax</li>
+  <li>go back and rewatch the pointfree episodes about the theory behind store scoping</li>
+</ul>
+
+<p>Or perhaps both? At this point, I can definitely tell I’m missing a key piece of my understanding of the <em>composable</em> part of TCA, but I’m not sure yet how to fill in that missing piece. Or at least what the most efficient way to do so is.</p>
+
+<p>In the end, I mostly avoided the issue entirely by either going more by-the-book with the structure of my features or completely eschewing TCA navigation as discussed in the previous section.</p>
+
+<h3 id="dependencies">Dependencies</h3>
+
+<p>I consider TCA to have 4 interdependent domains of complexity:</p>
+
+<ol>
+  <li>Reducers - composing the app logic by defining <code class="language-plaintext highlighter-rouge">State</code> and <code class="language-plaintext highlighter-rouge">Action</code>, and modifying state and kicking off side-effects on each action.</li>
+  <li>View-layer integration - using <code class="language-plaintext highlighter-rouge">ViewStore</code> and scoping <code class="language-plaintext highlighter-rouge">Store</code>.</li>
+  <li>Dependencies - the distinct layer of world state and side-effects.</li>
+  <li>Testing Reducers - exploiting the malleability of the dependency protocol in order to isolate the reducer layer from the dependency layer, and exploiting the one-way dependency of the view layer on the reducer layer to ignore the view layer.</li>
+</ol>
+
+<p>The TCA philosophy is to divide responsibilities amongst the reducer, view, and dependency layers to enable maximum testing ability of the reducer layer, in both unit and integration tests (for some definition of “unit” and “integration”). UI testing is reasonable but discouraged. Dependency testing is rarely mentioned, but is of course possible depending on how you the developer choose to design your dependencies.</p>
+
+<h4 id="writing-dependencies-in-the-pointfreeco-style">Writing dependencies in the pointfreeco-style</h4>
+
+<p>The pointfreeco-style of dependency design is unique (in my experience). And there are three distinct attributes:</p>
+
+<ol>
+  <li>The dependency interface as a struct containing one or more variables of functions.</li>
+  <li>Writing the dependency implementation as a class/actor in a way that you can create an instance of it within a static initializer of the dependency interface. When wrapping a system class as a dependency, often the system class is <a href="https://github.com/pointfreeco/isowords/blob/40d59a899bbe54810bb0d7af0f3b72379c56bafb/Sources/FeedbackGeneratorClient/LiveKey.swift#L5-L11">used directly</a> in the static initializer.</li>
+  <li>Treating this dependency interface as a singleton throughout your application, including being initialized independently at app startup and having the same lifetime as the app.</li>
+</ol>
+
+<p>My impression is that none of the above three attributes are <em>absolute requirements</em> to use TCA or the <a href="https://github.com/pointfreeco/swift-dependencies">swift-dependencies</a> library. However, most of the official examples contain the three attributes. (One notable exception is <a href="https://github.com/tgrapperon/swift-dependencies-additions">swift-dependencies-additions</a>, which has its own internal system of <a href="https://github.com/tgrapperon/swift-dependencies-additions/blob/main/Sources/DependenciesAdditionsBasics/Proxies.swift">proxies</a> to enable a more convenient interface for simple getters and setters).</p>
+
+<p>For reference from the TCA case studies, an example of (1), the dependency interface as a struct <a href="https://github.com/pointfreeco/swift-composable-architecture/blob/9b0f600253f467f61cbd53f60ccc243cc4ff27cd/Examples/SyncUps/SyncUps/Dependencies/SpeechRecognizer.swift#L4-L11">(SpeechClient)</a>:</p>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">SpeechClient</span> <span class="p">{</span>
+  <span class="k">var</span> <span class="nv">authorizationStatus</span><span class="p">:</span> <span class="kd">@Sendable</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">SFSpeechRecognizerAuthorizationStatus</span>
+  <span class="k">var</span> <span class="nv">requestAuthorization</span><span class="p">:</span> <span class="kd">@Sendable</span> <span class="p">()</span> <span class="k">as</span><span class="n">ync</span> <span class="o">-&gt;</span> <span class="kt">SFSpeechRecognizerAuthorizationStatus</span>
+  <span class="k">var</span> <span class="nv">startTask</span><span class="p">:</span> <span class="kd">@Sendable</span> <span class="p">(</span><span class="kt">SFSpeechAudioBufferRecognitionRequest</span><span class="p">)</span> <span class="k">as</span><span class="n">ync</span> <span class="o">-&gt;</span> <span class="kt">AsyncThrowingStream</span><span class="o">&lt;</span><span class="kt">SpeechRecognitionResult</span><span class="p">,</span> <span class="kt">Error</span><span class="o">&gt;</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p>And an example of (2), creating an actor and then using it in a static initializer:</p>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">private</span> <span class="n">actor</span> <span class="kt">Speech</span> <span class="p">{</span>
+  <span class="kd">private</span> <span class="k">var</span> <span class="nv">audioEngine</span><span class="p">:</span> <span class="kt">AVAudioEngine</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span>
+  <span class="kd">private</span> <span class="k">var</span> <span class="nv">recognitionTask</span><span class="p">:</span> <span class="kt">SFSpeechRecognitionTask</span><span class="p">?</span> <span class="o">=</span> <span class="kc">nil</span>
+  <span class="kd">private</span> <span class="k">var</span> <span class="nv">recognitionContinuation</span><span class="p">:</span>
+    <span class="kt">AsyncThrowingStream</span><span class="o">&lt;</span><span class="kt">SpeechRecognitionResult</span><span class="p">,</span> <span class="kt">Error</span><span class="o">&gt;.</span><span class="kt">Continuation</span><span class="p">?</span>
+
+  <span class="kd">func</span> <span class="nf">startTask</span><span class="p">(</span>
+    <span class="nv">request</span><span class="p">:</span> <span class="kt">SFSpeechAudioBufferRecognitionRequest</span>
+  <span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">AsyncThrowingStream</span><span class="o">&lt;</span><span class="kt">SpeechRecognitionResult</span><span class="p">,</span> <span class="kt">Error</span><span class="o">&gt;</span> <span class="p">{</span>
+      <span class="c1">// ...</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">extension</span> <span class="kt">SpeechClient</span><span class="p">:</span> <span class="kt">DependencyKey</span> <span class="p">{</span>
+  <span class="kd">static</span> <span class="k">var</span> <span class="nv">liveValue</span><span class="p">:</span> <span class="kt">SpeechClient</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">speech</span> <span class="o">=</span> <span class="kt">Speech</span><span class="p">()</span>
+    <span class="k">return</span> <span class="kt">SpeechClient</span><span class="p">(</span>
+      <span class="nv">authorizationStatus</span><span class="p">:</span> <span class="p">{</span> <span class="kt">SFSpeechRecognizer</span><span class="o">.</span><span class="nf">authorizationStatus</span><span class="p">()</span> <span class="p">},</span>
+      <span class="nv">requestAuthorization</span><span class="p">:</span> <span class="p">{</span> <span class="cm">/* ... */</span> <span class="p">},</span>
+      <span class="nv">startTask</span><span class="p">:</span> <span class="p">{</span> <span class="n">request</span> <span class="k">in</span> <span class="n">await</span> <span class="n">speech</span><span class="o">.</span><span class="nf">startTask</span><span class="p">(</span><span class="nv">request</span><span class="p">:</span> <span class="n">request</span><span class="p">)</span> <span class="p">}</span>
+    <span class="p">)</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p>Regarding (3), the “global-ness” of dependencies, in theory, the store-scoping initializers allow you to override dependencies all the way down a reducer hierarchy. For example:</p>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kt">Store</span><span class="p">(</span><span class="nv">initialState</span><span class="p">:</span> <span class="kt">SettingsFeature</span><span class="o">.</span><span class="kt">State</span><span class="p">())</span> <span class="p">{</span>
+    <span class="kt">SettingsFeature</span><span class="p">()</span>
+<span class="p">}</span> <span class="nv">withDependencies</span><span class="p">:</span> <span class="p">{</span> <span class="n">deps</span> <span class="k">in</span>
+    <span class="c1">// TODO: Does this create a new instance each time an action is sent to the reducer?</span>
+    <span class="n">deps</span><span class="o">.</span><span class="n">speechSynthesisClient</span> <span class="o">=</span> <span class="o">.</span><span class="nf">init</span><span class="p">()</span> 
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p>Or at the reducer-level:</p>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="c1">// TODO: Does this create a new instance each time an action is sent to the reducer?</span>
+<span class="kt">Reduce</span> <span class="p">{</span> <span class="n">state</span><span class="p">,</span> <span class="n">action</span> <span class="k">in</span>
+    <span class="c1">// ...</span>
+<span class="p">}</span>
+<span class="o">.</span><span class="nf">dependency</span><span class="p">(</span><span class="err">\</span><span class="o">.</span><span class="n">speechSynthesisClient</span><span class="p">,</span> <span class="o">.</span><span class="nf">init</span><span class="p">())</span>
+</code></pre>
+</div>
+
+<p>However, the feasibility of initializing a fresh dependency with data from the system is unclear to me. Especially since it seems like the above code would initialize a fresh instance of <code class="language-plaintext highlighter-rouge">speechSynthesisClient</code> each time a reducer is run (thousands of times per app run!).</p>
+
+<p>There are a few other topics on the discussion boards that mention the global lifetime of dependencies:</p>
+
+<ul>
+  <li><a href="https://github.com/pointfreeco/swift-composable-architecture/discussions/1287">Dynamic dependencies · pointfreeco/swift-composable-architecture · Discussion #1287</a></li>
+  <li><a href="https://github.com/pointfreeco/swift-dependencies/discussions/42">How to handle session-based dependencies? · pointfreeco/swift-dependencies · Discussion #42</a></li>
+  <li><a href="https://github.com/pointfreeco/swift-composable-architecture/discussions/1775">Dependencies that depend on dynamic values · pointfreeco/swift-composable-architecture · Discussion #1775</a></li>
+</ul>
+
+<p>For more complex applications than my own, I consider this limitation to be something to be carefully considered and architected around.</p>
+
+<p>The related problem of doing some sort of one-time dependency initialization and setting up relationships between dependencies at app startup is also unclear to me. I <a href="https://github.com/pointfreeco/swift-composable-architecture/discussions/1713#discussioncomment-6681618">asked about it</a> on the TCA discussions board, and <a href="https://github.com/pointfreeco/swift-composable-architecture/discussions/1287">discussion #1287</a> touches on it briefly, but due to a change in my app requirements, I no longer needed to follow up on it.</p>
+
+<p>There is certainly a wealth of information in the discussion boards I’ve yet to fully digest in the context of a more complex app. (Just a reminder that I’m writing this blog post for myself too as a way to process my thoughts and understanding on these inter-related concerns.)</p>
+
+<h4 id="heisenbugs-encountered-while-overriding-dependencies">Heisenbugs encountered while overriding dependencies</h4>
+
+<p><code class="language-plaintext highlighter-rouge">withDependencies</code> is most often used as a developer tool – for testing, SwiftUI previews, or temporary debugging.</p>
+
+<p>There were a few times where I ran into heisenbugs where my overridden dependencies at the app root or in previews weren’t getting overridden. Or they were getting overridden in a parent reducer but not a child. These situations felt nearly impossible to debug without doing a full code-review of <code class="language-plaintext highlighter-rouge">swift-dependencies</code> and <code class="language-plaintext highlighter-rouge">TaskLocal</code>s.</p>
+
+<h4 id="the-use-of-dependencies-in-count-biki">The use of dependencies in Count Biki</h4>
+
+<p>After all that foreword, I can talk at least a little bit about how I used dependencies in CountBiki.</p>
+
+<h5 id="stateless-clients">Stateless clients</h5>
+
+<p><code class="language-plaintext highlighter-rouge">SpeechSynthesisClient</code> is responsible for wrapping <code class="language-plaintext highlighter-rouge">AVSpeechSynthesizer</code>, Apple’s top-level API for text-to-speech.</p>
+
+<p>My tendency for designing clients is to separate configuration and side-effects. In other words, clients should be stateless by default. For example, most <code class="language-plaintext highlighter-rouge">NetworkClient</code> APIs are designed like:</p>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="c1">// Set configuration on app init or when current user is updated</span>
+<span class="kt">NetworkClient</span><span class="o">.</span><span class="n">shared</span><span class="o">.</span><span class="nf">setSessionToken</span><span class="p">(</span><span class="s">"123abc"</span><span class="p">)</span>
+<span class="kt">NetworkClient</span><span class="o">.</span><span class="n">shared</span><span class="o">.</span><span class="nf">setCacheSize</span><span class="p">(</span><span class="mf">1024*10*</span><span class="mi">10</span><span class="p">)</span>
+
+<span class="c1">// Make an authenticated network request in some other part of the app</span>
+<span class="k">let</span> <span class="nv">users</span> <span class="o">=</span> <span class="k">try</span> <span class="n">await</span> <span class="kt">NetworkClient</span><span class="o">.</span><span class="n">shared</span><span class="o">.</span><span class="nf">fetchFriends</span><span class="p">()</span>
+</code></pre>
+</div>
+
+<p>In the above example, the <code class="language-plaintext highlighter-rouge">NetworkClient</code> is both a source-of-truth for network-related state <em>and</em> a way to perform side-effects.</p>
+
+<p>For most use cases, this style of API is very reasonable. The benefit is that the caller of <code class="language-plaintext highlighter-rouge">fetchFriends</code> needs zero knowledge of the <code class="language-plaintext highlighter-rouge">NetworkClient</code> configuration details.</p>
+
+<p>I prefer to have <code class="language-plaintext highlighter-rouge">NetworkClient</code> be stateless. At the callsite, the above example would look like this instead:</p>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="c1">// `networkConfiguration` is passed around a subsystem via dependency injection or generated from existing state</span>
+<span class="k">let</span> <span class="nv">networkConfiguration</span><span class="p">:</span> <span class="kt">NetworkClient</span><span class="o">.</span><span class="kt">Configuration</span> <span class="o">=</span> <span class="o">...</span>
+<span class="k">let</span> <span class="nv">users</span> <span class="o">=</span> <span class="k">try</span> <span class="n">await</span> <span class="kt">NetworkClient</span><span class="p">()</span><span class="o">.</span><span class="nf">fetchFriends</span><span class="p">(</span><span class="n">networkConfiguration</span><span class="p">)</span>
+</code></pre>
+</div>
+
+<p>One benefit of stateless clients is that it’s trivial (or at least more-so) to add multi-account support and use the same <code class="language-plaintext highlighter-rouge">NetworkClient</code> instance.</p>
+
+<p>Another benefit is that it avoids the dependency initialization catch-22 we discussed earlier. A <code class="language-plaintext highlighter-rouge">NetworkClient</code> initialized at app startup and with the same lifetime as the app has no initialization race condition for needing its configuration set to a valid state before making calls.</p>
+
+<p>The <code class="language-plaintext highlighter-rouge">NetworkClient</code> example is probably a bad one though. The underlying <code class="language-plaintext highlighter-rouge">URLSession</code> is stateful by design. It maintains its own cache, so wrapping it with a stateless interface could actually increase the chance of bugs, or completely break caching functionality. Another downside is that functions that could be encapsulated within the <code class="language-plaintext highlighter-rouge">NetworkClient</code> such as seamlessly renewing expired session tokens.</p>
+
+<p>All of that is to say I used the stateless client pattern for <code class="language-plaintext highlighter-rouge">SpeechSynthesisClient</code>.</p>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">SpeechSynthesisSettings</span><span class="p">:</span> <span class="kt">Equatable</span><span class="p">,</span> <span class="kt">Codable</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">voiceIdentifier</span><span class="p">:</span> <span class="kt">String</span><span class="p">?</span>
+    <span class="k">var</span> <span class="nv">pitchMultiplier</span><span class="p">:</span> <span class="kt">Float</span><span class="p">?</span>
+    <span class="k">var</span> <span class="nv">volume</span><span class="p">:</span> <span class="kt">Float</span><span class="p">?</span>
+    <span class="k">var</span> <span class="nv">rate</span><span class="p">:</span> <span class="kt">Float</span><span class="p">?</span>
+    <span class="k">var</span> <span class="nv">preUtteranceDelay</span><span class="p">:</span> <span class="kt">TimeInterval</span><span class="p">?</span>
+    <span class="k">var</span> <span class="nv">postUtteranceDelay</span><span class="p">:</span> <span class="kt">TimeInterval</span><span class="p">?</span>
+<span class="p">}</span>
+
+<span class="kd">struct</span> <span class="kt">SpeechSynthesisUtterance</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">speechString</span><span class="p">:</span> <span class="kt">String</span>
+    <span class="k">var</span> <span class="nv">settings</span><span class="p">:</span> <span class="kt">SpeechSynthesisSettings</span>
+<span class="p">}</span>
+
+<span class="kd">struct</span> <span class="kt">SpeechSynthesisClient</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">speak</span><span class="p">:</span> <span class="kd">@Sendable</span> <span class="p">(</span><span class="kt">SpeechSynthesisUtterance</span><span class="p">)</span> <span class="k">as</span><span class="n">ync</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Void</span>
+    <span class="c1">// ...</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p><code class="language-plaintext highlighter-rouge">SpeechSynthesisSettings</code> are persisted using their own client <code class="language-plaintext highlighter-rouge">SpeechSynthesisSettingsClient</code>. The top-level feature is responsible for fetching the settings and configuring an utterance to provide to the stateless <code class="language-plaintext highlighter-rouge">SpeechSynthesisClient</code>.</p>
+
+<p>The implementation of <code class="language-plaintext highlighter-rouge">SpeechSynthesisClient</code> is admittedly weak. I should be using an actor.</p>
+
+<h5 id="separating-settings">Separating settings</h5>
+
+<p>I erred on the side of splitting persisted settings into separate clients, even though they all use the same underlying storage. Specifically: <code class="language-plaintext highlighter-rouge">SpeechSynthesisSettingsClient</code> and <code class="language-plaintext highlighter-rouge">TierPurchaseHistoryClient</code>. There’s some unnecessary indirection at this point.</p>
+
+<h5 id="wrapping-storekit">Wrapping StoreKit</h5>
+
+<p>Implementing StoreKit for a consumables tip jar was a bit of a headache.</p>
+
+<p>Consumables act differently than subscriptions, so there were a few misunderstanding before I landed on an API for the <code class="language-plaintext highlighter-rouge">TierProductsClient</code> dependency.</p>
+
+<p>The API I wanted for consumers of the dependency was similar to the read/write/observe API I mentioned previously. However, several of the mutations happen within the dependency itself while it’s observing internals of StoreKit.</p>
+
+<p>I wanted to use Combine’s <code class="language-plaintext highlighter-rouge">CurrentValueSubject</code>. Swift Concurrency does not have a built-in replacement for <code class="language-plaintext highlighter-rouge">CurrentValueSubject</code>, and using <code class="language-plaintext highlighter-rouge">CurrentValueSubject</code> safely within the confines of Swift Concurrency is not a fully endorsed activity (especially with compiler warnings set to maximum). I didn’t want to add another package dependency, however <a href="https://github.com/sideeffect-io/AsyncExtensions">AsyncExtensions</a> seemed to provide exactly the tool I needed.</p>
+
+<h5 id="topics">Topics</h5>
+
+<p>I somewhat regret my <code class="language-plaintext highlighter-rouge">Topic</code> interface. A <code class="language-plaintext highlighter-rouge">Topic</code> is a wrapper for generating question/answer pairs. I thought my interface would be generic enough for all kinds of topics.</p>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">Topic</span><span class="p">:</span> <span class="kt">Identifiable</span><span class="p">,</span> <span class="kt">Equatable</span> <span class="p">{</span>
+    <span class="kd">enum</span> <span class="kt">Skill</span> <span class="p">{</span>
+        <span class="k">case</span> <span class="n">listening</span>
+        <span class="k">case</span> <span class="n">reading</span>
+    <span class="p">}</span>
+
+    <span class="kd">enum</span> <span class="kt">Category</span> <span class="p">{</span>
+        <span class="k">case</span> <span class="n">number</span>
+        <span class="k">case</span> <span class="n">money</span>
+        <span class="k">case</span> <span class="n">duration</span>
+        <span class="k">case</span> <span class="n">dateTime</span>
+        <span class="k">case</span> <span class="n">counter</span>
+    <span class="p">}</span>
+
+    <span class="k">let</span> <span class="nv">id</span><span class="p">:</span> <span class="kt">UUID</span>
+    <span class="k">let</span> <span class="nv">skill</span><span class="p">:</span> <span class="kt">Skill</span>
+    <span class="k">let</span> <span class="nv">category</span><span class="p">:</span> <span class="kt">Category</span>
+    <span class="k">let</span> <span class="nv">title</span><span class="p">:</span> <span class="kt">String</span>
+    <span class="k">let</span> <span class="nv">description</span><span class="p">:</span> <span class="kt">String</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p>A <code class="language-plaintext highlighter-rouge">Topic</code> itself is only a bag of data attributes. However, I create a wrapper struct internally called <code class="language-plaintext highlighter-rouge">TopicGenerator</code> when defining each <code class="language-plaintext highlighter-rouge">Topic</code> that also provides a question generator function. This allows me to expose <code class="language-plaintext highlighter-rouge">Topic</code> to the rest of the app as behaviorless and <code class="language-plaintext highlighter-rouge">Equatable</code>, but still behavior associated with each <code class="language-plaintext highlighter-rouge">Topic</code> and defined inline with it.</p>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">private</span> <span class="kd">struct</span> <span class="kt">TopicGenerator</span><span class="p">:</span> <span class="kt">Identifiable</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">id</span><span class="p">:</span> <span class="kt">UUID</span> <span class="p">{</span> <span class="n">topic</span><span class="o">.</span><span class="n">id</span> <span class="p">}</span>
+    <span class="k">let</span> <span class="nv">topic</span><span class="p">:</span> <span class="kt">Topic</span>
+    <span class="k">var</span> <span class="nv">generateQuestion</span><span class="p">:</span> <span class="kd">@Sendable</span> <span class="p">(</span><span class="kt">WithRandomNumberGenerator</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="kt">Question</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p>The <code class="language-plaintext highlighter-rouge">WithRandomNumberGenerator</code> part turned out to be pretty useless. I thought it might be useful for testing or otherwise seeding and keeping some control over values generated, but in the end it was just another field I had to work around.</p>
+
+<p>An example of a <code class="language-plaintext highlighter-rouge">TopicGenerator</code> definition within the code:</p>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kt">TopicGenerator</span><span class="p">(</span>
+    <span class="nv">topic</span><span class="p">:</span> <span class="kt">Topic</span><span class="p">(</span>
+        <span class="nv">id</span><span class="p">:</span> <span class="kt">Topic</span><span class="o">.</span><span class="nf">id</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="mi">201</span><span class="p">),</span>
+        <span class="nv">skill</span><span class="p">:</span> <span class="o">.</span><span class="n">listening</span><span class="p">,</span>
+        <span class="nv">category</span><span class="p">:</span> <span class="o">.</span><span class="n">duration</span><span class="p">,</span>
+        <span class="nv">title</span><span class="p">:</span> <span class="s">"Hours"</span><span class="p">,</span>
+        <span class="nv">description</span><span class="p">:</span> <span class="s">"1-48時間"</span>
+    <span class="p">),</span>
+    <span class="nv">generateQuestion</span><span class="p">:</span> <span class="p">{</span> <span class="n">rng</span> <span class="k">in</span>
+        <span class="k">let</span> <span class="nv">answer</span> <span class="o">=</span> <span class="n">rng</span> <span class="p">{</span> <span class="kt">Int</span><span class="o">.</span><span class="nf">random</span><span class="p">(</span><span class="nv">in</span><span class="p">:</span> <span class="mi">1</span> <span class="o">...</span> <span class="mi">48</span><span class="p">,</span> <span class="nv">using</span><span class="p">:</span> <span class="o">&amp;</span><span class="nv">$0</span><span class="p">)</span> <span class="p">}</span>
+        <span class="k">let</span> <span class="nv">postfix</span> <span class="o">=</span> <span class="s">"時間"</span>
+        <span class="k">let</span> <span class="nv">displayText</span> <span class="o">=</span> <span class="s">"</span><span class="se">\(</span><span class="n">answer</span><span class="se">)\(</span><span class="k">postfix</span><span class="se">)</span><span class="s">"</span>
+        <span class="k">let</span> <span class="nv">acceptedAnswer</span> <span class="o">=</span> <span class="kt">String</span><span class="p">(</span><span class="n">answer</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kt">Question</span><span class="p">(</span>
+            <span class="nv">topicID</span><span class="p">:</span> <span class="kt">Topic</span><span class="o">.</span><span class="nf">id</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="mi">201</span><span class="p">),</span>
+            <span class="nv">displayText</span><span class="p">:</span> <span class="n">displayText</span><span class="p">,</span>
+            <span class="nv">spokenText</span><span class="p">:</span> <span class="n">displayText</span><span class="p">,</span>
+            <span class="nv">answerPrefix</span><span class="p">:</span> <span class="kc">nil</span><span class="p">,</span>
+            <span class="nv">answerPostfix</span><span class="p">:</span> <span class="k">postfix</span><span class="p">,</span>
+            <span class="nv">acceptedAnswer</span><span class="p">:</span> <span class="n">acceptedAnswer</span>
+        <span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">)</span>
+</code></pre>
+</div>
+
+<p>I’m defining a static ID for each <code class="language-plaintext highlighter-rouge">Topic</code> for a future where user answers are persisted and need to be associated back to a <code class="language-plaintext highlighter-rouge">Topic</code> internally.</p>
+
+<p>Another part of the interface I went back and forth on was whether I should keep the generated question and user answer as <code class="language-plaintext highlighter-rouge">Int</code> or whether all answers should converge to <code class="language-plaintext highlighter-rouge">String</code>. I kept the latter method (<code class="language-plaintext highlighter-rouge">String</code>) but realized during development that allowing access to the numerical values would give more flexibility in comparing and reformatting values.</p>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">TopicClient</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">allTopics</span><span class="p">:</span> <span class="kd">@Sendable</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">IdentifiedArrayOf</span><span class="o">&lt;</span><span class="kt">Topic</span><span class="o">&gt;</span>
+    <span class="k">var</span> <span class="nv">generateQuestion</span><span class="p">:</span> <span class="kd">@Sendable</span> <span class="p">(</span><span class="kt">UUID</span><span class="p">)</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="kt">Question</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p>The <code class="language-plaintext highlighter-rouge">TopicClient</code> itself simply abstracts away looking up a <code class="language-plaintext highlighter-rouge">Topic</code> by its ID and generating a <code class="language-plaintext highlighter-rouge">Question</code> for it.</p>
+
+<p>A downside to this stateless design is that all <code class="language-plaintext highlighter-rouge">TopicGenerator</code>s must have the input signature (they can’t take distinct parameters). Additionally, I can’t guarantee within the <code class="language-plaintext highlighter-rouge">TopicClient</code> that subsequently generated questions aren’t the same.</p>
+
+<h4 id="bikianimation">BikiAnimation</h4>
+
+<p>There’s a unique friction point we sometimes encounter with SwiftUI being a declarative system but needing to interface with imperative events.</p>
+
+<p>One of these friction points is animations.</p>
+
+<p>For my Count Biki SceneKit model, I have 1 idle animation and 2 brief animations that play for a second or two each. One animation is triggered when the user gets a question right. One animation is played when the user gets a question wrong.</p>
+
+<p>What’s the right way to model this in SwiftUI?</p>
+
+<p>This problem is easier to solve for something like the confetti animation that plays when the user gets a question right. We can model this as an integer that counts up by one each time the animation should play. The SwiftUI view will playback the animation any time that value changes (whether it be by 1 or 100).</p>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">State</span><span class="p">:</span> <span class="kt">Equatable</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">confettiAnimation</span><span class="p">:</span> <span class="kt">Int</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="c1">// ...</span>
+<span class="p">}</span>
+
+<span class="c1">// Change `confettiAnimation` when a correct answer is submitted</span>
+<span class="kt">Reduce</span> <span class="p">{</span> <span class="n">state</span><span class="p">,</span> <span class="n">action</span> <span class="k">in</span>
+    <span class="k">switch</span> <span class="n">action</span> <span class="p">{</span>
+    <span class="k">case</span> <span class="o">.</span><span class="nv">answerSubmitButtonTapped</span><span class="p">:</span>
+        <span class="c1">// ...</span>
+        <span class="n">state</span><span class="o">.</span><span class="n">confettiAnimation</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="c1">// ...</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1">// `ConfettiCannon` will observe changes to this value</span>
+<span class="kt">VStack</span> <span class="p">{</span> <span class="cm">/* ... */</span> <span class="p">}</span>
+    <span class="o">.</span><span class="nf">confettiCannon</span><span class="p">(</span><span class="nv">counter</span><span class="p">:</span> <span class="n">viewStore</span><span class="o">.</span><span class="n">confettiAnimation</span><span class="p">)</span>
+
+<span class="c1">// Or we can use `.animation` with any `Equatable` value</span>
+<span class="kt">VStack</span> <span class="p">{</span> <span class="cm">/* ... */</span> <span class="p">}</span>
+    <span class="o">.</span><span class="nf">animation</span><span class="p">(</span><span class="o">.</span><span class="k">default</span><span class="p">,</span> <span class="nv">value</span><span class="p">:</span> <span class="n">viewStore</span><span class="o">.</span><span class="n">confettiAnimation</span><span class="p">)</span>
+</code></pre>
+</div>
+
+<p>But for 2 different types of animation, how can we model it? Well we could just have 2 different counter variables and keep increasing the number of variables and the number of change observers. But this doesn’t scale well.</p>
+
+<p>Another way to model this is with a UUID wrapper:</p>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">BikiAnimation</span><span class="p">:</span> <span class="kt">Equatable</span> <span class="p">{</span>
+    <span class="kd">enum</span> <span class="kt">Kind</span> <span class="p">{</span>
+        <span class="k">case</span> <span class="n">correct</span>
+        <span class="k">case</span> <span class="n">incorrect</span>
+    <span class="p">}</span>
+
+    <span class="k">let</span> <span class="nv">id</span><span class="p">:</span> <span class="kt">UUID</span>
+    <span class="k">let</span> <span class="nv">kind</span><span class="p">:</span> <span class="kt">Kind</span>
+<span class="p">}</span>
+
+<span class="kd">struct</span> <span class="kt">State</span><span class="p">:</span> <span class="kt">Equatable</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">bikiAnimation</span><span class="p">:</span> <span class="kt">BikiAnimation</span><span class="p">?</span>
+    <span class="c1">// ...</span>
+<span class="p">}</span>
+
+<span class="kt">Reduce</span> <span class="p">{</span> <span class="n">state</span><span class="p">,</span> <span class="n">action</span> <span class="k">in</span>
+    <span class="k">switch</span> <span class="n">action</span> <span class="p">{</span>
+    <span class="k">case</span> <span class="o">.</span><span class="nv">answerSubmitButtonTapped</span><span class="p">:</span>
+        <span class="c1">// ...</span>
+        <span class="n">state</span><span class="o">.</span><span class="n">bikiAnimation</span> <span class="o">=</span> <span class="o">.</span><span class="nf">init</span><span class="p">(</span><span class="nv">id</span><span class="p">:</span> <span class="kt">UUID</span><span class="p">(),</span> <span class="nv">kind</span><span class="p">:</span> <span class="o">.</span><span class="n">correct</span><span class="p">)</span>
+    <span class="c1">// ...</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kt">SceneView</span> <span class="p">{</span> <span class="cm">/* ... */</span> <span class="p">}</span>
+    <span class="o">.</span><span class="nf">onChange</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="n">bikiAnimation</span><span class="p">)</span> <span class="p">{</span> <span class="n">newValue</span> <span class="k">in</span>
+        <span class="k">switch</span> <span class="n">newValue</span><span class="p">?</span><span class="o">.</span><span class="n">kind</span> <span class="p">{</span>
+        <span class="k">case</span> <span class="o">.</span><span class="nv">correct</span><span class="p">:</span>
+            <span class="n">sceneState</span><span class="o">.</span><span class="nf">playCorrect</span><span class="p">()</span>
+        <span class="k">case</span> <span class="o">.</span><span class="nv">incorrect</span><span class="p">:</span>
+            <span class="n">sceneState</span><span class="o">.</span><span class="nf">playIncorrect</span><span class="p">()</span>
+        <span class="k">case</span> <span class="nv">nil</span><span class="p">:</span>
+            <span class="k">break</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+</code></pre>
+</div>
+
+<h3 id="testing">Testing</h3>
+
+<p>One of TCA’s biggest wins is ease of testing. I dabbled in testing, but as of the 1.1 release I’ve only written 1 test. My reasons for this lack of tests are the usual excuses: it’s an MVP; I wanted to ship and get user feedback ASAP; the view-layer and dependency-layers were actually more error prone than the reducer-layer logic; the structure of the app was constantly in flux during initial development.</p>
+
+<p>Regardless of these excuses, I appreciate the testability facilitated by TCA and I’ll certainly be adding more, not fewer, tests over time to the project.</p>
+
+<h2 id="swiftui">SwiftUI</h2>
+
+<p>Although the focus of this post has been its architecture and relationship to TCA, I do want to mention a few parts of the view layer that stand out in some way.</p>
+
+<h3 id="bikiview">BikiView</h3>
+
+<p><a href="https://github.com/twocentstudios/count-biki/blob/8195c7fde3703166d5b3a41743c8a19486448a14/count/View/CountBikiView.swift"><code class="language-plaintext highlighter-rouge">BikiView</code></a> is the wrapper for the Count Biki character avatar derived from a SceneKit .scn file.</p>
+
+<p>Wrapping stateful view architecture like SceneKit or UIKit in SwiftUI can sometime be tricky.</p>
+
+<p>The <code class="language-plaintext highlighter-rouge">SceneState</code> struct holds onto the loaded <code class="language-plaintext highlighter-rouge">SCNScene</code> containing Biki, and also handles loading and playing back the animations on demand from the separate .dae files.</p>
+
+<p>Note that adding this view to a hierarchy non-trivially increases CPU usage and energy usage for the device. For now, I think this is an okay trade off, but SceneKit’s relative resource intensiveness is something to be aware of.</p>
+
+<h3 id="styling-with-base-ios-classes">Styling with base iOS classes</h3>
+
+<p>Apple’s human interface guidelines define <a href="https://developer.apple.com/design/human-interface-guidelines/color">system colors</a> and <a href="https://developer.apple.com/design/human-interface-guidelines/typography">system typography</a>.</p>
+
+<p>When I’m not working closely with a designer, it’s much easier to rely on the Apple-provided design system than create my own one-off design system. It takes a lot of the burden off of me as an individual to ensure proper accessibility, support dark mode, ensure a base-level of visual quality, and spend time designing my own controls.</p>
+
+<p>The tradeoff is that the visual style is a lot less <em>fun</em> and <em>unique</em> than it could/should be.</p>
+
+<p>For now, I feel okay about this compromise. After ensuring a base level of functionality, I feel more comfortable spending time exploring visual style adjustments.</p>
+
+<p>Even after 5 versions, I still feel using the Apple design system primitives can be unintuitive. For example, many of the system colors are still defined only in <code class="language-plaintext highlighter-rouge">UIKit.UIColor</code> and not <code class="language-plaintext highlighter-rouge">SwiftUI.Color</code> – for example <code class="language-plaintext highlighter-rouge">UIColor.secondarySystemBackground</code>. <code class="language-plaintext highlighter-rouge">SwiftUI.Color</code> has the limited <code class="language-plaintext highlighter-rouge">primary</code> and <code class="language-plaintext highlighter-rouge">secondary</code> variants.</p>
+
+<p>The meaning of <code class="language-plaintext highlighter-rouge">tint</code> and <code class="language-plaintext highlighter-rouge">accentColor</code> is subtly different, as are their SwiftUI modifiers (<code class="language-plaintext highlighter-rouge">.accentColor()</code> was deprecated and <code class="language-plaintext highlighter-rouge">.tintColor()</code> added in iOS 15).</p>
+
+<p>Semantic/Dynamic Type font styles like <code class="language-plaintext highlighter-rouge">Font.title</code> and <code class="language-plaintext highlighter-rouge">Font.body</code> don’t always map well to app styles, and there’s never been much guidance from Apple on how to do so.</p>
+
+<p>Aside: I’ve never worked with a designer who understood or considered these semantic font styles or Dynamic Type. The most Apple advertises Dynamic Type to designers is these three sentences from the <a href="https://developer.apple.com/design/human-interface-guidelines/typography">HIG</a>:</p>
+
+<blockquote>
+  <p>Consider using the built-in text styles. The system-defined text styles give you a convenient and consistent way to convey your information hierarchy through font size and weight. Using text styles with the system fonts also supports Dynamic Type and the larger accessibility type sizes (where available), which let people choose the text size that works for them.</p>
+</blockquote>
+
+<h3 id="laying-out-the-quiz-screen-without-a-scroll-view">Laying out the quiz screen without a scroll view</h3>
+
+<p>It’s arguably <a href="https://lickability.com/blog/every-screen-in-your-app-should-be-a-scrolling-view/">best practice</a> to use a scroll view for every screen in your app by default.</p>
+
+<p>The quiz screen is designed to be rapid fire, and wouldn’t really make sense to force the user to scroll up and down constantly while they are trying to power through questions.</p>
+
+<p>However, I was of course going against the laws of physics trying to fit in all the UI elements I wanted while still supporting all small screen sizes and accessibility Dynamic Type sizes. This was not an easy problem to solve, and for the version 1.1 release I had to cheat a bit by limiting the accessibility Dynamic Type size to the second level. I feel shame doing so, but at the moment it’s better to artificially enforce a limit rather than have a broken layout.</p>
+
+<div class="caption-wrapper"><img class="caption" src="/images/count-biki-v1-listening-quiz-accessibility.png" width="" height="600" alt="The listening quiz screen at maximum supported accessibility size" title="The listening quiz screen at maximum supported accessibility size" /><div class="caption-text">The listening quiz screen at maximum supported accessibility size</div></div>
+
+<h3 id="adding-commas-dynamically-to-the-textfield">Adding commas dynamically to the TextField</h3>
+
+<p>Text input is way more difficult than it seems. There’s a ton of complexity wrapped around the simple SwiftUI interface of <code class="language-plaintext highlighter-rouge">TextField($text)</code>.</p>
+
+<p>Answering a quiz question with only numbers is much simpler than all the functionality needed for a multi-lingual, editable text field. However, since <code class="language-plaintext highlighter-rouge">TextField</code> already exists, I preferred to use it with as few customizations as possible before implementing my own text input system from scratch.</p>
+
+<p>However, my beta users ran into problems when answering questions with long numbers like <code class="language-plaintext highlighter-rouge">125400000</code>. Without comma separators, it quickly becomes impossible to know exactly which number you’ve entered.</p>
+
+<p>Although it’s certainly possible, I felt uncomfortable modifying the TextField’s string while the user is typing to add separators, thinking that there’d be edge cases (especially with moving the cursor) I didn’t have time to thoroughly test. As a pragmatic (and hopefully temporary) solution, I instead added formatted text that mirrors the input string right above the TextField.</p>
+
+<div class="caption-wrapper"><img class="caption" src="/images/count-biki-v1-listening-quiz-formatted-text.png" width="" height="200" alt="A temporary solution for formatting the input string without interrupting the default TextField handling" title="A temporary solution for formatting the input string without interrupting the default TextField handling" /><div class="caption-text">A temporary solution for formatting the input string without interrupting the default TextField handling</div></div>
+
+<h2 id="conclusion">Conclusion</h2>
+
+<p>These were the various concerns running through my head while developing this simple app.</p>
+
+<p>Usually when working in a team I write these kind of explanations in pull request descriptions. But in this case I’ve saved everything until the first release.</p>
+
+<p>I don’t like to share “solutions” to problems before I’m completely sure they’re robust enough to survive the long term. That’s why the slant of the above text is more “here was X problem and how I solved it” than “here’s exactly how to solve X problem”.</p>
+
+<p>I also share some of these thoughts day-to-day on <a href="https://hachyderm.io/@twocentstudios">Mastodon</a>, so feel free to follow me there. And if you want to dig into the codebase, here’s <a href="https://github.com/twocentstudios/count-biki">one more link</a>.</p>
+
+<p>Thanks for reading this post or the whole series.</p>
+
+  </article>
+
+</div>
+
+      </div>
+    </div>
+
+    <footer class="site-footer">
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">twocentstudios</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col  footer-col-1">
+        <ul class="contact-list">
+          <li><a href="mailto:chris@twocentstudios.com">chris@twocentstudios.com</a></li>
+          
+          <li>
+            <a href="https://github.com/twocentstudios">
+              <span class="icon  icon--github">
+                <svg viewBox="0 0 16 16">
+                  <path fill="#828282" d="M7.999,0.431c-4.285,0-7.76,3.474-7.76,7.761 c0,3.428,2.223,6.337,5.307,7.363c0.388,0.071,0.53-0.168,0.53-0.374c0-0.184-0.007-0.672-0.01-1.32 c-2.159,0.469-2.614-1.04-2.614-1.04c-0.353-0.896-0.862-1.135-0.862-1.135c-0.705-0.481,0.053-0.472,0.053-0.472 c0.779,0.055,1.189,0.8,1.189,0.8c0.692,1.186,1.816,0.843,2.258,0.645c0.071-0.502,0.271-0.843,0.493-1.037 C4.86,11.425,3.049,10.76,3.049,7.786c0-0.847,0.302-1.54,0.799-2.082C3.768,5.507,3.501,4.718,3.924,3.65 c0,0,0.652-0.209,2.134,0.796C6.677,4.273,7.34,4.187,8,4.184c0.659,0.003,1.323,0.089,1.943,0.261 c1.482-1.004,2.132-0.796,2.132-0.796c0.423,1.068,0.157,1.857,0.077,2.054c0.497,0.542,0.798,1.235,0.798,2.082 c0,2.981-1.814,3.637-3.543,3.829c0.279,0.24,0.527,0.713,0.527,1.437c0,1.037-0.01,1.874-0.01,2.129 c0,0.208,0.14,0.449,0.534,0.373c3.081-1.028,5.302-3.935,5.302-7.362C15.76,3.906,12.285,0.431,7.999,0.431z"/>
+                </svg>
+              </span>
+
+              <span class="username">twocentstudios</span>
+            </a>
+          </li>
+          
+
+          <li>
+            <a href="https://hackyderm.io/@twocentstudios">
+              <span class="icon">
+                <svg viewBox="0 0 24 24">
+                  <path fill="#828282" d="M21.327 8.566c0-4.339-2.843-5.61-2.843-5.61-1.433-.658-3.894-.935-6.451-.956h-.063c-2.557.021-5.016.298-6.45.956 0 0-2.843 1.272-2.843 5.61 0 .993-.019 2.181.012 3.441.103 4.243.778 8.425 4.701 9.463 1.809.479 3.362.579 4.612.51 2.268-.126 3.541-.809 3.541-.809l-.075-1.646s-1.621.511-3.441.449c-1.804-.062-3.707-.194-3.999-2.409a4.523 4.523 0 0 1-.04-.621s1.77.433 4.014.536c1.372.063 2.658-.08 3.965-.236 2.506-.299 4.688-1.843 4.962-3.254.434-2.223.398-5.424.398-5.424zm-3.353 5.59h-2.081V9.057c0-1.075-.452-1.62-1.357-1.62-1 0-1.501.647-1.501 1.927v2.791h-2.069V9.364c0-1.28-.501-1.927-1.502-1.927-.905 0-1.357.546-1.357 1.62v5.099H6.026V8.903c0-1.074.273-1.927.823-2.558.566-.631 1.307-.955 2.228-.955 1.065 0 1.872.409 2.405 1.228l.518.869.519-.869c.533-.819 1.34-1.228 2.405-1.228.92 0 1.662.324 2.228.955.549.631.822 1.484.822 2.558v5.253z"/>
+                </svg>
+              </span>
+
+              <span class="username">twocentstudios</span>
+            </a>
+          </li>
+
+          
+          <li>
+            <a href="https://twitter.com/twocentstudios">
+              <span class="icon  icon--twitter">
+                <svg viewBox="0 0 16 16">
+                  <path fill="#828282" d="M15.969,3.058c-0.586,0.26-1.217,0.436-1.878,0.515c0.675-0.405,1.194-1.045,1.438-1.809
+                  c-0.632,0.375-1.332,0.647-2.076,0.793c-0.596-0.636-1.446-1.033-2.387-1.033c-1.806,0-3.27,1.464-3.27,3.27 c0,0.256,0.029,0.506,0.085,0.745C5.163,5.404,2.753,4.102,1.14,2.124C0.859,2.607,0.698,3.168,0.698,3.767 c0,1.134,0.577,2.135,1.455,2.722C1.616,6.472,1.112,6.325,0.671,6.08c0,0.014,0,0.027,0,0.041c0,1.584,1.127,2.906,2.623,3.206 C3.02,9.402,2.731,9.442,2.433,9.442c-0.211,0-0.416-0.021-0.615-0.059c0.416,1.299,1.624,2.245,3.055,2.271 c-1.119,0.877-2.529,1.4-4.061,1.4c-0.264,0-0.524-0.015-0.78-0.046c1.447,0.928,3.166,1.469,5.013,1.469 c6.015,0,9.304-4.983,9.304-9.304c0-0.142-0.003-0.283-0.009-0.423C14.976,4.29,15.531,3.714,15.969,3.058z"/>
+                </svg>
+              </span>
+
+              <span class="username">twocentstudios</span>
+            </a>
+          </li>
+          
+        </ul>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+
+
+  </body>
+
+</html>
