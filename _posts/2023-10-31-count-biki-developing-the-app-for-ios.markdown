@@ -17,7 +17,7 @@ Please check out the other posts in the series:
 
 Japanese learners can download the app from the [App Store](https://apps.apple.com/us/app/count-biki/id6463796779).
 
-Like many of my other apps, Count Biki is open source on [GitHub](https://github.com/twocentstudios/count-biki).
+Like many of my other apps, Count Biki is open source on [GitHub](https://github.com/twocentstudios/count-biki). The commit/tag referenced in this post is [v1.1](https://github.com/twocentstudios/count-biki/tree/v1.1), so the main branch will not fully align with the post's content.
 
 ## Stats
 
@@ -245,7 +245,7 @@ As I get more comfortable with TCA, I'll probably go back and move some of the n
 
 When implementing store scoping within the view layer, I found myself struggling a bit to craft the correct syntax to express the relationship between the parent and child features.
 
-When going by-the-book, the store scoping feels like boilerplate. But when I did want to play outside the sandbox a bit, I realized I was in over my head and couldn't even get the scoping statement to compile.
+When going by-the-book, the store scoping feels like boilerplate (there's not a lot to think about). But when I did want to play outside the sandbox a bit, I realized I was in over my head and couldn't even get the scoping statement to compile.
 
 The frustrating part was that I knew I either had to:
 
@@ -356,6 +356,32 @@ There is certainly a wealth of information in the discussion boards I've yet to 
 `withDependencies` is most often used as a developer tool – for testing, SwiftUI previews, or temporary debugging.
 
 There were a few times where I ran into heisenbugs where my overridden dependencies at the app root or in previews weren't getting overridden. Or they were getting overridden in a parent reducer but not a child. These situations felt nearly impossible to debug without doing a full code-review of `swift-dependencies` and `TaskLocal`s.
+
+#### Overriding dependencies for use with SwiftUI Previews
+
+A key piece of the `ListeningQuiz` screen is the text-to-speech playback for each question. `AVSpeechSynthesizer` does not work on SwiftUI Previews or even the iOS simulator. TCA allowed me to easily mock out this dependency on just Previews and the simulator so it didn't become a blocker for quick UI development. I could spend as much time as I normally would developing off-device when I wasn't doing TTS-related tasks.
+
+```swift
+extension SpeechSynthesisClient: TestDependencyKey {
+    static var previewValue: Self {
+        @Dependency(\.continuousClock) var clock
+        return Self(
+            availableVoices: { [.mock1, .mock2] },
+            defaultVoice: { .mock1 },
+            speak: { _ in
+                // Simulate 2 seconds of speech time
+                try? await clock.sleep(for: .seconds(2))
+            },
+            speechRateAttributes: {
+                .init(minimumRate: 0.0, maximumRate: 1.0, defaultRate: 0.5)
+            },
+            pitchMultiplierAttributes: {
+                .init(minimumPitch: 0.5, maximumPitch: 2.0, defaultPitch: 1.0)
+            }
+        )
+    }
+}
+```
 
 #### The use of dependencies in Count Biki
 
