@@ -165,7 +165,7 @@
 
 <p>Japanese learners can download the app from the <a href="https://apps.apple.com/us/app/count-biki/id6463796779">App Store</a>.</p>
 
-<p>Like many of my other apps, Count Biki is open source on <a href="https://github.com/twocentstudios/count-biki">GitHub</a>.</p>
+<p>Like many of my other apps, Count Biki is open source on <a href="https://github.com/twocentstudios/count-biki">GitHub</a>. The commit/tag referenced in this post is <a href="https://github.com/twocentstudios/count-biki/tree/v1.1">v1.1</a>, so the main branch will not fully align with the post’s content.</p>
 
 <h2 id="stats">Stats</h2>
 
@@ -405,7 +405,7 @@
 
 <p>When implementing store scoping within the view layer, I found myself struggling a bit to craft the correct syntax to express the relationship between the parent and child features.</p>
 
-<p>When going by-the-book, the store scoping feels like boilerplate. But when I did want to play outside the sandbox a bit, I realized I was in over my head and couldn’t even get the scoping statement to compile.</p>
+<p>When going by-the-book, the store scoping feels like boilerplate (there’s not a lot to think about). But when I did want to play outside the sandbox a bit, I realized I was in over my head and couldn’t even get the scoping statement to compile.</p>
 
 <p>The frustrating part was that I knew I either had to:</p>
 
@@ -524,6 +524,32 @@
 <p><code class="language-plaintext highlighter-rouge">withDependencies</code> is most often used as a developer tool – for testing, SwiftUI previews, or temporary debugging.</p>
 
 <p>There were a few times where I ran into heisenbugs where my overridden dependencies at the app root or in previews weren’t getting overridden. Or they were getting overridden in a parent reducer but not a child. These situations felt nearly impossible to debug without doing a full code-review of <code class="language-plaintext highlighter-rouge">swift-dependencies</code> and <code class="language-plaintext highlighter-rouge">TaskLocal</code>s.</p>
+
+<h4 id="overriding-dependencies-for-use-with-swiftui-previews">Overriding dependencies for use with SwiftUI Previews</h4>
+
+<p>A key piece of the <code class="language-plaintext highlighter-rouge">ListeningQuiz</code> screen is the text-to-speech playback for each question. <code class="language-plaintext highlighter-rouge">AVSpeechSynthesizer</code> does not work on SwiftUI Previews or even the iOS simulator. TCA allowed me to easily mock out this dependency on just Previews and the simulator so it didn’t become a blocker for quick UI development. I could spend as much time as I normally would developing off-device when I wasn’t doing TTS-related tasks.</p>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">extension</span> <span class="kt">SpeechSynthesisClient</span><span class="p">:</span> <span class="kt">TestDependencyKey</span> <span class="p">{</span>
+    <span class="kd">static</span> <span class="k">var</span> <span class="nv">previewValue</span><span class="p">:</span> <span class="k">Self</span> <span class="p">{</span>
+        <span class="kd">@Dependency(\.continuousClock)</span> <span class="k">var</span> <span class="nv">clock</span>
+        <span class="k">return</span> <span class="kt">Self</span><span class="p">(</span>
+            <span class="nv">availableVoices</span><span class="p">:</span> <span class="p">{</span> <span class="p">[</span><span class="o">.</span><span class="n">mock1</span><span class="p">,</span> <span class="o">.</span><span class="n">mock2</span><span class="p">]</span> <span class="p">},</span>
+            <span class="n">defaultVoice</span><span class="p">:</span> <span class="p">{</span> <span class="o">.</span><span class="n">mock1</span> <span class="p">},</span>
+            <span class="nv">speak</span><span class="p">:</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span>
+                <span class="c1">// Simulate 2 seconds of speech time</span>
+                <span class="k">try</span><span class="p">?</span> <span class="n">await</span> <span class="n">clock</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">seconds</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span>
+            <span class="p">},</span>
+            <span class="nv">speechRateAttributes</span><span class="p">:</span> <span class="p">{</span>
+                <span class="o">.</span><span class="nf">init</span><span class="p">(</span><span class="nv">minimumRate</span><span class="p">:</span> <span class="mf">0.0</span><span class="p">,</span> <span class="nv">maximumRate</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">defaultRate</span><span class="p">:</span> <span class="mf">0.5</span><span class="p">)</span>
+            <span class="p">},</span>
+            <span class="nv">pitchMultiplierAttributes</span><span class="p">:</span> <span class="p">{</span>
+                <span class="o">.</span><span class="nf">init</span><span class="p">(</span><span class="nv">minimumPitch</span><span class="p">:</span> <span class="mf">0.5</span><span class="p">,</span> <span class="nv">maximumPitch</span><span class="p">:</span> <span class="mf">2.0</span><span class="p">,</span> <span class="n">defaultPitch</span><span class="p">:</span> <span class="mf">1.0</span><span class="p">)</span>
+            <span class="p">}</span>
+        <span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre>
+</div>
 
 <h4 id="the-use-of-dependencies-in-count-biki">The use of dependencies in Count Biki</h4>
 
