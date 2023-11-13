@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>Strategies for Sharing State in The Composable Architecture</title>
+
+  <meta property="og:type" content="article" />
+  <meta property="og:title" content="Strategies for Sharing State in The Composable Architecture" />
+  <meta property="og:url" content="https://twocentstudios.com/2023/11/13/tca-strategies-sharing-state/" />
+  
+    <meta property="og:article:published_time" content="2023-11-13T04:00:00-06:00" />
+  
+  
+  
+  <link href='https://fonts.googleapis.com/css2?family=Work+Sans:wght@300;350;400;600' rel='stylesheet' type='text/css'>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="canonical" href="https://twocentstudios.com/2023/11/13/tca-strategies-sharing-state/">
+  <link rel="alternate" type="application/rss+xml" title="twocentstudios" href="https://twocentstudios.com/feed.xml" />
+</head>
+
+  <!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-NE82N02W8S"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-NE82N02W8S');
+</script>
+
+  <body>
+
+    <header class="site-header">
+
+  <div class="wrapper">
+
+    <a class="site-title" href="/">twocentstudios</a>
+
+    <nav class="site-nav">
+      <a href="#" class="menu-icon">
+        <svg viewBox="0 0 18 15">
+          <path fill="#424242" d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.031C17.335,0,18,0.665,18,1.484L18,1.484z"/>
+          <path fill="#424242" d="M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0c0-0.82,0.665-1.484,1.484-1.484 h15.031C17.335,6.031,18,6.696,18,7.516L18,7.516z"/>
+          <path fill="#424242" d="M18,13.516C18,14.335,17.335,15,16.516,15H1.484C0.665,15,0,14.335,0,13.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.031C17.335,12.031,18,12.696,18,13.516L18,13.516z"/>
+        </svg>
+      </a>
+
+      <div class="trigger">
+        
+          
+          <a class="page-link" href="/about/">About</a>
+          
+        
+          
+          <a class="page-link" href="/blog/">Blog</a>
+          
+        
+          
+        
+          
+        
+          
+          <a class="page-link" href="/portfolio/">Portfolio</a>
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      </div>
+    </nav>
+
+  </div>
+
+</header>
+
+
+    <div class="page-content">
+      <div class="wrapper">
+        <div class="post">
+
+  <header class="post-header">
+    <h1 class="post-title">Strategies for Sharing State in The Composable Architecture</h1>
+    <p class="post-meta">Nov 13, 2023</p>
+  </header>
+
+  <article class="post-content">
+    <p>While working on new features for <a href="/2023/10/29/count-biki-japanese-numbers/">Count Biki</a>, I’ve started to clarify some of the <a href="/2023/10/31/count-biki-developing-the-app-for-ios#shared-state">confusion points</a> I had about sharing state in a TCA app.</p>
+
+<p>So far, I’ve identified two distinct strategies for sharing state based on source-of-truth ownership of the state: <strong>root ownership</strong> and <strong>dependency ownership</strong>. <strong>Root ownership</strong> includes <strong>scope</strong> and <strong>copy-and-delegate</strong> sub-strategies.</p>
+
+<p>The kind of state in question here is:</p>
+
+<ol>
+  <li>shared across multiple features that could have parent/child/sibling/ancestor/descendant relationships.</li>
+  <li>longer lived than any one feature (and optionally persisted to disk).</li>
+</ol>
+
+<h3 id="strategy-1-root-ownership">Strategy 1: root ownership</h3>
+
+<p>Root ownership is keeping some source-of-truth state in a <code class="language-plaintext highlighter-rouge">Store</code>’s <code class="language-plaintext highlighter-rouge">State</code>, and vending access to all descendant features through the standard TCA scoping mechanism that conceptually <em>links</em> parent and child stores/features/views together.</p>
+
+<p>I’m still workshopping the above definition, but I think it’s clear with an example.</p>
+
+<p>Root ownership is what is shown in pointfreeco’s <a href="https://github.com/pointfreeco/swift-composable-architecture/tree/main/Examples/SyncUps">SyncUps example app</a>.</p>
+
+<p>The primary model state in this app is an array of <code class="language-plaintext highlighter-rouge">SyncUp</code> models. These are stored within the <code class="language-plaintext highlighter-rouge">SyncUpsList</code> feature.</p>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">SyncUpsList</span><span class="p">:</span> <span class="kt">Reducer</span> <span class="p">{</span>
+  <span class="kd">struct</span> <span class="kt">State</span><span class="p">:</span> <span class="kt">Equatable</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">syncUps</span><span class="p">:</span> <span class="kt">IdentifiedArrayOf</span><span class="o">&lt;</span><span class="kt">SyncUp</span><span class="o">&gt;</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="c1">// ...</span>
+  <span class="p">}</span>
+  <span class="c1">// ...</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p>However, the <em>actual</em> source-of-truth owner of this state is the parent reducer <code class="language-plaintext highlighter-rouge">AppFeature</code>:</p>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">AppFeature</span><span class="p">:</span> <span class="kt">Reducer</span> <span class="p">{</span>
+  <span class="kd">struct</span> <span class="kt">State</span><span class="p">:</span> <span class="kt">Equatable</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">syncUpsList</span> <span class="o">=</span> <span class="kt">SyncUpsList</span><span class="o">.</span><span class="kt">State</span><span class="p">()</span>
+    <span class="c1">// ...</span>
+  <span class="p">}</span>
+  <span class="c1">// ...</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p>I say it’s the source-of-truth owner of the state because it’s holding onto the <code class="language-plaintext highlighter-rouge">SyncUpsList.State</code> <em>and</em> it uses a <code class="language-plaintext highlighter-rouge">Scope</code> reducer and <code class="language-plaintext highlighter-rouge">.scope</code> modifier to (conceptually) link these pieces of state together.</p>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">AppFeature</span><span class="p">:</span> <span class="kt">Reducer</span> <span class="p">{</span>
+  <span class="c1">// ...</span>
+  <span class="k">var</span> <span class="nv">body</span><span class="p">:</span> <span class="n">some</span> <span class="kt">ReducerOf</span><span class="o">&lt;</span><span class="k">Self</span><span class="o">&gt;</span> <span class="p">{</span>
+    <span class="kt">Scope</span><span class="p">(</span><span class="nv">state</span><span class="p">:</span> <span class="err">\</span><span class="o">.</span><span class="n">syncUpsList</span><span class="p">,</span> <span class="nv">action</span><span class="p">:</span> <span class="o">/</span><span class="kt">Action</span><span class="o">.</span><span class="n">syncUpsList</span><span class="p">)</span> <span class="p">{</span>
+      <span class="kt">SyncUpsList</span><span class="p">()</span>
+    <span class="p">}</span>
+    <span class="c1">// ...</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">struct</span> <span class="kt">AppView</span><span class="p">:</span> <span class="kt">View</span> <span class="p">{</span>
+  <span class="k">let</span> <span class="nv">store</span><span class="p">:</span> <span class="kt">StoreOf</span><span class="o">&lt;</span><span class="kt">AppFeature</span><span class="o">&gt;</span>
+
+  <span class="k">var</span> <span class="nv">body</span><span class="p">:</span> <span class="n">some</span> <span class="kt">View</span> <span class="p">{</span>
+    <span class="kt">NavigationStackStore</span><span class="p">(</span><span class="k">self</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="nf">scope</span><span class="p">(</span><span class="nv">state</span><span class="p">:</span> <span class="err">\</span><span class="o">.</span><span class="n">path</span><span class="p">,</span> <span class="nv">action</span><span class="p">:</span> <span class="p">{</span> <span class="o">.</span><span class="nf">path</span><span class="p">(</span><span class="nv">$0</span><span class="p">)</span> <span class="p">}))</span> <span class="p">{</span>
+      <span class="kt">SyncUpsListView</span><span class="p">(</span>
+        <span class="nv">store</span><span class="p">:</span> <span class="k">self</span><span class="o">.</span><span class="n">store</span><span class="o">.</span><span class="nf">scope</span><span class="p">(</span><span class="nv">state</span><span class="p">:</span> <span class="err">\</span><span class="o">.</span><span class="n">syncUpsList</span><span class="p">,</span> <span class="nv">action</span><span class="p">:</span> <span class="p">{</span> <span class="o">.</span><span class="nf">syncUpsList</span><span class="p">(</span><span class="nv">$0</span><span class="p">)</span> <span class="p">})</span>
+      <span class="p">)</span>
+    <span class="p">}</span>
+    <span class="c1">// ...</span>
+  <span class="p">}</span>
+  <span class="c1">// ...</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p>This link allows both <code class="language-plaintext highlighter-rouge">AppFeature</code> and <code class="language-plaintext highlighter-rouge">SyncUpsList</code> to read/write the <code class="language-plaintext highlighter-rouge">syncUpsList</code> state as parent and child features.</p>
+
+<p>Scoping state this way allows an unlimited number of parent and children to share (mutable) state.</p>
+
+<p>We can additionally consider <code class="language-plaintext highlighter-rouge">AppFeature</code>  as the source-of-truth of the state/model because:</p>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">AppFeature</code> reads its initial <code class="language-plaintext highlighter-rouge">[SyncUp]</code> models from disk (via the <code class="language-plaintext highlighter-rouge">SyncUpsList.init</code> method).</li>
+  <li><code class="language-plaintext highlighter-rouge">AppFeature</code> writes changes of <code class="language-plaintext highlighter-rouge">[SyncUp]</code> to disk.</li>
+</ul>
+
+<p>However, the SyncUps app uses another mechanism to “share” state. I’ll call the second mechanism <em>copy-and-delegate</em>. It’s mostly what it sounds like:</p>
+
+<ol>
+  <li>From a parent feature, make a copy of all or some part of the source-of-truth state, but keep it alongside the source-of-truth state (as e.g. part of a <code class="language-plaintext highlighter-rouge">Destination.State</code> or <code class="language-plaintext highlighter-rouge">Path.State</code>).</li>
+  <li>Make the parent reducer listen to delegate actions from child reducers that describe changes to the source-of-true state, and modify the own source-of-truth state accordingly.</li>
+  <li>Discard the copy of the state as necessary (since the relevant changes have been incorporated into the source-of-truth).</li>
+</ol>
+
+<p>In a more isolated context, SyncUps uses this strategy for editing a <code class="language-plaintext highlighter-rouge">SyncUp</code> with the parent feature being <code class="language-plaintext highlighter-rouge">SyncUpDetail</code> and the child being <code class="language-plaintext highlighter-rouge">SyncUpForm</code>.</p>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">SyncUpDetail</span><span class="p">:</span> <span class="kt">Reducer</span> <span class="p">{</span>
+  <span class="kd">struct</span> <span class="kt">State</span><span class="p">:</span> <span class="kt">Equatable</span> <span class="p">{</span>
+    <span class="kd">@PresentationState</span> <span class="k">var</span> <span class="nv">destination</span><span class="p">:</span> <span class="kt">Destination</span><span class="o">.</span><span class="kt">State</span><span class="p">?</span>
+    <span class="k">var</span> <span class="nv">syncUp</span><span class="p">:</span> <span class="kt">SyncUp</span>
+  <span class="p">}</span>
+  <span class="c1">// ...</span>
+
+  <span class="k">var</span> <span class="nv">body</span><span class="p">:</span> <span class="n">some</span> <span class="kt">ReducerOf</span><span class="o">&lt;</span><span class="k">Self</span><span class="o">&gt;</span> <span class="p">{</span>
+    <span class="kt">Reduce</span> <span class="p">{</span> <span class="n">state</span><span class="p">,</span> <span class="n">action</span> <span class="k">in</span>
+      <span class="k">switch</span> <span class="n">action</span> <span class="p">{</span>
+      
+      <span class="c1">// Copy: Create a copy of the `syncUp` for the editing form.</span>
+      <span class="c1">// Store it in `destination` alongside the source-of-truth `syncUp`.</span>
+      <span class="k">case</span> <span class="o">.</span><span class="nv">editButtonTapped</span><span class="p">:</span>
+        <span class="n">state</span><span class="o">.</span><span class="n">destination</span> <span class="o">=</span> <span class="o">.</span><span class="nf">edit</span><span class="p">(</span><span class="kt">SyncUpForm</span><span class="o">.</span><span class="kt">State</span><span class="p">(</span><span class="nv">syncUp</span><span class="p">:</span> <span class="n">state</span><span class="o">.</span><span class="n">syncUp</span><span class="p">))</span>
+        <span class="k">return</span> <span class="o">.</span><span class="k">none</span>
+
+      <span class="c1">// Delegate: Re-integrate the edited copy of `syncUp` into</span>
+      <span class="c1">// its own source-of-truth state iff the user taps the done button.</span>
+      <span class="k">case</span> <span class="o">.</span><span class="nv">doneEditingButtonTapped</span><span class="p">:</span>
+        <span class="k">guard</span> <span class="k">case</span> <span class="kd">let</span> <span class="o">.</span><span class="nf">some</span><span class="p">(</span><span class="o">.</span><span class="nf">edit</span><span class="p">(</span><span class="n">editState</span><span class="p">))</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">destination</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="o">.</span><span class="k">none</span> <span class="p">}</span>
+        <span class="n">state</span><span class="o">.</span><span class="n">syncUp</span> <span class="o">=</span> <span class="n">editState</span><span class="o">.</span><span class="n">syncUp</span>
+        <span class="n">state</span><span class="o">.</span><span class="n">destination</span> <span class="o">=</span> <span class="kc">nil</span>
+        <span class="k">return</span> <span class="o">.</span><span class="k">none</span>
+      
+      <span class="c1">// ...</span>
+</code></pre>
+</div>
+
+<p>In this case, <code class="language-plaintext highlighter-rouge">SyncUpDetail</code> uses <code class="language-plaintext highlighter-rouge">.doneEditingButtonTapped</code> as the trigger to integrate the copy of the state (within <code class="language-plaintext highlighter-rouge">destination</code>) into <code class="language-plaintext highlighter-rouge">syncUp</code> rather than passing state through the action’s associated value (like we’ll see below).</p>
+
+<p>The copy-and-delegate strategy makes sense especially for editing workflows that allow the user to discard their changes.</p>
+
+<p>But <code class="language-plaintext highlighter-rouge">SyncUpDetail.State.syncUp</code> isn’t storing the <em>app</em>’s source-of-truth value for that <code class="language-plaintext highlighter-rouge">syncUp</code>. <code class="language-plaintext highlighter-rouge">SyncUpDetail.State</code> was also created as a copy and stored in the <code class="language-plaintext highlighter-rouge">path</code> property of <code class="language-plaintext highlighter-rouge">AppFeature.State</code> alongside the source-of-truth array <code class="language-plaintext highlighter-rouge">syncUpsList</code>.</p>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">AppFeature</span><span class="p">:</span> <span class="kt">Reducer</span> <span class="p">{</span>
+  <span class="kd">struct</span> <span class="kt">State</span><span class="p">:</span> <span class="kt">Equatable</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">path</span> <span class="o">=</span> <span class="kt">StackState</span><span class="o">&lt;</span><span class="kt">Path</span><span class="o">.</span><span class="kt">State</span><span class="o">&gt;</span><span class="p">()</span>
+    <span class="k">var</span> <span class="nv">syncUpsList</span> <span class="o">=</span> <span class="kt">SyncUpsList</span><span class="o">.</span><span class="kt">State</span><span class="p">()</span>
+  <span class="p">}</span>
+
+  <span class="kd">struct</span> <span class="kt">Path</span><span class="p">:</span> <span class="kt">Reducer</span> <span class="p">{</span>
+    <span class="kd">enum</span> <span class="kt">State</span><span class="p">:</span> <span class="kt">Equatable</span> <span class="p">{</span>
+      <span class="k">case</span> <span class="nf">detail</span><span class="p">(</span><span class="kt">SyncUpDetail</span><span class="o">.</span><span class="kt">State</span><span class="p">)</span>
+      <span class="c1">// ...</span>
+    <span class="p">}</span>
+    <span class="c1">// ...</span>
+  <span class="p">}</span>
+</code></pre>
+</div>
+
+<p><code class="language-plaintext highlighter-rouge">SyncUpDetail</code> must play back its changes to its parent via a delegate action. This is where we see a second layer of copy-and-delegate in practice.</p>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">SyncUpDetail</span><span class="p">:</span> <span class="kt">Reducer</span> <span class="p">{</span>
+  <span class="c1">// ...</span>
+
+  <span class="k">var</span> <span class="nv">body</span><span class="p">:</span> <span class="n">some</span> <span class="kt">ReducerOf</span><span class="o">&lt;</span><span class="k">Self</span><span class="o">&gt;</span> <span class="p">{</span>
+    <span class="kt">Reduce</span> <span class="p">{</span> <span class="n">state</span><span class="p">,</span> <span class="n">action</span> <span class="k">in</span>
+      <span class="c1">// ...</span>
+    <span class="p">}</span>
+    <span class="o">.</span><span class="nf">onChange</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="err">\</span><span class="o">.</span><span class="n">syncUp</span><span class="p">)</span> <span class="p">{</span> <span class="n">oldValue</span><span class="p">,</span> <span class="n">newValue</span> <span class="k">in</span>
+      <span class="kt">Reduce</span> <span class="p">{</span> <span class="n">state</span><span class="p">,</span> <span class="n">action</span> <span class="k">in</span>
+        <span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="o">.</span><span class="nf">delegate</span><span class="p">(</span><span class="o">.</span><span class="nf">syncUpUpdated</span><span class="p">(</span><span class="n">newValue</span><span class="p">)))</span>
+      <span class="p">}</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p>And the parent (in this case <code class="language-plaintext highlighter-rouge">AppFeature</code>) must listen for those delegate actions and use the state passed within to update its own source-of-truth state:</p>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">AppFeature</span><span class="p">:</span> <span class="kt">Reducer</span> <span class="p">{</span>
+  <span class="k">var</span> <span class="nv">body</span><span class="p">:</span> <span class="n">some</span> <span class="kt">ReducerOf</span><span class="o">&lt;</span><span class="k">Self</span><span class="o">&gt;</span> <span class="p">{</span>
+    <span class="c1">// ...</span>
+    <span class="kt">Reduce</span> <span class="p">{</span> <span class="n">state</span><span class="p">,</span> <span class="n">action</span> <span class="k">in</span>
+      <span class="k">switch</span> <span class="n">action</span> <span class="p">{</span>
+      <span class="k">case</span> <span class="kd">let</span> <span class="o">.</span><span class="nf">path</span><span class="p">(</span><span class="o">.</span><span class="nf">element</span><span class="p">(</span><span class="n">id</span><span class="p">,</span> <span class="o">.</span><span class="nf">detail</span><span class="p">(</span><span class="o">.</span><span class="nf">delegate</span><span class="p">(</span><span class="n">delegateAction</span><span class="p">)))):</span>
+        <span class="k">guard</span> <span class="k">case</span> <span class="kd">let</span> <span class="o">.</span><span class="nf">some</span><span class="p">(</span><span class="o">.</span><span class="nf">detail</span><span class="p">(</span><span class="n">detailState</span><span class="p">))</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">path</span><span class="p">[</span><span class="nv">id</span><span class="p">:</span> <span class="n">id</span><span class="p">]</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="o">.</span><span class="k">none</span> <span class="p">}</span>
+        <span class="k">switch</span> <span class="n">delegateAction</span> <span class="p">{</span>
+        <span class="k">case</span> <span class="kd">let</span> <span class="o">.</span><span class="nf">syncUpUpdated</span><span class="p">(</span><span class="n">syncUp</span><span class="p">):</span>
+          <span class="n">state</span><span class="o">.</span><span class="n">syncUpsList</span><span class="o">.</span><span class="n">syncUps</span><span class="p">[</span><span class="nv">id</span><span class="p">:</span> <span class="n">syncUp</span><span class="o">.</span><span class="n">id</span><span class="p">]</span> <span class="o">=</span> <span class="n">syncUp</span>
+          <span class="k">return</span> <span class="o">.</span><span class="k">none</span>
+      <span class="p">}</span>
+      <span class="c1">// ...</span>
+    <span class="p">}</span>
+    <span class="c1">// ...</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p>Just as we saw <code class="language-plaintext highlighter-rouge">SyncUpDetail</code> move the temporary state in <code class="language-plaintext highlighter-rouge">State.destination</code> to <code class="language-plaintext highlighter-rouge">State.syncUp</code> (via an <code class="language-plaintext highlighter-rouge">Action</code>), we also see <code class="language-plaintext highlighter-rouge">AppReducer</code> move the temporary state <code class="language-plaintext highlighter-rouge">State.path</code> into <code class="language-plaintext highlighter-rouge">State.syncUps</code> (via an <code class="language-plaintext highlighter-rouge">Action</code>).</p>
+
+<p>What tripped me up about the <strong>scope</strong> vs. <strong>copy-and-delegate</strong> strategies at first was:</p>
+
+<ol>
+  <li>I didn’t realize they were distinct strategies.</li>
+  <li>I didn’t realize <strong>copy-and-delegate</strong> <em>was</em> still fully integrated into the bread-and-butter scoping mechanism of TCA. After all, the parent reducer still needs to receive the delegate messages from the child reducer, which means there has to be <em>some</em> link between them.</li>
+  <li>Navigation-as-first-class-state (in the form of <code class="language-plaintext highlighter-rouge">Destination</code>, <code class="language-plaintext highlighter-rouge">Path</code>, etc.) has a lot of benefits (deep-linking, testing, etc.). But it does complect <em>model state</em> and <em>view state</em>. <em>Model state</em> and <em>view state</em> often have different lifetimes, and if you aren’t careful you can lose track of the concept of source-of-truth.</li>
+</ol>
+
+<p><code class="language-plaintext highlighter-rouge">AppFeature</code> holds the <em>model state</em> of <code class="language-plaintext highlighter-rouge">syncUpsList</code> side-by-side with the <em>view state</em> of <code class="language-plaintext highlighter-rouge">path</code>.</p>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">AppFeature</span><span class="p">:</span> <span class="kt">Reducer</span> <span class="p">{</span>
+  <span class="kd">struct</span> <span class="kt">State</span><span class="p">:</span> <span class="kt">Equatable</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">path</span> <span class="o">=</span> <span class="kt">StackState</span><span class="o">&lt;</span><span class="kt">Path</span><span class="o">.</span><span class="kt">State</span><span class="o">&gt;</span><span class="p">()</span>
+    <span class="k">var</span> <span class="nv">syncUpsList</span> <span class="o">=</span> <span class="kt">SyncUpsList</span><span class="o">.</span><span class="kt">State</span><span class="p">()</span>
+  <span class="p">}</span>
+  <span class="c1">// ...</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p>But <code class="language-plaintext highlighter-rouge">syncUpsList</code> <em>itself</em> could technically qualify as <em>view state</em>. Except that in this case, <code class="language-plaintext highlighter-rouge">SyncUpsListView</code> is the root of the <code class="language-plaintext highlighter-rouge">NavigationStack</code> which is the root of the <code class="language-plaintext highlighter-rouge">AppView</code> which has the same lifetime as the app itself.</p>
+
+<p>Perhaps you could even further separate <em>view state</em> into <em>view state</em> and <em>navigation state</em>.</p>
+
+<p>As a final note about <strong>root ownership</strong>, there are more advanced techniques for further processing state at the parent before handing it off to child reducers. It’s basically using computed variables to derive a distinct subset of the model state on the fly. See the <a href="https://github.com/pointfreeco/swift-composable-architecture/blob/main/Examples/CaseStudies/SwiftUICaseStudies/01-GettingStarted-SharedState.swift">Shared State</a> TCA case study to learn more it.</p>
+
+<h3 id="strategy-2-dependency-ownership">Strategy 2: dependency ownership</h3>
+
+<p>The second major strategy for sharing state is to do it through a dependency.</p>
+
+<p>Let’s show an example before discussing why you may want to choose the dependency ownership strategy.</p>
+
+<p>Going back to my app, Count Biki, we’ll use <code class="language-plaintext highlighter-rouge">SpeechSynthesisSettingsClient</code> as an example of a dependency used to share state. It has a very simple get/set/observe interface. Under the hood, it’s a wrapper over a <code class="language-plaintext highlighter-rouge">UserDefaults</code> dependency with a little bit of encoding/decoding processing thrown in.</p>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">SpeechSynthesisSettingsClient</span> <span class="p">{</span>
+  <span class="k">var</span> <span class="nv">get</span><span class="p">:</span> <span class="kd">@Sendable</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="kt">SpeechSynthesisSettings</span><span class="p">)</span>
+  <span class="k">var</span> <span class="nv">set</span><span class="p">:</span> <span class="kd">@Sendable</span> <span class="p">(</span><span class="kt">SpeechSynthesisSettings</span><span class="p">)</span> <span class="k">as</span><span class="n">ync</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="kt">Void</span>
+  <span class="k">var</span> <span class="nv">observe</span><span class="p">:</span> <span class="kd">@Sendable</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">AsyncStream</span><span class="o">&lt;</span><span class="kt">SpeechSynthesisSettings</span><span class="o">&gt;</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p>In contrast to <strong>root ownership</strong> (strategy 1), <strong>dependency ownership</strong> (strategy 2) does not <em>require</em> features to be linked together in order to share state or pass messages as long as they only depend on the state contained in the dependency (the features still can be linked through the usual scoping mechanism of course).</p>
+
+<p>Some combination of the get/set/observe interface will be used depending on the needs and assumptions of the feature:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>State Access</th>
+      <th>State modified externally during lifetime?</th>
+      <th>-&gt; Required APIs</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>read-only</td>
+      <td>no</td>
+      <td>get</td>
+    </tr>
+    <tr>
+      <td>read-only</td>
+      <td>yes</td>
+      <td>get/observe</td>
+    </tr>
+    <tr>
+      <td>read-write</td>
+      <td>no</td>
+      <td>get/set</td>
+    </tr>
+    <tr>
+      <td>read-write</td>
+      <td>yes</td>
+      <td>get/set/observe</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>It’s safest to assume the state of the dependency will be modified externally by a different feature or by something else in the environment. However, it does add a bit more code and complexity.</p>
+
+<p>When a feature uses state from a dependency this way, it’s going to need its own <em>view state</em> copy of the state (in the example case, <code class="language-plaintext highlighter-rouge">SpeechSynthesisSettings</code>) by the nature of TCA and SwiftUI. Having multiple copies of data is the first step to data getting out of sync and bugs. The safest way to keep the system organized and bug free in <strong>dependency ownership</strong> strategy is:</p>
+
+<ul>
+  <li>Treat the dependency’s state as the source-of-truth.</li>
+  <li>Set up 1-way or 2-way bindings to ensure nothing gets out of sync.</li>
+</ul>
+
+<p>Our <code class="language-plaintext highlighter-rouge">SpeechSettingsFeature</code> is considered <code class="language-plaintext highlighter-rouge">read-write | no</code> in the table above:</p>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">SpeechSettingsFeature</code> <code class="language-plaintext highlighter-rouge">get</code>s the <code class="language-plaintext highlighter-rouge">speechSettings</code> from the client on <code class="language-plaintext highlighter-rouge">init</code>.</li>
+  <li><code class="language-plaintext highlighter-rouge">SpeechSettingsFeature</code> <code class="language-plaintext highlighter-rouge">set</code>s the <code class="language-plaintext highlighter-rouge">speechSettings</code> on the client on any change.</li>
+  <li><code class="language-plaintext highlighter-rouge">SpeechSettingsFeature</code> assumes that <code class="language-plaintext highlighter-rouge">speechSettings</code> will not be changed by other sources during its lifetime (and therefore does not need to <code class="language-plaintext highlighter-rouge">observe</code>).</li>
+</ul>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">SpeechSettingsFeature</span><span class="p">:</span> <span class="kt">Reducer</span> <span class="p">{</span>
+  <span class="kd">struct</span> <span class="kt">State</span><span class="p">:</span> <span class="kt">Equatable</span> <span class="p">{</span>
+    <span class="c1">// ...</span>
+    <span class="k">var</span> <span class="nv">speechSettings</span><span class="p">:</span> <span class="kt">SpeechSynthesisSettings</span>
+
+    <span class="nf">init</span><span class="p">()</span> <span class="p">{</span>
+      <span class="kd">@Dependency(\.speechSynthesisSettingsClient)</span> <span class="k">var</span> <span class="nv">speechSettingsClient</span>
+      <span class="n">speechSettings</span> <span class="o">=</span> <span class="n">speechSettingsClient</span><span class="o">.</span><span class="nf">get</span><span class="p">()</span>
+      <span class="c1">// ...</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+
+  <span class="kd">@Dependency(\.speechSynthesisSettingsClient)</span> <span class="k">var</span> <span class="nv">speechSettingsClient</span>
+
+  <span class="k">var</span> <span class="nv">body</span><span class="p">:</span> <span class="n">some</span> <span class="kt">ReducerOf</span><span class="o">&lt;</span><span class="k">Self</span><span class="o">&gt;</span> <span class="p">{</span>
+    <span class="kt">Reduce</span> <span class="p">{</span> <span class="n">state</span><span class="p">,</span> <span class="n">action</span> <span class="k">in</span>
+      <span class="c1">// ...</span>
+    <span class="p">}</span>
+    <span class="o">.</span><span class="nf">onChange</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="err">\</span><span class="o">.</span><span class="n">speechSettings</span><span class="p">)</span> <span class="p">{</span> <span class="n">_</span><span class="p">,</span> <span class="n">newValue</span> <span class="k">in</span>
+      <span class="kt">Reduce</span> <span class="p">{</span> <span class="n">state</span><span class="p">,</span> <span class="n">_</span> <span class="k">in</span>
+        <span class="o">.</span><span class="n">run</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span>
+            <span class="k">try</span> <span class="n">await</span> <span class="n">speechSettingsClient</span><span class="o">.</span><span class="nf">set</span><span class="p">(</span><span class="n">newValue</span><span class="p">)</span>
+        <span class="p">}</span> <span class="nv">catch</span><span class="p">:</span> <span class="p">{</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="k">in</span>
+            <span class="kt">XCTFail</span><span class="p">(</span><span class="s">"SpeechSettingsClient unexpectedly failed to write"</span><span class="p">)</span>
+        <span class="p">}</span>
+      <span class="p">}</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p>Our <code class="language-plaintext highlighter-rouge">ListeningQuizFeature</code> is different from <code class="language-plaintext highlighter-rouge">SpeechSettingsFeature</code> above; it requires only read-only to <code class="language-plaintext highlighter-rouge">SpeechSynthesisSettings</code> but  <em>does</em> expect it to change during its lifetime (the in-session settings screen is presented over it). Therefore, it needs to implement get/observe.</p>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">ListeningQuizFeature</span><span class="p">:</span> <span class="kt">Reducer</span> <span class="p">{</span>
+  <span class="kd">struct</span> <span class="kt">State</span><span class="p">:</span> <span class="kt">Equatable</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">speechSettings</span><span class="p">:</span> <span class="kt">SpeechSynthesisSettings</span>
+    <span class="c1">// ...</span>
+
+    <span class="nf">init</span><span class="p">()</span> <span class="p">{</span>
+      <span class="kd">@Dependency(\.speechSynthesisSettingsClient)</span> <span class="k">var</span> <span class="nv">speechSettingsClient</span>
+      <span class="n">speechSettings</span> <span class="o">=</span> <span class="n">speechSettingsClient</span><span class="o">.</span><span class="nf">get</span><span class="p">()</span>
+      <span class="c1">// ...</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+
+  <span class="kd">enum</span> <span class="kt">Action</span><span class="p">:</span> <span class="kt">BindableAction</span><span class="p">,</span> <span class="kt">Equatable</span> <span class="p">{</span>
+    <span class="k">case</span> <span class="nf">onSpeechSettingsUpdated</span><span class="p">(</span><span class="kt">SpeechSynthesisSettings</span><span class="p">)</span>
+    <span class="k">case</span> <span class="n">onTask</span>
+    <span class="c1">// ...</span>
+  <span class="p">}</span>
+
+  <span class="kd">@Dependency(\.speechSynthesisSettingsClient)</span> <span class="k">var</span> <span class="nv">speechSettingsClient</span>
+
+  <span class="k">var</span> <span class="nv">body</span><span class="p">:</span> <span class="n">some</span> <span class="kt">ReducerOf</span><span class="o">&lt;</span><span class="k">Self</span><span class="o">&gt;</span> <span class="p">{</span>
+    <span class="kt">Reduce</span> <span class="p">{</span> <span class="n">state</span><span class="p">,</span> <span class="n">action</span> <span class="k">in</span>
+      <span class="k">switch</span> <span class="n">action</span> <span class="p">{</span>
+      <span class="k">case</span> <span class="kd">let</span> <span class="o">.</span><span class="nf">onSpeechSettingsUpdated</span><span class="p">(</span><span class="n">newValue</span><span class="p">):</span>
+        <span class="n">state</span><span class="o">.</span><span class="n">speechSettings</span> <span class="o">=</span> <span class="n">newValue</span>
+        <span class="k">return</span> <span class="o">.</span><span class="k">none</span>
+      <span class="k">case</span> <span class="o">.</span><span class="nv">onTask</span><span class="p">:</span>
+        <span class="k">return</span> <span class="o">.</span><span class="n">run</span> <span class="p">{</span> <span class="n">send</span> <span class="k">in</span>
+          <span class="k">for</span> <span class="n">await</span> <span class="n">newValue</span> <span class="k">in</span> <span class="n">speechSettingsClient</span><span class="o">.</span><span class="nf">observe</span><span class="p">()</span> <span class="p">{</span>
+            <span class="n">await</span> <span class="nf">send</span><span class="p">(</span><span class="o">.</span><span class="nf">onSpeechSettingsUpdated</span><span class="p">(</span><span class="n">newValue</span><span class="p">))</span>
+          <span class="p">}</span>
+        <span class="p">}</span>
+      <span class="p">}</span>
+      <span class="c1">// ...</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p>We again <code class="language-plaintext highlighter-rouge">get</code> the initial value from the dependency on <code class="language-plaintext highlighter-rouge">init</code>. But now there’s a two step process for observing new values from the dependency:</p>
+
+<ol>
+  <li>Use <code class="language-plaintext highlighter-rouge">for await</code> to monitor <code class="language-plaintext highlighter-rouge">observe()</code>. Each time the stream emits a new value, send it back into the system with the action <code class="language-plaintext highlighter-rouge">.onSpeechSettingsUpdated(newValue)</code>.</li>
+  <li>When the reducer receives .<code class="language-plaintext highlighter-rouge">onSpeechSettingsUpdated</code>, overwrite <code class="language-plaintext highlighter-rouge">state.speechSettings</code>.</li>
+</ol>
+
+<p>Note that there’s a very subtle bug possibility to look out for when implementing <code class="language-plaintext highlighter-rouge">viewStore.send(.onTask)</code> in the view layer:</p>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">ListeningQuizView</span><span class="p">:</span> <span class="kt">View</span> <span class="p">{</span>
+  <span class="k">let</span> <span class="nv">store</span><span class="p">:</span> <span class="kt">StoreOf</span><span class="o">&lt;</span><span class="kt">ListeningQuizFeature</span><span class="o">&gt;</span>
+
+  <span class="k">var</span> <span class="nv">body</span><span class="p">:</span> <span class="n">some</span> <span class="kt">View</span> <span class="p">{</span>
+    <span class="kt">WithViewStore</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="nv">observe</span><span class="p">:</span> <span class="p">{</span> <span class="nv">$0</span> <span class="p">})</span> <span class="p">{</span> <span class="n">viewStore</span> <span class="k">in</span>
+      <span class="kt">VStack</span><span class="p">(</span><span class="nv">spacing</span><span class="p">:</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+      <span class="c1">// ...</span>
+      <span class="p">}</span>
+      <span class="o">.</span><span class="n">task</span> <span class="p">{</span>
+        <span class="c1">// Option A:</span>
+        <span class="n">await</span> <span class="n">viewStore</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="o">.</span><span class="n">onTask</span><span class="p">)</span><span class="o">.</span><span class="nf">finish</span><span class="p">()</span>
+      <span class="p">}</span>
+      <span class="o">.</span><span class="n">task</span> <span class="p">{</span>
+        <span class="c1">// Option B:</span>
+        <span class="n">viewStore</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="o">.</span><span class="n">onTask</span><span class="p">)</span>
+      <span class="p">}</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p>What’s the difference between Option A and Option B?</p>
+
+<ul>
+  <li>Option A ties the lifetime of the task within the reducer to the <em>appearance</em> of the view.</li>
+  <li>Option B ties the lifetime of the task within the reducer to the <em>lifetime</em> of the view.</li>
+</ul>
+
+<p>In our case, “the task within the reducer” means observing changes to <code class="language-plaintext highlighter-rouge">SpeechSynthesisSettings</code> as <code class="language-plaintext highlighter-rouge">for await settings in client.observe()</code>. The difference is a subtle because a lot of the time <em>appearance</em> and <em>lifetime</em> of the view are the same.</p>
+
+<p>However, when using <code class="language-plaintext highlighter-rouge">NavigationStack</code> and pushing view B after view A, view A will disappear and then reappear when view B is popped, and the appearance and lifetime with be different.</p>
+
+<p>If we used Option A in <code class="language-plaintext highlighter-rouge">ListeningQuizView</code>, then <code class="language-plaintext highlighter-rouge">ListeningQuizFeature</code> would no longer be observing changes to <code class="language-plaintext highlighter-rouge">SpeechSynthesisSettings</code> while another view was pushed on the stack above it. If that pushed view changed <code class="language-plaintext highlighter-rouge">SpeechSynthesisSettings</code> <em>and</em> <code class="language-plaintext highlighter-rouge">.observe()</code> was <em>not</em> implemented as a “replay” type of stream, then <code class="language-plaintext highlighter-rouge">ListeningQuizFeature</code> would be stuck using an old value of <code class="language-plaintext highlighter-rouge">SpeechSynthesisSettings</code>, and this would probably be considered a bug.</p>
+
+<p>In the case of <code class="language-plaintext highlighter-rouge">ListeningQuizFeature</code>, <code class="language-plaintext highlighter-rouge">SpeechSynthesisSettings</code> is only changed via a view that is presented as a sheet. Presenting a sheet does not cause the presenting view to disappear. Additionally, our <code class="language-plaintext highlighter-rouge">.observe()</code> stream is implemented as a “replay”-type stream. Therefore both Option A and Option B are both reasonable choices.</p>
+
+<p>Of course, I should also emphasize that the dependency ownership strategy needs to take into account concurrency and delays inherent in observation and therefore update races. In the case above, the state is limited in scope and update frequency, and not expected to be changed from multiple views.</p>
+
+<p>So why would you want to choose the <strong>dependency ownership</strong> strategy over the <strong>root ownership</strong> strategy?</p>
+
+<ul>
+  <li>Features are more dependent on the dependency but less dependent on one another.</li>
+  <li>Your view hierarchy is unbounded (any view can present any other view) and doesn’t share a lot of state between nearby features.</li>
+  <li>Features that share state don’t have an obvious common ancestor that should be responsible to maintaining source-of-truth and persistence duties.</li>
+  <li>You’re willing to accept the overhead of creating a dependency and interfacing with it in addition to the inter-feature communication you may need to maintain anyway.</li>
+  <li>If most of your state is in a database, it will probably feel much more natural to architect your features with <strong>dependency ownership</strong>.</li>
+</ul>
+
+<h2 id="related-discussions">Related discussions</h2>
+
+<ul>
+  <li><a href="https://github.com/pointfreeco/swift-composable-architecture/discussions/1287">Dynamic dependencies · pointfreeco/swift-composable-architecture · Discussion #1287</a></li>
+  <li><a href="https://github.com/pointfreeco/swift-dependencies/discussions/42">How to handle session-based dependencies? · pointfreeco/swift-dependencies · Discussion #42</a></li>
+  <li><a href="https://github.com/pointfreeco/swift-composable-architecture/discussions/1775">Dependencies that depend on dynamic values · pointfreeco/swift-composable-architecture · Discussion #1775</a></li>
+</ul>
+
+  </article>
+
+</div>
+
+      </div>
+    </div>
+
+    <footer class="site-footer">
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">twocentstudios</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col  footer-col-1">
+        <ul class="contact-list">
+          <li><a href="mailto:chris@twocentstudios.com">chris@twocentstudios.com</a></li>
+          
+          <li>
+            <a href="https://github.com/twocentstudios">
+              <span class="icon  icon--github">
+                <svg viewBox="0 0 16 16">
+                  <path fill="#828282" d="M7.999,0.431c-4.285,0-7.76,3.474-7.76,7.761 c0,3.428,2.223,6.337,5.307,7.363c0.388,0.071,0.53-0.168,0.53-0.374c0-0.184-0.007-0.672-0.01-1.32 c-2.159,0.469-2.614-1.04-2.614-1.04c-0.353-0.896-0.862-1.135-0.862-1.135c-0.705-0.481,0.053-0.472,0.053-0.472 c0.779,0.055,1.189,0.8,1.189,0.8c0.692,1.186,1.816,0.843,2.258,0.645c0.071-0.502,0.271-0.843,0.493-1.037 C4.86,11.425,3.049,10.76,3.049,7.786c0-0.847,0.302-1.54,0.799-2.082C3.768,5.507,3.501,4.718,3.924,3.65 c0,0,0.652-0.209,2.134,0.796C6.677,4.273,7.34,4.187,8,4.184c0.659,0.003,1.323,0.089,1.943,0.261 c1.482-1.004,2.132-0.796,2.132-0.796c0.423,1.068,0.157,1.857,0.077,2.054c0.497,0.542,0.798,1.235,0.798,2.082 c0,2.981-1.814,3.637-3.543,3.829c0.279,0.24,0.527,0.713,0.527,1.437c0,1.037-0.01,1.874-0.01,2.129 c0,0.208,0.14,0.449,0.534,0.373c3.081-1.028,5.302-3.935,5.302-7.362C15.76,3.906,12.285,0.431,7.999,0.431z"/>
+                </svg>
+              </span>
+
+              <span class="username">twocentstudios</span>
+            </a>
+          </li>
+          
+
+          <li>
+            <a href="https://hackyderm.io/@twocentstudios">
+              <span class="icon">
+                <svg viewBox="0 0 24 24">
+                  <path fill="#828282" d="M21.327 8.566c0-4.339-2.843-5.61-2.843-5.61-1.433-.658-3.894-.935-6.451-.956h-.063c-2.557.021-5.016.298-6.45.956 0 0-2.843 1.272-2.843 5.61 0 .993-.019 2.181.012 3.441.103 4.243.778 8.425 4.701 9.463 1.809.479 3.362.579 4.612.51 2.268-.126 3.541-.809 3.541-.809l-.075-1.646s-1.621.511-3.441.449c-1.804-.062-3.707-.194-3.999-2.409a4.523 4.523 0 0 1-.04-.621s1.77.433 4.014.536c1.372.063 2.658-.08 3.965-.236 2.506-.299 4.688-1.843 4.962-3.254.434-2.223.398-5.424.398-5.424zm-3.353 5.59h-2.081V9.057c0-1.075-.452-1.62-1.357-1.62-1 0-1.501.647-1.501 1.927v2.791h-2.069V9.364c0-1.28-.501-1.927-1.502-1.927-.905 0-1.357.546-1.357 1.62v5.099H6.026V8.903c0-1.074.273-1.927.823-2.558.566-.631 1.307-.955 2.228-.955 1.065 0 1.872.409 2.405 1.228l.518.869.519-.869c.533-.819 1.34-1.228 2.405-1.228.92 0 1.662.324 2.228.955.549.631.822 1.484.822 2.558v5.253z"/>
+                </svg>
+              </span>
+
+              <span class="username">twocentstudios</span>
+            </a>
+          </li>
+
+          
+          <li>
+            <a href="https://twitter.com/twocentstudios">
+              <span class="icon  icon--twitter">
+                <svg viewBox="0 0 16 16">
+                  <path fill="#828282" d="M15.969,3.058c-0.586,0.26-1.217,0.436-1.878,0.515c0.675-0.405,1.194-1.045,1.438-1.809
+                  c-0.632,0.375-1.332,0.647-2.076,0.793c-0.596-0.636-1.446-1.033-2.387-1.033c-1.806,0-3.27,1.464-3.27,3.27 c0,0.256,0.029,0.506,0.085,0.745C5.163,5.404,2.753,4.102,1.14,2.124C0.859,2.607,0.698,3.168,0.698,3.767 c0,1.134,0.577,2.135,1.455,2.722C1.616,6.472,1.112,6.325,0.671,6.08c0,0.014,0,0.027,0,0.041c0,1.584,1.127,2.906,2.623,3.206 C3.02,9.402,2.731,9.442,2.433,9.442c-0.211,0-0.416-0.021-0.615-0.059c0.416,1.299,1.624,2.245,3.055,2.271 c-1.119,0.877-2.529,1.4-4.061,1.4c-0.264,0-0.524-0.015-0.78-0.046c1.447,0.928,3.166,1.469,5.013,1.469 c6.015,0,9.304-4.983,9.304-9.304c0-0.142-0.003-0.283-0.009-0.423C14.976,4.29,15.531,3.714,15.969,3.058z"/>
+                </svg>
+              </span>
+
+              <span class="username">twocentstudios</span>
+            </a>
+          </li>
+          
+        </ul>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+
+
+  </body>
+
+</html>

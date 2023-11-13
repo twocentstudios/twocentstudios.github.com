@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>Refactoring and Composing a Feature in The Composable Architecture</title>
+
+  <meta property="og:type" content="article" />
+  <meta property="og:title" content="Refactoring and Composing a Feature in The Composable Architecture" />
+  <meta property="og:url" content="https://twocentstudios.com/2023/11/14/tca-refactoring-into-child-reducer.markdown/" />
+  
+    <meta property="og:article:published_time" content="2023-11-14T06:00:00-06:00" />
+  
+  
+    <meta property="og:image" content="https://twocentstudios.com/images/count-reducer-refactor-screens.png" />
+  
+  
+  <link href='https://fonts.googleapis.com/css2?family=Work+Sans:wght@300;350;400;600' rel='stylesheet' type='text/css'>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="canonical" href="https://twocentstudios.com/2023/11/14/tca-refactoring-into-child-reducer.markdown/">
+  <link rel="alternate" type="application/rss+xml" title="twocentstudios" href="https://twocentstudios.com/feed.xml" />
+</head>
+
+  <!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-NE82N02W8S"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-NE82N02W8S');
+</script>
+
+  <body>
+
+    <header class="site-header">
+
+  <div class="wrapper">
+
+    <a class="site-title" href="/">twocentstudios</a>
+
+    <nav class="site-nav">
+      <a href="#" class="menu-icon">
+        <svg viewBox="0 0 18 15">
+          <path fill="#424242" d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.031C17.335,0,18,0.665,18,1.484L18,1.484z"/>
+          <path fill="#424242" d="M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0c0-0.82,0.665-1.484,1.484-1.484 h15.031C17.335,6.031,18,6.696,18,7.516L18,7.516z"/>
+          <path fill="#424242" d="M18,13.516C18,14.335,17.335,15,16.516,15H1.484C0.665,15,0,14.335,0,13.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.031C17.335,12.031,18,12.696,18,13.516L18,13.516z"/>
+        </svg>
+      </a>
+
+      <div class="trigger">
+        
+          
+          <a class="page-link" href="/about/">About</a>
+          
+        
+          
+          <a class="page-link" href="/blog/">Blog</a>
+          
+        
+          
+        
+          
+        
+          
+          <a class="page-link" href="/portfolio/">Portfolio</a>
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      </div>
+    </nav>
+
+  </div>
+
+</header>
+
+
+    <div class="page-content">
+      <div class="wrapper">
+        <div class="post">
+
+  <header class="post-header">
+    <h1 class="post-title">Refactoring and Composing a Feature in The Composable Architecture</h1>
+    <p class="post-meta">Nov 14, 2023</p>
+  </header>
+
+  <article class="post-content">
+    <p>In this post, I’ll show an example of how I refactored a reusable feature/view pair from two screen-level reducers in my app Count Biki that uses <a href="https://github.com/pointfreeco/swift-composable-architecture">The Composable Architecture</a> (TCA). This post acts as a simplified walkthrough of the <a href="https://github.com/twocentstudios/count-biki/pull/4">pull request</a> on the project’s <a href="https://github.com/twocentstudios/count-biki">open source repo</a>.</p>
+
+<p>This has some similarities to the case study <a href="https://github.com/pointfreeco/swift-composable-architecture/blob/17c0cba2ef93f9322707f2c84e6b5680cd05baf0/Examples/CaseStudies/SwiftUICaseStudies/04-HigherOrderReducers-ReusableFavoriting.swift">Reusable Favoriting</a>, so please refer to that official example as well.</p>
+
+<h2 id="background">Background</h2>
+
+<p><a href="/2023/10/29/count-biki-japanese-numbers/">Count Biki</a> is my first App Store-released app using TCA. In my v1.0 release, I struggled to properly extend TCA concepts beyond just the basics illustrated in the case studies and example apps. I wrote about some of those lingering misunderstandings in <a href="/2023/10/31/count-biki-developing-the-app-for-ios/">this post</a> too.</p>
+
+<p>While working on the next set of features for the v1.1 and v1.2 releases, I’ve started to feel the dots start to connect regarding TCA. One of those is actually understanding reducer nesting to actually unlock the <em>composability</em> part of The <em>Composable</em> Architecture.</p>
+
+<p>The goal of this post is to share a real world example of a small refactoring in hopes that it will help other TCA novices connect those same dots. And also solicit feedback from TCA veterans who may know better ways to accomplish the same refactorings I’ll present.</p>
+
+<h2 id="about-the-app-and-feature">About the app and feature</h2>
+
+<p>Count Biki is a flashcard app for randomly generated Japanese numbers. The questions are audio read by the build-in text-to-speech (TTS)engine. The answers are numerals input by the user via the standard 10-key numeric keyboard.</p>
+
+<p>A <em>session</em> is a set of questions presented to the user about one <em>topic</em>.</p>
+
+<p>Before choosing a topic, the user can optionally configure some settings. Once the user starts a <em>session</em> by selecting a <em>topic</em>, they can configure a subset of settings related to voice and the TTS engine.</p>
+
+<div class="caption-wrapper"><img class="caption" src="/images/count-reducer-refactor-screens.png" width="" height="" alt="The pre-session setting screen, the quiz screen, and the in-session settings screen. The red box is duplicated code that we want to refactor and compose." title="The pre-session setting screen, the quiz screen, and the in-session settings screen. The red box is duplicated code that we want to refactor and compose." /><div class="caption-text">The pre-session setting screen, the quiz screen, and the in-session settings screen. The red box is duplicated code that we want to refactor and compose.</div></div>
+
+<p>The voice settings are in their own <code class="language-plaintext highlighter-rouge">List</code> <code class="language-plaintext highlighter-rouge">Section</code> and require:</p>
+
+<ul>
+  <li>logic to handle the bindings</li>
+  <li>glue code to convert the view state to some <code class="language-plaintext highlighter-rouge">Codable</code> state</li>
+  <li>debounced writing to the persistence client</li>
+</ul>
+
+<p>My first implementation of adding the pre-session setting screen was to simply duplicate both the view and reducer from the existing in-session settings feature. I did that (and a few other tasks) in the PR <a href="https://github.com/twocentstudios/count-biki/pull/3">Add question/time limit quiz modes</a>.</p>
+
+<h2 id="goal">Goal</h2>
+
+<p>Our goal is to:</p>
+
+<ol>
+  <li>refactor the duplicate code in the pre-session and in-session settings features for the voice settings into its own <code class="language-plaintext highlighter-rouge">Reducer</code> and <code class="language-plaintext highlighter-rouge">View</code> pair.</li>
+  <li>re-integrate this <code class="language-plaintext highlighter-rouge">SpeechSettingsFeature</code> and <code class="language-plaintext highlighter-rouge">SpeechSettingSection</code> back into the pre-session and in-session settings features.</li>
+  <li>ensure any parent features that were relying on communication with either pre-session or in-session settings features still work as expected.</li>
+</ol>
+
+<div class="caption-wrapper"><img class="caption" src="/images/count-reducer-refactor-features.png" width="" height="" alt="Configuration of the features and dependencies before and after" title="Configuration of the features and dependencies before and after" /><div class="caption-text">Configuration of the features and dependencies before and after</div></div>
+
+<h1 id="refactoring">Refactoring</h1>
+
+<h2 id="in-session-settingsfeature-before-refactoring">In-session <code class="language-plaintext highlighter-rouge">SettingsFeature</code> before refactoring</h2>
+
+<p>Let’s start by looking at a simplified version of the code from the in-session settings feature, named <code class="language-plaintext highlighter-rouge">SettingsFeature</code> before starting the refactor.</p>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">SettingsFeature</span><span class="p">:</span> <span class="kt">Reducer</span> <span class="p">{</span>
+  <span class="kd">struct</span> <span class="kt">State</span><span class="p">:</span> <span class="kt">Equatable</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">availableVoices</span><span class="p">:</span> <span class="p">[</span><span class="kt">SpeechSynthesisVoice</span><span class="p">]</span>
+    <span class="kd">@BindingState</span> <span class="k">var</span> <span class="nv">rawSpeechRate</span><span class="p">:</span> <span class="kt">Float</span>
+    <span class="kd">@BindingState</span> <span class="k">var</span> <span class="nv">rawVoiceIdentifier</span><span class="p">:</span> <span class="kt">String</span><span class="p">?</span>
+    <span class="kd">@BindingState</span> <span class="k">var</span> <span class="nv">rawPitchMultiplier</span><span class="p">:</span> <span class="kt">Float</span>
+    <span class="k">let</span> <span class="nv">pitchMultiplierRange</span><span class="p">:</span> <span class="kt">ClosedRange</span><span class="o">&lt;</span><span class="kt">Float</span><span class="o">&gt;</span>
+    <span class="k">let</span> <span class="nv">speechRateRange</span><span class="p">:</span> <span class="kt">ClosedRange</span><span class="o">&lt;</span><span class="kt">Float</span><span class="o">&gt;</span>
+    <span class="k">var</span> <span class="nv">speechSettings</span><span class="p">:</span> <span class="kt">SpeechSynthesisSettings</span>
+
+    <span class="k">let</span> <span class="nv">topic</span><span class="p">:</span> <span class="kt">Topic</span> <span class="c1">// assume the `Topic` is set</span>
+
+    <span class="c1">// The initial values for `speechSettings` are passed in from the parent feature. This feature is only responsible for modifying `speechSettings` in place, assuming the parent will monitor those changes. </span>
+    <span class="nf">init</span><span class="p">(</span><span class="nv">speechSettings</span><span class="p">:</span> <span class="kt">SpeechSynthesisSettings</span><span class="p">)</span> <span class="p">{</span>
+      <span class="kd">@Dependency(\.speechSynthesisClient)</span> <span class="k">var</span> <span class="nv">speechClient</span>
+
+      <span class="k">self</span><span class="o">.</span><span class="n">speechSettings</span> <span class="o">=</span> <span class="n">speechSettings</span>
+
+      <span class="c1">// Read and set valid ranges and default values from `speechClient`.</span>
+      <span class="n">availableVoices</span> <span class="o">=</span> <span class="o">...</span>
+      <span class="n">speechRateRange</span> <span class="o">=</span> <span class="o">...</span>
+      <span class="n">pitchMultiplierRange</span> <span class="o">=</span> <span class="o">...</span>
+
+      <span class="c1">// Set the initial "raw" values that are bound directly to the view layer from the input `speechSettings`.</span>
+      <span class="n">rawVoiceIdentifier</span> <span class="o">=</span> <span class="o">...</span>
+      <span class="n">rawSpeechRate</span> <span class="o">=</span> <span class="o">...</span>
+      <span class="n">rawPitchMultiplier</span> <span class="o">=</span> <span class="o">...</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+
+  <span class="kd">enum</span> <span class="kt">Action</span><span class="p">:</span> <span class="kt">BindableAction</span><span class="p">,</span> <span class="kt">Equatable</span> <span class="p">{</span>
+    <span class="k">case</span> <span class="nf">binding</span><span class="p">(</span><span class="kt">BindingAction</span><span class="o">&lt;</span><span class="kt">State</span><span class="o">&gt;</span><span class="p">)</span>
+    <span class="k">case</span> <span class="n">doneButtonTapped</span>
+    <span class="k">case</span> <span class="n">onSceneWillEnterForeground</span>
+    <span class="k">case</span> <span class="n">onTask</span>
+    <span class="k">case</span> <span class="n">pitchLabelDoubleTapped</span>
+    <span class="k">case</span> <span class="n">rateLabelDoubleTapped</span>
+    <span class="k">case</span> <span class="n">testVoiceButtonTapped</span>
+  <span class="p">}</span>
+
+  <span class="kd">@Dependency(\.dismiss)</span> <span class="k">var</span> <span class="nv">dismiss</span>
+  <span class="kd">@Dependency</span><span class="o">.</span><span class="kt">Notification</span><span class="p">(</span><span class="err">\</span><span class="o">.</span><span class="n">sceneWillEnterForeground</span><span class="p">)</span> <span class="k">var</span> <span class="nv">sceneWillEnterForeground</span>
+  <span class="kd">@Dependency(\.speechSynthesisClient)</span> <span class="k">var</span> <span class="nv">speechClient</span>
+
+  <span class="k">var</span> <span class="nv">body</span><span class="p">:</span> <span class="n">some</span> <span class="kt">ReducerOf</span><span class="o">&lt;</span><span class="k">Self</span><span class="o">&gt;</span> <span class="p">{</span>
+    <span class="kt">BindingReducer</span><span class="p">()</span>
+    <span class="kt">Reduce</span> <span class="p">{</span> <span class="n">state</span><span class="p">,</span> <span class="n">action</span> <span class="k">in</span>
+      <span class="k">switch</span> <span class="n">action</span> <span class="p">{</span>
+      <span class="k">case</span> <span class="o">.</span><span class="nf">binding</span><span class="p">(</span><span class="err">\</span><span class="o">.</span><span class="err">$</span><span class="n">rawSpeechRate</span><span class="p">):</span>
+        <span class="n">state</span><span class="o">.</span><span class="n">speechSettings</span><span class="o">.</span><span class="n">rate</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">rawSpeechRate</span>
+        <span class="k">return</span> <span class="o">.</span><span class="k">none</span>
+      <span class="k">case</span> <span class="o">.</span><span class="nf">binding</span><span class="p">(</span><span class="err">\</span><span class="o">.</span><span class="err">$</span><span class="n">rawVoiceIdentifier</span><span class="p">):</span>
+        <span class="n">state</span><span class="o">.</span><span class="n">speechSettings</span><span class="o">.</span><span class="n">voiceIdentifier</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">rawVoiceIdentifier</span>
+        <span class="k">return</span> <span class="o">.</span><span class="k">none</span>
+      <span class="k">case</span> <span class="o">.</span><span class="nf">binding</span><span class="p">(</span><span class="err">\</span><span class="o">.</span><span class="err">$</span><span class="n">rawPitchMultiplier</span><span class="p">):</span>
+        <span class="n">state</span><span class="o">.</span><span class="n">speechSettings</span><span class="o">.</span><span class="n">pitchMultiplier</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">rawPitchMultiplier</span>
+        <span class="k">return</span> <span class="o">.</span><span class="k">none</span>
+      <span class="k">case</span> <span class="o">.</span><span class="nv">binding</span><span class="p">:</span>
+        <span class="k">return</span> <span class="o">.</span><span class="k">none</span>
+      <span class="k">case</span> <span class="o">.</span><span class="nv">doneButtonTapped</span><span class="p">:</span>
+        <span class="k">return</span> <span class="o">.</span><span class="n">run</span> <span class="p">{</span> <span class="n">send</span> <span class="k">in</span>
+          <span class="n">await</span> <span class="nf">dismiss</span><span class="p">()</span>
+        <span class="p">}</span>
+      <span class="k">case</span> <span class="o">.</span><span class="nv">pitchLabelDoubleTapped</span><span class="p">:</span>
+        <span class="n">state</span><span class="o">.</span><span class="n">rawPitchMultiplier</span> <span class="o">=</span> <span class="n">speechClient</span><span class="o">.</span><span class="nf">pitchMultiplierAttributes</span><span class="p">()</span><span class="o">.</span><span class="n">defaultPitch</span>
+        <span class="n">state</span><span class="o">.</span><span class="n">speechSettings</span><span class="o">.</span><span class="n">pitchMultiplier</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">rawPitchMultiplier</span>
+        <span class="k">return</span> <span class="o">.</span><span class="k">none</span>
+      <span class="k">case</span> <span class="o">.</span><span class="nv">rateLabelDoubleTapped</span><span class="p">:</span>
+        <span class="n">state</span><span class="o">.</span><span class="n">rawSpeechRate</span> <span class="o">=</span> <span class="n">speechClient</span><span class="o">.</span><span class="nf">speechRateAttributes</span><span class="p">()</span><span class="o">.</span><span class="n">defaultRate</span>
+        <span class="n">state</span><span class="o">.</span><span class="n">speechSettings</span><span class="o">.</span><span class="n">rate</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">rawSpeechRate</span>
+        <span class="k">return</span> <span class="o">.</span><span class="k">none</span>
+      <span class="k">case</span> <span class="o">.</span><span class="nv">onSceneWillEnterForeground</span><span class="p">:</span>
+        <span class="c1">// We expect the user will leave the app to download more voices and we should refetch</span>
+        <span class="c1">// voices from the system when the app returns to the foreground.</span>
+        <span class="n">state</span><span class="o">.</span><span class="n">availableVoices</span> <span class="o">=</span> <span class="n">speechClient</span><span class="o">.</span><span class="nf">availableVoices</span><span class="p">()</span>
+        <span class="k">return</span> <span class="o">.</span><span class="k">none</span>
+      <span class="k">case</span> <span class="o">.</span><span class="nv">onTask</span><span class="p">:</span>
+        <span class="k">return</span> <span class="o">.</span><span class="n">run</span> <span class="p">{</span> <span class="n">send</span> <span class="k">in</span>
+          <span class="k">for</span> <span class="n">await</span> <span class="n">_</span> <span class="k">in</span> <span class="n">sceneWillEnterForeground</span> <span class="p">{</span>
+            <span class="n">await</span> <span class="nf">send</span><span class="p">(</span><span class="o">.</span><span class="n">onSceneWillEnterForeground</span><span class="p">)</span>
+          <span class="p">}</span>
+        <span class="p">}</span>
+      <span class="k">case</span> <span class="o">.</span><span class="nv">testVoiceButtonTapped</span><span class="p">:</span>
+        <span class="c1">// Use `speechClient` to speak a test phrase with the current `speechSettings`.</span>
+        <span class="c1">// ...</span>
+      <span class="p">}</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p>Nearly all the <code class="language-plaintext highlighter-rouge">State</code> and <code class="language-plaintext highlighter-rouge">Action</code> components are related to the speech settings. One method to start our refactor could be to rename the whole feature to <code class="language-plaintext highlighter-rouge">SpeechSettingsFeature</code> and <em>extract</em> the parent <code class="language-plaintext highlighter-rouge">SettingsFeature</code> elements from it.</p>
+
+<p>But before we do that, let’s take a quick look at the view.</p>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">SettingsView</span><span class="p">:</span> <span class="kt">View</span> <span class="p">{</span>
+  <span class="k">let</span> <span class="nv">store</span><span class="p">:</span> <span class="kt">StoreOf</span><span class="o">&lt;</span><span class="kt">SettingsFeature</span><span class="o">&gt;</span>
+
+  <span class="k">var</span> <span class="nv">body</span><span class="p">:</span> <span class="n">some</span> <span class="kt">View</span> <span class="p">{</span>
+    <span class="kt">WithViewStore</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="nv">observe</span><span class="p">:</span> <span class="p">{</span> <span class="nv">$0</span> <span class="p">})</span> <span class="p">{</span> <span class="n">viewStore</span> <span class="k">in</span>
+      <span class="kt">NavigationStack</span> <span class="p">{</span>
+        <span class="kt">Form</span> <span class="p">{</span>
+          <span class="kt">Section</span> <span class="p">{</span>
+            <span class="c1">// Topic-related views</span>
+            <span class="c1">// ...</span>
+          <span class="p">}</span> <span class="nv">header</span><span class="p">:</span> <span class="p">{</span>
+            <span class="kt">Text</span><span class="p">(</span><span class="s">"Topic"</span><span class="p">)</span>
+          <span class="p">}</span>
+
+          <span class="c1">// Looks like almost all speech settings are contained within this `Section` besides the `.task` modifier.</span>
+          <span class="kt">Section</span> <span class="p">{</span>
+            <span class="k">if</span> <span class="kd">let</span> <span class="err">$</span><span class="n">unwrappedVoiceIdentifier</span> <span class="o">=</span> <span class="kt">Binding</span><span class="p">(</span><span class="n">viewStore</span><span class="o">.</span><span class="err">$</span><span class="n">rawVoiceIdentifier</span><span class="p">)</span> <span class="p">{</span>
+              <span class="kt">Picker</span><span class="p">(</span><span class="nv">selection</span><span class="p">:</span> <span class="err">$</span><span class="n">unwrappedVoiceIdentifier</span><span class="p">)</span> <span class="p">{</span>
+                <span class="kt">ForEach</span><span class="p">(</span><span class="n">viewStore</span><span class="o">.</span><span class="n">availableVoices</span><span class="p">)</span> <span class="p">{</span> <span class="n">voice</span> <span class="k">in</span>
+                  <span class="kt">Text</span><span class="p">(</span><span class="n">voice</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                    <span class="o">.</span><span class="nf">tag</span><span class="p">(</span><span class="kt">Optional</span><span class="p">(</span><span class="n">voice</span><span class="o">.</span><span class="n">voiceIdentifier</span><span class="p">))</span>
+                <span class="p">}</span>
+              <span class="p">}</span> <span class="nv">label</span><span class="p">:</span> <span class="p">{</span>
+                <span class="kt">Text</span><span class="p">(</span><span class="s">"Voice name"</span><span class="p">)</span>
+              <span class="p">}</span>
+              <span class="o">.</span><span class="nf">pickerStyle</span><span class="p">(</span><span class="o">.</span><span class="n">navigationLink</span><span class="p">)</span>
+              <span class="kt">NavigationLink</span> <span class="p">{</span>
+                <span class="kt">GetMoreVoicesView</span><span class="p">()</span>
+              <span class="p">}</span> <span class="nv">label</span><span class="p">:</span> <span class="p">{</span>
+                <span class="kt">Text</span><span class="p">(</span><span class="s">"Get more voices"</span><span class="p">)</span>
+              <span class="p">}</span>
+              <span class="kt">HStack</span> <span class="p">{</span>
+                <span class="kt">Text</span><span class="p">(</span><span class="s">"Rate"</span><span class="p">)</span>
+                  <span class="o">.</span><span class="nf">onTapGesture</span><span class="p">(</span><span class="nv">count</span><span class="p">:</span> <span class="mi">2</span><span class="p">)</span> <span class="p">{</span>
+                    <span class="n">viewStore</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="o">.</span><span class="n">rateLabelDoubleTapped</span><span class="p">)</span>
+                  <span class="p">}</span>
+                <span class="kt">Slider</span><span class="p">(</span><span class="nv">value</span><span class="p">:</span> <span class="n">viewStore</span><span class="o">.</span><span class="err">$</span><span class="n">rawSpeechRate</span><span class="p">,</span> <span class="nv">in</span><span class="p">:</span> <span class="n">viewStore</span><span class="o">.</span><span class="n">speechRateRange</span><span class="p">,</span> <span class="nv">step</span><span class="p">:</span> <span class="mf">0.05</span><span class="p">)</span> <span class="p">{</span>
+                  <span class="kt">Text</span><span class="p">(</span><span class="s">"Speech rate"</span><span class="p">)</span>
+                <span class="p">}</span> <span class="nv">minimumValueLabel</span><span class="p">:</span> <span class="p">{</span>
+                  <span class="kt">Image</span><span class="p">(</span><span class="nv">systemName</span><span class="p">:</span> <span class="s">"tortoise"</span><span class="p">)</span>
+                <span class="p">}</span> <span class="nv">maximumValueLabel</span><span class="p">:</span> <span class="p">{</span>
+                  <span class="kt">Image</span><span class="p">(</span><span class="nv">systemName</span><span class="p">:</span> <span class="s">"hare"</span><span class="p">)</span>
+                <span class="p">}</span>
+              <span class="p">}</span>
+              <span class="c1">// Pitch settings slider (similar to rate above)</span>
+              <span class="c1">// ...</span>
+              <span class="p">}</span>
+              <span class="kt">Button</span> <span class="p">{</span>
+                <span class="n">viewStore</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="o">.</span><span class="n">testVoiceButtonTapped</span><span class="p">)</span>
+              <span class="p">}</span> <span class="nv">label</span><span class="p">:</span> <span class="p">{</span>
+                <span class="kt">HStack</span><span class="p">(</span><span class="nv">spacing</span><span class="p">:</span> <span class="mi">10</span><span class="p">)</span> <span class="p">{</span>
+                  <span class="kt">Image</span><span class="p">(</span><span class="nv">systemName</span><span class="p">:</span> <span class="s">"person.wave.2"</span><span class="p">)</span>
+                  <span class="kt">Text</span><span class="p">(</span><span class="s">"Test Voice"</span><span class="p">)</span>
+                <span class="p">}</span>
+                <span class="o">.</span><span class="nf">frame</span><span class="p">(</span><span class="nv">maxWidth</span><span class="p">:</span> <span class="o">.</span><span class="n">infinity</span><span class="p">,</span> <span class="nv">alignment</span><span class="p">:</span> <span class="o">.</span><span class="n">center</span><span class="p">)</span>
+              <span class="p">}</span>
+            <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+              <span class="kt">NavigationLink</span> <span class="p">{</span>
+                <span class="kt">GetMoreVoicesView</span><span class="p">()</span>
+              <span class="p">}</span> <span class="nv">label</span><span class="p">:</span> <span class="p">{</span>
+                <span class="kt">HStack</span> <span class="p">{</span>
+                  <span class="kt">Text</span><span class="p">(</span><span class="s">"Error: no voices found on device"</span><span class="p">)</span>
+                    <span class="o">.</span><span class="nf">foregroundStyle</span><span class="p">(</span><span class="kt">Color</span><span class="o">.</span><span class="n">red</span><span class="p">)</span>
+                <span class="p">}</span>
+              <span class="p">}</span>
+            <span class="p">}</span>
+          <span class="p">}</span> <span class="nv">header</span><span class="p">:</span> <span class="p">{</span>
+            <span class="kt">Text</span><span class="p">(</span><span class="s">"Voice Settings"</span><span class="p">)</span>
+              <span class="o">.</span><span class="nf">font</span><span class="p">(</span><span class="o">.</span><span class="n">subheadline</span><span class="p">)</span>
+          <span class="p">}</span>
+        <span class="p">}</span>
+        <span class="c1">// Toolbar-styling modifiers</span>
+        <span class="c1">// ...</span>
+      <span class="p">}</span>
+      <span class="o">.</span><span class="n">task</span> <span class="p">{</span>
+        <span class="n">await</span> <span class="n">viewStore</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="o">.</span><span class="n">onTask</span><span class="p">)</span><span class="o">.</span><span class="nf">finish</span><span class="p">()</span>
+      <span class="p">}</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p>The <code class="language-plaintext highlighter-rouge">SettingsFeature</code> above looks very similar to the <code class="language-plaintext highlighter-rouge">PreSettingsFeature</code>, so I’ll only show the result of that refactor later.</p>
+
+<h2 id="in-session-settingsfeature-after-refactoring">In-session <code class="language-plaintext highlighter-rouge">SettingsFeature</code> after refactoring</h2>
+
+<p>Since <code class="language-plaintext highlighter-rouge">SettingsFeature</code> actually contains mostly <code class="language-plaintext highlighter-rouge">SpeechSettingsFeature</code> functionality, we’ll rename the <code class="language-plaintext highlighter-rouge">SettingsFeature</code> to <code class="language-plaintext highlighter-rouge">SpeechSettingsFeature</code> and then create a new <code class="language-plaintext highlighter-rouge">SettingsFeature</code> as the parent.</p>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">SettingsFeature</span><span class="p">:</span> <span class="kt">Reducer</span> <span class="p">{</span>
+    <span class="kd">struct</span> <span class="kt">State</span><span class="p">:</span> <span class="kt">Equatable</span> <span class="p">{</span>
+        <span class="c1">// `SettingsFeature` holds the source of truth for `SpeechSettingsFeature.State`.</span>
+        <span class="k">var</span> <span class="nv">speechSettings</span><span class="p">:</span> <span class="kt">SpeechSettingsFeature</span><span class="o">.</span><span class="kt">State</span>
+
+        <span class="k">let</span> <span class="nv">topic</span><span class="p">:</span> <span class="kt">Topic</span> <span class="c1">// assume `Topic` is set</span>
+
+        <span class="nf">init</span><span class="p">()</span> <span class="p">{</span>
+            <span class="k">self</span><span class="o">.</span><span class="n">speechSettings</span> <span class="o">=</span> <span class="o">.</span><span class="nf">init</span><span class="p">()</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="c1">// This `Action` no longer needs `BindableAction` conformance.</span>
+    <span class="kd">enum</span> <span class="kt">Action</span><span class="p">:</span> <span class="kt">Equatable</span> <span class="p">{</span>
+        <span class="c1">// `SettingsFeature` is only responsible for the `doneButton`.</span>
+        <span class="k">case</span> <span class="n">doneButtonTapped</span>
+
+        <span class="c1">// `SettingsFeature` forwards `SpeechSettingsFeature` actions to the child reducer.</span>
+        <span class="k">case</span> <span class="nf">speechSettings</span><span class="p">(</span><span class="kt">SpeechSettingsFeature</span><span class="o">.</span><span class="kt">Action</span><span class="p">)</span>
+    <span class="p">}</span>
+
+    <span class="kd">@Dependency(\.dismiss)</span> <span class="k">var</span> <span class="nv">dismiss</span>
+
+    <span class="k">var</span> <span class="nv">body</span><span class="p">:</span> <span class="n">some</span> <span class="kt">ReducerOf</span><span class="o">&lt;</span><span class="k">Self</span><span class="o">&gt;</span> <span class="p">{</span>
+        <span class="c1">// This scoping reducer is what's responsible for extracting the state and actions from the</span>
+        <span class="c1">// parent reducer `SettingsReducer` and passing them through to the child `SpeechSettingsFeature`.</span>
+        <span class="kt">Scope</span><span class="p">(</span><span class="nv">state</span><span class="p">:</span> <span class="err">\</span><span class="o">.</span><span class="n">speechSettings</span><span class="p">,</span> <span class="nv">action</span><span class="p">:</span> <span class="o">/</span><span class="kt">Action</span><span class="o">.</span><span class="n">speechSettings</span><span class="p">)</span> <span class="p">{</span>
+            <span class="kt">SpeechSettingsFeature</span><span class="p">()</span>
+        <span class="p">}</span>
+        <span class="kt">Reduce</span> <span class="p">{</span> <span class="n">state</span><span class="p">,</span> <span class="n">action</span> <span class="k">in</span>
+            <span class="k">switch</span> <span class="n">action</span> <span class="p">{</span>
+            <span class="k">case</span> <span class="o">.</span><span class="nv">doneButtonTapped</span><span class="p">:</span>
+                <span class="k">return</span> <span class="o">.</span><span class="n">run</span> <span class="p">{</span> <span class="n">send</span> <span class="k">in</span>
+                    <span class="n">await</span> <span class="nf">dismiss</span><span class="p">()</span>
+                <span class="p">}</span>
+            <span class="k">case</span> <span class="o">.</span><span class="nv">speechSettings</span><span class="p">:</span>
+                <span class="k">return</span> <span class="o">.</span><span class="k">none</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p>And the refactored <code class="language-plaintext highlighter-rouge">SettingsView</code>:</p>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">SettingsView</span><span class="p">:</span> <span class="kt">View</span> <span class="p">{</span>
+  <span class="k">let</span> <span class="nv">store</span><span class="p">:</span> <span class="kt">StoreOf</span><span class="o">&lt;</span><span class="kt">SettingsFeature</span><span class="o">&gt;</span>
+
+  <span class="k">var</span> <span class="nv">body</span><span class="p">:</span> <span class="n">some</span> <span class="kt">View</span> <span class="p">{</span>
+    <span class="kt">WithViewStore</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="nv">observe</span><span class="p">:</span> <span class="p">{</span> <span class="nv">$0</span> <span class="p">})</span> <span class="p">{</span> <span class="n">viewStore</span> <span class="k">in</span>
+      <span class="kt">NavigationStack</span> <span class="p">{</span>
+        <span class="kt">Form</span> <span class="p">{</span>
+          <span class="kt">Section</span> <span class="p">{</span>
+            <span class="c1">// Topic-related views</span>
+            <span class="c1">// ...</span>
+          <span class="p">}</span> <span class="nv">header</span><span class="p">:</span> <span class="p">{</span>
+            <span class="kt">Text</span><span class="p">(</span><span class="s">"Topic"</span><span class="p">)</span>
+          <span class="p">}</span>
+
+          <span class="c1">// We've refactored all this view code into `SpeechSettingsSection`.</span>
+          <span class="c1">// However, `SpeechSettingsSection` expects a store with type `StoreOf&lt;SpeechSettingsReducer&gt;`,</span>
+          <span class="c1">// so we have to scope the `StoreOf&lt;SettingsFeature&gt;` held by this view.</span>
+          <span class="kt">SpeechSettingsSection</span><span class="p">(</span>
+            <span class="nv">store</span><span class="p">:</span> <span class="n">store</span><span class="o">.</span><span class="nf">scope</span><span class="p">(</span><span class="nv">state</span><span class="p">:</span> <span class="err">\</span><span class="o">.</span><span class="n">speechSettings</span><span class="p">,</span> <span class="nv">action</span><span class="p">:</span> <span class="p">{</span> <span class="o">.</span><span class="nf">speechSettings</span><span class="p">(</span><span class="nv">$0</span><span class="p">)</span> <span class="p">})</span>
+          <span class="p">)</span>
+        <span class="p">}</span>
+        <span class="c1">// Toolbar-styling modifiers</span>
+        <span class="c1">// ...</span>
+      <span class="p">}</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p>You’ll notice that the <code class="language-plaintext highlighter-rouge">.task</code> modifier connected to the <code class="language-plaintext highlighter-rouge">SettingsView</code>’s <code class="language-plaintext highlighter-rouge">NavigationStack</code> lives as long as <code class="language-plaintext highlighter-rouge">SettingsView</code>. We’re using <code class="language-plaintext highlighter-rouge">.task</code> in the <code class="language-plaintext highlighter-rouge">SpeechSettingsFeature</code> to listen for app foreground changes. We want to do that with the same lifetime as <code class="language-plaintext highlighter-rouge">SettingsView</code>. However, since <code class="language-plaintext highlighter-rouge">SpeechSettingsSection</code> is a section within a <code class="language-plaintext highlighter-rouge">Form</code>/<code class="language-plaintext highlighter-rouge">List</code>/<code class="language-plaintext highlighter-rouge">LazyVStack</code>, its lifetime will be tied to its position within the internal <code class="language-plaintext highlighter-rouge">ScrollView</code>. But we want it to have the same lifetime as the parent. Therefore, we manually pass the <code class="language-plaintext highlighter-rouge">.onTask</code> modifier from parent to child above instead of implementing <code class="language-plaintext highlighter-rouge">.onTask</code> directly from <code class="language-plaintext highlighter-rouge">SpeechSettingsSection</code> to <code class="language-plaintext highlighter-rouge">SpeechSettingsFeature</code>. It’s a  subtle difference that could lead to bugs depending the user’s scroll position.</p>
+
+<h2 id="speechsettingsfeature-after-refactoring"><code class="language-plaintext highlighter-rouge">SpeechSettingsFeature</code> after refactoring</h2>
+
+<p><code class="language-plaintext highlighter-rouge">SpeechSettingsFeature</code> looks pretty similar to our before-refactoring version of <code class="language-plaintext highlighter-rouge">SettingsFeature</code>, but let’s show the simple version of it after refactoring for completeness.</p>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">SpeechSettingsFeature</span><span class="p">:</span> <span class="kt">Reducer</span> <span class="p">{</span>
+    <span class="kd">struct</span> <span class="kt">State</span><span class="p">:</span> <span class="kt">Equatable</span> <span class="p">{</span>
+        <span class="k">var</span> <span class="nv">availableVoices</span><span class="p">:</span> <span class="p">[</span><span class="kt">SpeechSynthesisVoice</span><span class="p">]</span>
+        <span class="kd">@BindingState</span> <span class="k">var</span> <span class="nv">rawSpeechRate</span><span class="p">:</span> <span class="kt">Float</span>
+        <span class="kd">@BindingState</span> <span class="k">var</span> <span class="nv">rawVoiceIdentifier</span><span class="p">:</span> <span class="kt">String</span><span class="p">?</span>
+        <span class="kd">@BindingState</span> <span class="k">var</span> <span class="nv">rawPitchMultiplier</span><span class="p">:</span> <span class="kt">Float</span>
+        <span class="k">let</span> <span class="nv">pitchMultiplierRange</span><span class="p">:</span> <span class="kt">ClosedRange</span><span class="o">&lt;</span><span class="kt">Float</span><span class="o">&gt;</span>
+        <span class="k">let</span> <span class="nv">speechRateRange</span><span class="p">:</span> <span class="kt">ClosedRange</span><span class="o">&lt;</span><span class="kt">Float</span><span class="o">&gt;</span>
+
+        <span class="k">var</span> <span class="nv">speechSettings</span><span class="p">:</span> <span class="kt">SpeechSynthesisSettings</span>
+
+        <span class="nf">init</span><span class="p">()</span> <span class="p">{</span>
+            <span class="kd">@Dependency(\.speechSynthesisSettingsClient)</span> <span class="k">var</span> <span class="nv">speechSettingsClient</span>
+            <span class="kd">@Dependency(\.speechSynthesisClient)</span> <span class="k">var</span> <span class="nv">speechClient</span>
+
+            <span class="k">self</span><span class="o">.</span><span class="n">speechSettings</span> <span class="o">=</span> <span class="n">speechSettingsClient</span><span class="o">.</span><span class="nf">get</span><span class="p">()</span>
+
+            <span class="c1">// Read and set valid ranges and default values from `speechClient`.</span>
+            <span class="n">availableVoices</span> <span class="o">=</span> <span class="o">...</span>
+            <span class="n">speechRateRange</span> <span class="o">=</span> <span class="o">...</span>
+            <span class="n">pitchMultiplierRange</span> <span class="o">=</span> <span class="o">...</span>
+
+            <span class="c1">// Set the initial "raw" values that are bound directly to the view layer from the input `speechSettings`.</span>
+            <span class="n">rawVoiceIdentifier</span> <span class="o">=</span> <span class="o">...</span>
+            <span class="n">rawSpeechRate</span> <span class="o">=</span> <span class="o">...</span>
+            <span class="n">rawPitchMultiplier</span> <span class="o">=</span> <span class="o">...</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="kd">enum</span> <span class="kt">Action</span><span class="p">:</span> <span class="kt">BindableAction</span><span class="p">,</span> <span class="kt">Equatable</span> <span class="p">{</span>
+        <span class="k">case</span> <span class="nf">binding</span><span class="p">(</span><span class="kt">BindingAction</span><span class="o">&lt;</span><span class="kt">State</span><span class="o">&gt;</span><span class="p">)</span>
+        <span class="k">case</span> <span class="n">onSceneWillEnterForeground</span>
+        <span class="k">case</span> <span class="n">onTask</span>
+        <span class="k">case</span> <span class="n">pitchLabelDoubleTapped</span>
+        <span class="k">case</span> <span class="n">rateLabelDoubleTapped</span>
+        <span class="k">case</span> <span class="n">testVoiceButtonTapped</span>
+    <span class="p">}</span>
+
+    <span class="kd">private</span> <span class="kd">enum</span> <span class="kt">CancelID</span> <span class="p">{</span>
+        <span class="k">case</span> <span class="n">saveDebounce</span>
+    <span class="p">}</span>
+
+    <span class="kd">@Dependency(\.continuousClock)</span> <span class="k">var</span> <span class="nv">clock</span>
+    <span class="kd">@Dependency</span><span class="o">.</span><span class="kt">Notification</span><span class="p">(</span><span class="err">\</span><span class="o">.</span><span class="n">sceneWillEnterForeground</span><span class="p">)</span> <span class="k">var</span> <span class="nv">sceneWillEnterForeground</span>
+    <span class="kd">@Dependency(\.speechSynthesisSettingsClient)</span> <span class="k">var</span> <span class="nv">speechSettingsClient</span>
+    <span class="kd">@Dependency(\.speechSynthesisClient)</span> <span class="k">var</span> <span class="nv">speechClient</span>
+
+    <span class="k">var</span> <span class="nv">body</span><span class="p">:</span> <span class="n">some</span> <span class="kt">ReducerOf</span><span class="o">&lt;</span><span class="k">Self</span><span class="o">&gt;</span> <span class="p">{</span>
+        <span class="kt">BindingReducer</span><span class="p">()</span>
+        <span class="kt">Reduce</span> <span class="p">{</span> <span class="n">state</span><span class="p">,</span> <span class="n">action</span> <span class="k">in</span>
+            <span class="k">switch</span> <span class="n">action</span> <span class="p">{</span>
+            <span class="k">case</span> <span class="o">.</span><span class="nf">binding</span><span class="p">(</span><span class="err">\</span><span class="o">.</span><span class="err">$</span><span class="n">rawSpeechRate</span><span class="p">):</span>
+                <span class="n">state</span><span class="o">.</span><span class="n">speechSettings</span><span class="o">.</span><span class="n">rate</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">rawSpeechRate</span>
+                <span class="k">return</span> <span class="o">.</span><span class="k">none</span>
+            <span class="k">case</span> <span class="o">.</span><span class="nf">binding</span><span class="p">(</span><span class="err">\</span><span class="o">.</span><span class="err">$</span><span class="n">rawVoiceIdentifier</span><span class="p">):</span>
+                <span class="n">state</span><span class="o">.</span><span class="n">speechSettings</span><span class="o">.</span><span class="n">voiceIdentifier</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">rawVoiceIdentifier</span>
+                <span class="k">return</span> <span class="o">.</span><span class="k">none</span>
+            <span class="k">case</span> <span class="o">.</span><span class="nf">binding</span><span class="p">(</span><span class="err">\</span><span class="o">.</span><span class="err">$</span><span class="n">rawPitchMultiplier</span><span class="p">):</span>
+                <span class="n">state</span><span class="o">.</span><span class="n">speechSettings</span><span class="o">.</span><span class="n">pitchMultiplier</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">rawPitchMultiplier</span>
+                <span class="k">return</span> <span class="o">.</span><span class="k">none</span>
+            <span class="k">case</span> <span class="o">.</span><span class="nv">binding</span><span class="p">:</span>
+                <span class="k">return</span> <span class="o">.</span><span class="k">none</span>
+            <span class="k">case</span> <span class="o">.</span><span class="nv">pitchLabelDoubleTapped</span><span class="p">:</span>
+                <span class="n">state</span><span class="o">.</span><span class="n">rawPitchMultiplier</span> <span class="o">=</span> <span class="n">speechClient</span><span class="o">.</span><span class="nf">pitchMultiplierAttributes</span><span class="p">()</span><span class="o">.</span><span class="n">defaultPitch</span>
+                <span class="n">state</span><span class="o">.</span><span class="n">speechSettings</span><span class="o">.</span><span class="n">pitchMultiplier</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">rawPitchMultiplier</span>
+                <span class="k">return</span> <span class="o">.</span><span class="k">none</span>
+            <span class="k">case</span> <span class="o">.</span><span class="nv">rateLabelDoubleTapped</span><span class="p">:</span>
+                <span class="n">state</span><span class="o">.</span><span class="n">rawSpeechRate</span> <span class="o">=</span> <span class="n">speechClient</span><span class="o">.</span><span class="nf">speechRateAttributes</span><span class="p">()</span><span class="o">.</span><span class="n">defaultRate</span>
+                <span class="n">state</span><span class="o">.</span><span class="n">speechSettings</span><span class="o">.</span><span class="n">rate</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">rawSpeechRate</span>
+                <span class="k">return</span> <span class="o">.</span><span class="k">none</span>
+            <span class="k">case</span> <span class="o">.</span><span class="nv">onSceneWillEnterForeground</span><span class="p">:</span>
+                <span class="n">state</span><span class="o">.</span><span class="n">availableVoices</span> <span class="o">=</span> <span class="n">speechClient</span><span class="o">.</span><span class="nf">availableVoices</span><span class="p">()</span>
+                <span class="k">return</span> <span class="o">.</span><span class="k">none</span>
+            <span class="k">case</span> <span class="o">.</span><span class="nv">onTask</span><span class="p">:</span>
+                <span class="k">return</span> <span class="o">.</span><span class="n">run</span> <span class="p">{</span> <span class="n">send</span> <span class="k">in</span>
+                    <span class="k">for</span> <span class="n">await</span> <span class="n">_</span> <span class="k">in</span> <span class="n">sceneWillEnterForeground</span> <span class="p">{</span>
+                        <span class="n">await</span> <span class="nf">send</span><span class="p">(</span><span class="o">.</span><span class="n">onSceneWillEnterForeground</span><span class="p">)</span>
+                    <span class="p">}</span>
+                <span class="p">}</span>
+            <span class="k">case</span> <span class="o">.</span><span class="nv">testVoiceButtonTapped</span><span class="p">:</span>
+                <span class="k">let</span> <span class="nv">spokenText</span> <span class="o">=</span> <span class="s">"1234"</span>
+                <span class="kd">enum</span> <span class="kt">CancelID</span> <span class="p">{</span> <span class="k">case</span> <span class="n">speakAction</span> <span class="p">}</span>
+                <span class="k">return</span> <span class="o">.</span><span class="n">run</span> <span class="p">{</span> <span class="p">[</span><span class="n">settings</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">speechSettings</span><span class="p">]</span> <span class="n">send</span> <span class="k">in</span>
+                    <span class="n">await</span> <span class="nf">withTaskCancellation</span><span class="p">(</span><span class="nv">id</span><span class="p">:</span> <span class="kt">CancelID</span><span class="o">.</span><span class="n">speakAction</span><span class="p">,</span> <span class="nv">cancelInFlight</span><span class="p">:</span> <span class="kc">true</span><span class="p">)</span> <span class="p">{</span>
+                        <span class="k">do</span> <span class="p">{</span>
+                            <span class="k">let</span> <span class="nv">utterance</span> <span class="o">=</span> <span class="kt">SpeechSynthesisUtterance</span><span class="p">(</span><span class="nv">speechString</span><span class="p">:</span> <span class="n">spokenText</span><span class="p">,</span> <span class="nv">settings</span><span class="p">:</span> <span class="n">settings</span><span class="p">)</span>
+                            <span class="k">try</span> <span class="n">await</span> <span class="n">speechClient</span><span class="o">.</span><span class="nf">speak</span><span class="p">(</span><span class="n">utterance</span><span class="p">)</span>
+                        <span class="p">}</span> <span class="k">catch</span> <span class="p">{</span>
+                            <span class="nf">assertionFailure</span><span class="p">(</span><span class="n">error</span><span class="o">.</span><span class="n">localizedDescription</span><span class="p">)</span>
+                        <span class="p">}</span>
+                    <span class="p">}</span>
+                <span class="p">}</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+        <span class="o">.</span><span class="nf">onChange</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="err">\</span><span class="o">.</span><span class="n">speechSettings</span><span class="p">)</span> <span class="p">{</span> <span class="n">_</span><span class="p">,</span> <span class="n">newValue</span> <span class="k">in</span>
+            <span class="c1">// We've added a debounced save to disk action that runs on any change to `speechSettings`.</span>
+            <span class="c1">// This allows our feature to be more self-contained and reusable.</span>
+            <span class="c1">// Other features will have to rely on observing state from `speechSettingsClient`</span>
+            <span class="c1">// instead of passing it via actions through the reducer hierarchy.</span>
+            <span class="kt">Reduce</span> <span class="p">{</span> <span class="n">state</span><span class="p">,</span> <span class="n">_</span> <span class="k">in</span>
+                <span class="o">.</span><span class="n">run</span> <span class="p">{</span> <span class="n">_</span> <span class="k">in</span>
+                    <span class="k">try</span> <span class="n">await</span> <span class="nf">withTaskCancellation</span><span class="p">(</span><span class="nv">id</span><span class="p">:</span> <span class="kt">CancelID</span><span class="o">.</span><span class="n">saveDebounce</span><span class="p">,</span> <span class="nv">cancelInFlight</span><span class="p">:</span> <span class="kc">true</span><span class="p">)</span> <span class="p">{</span>
+                        <span class="k">try</span> <span class="n">await</span> <span class="n">clock</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">seconds</span><span class="p">(</span><span class="mf">0.25</span><span class="p">))</span>
+                        <span class="k">do</span> <span class="p">{</span>
+                            <span class="k">try</span> <span class="n">speechSettingsClient</span><span class="o">.</span><span class="nf">set</span><span class="p">(</span><span class="n">newValue</span><span class="p">)</span>
+                        <span class="p">}</span> <span class="k">catch</span> <span class="p">{</span>
+                            <span class="kt">XCTFail</span><span class="p">(</span><span class="s">"SpeechSettingsClient unexpectedly failed to write: </span><span class="se">\(</span><span class="n">error</span><span class="se">)</span><span class="s">"</span><span class="p">)</span>
+                        <span class="p">}</span>
+                    <span class="p">}</span>
+                <span class="p">}</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p>And the <code class="language-plaintext highlighter-rouge">Section</code>:</p>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">SpeechSettingsSection</span><span class="p">:</span> <span class="kt">View</span> <span class="p">{</span>
+    <span class="c1">// Note: the `store` is now specialized to `SpeechSettingsFeature` and must be</span>
+    <span class="c1">// properly scoped in the parent reducer.</span>
+    <span class="k">let</span> <span class="nv">store</span><span class="p">:</span> <span class="kt">StoreOf</span><span class="o">&lt;</span><span class="kt">SpeechSettingsFeature</span><span class="o">&gt;</span>
+
+    <span class="k">var</span> <span class="nv">body</span><span class="p">:</span> <span class="n">some</span> <span class="kt">View</span> <span class="p">{</span>
+        <span class="kt">WithViewStore</span><span class="p">(</span><span class="n">store</span><span class="p">,</span> <span class="nv">observe</span><span class="p">:</span> <span class="p">{</span> <span class="nv">$0</span> <span class="p">})</span> <span class="p">{</span> <span class="n">viewStore</span> <span class="k">in</span>
+            <span class="kt">Section</span> <span class="p">{</span>
+                <span class="k">if</span> <span class="kd">let</span> <span class="err">$</span><span class="n">unwrappedVoiceIdentifier</span> <span class="o">=</span> <span class="kt">Binding</span><span class="p">(</span><span class="n">viewStore</span><span class="o">.</span><span class="err">$</span><span class="n">rawVoiceIdentifier</span><span class="p">)</span> <span class="p">{</span>
+                    <span class="kt">Picker</span><span class="p">(</span><span class="nv">selection</span><span class="p">:</span> <span class="err">$</span><span class="n">unwrappedVoiceIdentifier</span><span class="p">)</span> <span class="p">{</span>
+                        <span class="kt">ForEach</span><span class="p">(</span><span class="n">viewStore</span><span class="o">.</span><span class="n">availableVoices</span><span class="p">)</span> <span class="p">{</span> <span class="n">voice</span> <span class="k">in</span>
+                            <span class="kt">Text</span><span class="p">(</span><span class="n">voice</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                                <span class="o">.</span><span class="nf">tag</span><span class="p">(</span><span class="kt">Optional</span><span class="p">(</span><span class="n">voice</span><span class="o">.</span><span class="n">voiceIdentifier</span><span class="p">))</span>
+                        <span class="p">}</span>
+                    <span class="p">}</span> <span class="nv">label</span><span class="p">:</span> <span class="p">{</span>
+                        <span class="kt">Text</span><span class="p">(</span><span class="s">"Voice name"</span><span class="p">)</span>
+                    <span class="p">}</span>
+                    <span class="o">.</span><span class="nf">pickerStyle</span><span class="p">(</span><span class="o">.</span><span class="n">navigationLink</span><span class="p">)</span>
+                    <span class="kt">NavigationLink</span> <span class="p">{</span>
+                        <span class="kt">GetMoreVoicesView</span><span class="p">()</span>
+                    <span class="p">}</span> <span class="nv">label</span><span class="p">:</span> <span class="p">{</span>
+                        <span class="kt">Text</span><span class="p">(</span><span class="s">"Get more voices"</span><span class="p">)</span>
+                    <span class="p">}</span>
+                    <span class="kt">HStack</span> <span class="p">{</span>
+                        <span class="kt">Text</span><span class="p">(</span><span class="s">"Rate"</span><span class="p">)</span>
+                            <span class="o">.</span><span class="nf">onTapGesture</span><span class="p">(</span><span class="nv">count</span><span class="p">:</span> <span class="mi">2</span><span class="p">)</span> <span class="p">{</span>
+                                <span class="n">viewStore</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="o">.</span><span class="n">rateLabelDoubleTapped</span><span class="p">)</span>
+                            <span class="p">}</span>
+                        <span class="kt">Slider</span><span class="p">(</span><span class="nv">value</span><span class="p">:</span> <span class="n">viewStore</span><span class="o">.</span><span class="err">$</span><span class="n">rawSpeechRate</span><span class="p">,</span> <span class="nv">in</span><span class="p">:</span> <span class="n">viewStore</span><span class="o">.</span><span class="n">speechRateRange</span><span class="p">,</span> <span class="nv">step</span><span class="p">:</span> <span class="mf">0.05</span><span class="p">)</span> <span class="p">{</span>
+                            <span class="kt">Text</span><span class="p">(</span><span class="s">"Speech rate"</span><span class="p">)</span>
+                        <span class="p">}</span> <span class="nv">minimumValueLabel</span><span class="p">:</span> <span class="p">{</span>
+                            <span class="kt">Image</span><span class="p">(</span><span class="nv">systemName</span><span class="p">:</span> <span class="s">"tortoise"</span><span class="p">)</span>
+                        <span class="p">}</span> <span class="nv">maximumValueLabel</span><span class="p">:</span> <span class="p">{</span>
+                            <span class="kt">Image</span><span class="p">(</span><span class="nv">systemName</span><span class="p">:</span> <span class="s">"hare"</span><span class="p">)</span>
+                        <span class="p">}</span>
+                    <span class="p">}</span>
+                    <span class="kt">HStack</span> <span class="p">{</span>
+                        <span class="kt">Text</span><span class="p">(</span><span class="s">"Pitch"</span><span class="p">)</span>
+                            <span class="o">.</span><span class="nf">onTapGesture</span><span class="p">(</span><span class="nv">count</span><span class="p">:</span> <span class="mi">2</span><span class="p">)</span> <span class="p">{</span>
+                                <span class="n">viewStore</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="o">.</span><span class="n">pitchLabelDoubleTapped</span><span class="p">)</span>
+                            <span class="p">}</span>
+                        <span class="kt">Slider</span><span class="p">(</span><span class="nv">value</span><span class="p">:</span> <span class="n">viewStore</span><span class="o">.</span><span class="err">$</span><span class="n">rawPitchMultiplier</span><span class="p">,</span> <span class="nv">in</span><span class="p">:</span> <span class="n">viewStore</span><span class="o">.</span><span class="n">pitchMultiplierRange</span><span class="p">,</span> <span class="nv">step</span><span class="p">:</span> <span class="mf">0.05</span><span class="p">)</span> <span class="p">{</span>
+                            <span class="kt">Text</span><span class="p">(</span><span class="s">"Pitch"</span><span class="p">)</span>
+                        <span class="p">}</span> <span class="nv">minimumValueLabel</span><span class="p">:</span> <span class="p">{</span>
+                            <span class="kt">Image</span><span class="p">(</span><span class="nv">systemName</span><span class="p">:</span> <span class="s">"dial.low"</span><span class="p">)</span>
+                        <span class="p">}</span> <span class="nv">maximumValueLabel</span><span class="p">:</span> <span class="p">{</span>
+                            <span class="kt">Image</span><span class="p">(</span><span class="nv">systemName</span><span class="p">:</span> <span class="s">"dial.high"</span><span class="p">)</span>
+                        <span class="p">}</span>
+                    <span class="p">}</span>
+                    <span class="kt">Button</span> <span class="p">{</span>
+                        <span class="n">viewStore</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="o">.</span><span class="n">testVoiceButtonTapped</span><span class="p">)</span>
+                    <span class="p">}</span> <span class="nv">label</span><span class="p">:</span> <span class="p">{</span>
+                        <span class="kt">HStack</span><span class="p">(</span><span class="nv">spacing</span><span class="p">:</span> <span class="mi">10</span><span class="p">)</span> <span class="p">{</span>
+                            <span class="kt">Image</span><span class="p">(</span><span class="nv">systemName</span><span class="p">:</span> <span class="s">"person.wave.2"</span><span class="p">)</span>
+                            <span class="kt">Text</span><span class="p">(</span><span class="s">"Test Voice"</span><span class="p">)</span>
+                        <span class="p">}</span>
+                        <span class="o">.</span><span class="nf">frame</span><span class="p">(</span><span class="nv">maxWidth</span><span class="p">:</span> <span class="o">.</span><span class="n">infinity</span><span class="p">,</span> <span class="nv">alignment</span><span class="p">:</span> <span class="o">.</span><span class="n">center</span><span class="p">)</span>
+                    <span class="p">}</span>
+                <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+                    <span class="kt">NavigationLink</span> <span class="p">{</span>
+                        <span class="kt">GetMoreVoicesView</span><span class="p">()</span>
+                    <span class="p">}</span> <span class="nv">label</span><span class="p">:</span> <span class="p">{</span>
+                        <span class="kt">HStack</span> <span class="p">{</span>
+                            <span class="kt">Text</span><span class="p">(</span><span class="s">"Error: no voices found on device"</span><span class="p">)</span>
+                                <span class="o">.</span><span class="nf">foregroundStyle</span><span class="p">(</span><span class="kt">Color</span><span class="o">.</span><span class="n">red</span><span class="p">)</span>
+                        <span class="p">}</span>
+                    <span class="p">}</span>
+                <span class="p">}</span>
+            <span class="p">}</span> <span class="nv">header</span><span class="p">:</span> <span class="p">{</span>
+                <span class="kt">Text</span><span class="p">(</span><span class="s">"Voice Settings"</span><span class="p">)</span>
+                    <span class="o">.</span><span class="nf">font</span><span class="p">(</span><span class="o">.</span><span class="n">subheadline</span><span class="p">)</span>
+            <span class="p">}</span>
+            <span class="o">.</span><span class="n">task</span> <span class="p">{</span>
+                <span class="n">await</span> <span class="n">viewStore</span><span class="o">.</span><span class="nf">send</span><span class="p">(</span><span class="o">.</span><span class="n">onTask</span><span class="p">)</span><span class="o">.</span><span class="nf">finish</span><span class="p">()</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<h2 id="reconsidering-parentchild-communication">Reconsidering parent/child communication</h2>
+
+<p>There’s actually one more step we can take that will reduce the complexity of parent-to-child reducer communication. It has to do with how we’re sharing the <code class="language-plaintext highlighter-rouge">SpeechSynthesisSettings</code> across features.</p>
+
+<p>Let’s look at a visual of the features one more time:</p>
+
+<div class="caption-wrapper"><img class="caption" src="/images/count-reducer-refactor-screens.png" width="" height="" alt="The pre-session setting screen, the quiz screen, and the in-session settings screen" title="The pre-session setting screen, the quiz screen, and the in-session settings screen" /><div class="caption-text">The pre-session setting screen, the quiz screen, and the in-session settings screen</div></div>
+
+<p>Regarding hierarchy:</p>
+
+<ul>
+  <li>There is a quiz navigation screen that acts as a wrapper for navigating between the 3 quiz screens. The quiz screen is a the root of a <code class="language-plaintext highlighter-rouge">NavigationStack</code>. The summary screen can be pushed onto the stack. And the in-session settings is presented modally. This creates a layer of indirection between the quiz screen (which reads <code class="language-plaintext highlighter-rouge">SpeechSynthesisSettings</code>) and the in-session setting screen (which reads/writes <code class="language-plaintext highlighter-rouge">SpeechSynthesisSettings</code>).</li>
+  <li>The pre-session settings screen and quiz navigation screen are siblings, and their presentation <em>is</em> mutually-exclusive (only one is presented at a time).</li>
+  <li>The in-session settings screen is a child of the quiz navigation screen.</li>
+</ul>
+
+<div class="caption-wrapper"><img class="caption" src="/images/count-reducer-refactor-hierarchy-access.png" width="" height="" alt="The hierarchy of features that need some kind of access to `SpeechSynthesisSettings`" title="The hierarchy of features that need some kind of access to `SpeechSynthesisSettings`" /><div class="caption-text">The hierarchy of features that need some kind of access to `SpeechSynthesisSettings`</div></div>
+
+<p>Regarding read and write access to <code class="language-plaintext highlighter-rouge">SpeechSynthesisSettings</code>:</p>
+
+<ul>
+  <li>The pre-session settings screen needs read/write access to <code class="language-plaintext highlighter-rouge">SpeechSynthesisSettings</code>.</li>
+  <li>The quiz screen needs read-only access to <code class="language-plaintext highlighter-rouge">SpeechSynthesisSettings</code>.</li>
+  <li>The in-session settings screen needs read/write access to <code class="language-plaintext highlighter-rouge">SpeechSynthesisSettings</code>.</li>
+  <li>The quiz navigation screen needs no access to <code class="language-plaintext highlighter-rouge">SpeechSynthesisSettings</code>.</li>
+</ul>
+
+<p>Modeling this state is something I struggled with and wrote about <a href="/2023/10/31/count-biki-developing-the-app-for-ios/">in my initial post</a> detailing the development of v1.0 of this app. Through the process of adding a few new features and refactoring, it’s become much clearer of the two different strategies to model this kind of state and the tradeoffs for each.</p>
+
+<p>By “this kind of state” I mean state that is:</p>
+
+<ul>
+  <li>shared with varying read/write access between parent/child/sibling features.</li>
+  <li>persisted in some form.</li>
+</ul>
+
+<p>I wrote about the <a href="/2023/11/13/tca-strategies-sharing-state">two strategies to model state</a> in TCA: <em>root ownership</em> and <em>dependency ownership</em>.</p>
+
+<p>What I realized is that in the above refactoring, I had unnecessarily been mixing both <em>root ownership</em> and <em>dependency ownership</em>. Or, more precisely, I’d been superfluously using <em>root ownership</em>.</p>
+
+<p><code class="language-plaintext highlighter-rouge">SettingsFeature</code> and <code class="language-plaintext highlighter-rouge">PreSettingsFeature</code> did not need to hold onto and scope the state/actions of <code class="language-plaintext highlighter-rouge">SpeechSettingsFeature</code> because the source of truth for the underlying state of <code class="language-plaintext highlighter-rouge">SpeechSettingsFeature</code> is in the dependency <code class="language-plaintext highlighter-rouge">SpeechSynthesisSettingsClient</code>.</p>
+
+<p>Let’s take a look at the changes to <code class="language-plaintext highlighter-rouge">SettingsFeature</code> after one more step of refactoring. I won’t show <code class="language-plaintext highlighter-rouge">PreSettingsFeature</code> because it’s basically the same.</p>
+
+<div class="language-diff highlighter-rouge"><pre class="highlight"><code>struct SettingsFeature: Reducer {
+    struct State: Equatable {
+<span class="gd">-        var speechSettings: SpeechSettingsFeature.State
+</span>
+        let topic: Topic // assume `Topic` is set
+
+        init() {
+<span class="gd">-            self.speechSettings = .init()
+</span>        }
+    }
+
+    // This `Action` no longer needs `BindableAction` conformance.
+    enum Action: Equatable {
+        case doneButtonTapped
+<span class="gd">-        case speechSettings(SpeechSettingsFeature.Action)
+</span>    }
+
+    @Dependency(\.dismiss) var dismiss
+
+    var body: some ReducerOf&lt;Self&gt; {
+<span class="gd">-        Scope(state: \.speechSettings, action: /Action.speechSettings) {
+-            SpeechSettingsFeature()
+-        }
+</span>        Reduce { state, action in
+            switch action {
+            case .doneButtonTapped:
+                return .run { send in
+                    await dismiss()
+                }
+<span class="gd">-            case .speechSettings:
+-                return .none
+</span>            }
+        }
+    }
+}
+</code></pre>
+</div>
+
+<div class="language-diff highlighter-rouge"><pre class="highlight"><code>struct SettingsView: View {
+  let store: StoreOf&lt;SettingsFeature&gt;
+
+  var body: some View {
+    WithViewStore(store, observe: { $0 }) { viewStore in
+      NavigationStack {
+        Form {
+          Section {
+            // Topic-related views
+            // ...
+          } header: {
+            Text("Topic")
+          }
+
+          SpeechSettingsSection(
+<span class="gd">-            store: store.scope(state: \.speechSettings, action: { .speechSettings($0) })
+</span><span class="gi">+            store: Store(initialState: .init()) {
++                SpeechSettingsFeature()
++            }
+</span>          )
+        }
+        // Toolbar-styling modifiers
+        // ...
+      }
+    }
+  }
+}
+</code></pre>
+</div>
+
+<p>We were able to remove some unnecessary code and complexity from both <code class="language-plaintext highlighter-rouge">SettingsFeature</code> and <code class="language-plaintext highlighter-rouge">PreSettingsFeature</code>. <code class="language-plaintext highlighter-rouge">SpeechSettingsFeature</code> is now a drop-in feature.</p>
+
+<p>As discussed in the <a href="/2023/11/13/tca-strategies-sharing-state">two strategies to model state</a> post, there are tradeoffs to using the <em>root ownership</em> and <em>dependency ownership</em> strategies. In the case of <code class="language-plaintext highlighter-rouge">SpeechSettingsFeature</code>, <em>dependency ownership</em> seems like the most reasonable choice at the moment.</p>
+
+<h2 id="conclusion">Conclusion</h2>
+
+<p>We succeeded in refactoring the duplicated functionality in <code class="language-plaintext highlighter-rouge">SettingsFeature</code> and <code class="language-plaintext highlighter-rouge">PreSettingsFeature</code> into one composable <code class="language-plaintext highlighter-rouge">SpeechSettingsFeature</code>. We also used this opportunity to convert the underlying state sharing strategy to <em>dependency ownership</em>.</p>
+
+  </article>
+
+</div>
+
+      </div>
+    </div>
+
+    <footer class="site-footer">
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">twocentstudios</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col  footer-col-1">
+        <ul class="contact-list">
+          <li><a href="mailto:chris@twocentstudios.com">chris@twocentstudios.com</a></li>
+          
+          <li>
+            <a href="https://github.com/twocentstudios">
+              <span class="icon  icon--github">
+                <svg viewBox="0 0 16 16">
+                  <path fill="#828282" d="M7.999,0.431c-4.285,0-7.76,3.474-7.76,7.761 c0,3.428,2.223,6.337,5.307,7.363c0.388,0.071,0.53-0.168,0.53-0.374c0-0.184-0.007-0.672-0.01-1.32 c-2.159,0.469-2.614-1.04-2.614-1.04c-0.353-0.896-0.862-1.135-0.862-1.135c-0.705-0.481,0.053-0.472,0.053-0.472 c0.779,0.055,1.189,0.8,1.189,0.8c0.692,1.186,1.816,0.843,2.258,0.645c0.071-0.502,0.271-0.843,0.493-1.037 C4.86,11.425,3.049,10.76,3.049,7.786c0-0.847,0.302-1.54,0.799-2.082C3.768,5.507,3.501,4.718,3.924,3.65 c0,0,0.652-0.209,2.134,0.796C6.677,4.273,7.34,4.187,8,4.184c0.659,0.003,1.323,0.089,1.943,0.261 c1.482-1.004,2.132-0.796,2.132-0.796c0.423,1.068,0.157,1.857,0.077,2.054c0.497,0.542,0.798,1.235,0.798,2.082 c0,2.981-1.814,3.637-3.543,3.829c0.279,0.24,0.527,0.713,0.527,1.437c0,1.037-0.01,1.874-0.01,2.129 c0,0.208,0.14,0.449,0.534,0.373c3.081-1.028,5.302-3.935,5.302-7.362C15.76,3.906,12.285,0.431,7.999,0.431z"/>
+                </svg>
+              </span>
+
+              <span class="username">twocentstudios</span>
+            </a>
+          </li>
+          
+
+          <li>
+            <a href="https://hackyderm.io/@twocentstudios">
+              <span class="icon">
+                <svg viewBox="0 0 24 24">
+                  <path fill="#828282" d="M21.327 8.566c0-4.339-2.843-5.61-2.843-5.61-1.433-.658-3.894-.935-6.451-.956h-.063c-2.557.021-5.016.298-6.45.956 0 0-2.843 1.272-2.843 5.61 0 .993-.019 2.181.012 3.441.103 4.243.778 8.425 4.701 9.463 1.809.479 3.362.579 4.612.51 2.268-.126 3.541-.809 3.541-.809l-.075-1.646s-1.621.511-3.441.449c-1.804-.062-3.707-.194-3.999-2.409a4.523 4.523 0 0 1-.04-.621s1.77.433 4.014.536c1.372.063 2.658-.08 3.965-.236 2.506-.299 4.688-1.843 4.962-3.254.434-2.223.398-5.424.398-5.424zm-3.353 5.59h-2.081V9.057c0-1.075-.452-1.62-1.357-1.62-1 0-1.501.647-1.501 1.927v2.791h-2.069V9.364c0-1.28-.501-1.927-1.502-1.927-.905 0-1.357.546-1.357 1.62v5.099H6.026V8.903c0-1.074.273-1.927.823-2.558.566-.631 1.307-.955 2.228-.955 1.065 0 1.872.409 2.405 1.228l.518.869.519-.869c.533-.819 1.34-1.228 2.405-1.228.92 0 1.662.324 2.228.955.549.631.822 1.484.822 2.558v5.253z"/>
+                </svg>
+              </span>
+
+              <span class="username">twocentstudios</span>
+            </a>
+          </li>
+
+          
+          <li>
+            <a href="https://twitter.com/twocentstudios">
+              <span class="icon  icon--twitter">
+                <svg viewBox="0 0 16 16">
+                  <path fill="#828282" d="M15.969,3.058c-0.586,0.26-1.217,0.436-1.878,0.515c0.675-0.405,1.194-1.045,1.438-1.809
+                  c-0.632,0.375-1.332,0.647-2.076,0.793c-0.596-0.636-1.446-1.033-2.387-1.033c-1.806,0-3.27,1.464-3.27,3.27 c0,0.256,0.029,0.506,0.085,0.745C5.163,5.404,2.753,4.102,1.14,2.124C0.859,2.607,0.698,3.168,0.698,3.767 c0,1.134,0.577,2.135,1.455,2.722C1.616,6.472,1.112,6.325,0.671,6.08c0,0.014,0,0.027,0,0.041c0,1.584,1.127,2.906,2.623,3.206 C3.02,9.402,2.731,9.442,2.433,9.442c-0.211,0-0.416-0.021-0.615-0.059c0.416,1.299,1.624,2.245,3.055,2.271 c-1.119,0.877-2.529,1.4-4.061,1.4c-0.264,0-0.524-0.015-0.78-0.046c1.447,0.928,3.166,1.469,5.013,1.469 c6.015,0,9.304-4.983,9.304-9.304c0-0.142-0.003-0.283-0.009-0.423C14.976,4.29,15.531,3.714,15.969,3.058z"/>
+                </svg>
+              </span>
+
+              <span class="username">twocentstudios</span>
+            </a>
+          </li>
+          
+        </ul>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+
+
+  </body>
+
+</html>
