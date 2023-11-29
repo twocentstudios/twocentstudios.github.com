@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>Exploring SwiftUI Explicit Identity</title>
+
+  <meta property="og:type" content="article" />
+  <meta property="og:title" content="Exploring SwiftUI Explicit Identity" />
+  <meta property="og:url" content="https://twocentstudios.com/2023/11/28/exploring-swift-ui-explicit-identity/" />
+  
+    <meta property="og:article:published_time" content="2023-11-28T17:17:22-06:00" />
+  
+  
+    <meta property="og:image" content="https://twocentstudios.com/images/explicit-identity-1-1.png" />
+  
+  
+  <link href='https://fonts.googleapis.com/css2?family=Work+Sans:wght@300;350;400;600' rel='stylesheet' type='text/css'>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="canonical" href="https://twocentstudios.com/2023/11/28/exploring-swift-ui-explicit-identity/">
+  <link rel="alternate" type="application/rss+xml" title="twocentstudios" href="https://twocentstudios.com/feed.xml" />
+</head>
+
+  <!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-NE82N02W8S"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-NE82N02W8S');
+</script>
+
+  <body>
+
+    <header class="site-header">
+
+  <div class="wrapper">
+
+    <a class="site-title" href="/">twocentstudios</a>
+
+    <nav class="site-nav">
+      <a href="#" class="menu-icon">
+        <svg viewBox="0 0 18 15">
+          <path fill="#424242" d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.031C17.335,0,18,0.665,18,1.484L18,1.484z"/>
+          <path fill="#424242" d="M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0c0-0.82,0.665-1.484,1.484-1.484 h15.031C17.335,6.031,18,6.696,18,7.516L18,7.516z"/>
+          <path fill="#424242" d="M18,13.516C18,14.335,17.335,15,16.516,15H1.484C0.665,15,0,14.335,0,13.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.031C17.335,12.031,18,12.696,18,13.516L18,13.516z"/>
+        </svg>
+      </a>
+
+      <div class="trigger">
+        
+          
+          <a class="page-link" href="/about/">About</a>
+          
+        
+          
+          <a class="page-link" href="/blog/">Blog</a>
+          
+        
+          
+        
+          
+        
+          
+          <a class="page-link" href="/portfolio/">Portfolio</a>
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      </div>
+    </nav>
+
+  </div>
+
+</header>
+
+
+    <div class="page-content">
+      <div class="wrapper">
+        <div class="post">
+
+  <header class="post-header">
+    <h1 class="post-title">Exploring SwiftUI Explicit Identity</h1>
+    <p class="post-meta">Nov 28, 2023</p>
+  </header>
+
+  <article class="post-content">
+    <p>In this post, I’ll show a few examples of how specifying the explicit identity of a simple SwiftUI view affects the behavior of the view over time depending on its container view.</p>
+
+<h2 id="background">Background</h2>
+
+<p><em>View identity</em> is an essential part to the deep story behind how the SwiftUI framework converts <code class="language-plaintext highlighter-rouge">View</code> protocol-conforming structs written by us into pixels on the screen, and how that process works over the lifetime of our app. This post assumes you already have a basic understanding of SwiftUI (I recommend viewing the resources at the bottom of this post to build your mental model of SwiftUI).</p>
+
+<p>SwiftUI uses the concept of <em>view identity</em> to track view lifetime, not only for efficient rendering but also to ensure the view-local state (like the kind marked by <code class="language-plaintext highlighter-rouge">@State</code>) that it maintains for us is not discarded prematurely.</p>
+
+<p>SwiftUI tracks view identity in two ways: <strong>structural identity</strong> and <strong>explicit identity</strong>. This post discusses <strong>explicit identity</strong>: associating a <code class="language-plaintext highlighter-rouge">Hashable</code> value to a SwiftUI view through the <code class="language-plaintext highlighter-rouge">.id(...)</code> modifier, or (more commonly) using an initializer of <code class="language-plaintext highlighter-rouge">ForEach</code>, <code class="language-plaintext highlighter-rouge">List</code>, or other enumerable primitive views with an <code class="language-plaintext highlighter-rouge">Identifiable</code> associated value.</p>
+
+<p>For example:</p>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="c1">/// An `id` modifier will add explicit identity to the `Text` view returned by `body`. </span>
+<span class="kd">struct</span> <span class="kt">MyView</span><span class="p">:</span> <span class="kt">View</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">body</span><span class="p">:</span> <span class="n">some</span> <span class="kt">View</span> <span class="p">{</span>
+        <span class="kt">Text</span><span class="p">(</span><span class="s">"Hello world"</span><span class="p">)</span>
+            <span class="o">.</span><span class="nf">id</span><span class="p">(</span><span class="s">"text"</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1">/// This initializer of `List` requires a collection where each element has a stable identity.</span>
+<span class="c1">/// Each `Text` will be assigned an explicit identifier.</span>
+<span class="kd">struct</span> <span class="kt">MyListView</span><span class="p">:</span> <span class="kt">View</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">items</span><span class="p">:</span> <span class="p">[</span><span class="kt">String</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="s">"a"</span><span class="p">,</span> <span class="s">"b"</span><span class="p">]</span>
+    <span class="k">var</span> <span class="nv">body</span><span class="p">:</span> <span class="n">some</span> <span class="kt">View</span> <span class="p">{</span>
+        <span class="kt">List</span><span class="p">(</span><span class="n">items</span><span class="p">,</span> <span class="nv">id</span><span class="p">:</span> <span class="err">\</span><span class="o">.</span><span class="k">self</span><span class="p">)</span> <span class="p">{</span> <span class="n">item</span> <span class="k">in</span>
+            <span class="kt">Text</span><span class="p">(</span><span class="n">item</span><span class="p">)</span>
+                <span class="c1">// .id(item) &lt;- applied automatically by `List`</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p>For context, it’s overwhelmingly more common to see explicit identity expressed with enumerating views like <code class="language-plaintext highlighter-rouge">ForEach</code>. In my experience, the <code class="language-plaintext highlighter-rouge">.id</code> modifier is usually only seen used alongside <code class="language-plaintext highlighter-rouge">ScrollViewReader</code> to force scroll to a certain view. Or, even more rarely, to force SwiftUI to reload a view, perhaps to trigger a <code class="language-plaintext highlighter-rouge">.transition</code> animation. The trivia in this post is most useful in the realm of the latter.</p>
+
+<h2 id="experiment-setup">Experiment setup</h2>
+
+<p>Let’s define a view structure we can reuse for each experiment.</p>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">User</span><span class="p">:</span> <span class="kt">Identifiable</span><span class="p">,</span> <span class="kt">Equatable</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">id</span><span class="p">:</span> <span class="kt">Int</span>
+    <span class="k">let</span> <span class="nv">name</span><span class="p">:</span> <span class="kt">String</span>
+<span class="p">}</span>
+
+<span class="kd">struct</span> <span class="kt">ViewData</span><span class="p">:</span> <span class="kt">Equatable</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">userTop</span> <span class="o">=</span> <span class="kt">User</span><span class="p">(</span><span class="nv">id</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="nv">name</span><span class="p">:</span> <span class="s">"Abby"</span><span class="p">)</span>
+    <span class="k">var</span> <span class="nv">userMiddle</span> <span class="o">=</span> <span class="kt">User</span><span class="p">(</span><span class="nv">id</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="nv">name</span><span class="p">:</span> <span class="s">"Barry"</span><span class="p">)</span>
+    <span class="k">var</span> <span class="nv">userBottom</span> <span class="o">=</span> <span class="kt">User</span><span class="p">(</span><span class="nv">id</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="nv">name</span><span class="p">:</span> <span class="s">"Craig"</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="kd">struct</span> <span class="kt">ContentView</span><span class="p">:</span> <span class="kt">View</span> <span class="p">{</span>
+    <span class="kd">@State</span> <span class="k">var</span> <span class="nv">viewData</span> <span class="o">=</span> <span class="kt">ViewData</span><span class="p">()</span>
+    <span class="kd">@Namespace</span> <span class="k">var</span> <span class="nv">ns</span> <span class="c1">// used later for `.matchedGeometryEffect`</span>
+
+    <span class="k">var</span> <span class="nv">body</span><span class="p">:</span> <span class="n">some</span> <span class="kt">View</span> <span class="p">{</span>
+        <span class="kt">NavigationStack</span> <span class="p">{</span>
+            <span class="c1">// ** Each experiment will replace `EmptyView` **</span>
+            <span class="kt">EmptyView</span><span class="p">()</span>
+                <span class="o">.</span><span class="nf">navigationTitle</span><span class="p">(</span><span class="s">"Experiment Title"</span><span class="p">)</span>
+                <span class="o">.</span><span class="n">toolbar</span> <span class="p">{</span>
+                    <span class="kt">Button</span><span class="p">(</span><span class="s">"Swap Abby &amp; Craig"</span><span class="p">)</span> <span class="p">{</span>
+                        <span class="n">withAnimation</span> <span class="p">{</span>
+                            <span class="k">let</span> <span class="nv">newBottom</span> <span class="o">=</span> <span class="n">viewData</span><span class="o">.</span><span class="n">userTop</span>
+                            <span class="n">viewData</span><span class="o">.</span><span class="n">userTop</span> <span class="o">=</span> <span class="n">viewData</span><span class="o">.</span><span class="n">userBottom</span>
+                            <span class="n">viewData</span><span class="o">.</span><span class="n">userBottom</span> <span class="o">=</span> <span class="n">newBottom</span>
+                        <span class="p">}</span>
+                    <span class="p">}</span>
+                <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">struct</span> <span class="kt">UserView</span><span class="p">:</span> <span class="kt">View</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">user</span><span class="p">:</span> <span class="kt">User</span>
+
+    <span class="c1">// Internal state that will help us understand SwiftUI's lifetime of this view</span>
+    <span class="kd">@State</span> <span class="k">var</span> <span class="nv">internalFlag</span><span class="p">:</span> <span class="kt">Bool</span> <span class="o">=</span> <span class="kc">false</span>
+
+    <span class="k">var</span> <span class="nv">body</span><span class="p">:</span> <span class="n">some</span> <span class="kt">View</span> <span class="p">{</span>
+        <span class="kt">HStack</span> <span class="p">{</span>
+            <span class="kt">Text</span><span class="p">(</span><span class="n">user</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+            <span class="kt">Spacer</span><span class="p">()</span>
+            <span class="kt">Toggle</span><span class="p">(</span><span class="s">""</span><span class="p">,</span> <span class="nv">isOn</span><span class="p">:</span> <span class="err">$</span><span class="n">internalFlag</span><span class="p">)</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p>The view for each experiment will usually look like this:</p>
+
+<div class="caption-wrapper"><img class="caption" src="/images/explicit-identity-setup.png" width="" height="" alt="The common view appearance for the experiments" title="The common view appearance for the experiments" /><div class="caption-text">The common view appearance for the experiments</div></div>
+
+<p>In order to determine what’s happening with SwiftUI’s internal representation of our views in the render tree, we’ll manually set the top and middle toggles (Abby and Barry) to “on”, even though their default value is “off”, like so:</p>
+
+<div class="caption-wrapper"><img class="caption" src="/images/explicit-identity-1-1.png" width="" height="" alt="We'll manually set the initial state of the top and middle toggles to `on`" title="We'll manually set the initial state of the top and middle toggles to `on`" /><div class="caption-text">We'll manually set the initial state of the top and middle toggles to `on`</div></div>
+
+<p>Note: in the post I’ll be eliding styling modifiers in code blocks for brevity.</p>
+
+<h2 id="experiments">Experiments</h2>
+
+<p>Our goal is to observe the behavior of explicit identity in a several situations. We’ll see subtle differences in behavior based on changing the parent view that contains the views we’ve explicitly identified.</p>
+
+<p>There are 3 cells that display the 3 users. Tapping the button swaps the top and bottom users (Abby and Craig).</p>
+
+<p>Each cell has one piece of internal boolean <code class="language-plaintext highlighter-rouge">@State</code> represented in the UI by a <code class="language-plaintext highlighter-rouge">Toggle</code> control. In the experiments, we’ll manually toggle this state to true. If it resets to <code class="language-plaintext highlighter-rouge">false</code> after tapping the button, we’ll have a clue that SwiftUI thinks the view’s identity changed and it recreated the underlying render tree view.</p>
+
+<p>Note: there are other ways besides <code class="language-plaintext highlighter-rouge">@State</code> to monitor a view’s lifetime: printing to the console inside <code class="language-plaintext highlighter-rouge">onAppear</code>, <code class="language-plaintext highlighter-rouge">onDisappear</code>, <code class="language-plaintext highlighter-rouge">onTask</code>; adding a non-default <code class="language-plaintext highlighter-rouge">.transition</code>; adding <code class="language-plaintext highlighter-rouge">Self._printChanges</code> in the <code class="language-plaintext highlighter-rouge">body</code> property.</p>
+
+<p>All experiments were run on Xcode 15.0.1, iOS 17.0.1, and Swift 5.9.</p>
+
+<h3 id="1-vstack-container-with-no-explicit-identity">1. VStack container with no explicit identity</h3>
+
+<p>Let’s start with the simplest setup.</p>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kt">VStack</span> <span class="p">{</span>
+    <span class="kt">UserView</span><span class="p">(</span><span class="nv">user</span><span class="p">:</span> <span class="n">viewData</span><span class="o">.</span><span class="n">userTop</span><span class="p">)</span>
+    <span class="kt">UserView</span><span class="p">(</span><span class="nv">user</span><span class="p">:</span> <span class="n">viewData</span><span class="o">.</span><span class="n">userMiddle</span><span class="p">)</span>
+    <span class="kt">UserView</span><span class="p">(</span><span class="nv">user</span><span class="p">:</span> <span class="n">viewData</span><span class="o">.</span><span class="n">userBottom</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<table>
+  <thead>
+    <tr>
+      <th>Initial</th>
+      <th>After 1st tap</th>
+      <th>After 2nd tap</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><img src="/images/explicit-identity-1-1.png" alt="" /></td>
+      <td><img src="/images/explicit-identity-1-2.png" alt="" /></td>
+      <td><img src="/images/explicit-identity-1-1.png" alt="" /></td>
+    </tr>
+  </tbody>
+</table>
+
+<video src="/images/explicit-identity-1.mov" controls="" preload="none" poster="/images/explicit-identity-1-1.png" width="100%"></video>
+
+<p>Without <em>explicit identity</em>, SwiftUI is relying on <em>structural identity</em> to track the identity of each of the 3 <code class="language-plaintext highlighter-rouge">UserView</code>s.</p>
+
+<p>This example shows us that SwiftUI is not recreating the underlying render tree views. The names are changing but the toggles are staying the same. As far as SwiftUI is concerned, the <code class="language-plaintext highlighter-rouge">UserView</code> dependency value <code class="language-plaintext highlighter-rouge">user</code> is changing, but the <code class="language-plaintext highlighter-rouge">UserView</code> maintains the same identity.</p>
+
+<p>Abby’s toggle looks like it was inherited by Craig after the first tap. Conceptually, it’s true that you can consider the “name” part as jumping between non-moving cells in this setup.</p>
+
+<p>For the record: <code class="language-plaintext highlighter-rouge">LazyVStack</code> has the same behavior as <code class="language-plaintext highlighter-rouge">VStack</code> when its content views have no explicit identity.</p>
+
+<h3 id="2-vstack-container-with-explicit-identity">2. VStack container with explicit identity</h3>
+
+<p>Let’s add explicit identity via the <code class="language-plaintext highlighter-rouge">.id</code> modifier to each cell.</p>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kt">VStack</span> <span class="p">{</span>
+    <span class="kt">UserView</span><span class="p">(</span><span class="nv">user</span><span class="p">:</span> <span class="n">viewData</span><span class="o">.</span><span class="n">userTop</span><span class="p">)</span>
+        <span class="o">.</span><span class="nf">id</span><span class="p">(</span><span class="n">viewData</span><span class="o">.</span><span class="n">userTop</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+    <span class="kt">UserView</span><span class="p">(</span><span class="nv">user</span><span class="p">:</span> <span class="n">viewData</span><span class="o">.</span><span class="n">userMiddle</span><span class="p">)</span>
+        <span class="o">.</span><span class="nf">id</span><span class="p">(</span><span class="n">viewData</span><span class="o">.</span><span class="n">userMiddle</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+    <span class="kt">UserView</span><span class="p">(</span><span class="nv">user</span><span class="p">:</span> <span class="n">viewData</span><span class="o">.</span><span class="n">userBottom</span><span class="p">)</span>
+        <span class="o">.</span><span class="nf">id</span><span class="p">(</span><span class="n">viewData</span><span class="o">.</span><span class="n">userBottom</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<table>
+  <thead>
+    <tr>
+      <th>Initial</th>
+      <th>After 1st tap</th>
+      <th>After 2nd tap</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><img src="/images/explicit-identity-2-1.png" alt="" /></td>
+      <td><img src="/images/explicit-identity-2-2.png" alt="" /></td>
+      <td><img src="/images/explicit-identity-2-3.png" alt="" /></td>
+    </tr>
+  </tbody>
+</table>
+
+<video src="/images/explicit-identity-2.mov" controls="" preload="none" poster="/images/explicit-identity-2-1.png" width="100%"></video>
+
+<p>The <code class="language-plaintext highlighter-rouge">UserView</code> <code class="language-plaintext highlighter-rouge">id</code> values before and after switching places:</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>ID Before</th>
+      <th>ID After</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>0</td>
+      <td>2</td>
+    </tr>
+    <tr>
+      <td>1</td>
+      <td>1</td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td>0</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>The top and bottom <code class="language-plaintext highlighter-rouge">UserView</code>’s <code class="language-plaintext highlighter-rouge">id</code> values changed, therefore SwiftUI considers them new views, ends the lifetime of their render tree equivalents, and creates new render tree views in their places, including the underlying storage for <code class="language-plaintext highlighter-rouge">UserView.internalFlag</code>.</p>
+
+<p>Both the <code class="language-plaintext highlighter-rouge">Text</code> and <code class="language-plaintext highlighter-rouge">Toggle</code> of the top and bottom cells animate with the default <code class="language-plaintext highlighter-rouge">.opacity</code> transition. Although it looks the same as experiment (1), this is a <em>transition</em> and not an in-place animation.</p>
+
+<p>The middle view (“Barry”) has not changed. Its explicit identity and structural identity did not change.</p>
+
+<p>You may have thought that the top and bottom cells would swap places without being recreated. If that were the case, Abby’s “on” toggle would follow her to the bottom row. Why doesn’t it?</p>
+
+<p>This is behavior specific to <code class="language-plaintext highlighter-rouge">VStack</code> (as opposed to <code class="language-plaintext highlighter-rouge">LazyVStack</code> or <code class="language-plaintext highlighter-rouge">ForEach</code> or <code class="language-plaintext highlighter-rouge">List</code>, which we’ll see in a moment). This behavior is explained in the book <a href="https://www.objc.io/books/thinking-in-swiftui/">Thinking in SwiftUI</a>:</p>
+
+<blockquote>
+  <p>It’s important to note that an explicit identifier like the one above doesn’t override the view’s implicit identity, but is instead applied on top of it.</p>
+</blockquote>
+
+<p><code class="language-plaintext highlighter-rouge">VStack</code> seems to enforce strong structural identity of our 3 views, and therefore even though it sees the same view type and the same id but in a different position, it doesn’t try to maintain our views’ identities across the reorder.</p>
+
+<h3 id="3-lazyvstack-container-with-explicit-identity">3. LazyVStack container with explicit identity</h3>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kt">LazyVStack</span> <span class="p">{</span>
+    <span class="kt">UserView</span><span class="p">(</span><span class="nv">user</span><span class="p">:</span> <span class="n">viewData</span><span class="o">.</span><span class="n">userTop</span><span class="p">)</span>
+        <span class="o">.</span><span class="nf">id</span><span class="p">(</span><span class="n">viewData</span><span class="o">.</span><span class="n">userTop</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+    <span class="kt">UserView</span><span class="p">(</span><span class="nv">user</span><span class="p">:</span> <span class="n">viewData</span><span class="o">.</span><span class="n">userMiddle</span><span class="p">)</span>
+        <span class="o">.</span><span class="nf">id</span><span class="p">(</span><span class="n">viewData</span><span class="o">.</span><span class="n">userMiddle</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+    <span class="kt">UserView</span><span class="p">(</span><span class="nv">user</span><span class="p">:</span> <span class="n">viewData</span><span class="o">.</span><span class="n">userBottom</span><span class="p">)</span>
+        <span class="o">.</span><span class="nf">id</span><span class="p">(</span><span class="n">viewData</span><span class="o">.</span><span class="n">userBottom</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<table>
+  <thead>
+    <tr>
+      <th>Initial</th>
+      <th>After 1st tap</th>
+      <th>After 2nd tap</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><img src="/images/explicit-identity-3-1.png" alt="" /></td>
+      <td><img src="/images/explicit-identity-3-2.png" alt="" /></td>
+      <td><img src="/images/explicit-identity-3-1.png" alt="" /></td>
+    </tr>
+  </tbody>
+</table>
+
+<video src="/images/explicit-identity-3.mov" controls="" preload="none" poster="/images/explicit-identity-3-1.png" width="100%"></video>
+
+<p>After the first button tap, <code class="language-plaintext highlighter-rouge">LazyVStack</code> with explicit identity looks like it will have the same behavior as <code class="language-plaintext highlighter-rouge">VStack</code> from experiment 2. However, on the second button tap, we see that Abby’s toggle value has been restored!</p>
+
+<p>What’s going on here?</p>
+
+<p>It seems like SwiftUI is still deriving an identity for each view by combining structural identity and explicit identity, but <code class="language-plaintext highlighter-rouge">LazyVStack</code> isn’t discarding the internal state even if a view with that identity is removed from its jurisdiction.</p>
+
+<p>Let’s think about the usual use case for <code class="language-plaintext highlighter-rouge">LazyVStack</code>. <code class="language-plaintext highlighter-rouge">LazyVStack</code> maintains a group of views within a <code class="language-plaintext highlighter-rouge">ScrollView</code>.</p>
+
+<p>Quoting from <a href="https://swiftui-lab.com/companion/">A Companion for SwiftUI</a> (<strong>emphasis</strong> mine):</p>
+
+<blockquote>
+  <p>The child views of lazy stacks and grids are only created as they become visible. Once they have been created and made part of the view hierarchy, they will remain part of it, until they scroll out of view. However, <strong>their states will remain in memory</strong>.</p>
+</blockquote>
+
+<p>The only surprising part then is that usually it’s <code class="language-plaintext highlighter-rouge">ScrollView &gt; LazyVStack &gt; ForEach</code> cohort that are handling the adding/removing of views and maintaining explicit identifiers, but in this case we’re the ones doing the manipulating and we’re seeing similar behavior.</p>
+
+<h3 id="4-vstack-container-with-matched-geometry-effect">4. VStack container with matched geometry effect</h3>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kt">VStack</span><span class="p">(</span><span class="nv">spacing</span><span class="p">:</span> <span class="mi">6</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kt">UserView</span><span class="p">(</span><span class="nv">user</span><span class="p">:</span> <span class="n">viewData</span><span class="o">.</span><span class="n">userTop</span><span class="p">)</span>
+        <span class="o">.</span><span class="nf">matchedGeometryEffect</span><span class="p">(</span><span class="nv">id</span><span class="p">:</span> <span class="n">viewData</span><span class="o">.</span><span class="n">userTop</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="nv">in</span><span class="p">:</span> <span class="n">ns</span><span class="p">)</span>
+        <span class="o">.</span><span class="nf">id</span><span class="p">(</span><span class="n">viewData</span><span class="o">.</span><span class="n">userTop</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+    <span class="kt">UserView</span><span class="p">(</span><span class="nv">user</span><span class="p">:</span> <span class="n">viewData</span><span class="o">.</span><span class="n">userMiddle</span><span class="p">)</span>
+        <span class="o">.</span><span class="nf">matchedGeometryEffect</span><span class="p">(</span><span class="nv">id</span><span class="p">:</span> <span class="n">viewData</span><span class="o">.</span><span class="n">userMiddle</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="nv">in</span><span class="p">:</span> <span class="n">ns</span><span class="p">)</span>
+        <span class="o">.</span><span class="nf">id</span><span class="p">(</span><span class="n">viewData</span><span class="o">.</span><span class="n">userMiddle</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+    <span class="kt">UserView</span><span class="p">(</span><span class="nv">user</span><span class="p">:</span> <span class="n">viewData</span><span class="o">.</span><span class="n">userBottom</span><span class="p">)</span>
+        <span class="o">.</span><span class="nf">matchedGeometryEffect</span><span class="p">(</span><span class="nv">id</span><span class="p">:</span> <span class="n">viewData</span><span class="o">.</span><span class="n">userBottom</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="nv">in</span><span class="p">:</span> <span class="n">ns</span><span class="p">)</span>
+        <span class="o">.</span><span class="nf">id</span><span class="p">(</span><span class="n">viewData</span><span class="o">.</span><span class="n">userBottom</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<table>
+  <thead>
+    <tr>
+      <th>Initial</th>
+      <th>After 1st tap</th>
+      <th>After 2nd tap</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><img src="/images/explicit-identity-4-1.png" alt="" /></td>
+      <td><img src="/images/explicit-identity-4-2.png" alt="" /></td>
+      <td><img src="/images/explicit-identity-4-3.png" alt="" /></td>
+    </tr>
+  </tbody>
+</table>
+
+<video src="/images/explicit-identity-4.mov" controls="" preload="none" poster="/images/explicit-identity-4-1.png" width="100%"></video>
+
+<p><code class="language-plaintext highlighter-rouge">.matchedGeometryEffect</code> is a quirky modifier. I was curious whether we could force <code class="language-plaintext highlighter-rouge">VStack</code> to recognize the top and bottom views as having the same underlying identity.</p>
+
+<p>The result is about half what we’d hope. The top and bottom views swap positions with an animation (good), but the <code class="language-plaintext highlighter-rouge">internalFlag</code> is still reset as we saw in experiment 1.</p>
+
+<p>For those curious, removing the explicit <code class="language-plaintext highlighter-rouge">.id</code> from each cell has the same behavior as experiment 1.</p>
+
+<h3 id="5-foreach">5. ForEach</h3>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kt">VStack</span><span class="p">(</span><span class="nv">spacing</span><span class="p">:</span> <span class="mi">6</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kt">ForEach</span><span class="p">([</span><span class="n">viewData</span><span class="o">.</span><span class="n">userTop</span><span class="p">,</span> <span class="n">viewData</span><span class="o">.</span><span class="n">userMiddle</span><span class="p">,</span> <span class="n">viewData</span><span class="o">.</span><span class="n">userBottom</span><span class="p">])</span> <span class="p">{</span> <span class="n">item</span> <span class="k">in</span>
+        <span class="kt">UserView</span><span class="p">(</span><span class="nv">user</span><span class="p">:</span> <span class="n">item</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<table>
+  <thead>
+    <tr>
+      <th>Initial</th>
+      <th>After 1st tap</th>
+      <th>After 2nd tap</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><img src="/images/explicit-identity-5-1.png" alt="" /></td>
+      <td><img src="/images/explicit-identity-5-2.png" alt="" /></td>
+      <td><img src="/images/explicit-identity-5-1.png" alt="" /></td>
+    </tr>
+  </tbody>
+</table>
+
+<video src="/images/explicit-identity-5.mov" controls="" preload="none" poster="/images/explicit-identity-5-1.png" width="100%"></video>
+
+<p><code class="language-plaintext highlighter-rouge">ForEach</code> is the first enumerating view we’re experimenting with that has first class support for explicit identity. The <code class="language-plaintext highlighter-rouge">User</code> struct conforms to <code class="language-plaintext highlighter-rouge">Identifiable</code>, and therefore <code class="language-plaintext highlighter-rouge">ForEach</code> is using this initializer (note the <code class="language-plaintext highlighter-rouge">Data.Element: Identifiable</code>):</p>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">extension</span> <span class="kt">ForEach</span> <span class="k">where</span> <span class="kt">ID</span> <span class="o">==</span> <span class="kt">Data</span><span class="o">.</span><span class="kt">Element</span><span class="o">.</span><span class="kt">ID</span><span class="p">,</span> <span class="kt">Content</span> <span class="p">:</span> <span class="kt">View</span><span class="p">,</span> <span class="kt">Data</span><span class="o">.</span><span class="kt">Element</span> <span class="p">:</span> <span class="kt">Identifiable</span> <span class="p">{</span>
+
+    <span class="c1">/// Creates an instance that uniquely identifies and creates views across</span>
+    <span class="c1">/// updates based on the identity of the underlying data.</span>
+    <span class="c1">///</span>
+    <span class="c1">/// It's important that the `id` of a data element doesn't change unless you</span>
+    <span class="c1">/// replace the data element with a new data element that has a new</span>
+    <span class="c1">/// identity. If the `id` of a data element changes, the content view</span>
+    <span class="c1">/// generated from that data element loses any current state and animations.</span>
+    <span class="c1">///</span>
+    <span class="c1">/// - Parameters:</span>
+    <span class="c1">///   - data: The identified data that the ``ForEach`` instance uses to</span>
+    <span class="c1">///     create views dynamically.</span>
+    <span class="c1">///   - content: The view builder that creates views dynamically.</span>
+    <span class="kd">public</span> <span class="nf">init</span><span class="p">(</span><span class="n">_</span> <span class="nv">data</span><span class="p">:</span> <span class="kt">Data</span><span class="p">,</span> <span class="kd">@ViewBuilder</span> <span class="nv">content</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="p">(</span><span class="kt">Data</span><span class="o">.</span><span class="kt">Element</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Content</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p>The behavior looks good! SwiftUI is not only maintaining the internal state of each cell, but also providing a slick animation swapping the top and bottom cells.</p>
+
+<p>We can perhaps say that <code class="language-plaintext highlighter-rouge">ForEach</code> provides strong explicit identity and weak structural identity for its child views. Or maybe no structural identity at all.</p>
+
+<h3 id="6-list">6. List</h3>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kt">List</span><span class="p">([</span><span class="n">viewData</span><span class="o">.</span><span class="n">userTop</span><span class="p">,</span> <span class="n">viewData</span><span class="o">.</span><span class="n">userMiddle</span><span class="p">,</span> <span class="n">viewData</span><span class="o">.</span><span class="n">userBottom</span><span class="p">])</span> <span class="p">{</span> <span class="n">item</span> <span class="k">in</span>
+    <span class="kt">UserView</span><span class="p">(</span><span class="nv">user</span><span class="p">:</span> <span class="n">item</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<table>
+  <thead>
+    <tr>
+      <th>Initial</th>
+      <th>After 1st tap</th>
+      <th>After 2nd tap</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><img src="/images/explicit-identity-6-1.png" alt="" /></td>
+      <td><img src="/images/explicit-identity-6-2.png" alt="" /></td>
+      <td><img src="/images/explicit-identity-6-1.png" alt="" /></td>
+    </tr>
+  </tbody>
+</table>
+
+<video src="/images/explicit-identity-6.mov" controls="" preload="none" poster="/images/explicit-identity-6-1.png" width="100%"></video>
+
+<p><code class="language-plaintext highlighter-rouge">List</code> is the more opinionated version of <code class="language-plaintext highlighter-rouge">LazyVStack</code>+<code class="language-plaintext highlighter-rouge">ForEach</code>, implemented under-the-hood as a <code class="language-plaintext highlighter-rouge">UICollectionView</code> subclass.</p>
+
+<div class="caption-wrapper"><img class="caption" src="/images/explicit-identity-view-debugger-list.png" width="" height="" alt="Under the hood: in iOS 17 List is implemented as a UICollectionView subclass" title="Under the hood: in iOS 17 List is implemented as a UICollectionView subclass" /><div class="caption-text">Under the hood: in iOS 17 List is implemented as a UICollectionView subclass</div></div>
+
+<p>The behavior is exactly the same as <code class="language-plaintext highlighter-rouge">ForEach</code> in experiment 5. With the heartbreaking exception that there is no animation in the Xcode Preview (but there is on the full simulator).</p>
+
+<h2 id="conclusion">Conclusion</h2>
+
+<p>Although you probably won’t encounter situations where you need to understand the subtleties of explicit identity we’ve uncovered in this post regularly, hopefully it has helped reinforce your mental model of how SwiftUI handles identity.</p>
+
+<p>Any other interesting view identity behavior or trivia you’ve encountered? Let me know on <a href="https://hackyderm.io/@twocentstudios">Mastodon</a>.</p>
+
+<h2 id="recommended-viewingreading">Recommended viewing/reading</h2>
+
+<ul>
+  <li><a href="https://chris.eidhof.nl/presentations/day-in-the-life/">A Day in the Life of a SwiftUI View — Chris Eidhof</a></li>
+  <li><a href="https://developer.apple.com/videos/play/wwdc2021/10022/">Demystify SwiftUI - WWDC21</a></li>
+  <li><a href="https://www.objc.io/books/thinking-in-swiftui/">Thinking in SwiftUI · objc.io</a></li>
+</ul>
+
+<h2 id="full-copypasteable-code">Full copy/pasteable code</h2>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">import</span> <span class="kt">SwiftUI</span>
+
+<span class="kd">struct</span> <span class="kt">User</span><span class="p">:</span> <span class="kt">Identifiable</span><span class="p">,</span> <span class="kt">Equatable</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">id</span><span class="p">:</span> <span class="kt">Int</span>
+    <span class="k">let</span> <span class="nv">name</span><span class="p">:</span> <span class="kt">String</span>
+<span class="p">}</span>
+
+<span class="kd">struct</span> <span class="kt">ViewData</span><span class="p">:</span> <span class="kt">Equatable</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">userTop</span> <span class="o">=</span> <span class="kt">User</span><span class="p">(</span><span class="nv">id</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span> <span class="nv">name</span><span class="p">:</span> <span class="s">"Abby"</span><span class="p">)</span>
+    <span class="k">var</span> <span class="nv">userMiddle</span> <span class="o">=</span> <span class="kt">User</span><span class="p">(</span><span class="nv">id</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span> <span class="nv">name</span><span class="p">:</span> <span class="s">"Barry"</span><span class="p">)</span>
+    <span class="k">var</span> <span class="nv">userBottom</span> <span class="o">=</span> <span class="kt">User</span><span class="p">(</span><span class="nv">id</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="nv">name</span><span class="p">:</span> <span class="s">"Craig"</span><span class="p">)</span>
+<span class="p">}</span>
+
+<span class="kd">struct</span> <span class="kt">UserView</span><span class="p">:</span> <span class="kt">View</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">user</span><span class="p">:</span> <span class="kt">User</span>
+
+    <span class="c1">// Internal state that will help us understand SwiftUI's lifetime of this view</span>
+    <span class="kd">@State</span> <span class="k">var</span> <span class="nv">internalFlag</span><span class="p">:</span> <span class="kt">Bool</span> <span class="o">=</span> <span class="kc">false</span>
+
+    <span class="k">var</span> <span class="nv">body</span><span class="p">:</span> <span class="n">some</span> <span class="kt">View</span> <span class="p">{</span>
+        <span class="kt">HStack</span> <span class="p">{</span>
+            <span class="kt">Text</span><span class="p">(</span><span class="n">user</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+            <span class="kt">Spacer</span><span class="p">()</span>
+            <span class="kt">Toggle</span><span class="p">(</span><span class="s">""</span><span class="p">,</span> <span class="nv">isOn</span><span class="p">:</span> <span class="err">$</span><span class="n">internalFlag</span><span class="p">)</span>
+        <span class="p">}</span>
+        <span class="c1">// .transition(.slide.combined(with: .opacity))</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="cp">#Preview("1. VStack") {</span>
+    <span class="kd">struct</span> <span class="kt">ContentView</span><span class="p">:</span> <span class="kt">View</span> <span class="p">{</span>
+        <span class="kd">@State</span> <span class="k">var</span> <span class="nv">viewData</span> <span class="o">=</span> <span class="kt">ViewData</span><span class="p">()</span>
+
+        <span class="k">var</span> <span class="nv">body</span><span class="p">:</span> <span class="n">some</span> <span class="kt">View</span> <span class="p">{</span>
+            <span class="kt">NavigationStack</span> <span class="p">{</span>
+                <span class="kt">VStack</span><span class="p">(</span><span class="nv">spacing</span><span class="p">:</span> <span class="mi">6</span><span class="p">)</span> <span class="p">{</span>
+                    <span class="kt">UserView</span><span class="p">(</span><span class="nv">user</span><span class="p">:</span> <span class="n">viewData</span><span class="o">.</span><span class="n">userTop</span><span class="p">)</span>
+                    <span class="kt">UserView</span><span class="p">(</span><span class="nv">user</span><span class="p">:</span> <span class="n">viewData</span><span class="o">.</span><span class="n">userMiddle</span><span class="p">)</span>
+                    <span class="kt">UserView</span><span class="p">(</span><span class="nv">user</span><span class="p">:</span> <span class="n">viewData</span><span class="o">.</span><span class="n">userBottom</span><span class="p">)</span>
+                <span class="p">}</span>
+                <span class="o">.</span><span class="nf">padding</span><span class="p">()</span>
+                <span class="o">.</span><span class="nf">frame</span><span class="p">(</span><span class="nv">maxWidth</span><span class="p">:</span> <span class="o">.</span><span class="n">infinity</span><span class="p">,</span> <span class="nv">maxHeight</span><span class="p">:</span> <span class="o">.</span><span class="n">infinity</span><span class="p">,</span> <span class="nv">alignment</span><span class="p">:</span> <span class="o">.</span><span class="n">topLeading</span><span class="p">)</span>
+                <span class="o">.</span><span class="nf">navigationTitle</span><span class="p">(</span><span class="s">"1. VStack"</span><span class="p">)</span>
+                <span class="o">.</span><span class="n">toolbar</span> <span class="p">{</span>
+                    <span class="kt">Button</span><span class="p">(</span><span class="s">"Swap Abby &amp; Craig"</span><span class="p">)</span> <span class="p">{</span>
+                        <span class="n">withAnimation</span> <span class="p">{</span>
+                            <span class="k">let</span> <span class="nv">swap</span> <span class="o">=</span> <span class="n">viewData</span><span class="o">.</span><span class="n">userTop</span>
+                            <span class="n">viewData</span><span class="o">.</span><span class="n">userTop</span> <span class="o">=</span> <span class="n">viewData</span><span class="o">.</span><span class="n">userBottom</span>
+                            <span class="n">viewData</span><span class="o">.</span><span class="n">userBottom</span> <span class="o">=</span> <span class="n">swap</span>
+                        <span class="p">}</span>
+                    <span class="p">}</span>
+                <span class="p">}</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="kt">ContentView</span><span class="p">()</span>
+<span class="p">}</span>
+
+<span class="cp">#Preview("2. VStack w/ID") {</span>
+    <span class="kd">struct</span> <span class="kt">ContentView</span><span class="p">:</span> <span class="kt">View</span> <span class="p">{</span>
+        <span class="kd">@State</span> <span class="k">var</span> <span class="nv">viewData</span> <span class="o">=</span> <span class="kt">ViewData</span><span class="p">()</span>
+
+        <span class="k">var</span> <span class="nv">body</span><span class="p">:</span> <span class="n">some</span> <span class="kt">View</span> <span class="p">{</span>
+            <span class="kt">NavigationStack</span> <span class="p">{</span>
+                <span class="kt">VStack</span><span class="p">(</span><span class="nv">spacing</span><span class="p">:</span> <span class="mi">6</span><span class="p">)</span> <span class="p">{</span>
+                    <span class="kt">UserView</span><span class="p">(</span><span class="nv">user</span><span class="p">:</span> <span class="n">viewData</span><span class="o">.</span><span class="n">userTop</span><span class="p">)</span>
+                        <span class="o">.</span><span class="nf">id</span><span class="p">(</span><span class="n">viewData</span><span class="o">.</span><span class="n">userTop</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+                    <span class="kt">UserView</span><span class="p">(</span><span class="nv">user</span><span class="p">:</span> <span class="n">viewData</span><span class="o">.</span><span class="n">userMiddle</span><span class="p">)</span>
+                        <span class="o">.</span><span class="nf">id</span><span class="p">(</span><span class="n">viewData</span><span class="o">.</span><span class="n">userMiddle</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+                    <span class="kt">UserView</span><span class="p">(</span><span class="nv">user</span><span class="p">:</span> <span class="n">viewData</span><span class="o">.</span><span class="n">userBottom</span><span class="p">)</span>
+                        <span class="o">.</span><span class="nf">id</span><span class="p">(</span><span class="n">viewData</span><span class="o">.</span><span class="n">userBottom</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+                <span class="p">}</span>
+                <span class="o">.</span><span class="nf">padding</span><span class="p">()</span>
+                <span class="o">.</span><span class="nf">frame</span><span class="p">(</span><span class="nv">maxWidth</span><span class="p">:</span> <span class="o">.</span><span class="n">infinity</span><span class="p">,</span> <span class="nv">maxHeight</span><span class="p">:</span> <span class="o">.</span><span class="n">infinity</span><span class="p">,</span> <span class="nv">alignment</span><span class="p">:</span> <span class="o">.</span><span class="n">topLeading</span><span class="p">)</span>
+                <span class="o">.</span><span class="nf">navigationTitle</span><span class="p">(</span><span class="s">"2. VStack w/ID"</span><span class="p">)</span>
+                <span class="o">.</span><span class="n">toolbar</span> <span class="p">{</span>
+                    <span class="kt">Button</span><span class="p">(</span><span class="s">"Swap Abby &amp; Craig"</span><span class="p">)</span> <span class="p">{</span>
+                        <span class="n">withAnimation</span> <span class="p">{</span>
+                            <span class="k">let</span> <span class="nv">swap</span> <span class="o">=</span> <span class="n">viewData</span><span class="o">.</span><span class="n">userTop</span>
+                            <span class="n">viewData</span><span class="o">.</span><span class="n">userTop</span> <span class="o">=</span> <span class="n">viewData</span><span class="o">.</span><span class="n">userBottom</span>
+                            <span class="n">viewData</span><span class="o">.</span><span class="n">userBottom</span> <span class="o">=</span> <span class="n">swap</span>
+                        <span class="p">}</span>
+                    <span class="p">}</span>
+                <span class="p">}</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="kt">ContentView</span><span class="p">()</span>
+<span class="p">}</span>
+
+<span class="cp">#Preview("3. LazyVStack w/ID") {</span>
+    <span class="kd">struct</span> <span class="kt">ContentView</span><span class="p">:</span> <span class="kt">View</span> <span class="p">{</span>
+        <span class="kd">@State</span> <span class="k">var</span> <span class="nv">viewData</span> <span class="o">=</span> <span class="kt">ViewData</span><span class="p">()</span>
+
+        <span class="k">var</span> <span class="nv">body</span><span class="p">:</span> <span class="n">some</span> <span class="kt">View</span> <span class="p">{</span>
+            <span class="kt">NavigationStack</span> <span class="p">{</span>
+                <span class="kt">LazyVStack</span><span class="p">(</span><span class="nv">spacing</span><span class="p">:</span> <span class="mi">6</span><span class="p">)</span> <span class="p">{</span>
+                    <span class="kt">UserView</span><span class="p">(</span><span class="nv">user</span><span class="p">:</span> <span class="n">viewData</span><span class="o">.</span><span class="n">userTop</span><span class="p">)</span>
+                        <span class="o">.</span><span class="nf">id</span><span class="p">(</span><span class="n">viewData</span><span class="o">.</span><span class="n">userTop</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+                    <span class="kt">UserView</span><span class="p">(</span><span class="nv">user</span><span class="p">:</span> <span class="n">viewData</span><span class="o">.</span><span class="n">userMiddle</span><span class="p">)</span>
+                        <span class="o">.</span><span class="nf">id</span><span class="p">(</span><span class="n">viewData</span><span class="o">.</span><span class="n">userMiddle</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+                    <span class="kt">UserView</span><span class="p">(</span><span class="nv">user</span><span class="p">:</span> <span class="n">viewData</span><span class="o">.</span><span class="n">userBottom</span><span class="p">)</span>
+                        <span class="o">.</span><span class="nf">id</span><span class="p">(</span><span class="n">viewData</span><span class="o">.</span><span class="n">userBottom</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+                <span class="p">}</span>
+                <span class="o">.</span><span class="nf">padding</span><span class="p">()</span>
+                <span class="o">.</span><span class="nf">frame</span><span class="p">(</span><span class="nv">maxWidth</span><span class="p">:</span> <span class="o">.</span><span class="n">infinity</span><span class="p">,</span> <span class="nv">maxHeight</span><span class="p">:</span> <span class="o">.</span><span class="n">infinity</span><span class="p">,</span> <span class="nv">alignment</span><span class="p">:</span> <span class="o">.</span><span class="n">topLeading</span><span class="p">)</span>
+                <span class="o">.</span><span class="nf">navigationTitle</span><span class="p">(</span><span class="s">"3. LazyVStack w/ID"</span><span class="p">)</span>
+                <span class="o">.</span><span class="n">toolbar</span> <span class="p">{</span>
+                    <span class="kt">Button</span><span class="p">(</span><span class="s">"Swap Abby &amp; Craig"</span><span class="p">)</span> <span class="p">{</span>
+                        <span class="n">withAnimation</span> <span class="p">{</span>
+                            <span class="k">let</span> <span class="nv">swap</span> <span class="o">=</span> <span class="n">viewData</span><span class="o">.</span><span class="n">userTop</span>
+                            <span class="n">viewData</span><span class="o">.</span><span class="n">userTop</span> <span class="o">=</span> <span class="n">viewData</span><span class="o">.</span><span class="n">userBottom</span>
+                            <span class="n">viewData</span><span class="o">.</span><span class="n">userBottom</span> <span class="o">=</span> <span class="n">swap</span>
+                        <span class="p">}</span>
+                    <span class="p">}</span>
+                <span class="p">}</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="kt">ContentView</span><span class="p">()</span>
+<span class="p">}</span>
+
+<span class="cp">#Preview("4. VStack w/MGE") {</span>
+    <span class="kd">struct</span> <span class="kt">ContentView</span><span class="p">:</span> <span class="kt">View</span> <span class="p">{</span>
+        <span class="kd">@State</span> <span class="k">var</span> <span class="nv">viewData</span> <span class="o">=</span> <span class="kt">ViewData</span><span class="p">()</span>
+        <span class="kd">@Namespace</span> <span class="k">var</span> <span class="nv">ns</span>
+
+        <span class="k">var</span> <span class="nv">body</span><span class="p">:</span> <span class="n">some</span> <span class="kt">View</span> <span class="p">{</span>
+            <span class="kt">NavigationStack</span> <span class="p">{</span>
+                <span class="kt">VStack</span><span class="p">(</span><span class="nv">spacing</span><span class="p">:</span> <span class="mi">6</span><span class="p">)</span> <span class="p">{</span>
+                    <span class="kt">UserView</span><span class="p">(</span><span class="nv">user</span><span class="p">:</span> <span class="n">viewData</span><span class="o">.</span><span class="n">userTop</span><span class="p">)</span>
+                        <span class="o">.</span><span class="nf">matchedGeometryEffect</span><span class="p">(</span><span class="nv">id</span><span class="p">:</span> <span class="n">viewData</span><span class="o">.</span><span class="n">userTop</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="nv">in</span><span class="p">:</span> <span class="n">ns</span><span class="p">)</span>
+                        <span class="o">.</span><span class="nf">id</span><span class="p">(</span><span class="n">viewData</span><span class="o">.</span><span class="n">userTop</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+                    <span class="kt">UserView</span><span class="p">(</span><span class="nv">user</span><span class="p">:</span> <span class="n">viewData</span><span class="o">.</span><span class="n">userMiddle</span><span class="p">)</span>
+                        <span class="o">.</span><span class="nf">matchedGeometryEffect</span><span class="p">(</span><span class="nv">id</span><span class="p">:</span> <span class="n">viewData</span><span class="o">.</span><span class="n">userMiddle</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="nv">in</span><span class="p">:</span> <span class="n">ns</span><span class="p">)</span>
+                        <span class="o">.</span><span class="nf">id</span><span class="p">(</span><span class="n">viewData</span><span class="o">.</span><span class="n">userMiddle</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+                    <span class="kt">UserView</span><span class="p">(</span><span class="nv">user</span><span class="p">:</span> <span class="n">viewData</span><span class="o">.</span><span class="n">userBottom</span><span class="p">)</span>
+                        <span class="o">.</span><span class="nf">matchedGeometryEffect</span><span class="p">(</span><span class="nv">id</span><span class="p">:</span> <span class="n">viewData</span><span class="o">.</span><span class="n">userBottom</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="nv">in</span><span class="p">:</span> <span class="n">ns</span><span class="p">)</span>
+                        <span class="o">.</span><span class="nf">id</span><span class="p">(</span><span class="n">viewData</span><span class="o">.</span><span class="n">userBottom</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+                <span class="p">}</span>
+                <span class="o">.</span><span class="nf">padding</span><span class="p">()</span>
+                <span class="o">.</span><span class="nf">frame</span><span class="p">(</span><span class="nv">maxWidth</span><span class="p">:</span> <span class="o">.</span><span class="n">infinity</span><span class="p">,</span> <span class="nv">maxHeight</span><span class="p">:</span> <span class="o">.</span><span class="n">infinity</span><span class="p">,</span> <span class="nv">alignment</span><span class="p">:</span> <span class="o">.</span><span class="n">topLeading</span><span class="p">)</span>
+                <span class="o">.</span><span class="nf">navigationTitle</span><span class="p">(</span><span class="s">"4. VStack w/MGE"</span><span class="p">)</span>
+                <span class="o">.</span><span class="n">toolbar</span> <span class="p">{</span>
+                    <span class="kt">Button</span><span class="p">(</span><span class="s">"Swap Abby &amp; Craig"</span><span class="p">)</span> <span class="p">{</span>
+                        <span class="n">withAnimation</span> <span class="p">{</span>
+                            <span class="k">let</span> <span class="nv">swap</span> <span class="o">=</span> <span class="n">viewData</span><span class="o">.</span><span class="n">userTop</span>
+                            <span class="n">viewData</span><span class="o">.</span><span class="n">userTop</span> <span class="o">=</span> <span class="n">viewData</span><span class="o">.</span><span class="n">userBottom</span>
+                            <span class="n">viewData</span><span class="o">.</span><span class="n">userBottom</span> <span class="o">=</span> <span class="n">swap</span>
+                        <span class="p">}</span>
+                    <span class="p">}</span>
+                <span class="p">}</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="kt">ContentView</span><span class="p">()</span>
+<span class="p">}</span>
+
+<span class="cp">#Preview("5. ForEach") {</span>
+    <span class="kd">struct</span> <span class="kt">ContentView</span><span class="p">:</span> <span class="kt">View</span> <span class="p">{</span>
+        <span class="kd">@State</span> <span class="k">var</span> <span class="nv">viewData</span> <span class="o">=</span> <span class="kt">ViewData</span><span class="p">()</span>
+
+        <span class="k">var</span> <span class="nv">body</span><span class="p">:</span> <span class="n">some</span> <span class="kt">View</span> <span class="p">{</span>
+            <span class="kt">NavigationStack</span> <span class="p">{</span>
+                <span class="kt">VStack</span><span class="p">(</span><span class="nv">spacing</span><span class="p">:</span> <span class="mi">6</span><span class="p">)</span> <span class="p">{</span>
+                    <span class="kt">ForEach</span><span class="p">([</span><span class="n">viewData</span><span class="o">.</span><span class="n">userTop</span><span class="p">,</span> <span class="n">viewData</span><span class="o">.</span><span class="n">userMiddle</span><span class="p">,</span> <span class="n">viewData</span><span class="o">.</span><span class="n">userBottom</span><span class="p">])</span> <span class="p">{</span> <span class="n">item</span> <span class="k">in</span>
+                        <span class="kt">UserView</span><span class="p">(</span><span class="nv">user</span><span class="p">:</span> <span class="n">item</span><span class="p">)</span>
+                    <span class="p">}</span>
+                <span class="p">}</span>
+                <span class="o">.</span><span class="nf">padding</span><span class="p">()</span>
+                <span class="o">.</span><span class="nf">frame</span><span class="p">(</span><span class="nv">maxWidth</span><span class="p">:</span> <span class="o">.</span><span class="n">infinity</span><span class="p">,</span> <span class="nv">maxHeight</span><span class="p">:</span> <span class="o">.</span><span class="n">infinity</span><span class="p">,</span> <span class="nv">alignment</span><span class="p">:</span> <span class="o">.</span><span class="n">topLeading</span><span class="p">)</span>
+                <span class="o">.</span><span class="nf">navigationTitle</span><span class="p">(</span><span class="s">"5. ForEach"</span><span class="p">)</span>
+                <span class="o">.</span><span class="n">toolbar</span> <span class="p">{</span>
+                    <span class="kt">Button</span><span class="p">(</span><span class="s">"Swap Abby &amp; Craig"</span><span class="p">)</span> <span class="p">{</span>
+                        <span class="n">withAnimation</span> <span class="p">{</span>
+                            <span class="k">let</span> <span class="nv">swap</span> <span class="o">=</span> <span class="n">viewData</span><span class="o">.</span><span class="n">userTop</span>
+                            <span class="n">viewData</span><span class="o">.</span><span class="n">userTop</span> <span class="o">=</span> <span class="n">viewData</span><span class="o">.</span><span class="n">userBottom</span>
+                            <span class="n">viewData</span><span class="o">.</span><span class="n">userBottom</span> <span class="o">=</span> <span class="n">swap</span>
+                        <span class="p">}</span>
+                    <span class="p">}</span>
+                <span class="p">}</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="kt">ContentView</span><span class="p">()</span>
+<span class="p">}</span>
+
+<span class="cp">#Preview("6. List") {</span>
+    <span class="kd">struct</span> <span class="kt">ContentView</span><span class="p">:</span> <span class="kt">View</span> <span class="p">{</span>
+        <span class="kd">@State</span> <span class="k">var</span> <span class="nv">viewData</span> <span class="o">=</span> <span class="kt">ViewData</span><span class="p">()</span>
+
+        <span class="k">var</span> <span class="nv">body</span><span class="p">:</span> <span class="n">some</span> <span class="kt">View</span> <span class="p">{</span>
+            <span class="kt">NavigationStack</span> <span class="p">{</span>
+                <span class="kt">List</span><span class="p">([</span><span class="n">viewData</span><span class="o">.</span><span class="n">userTop</span><span class="p">,</span> <span class="n">viewData</span><span class="o">.</span><span class="n">userMiddle</span><span class="p">,</span> <span class="n">viewData</span><span class="o">.</span><span class="n">userBottom</span><span class="p">])</span> <span class="p">{</span> <span class="n">item</span> <span class="k">in</span>
+                    <span class="kt">UserView</span><span class="p">(</span><span class="nv">user</span><span class="p">:</span> <span class="n">item</span><span class="p">)</span>
+                <span class="p">}</span>
+                <span class="o">.</span><span class="nf">listStyle</span><span class="p">(</span><span class="o">.</span><span class="n">plain</span><span class="p">)</span>
+                <span class="o">.</span><span class="nf">navigationTitle</span><span class="p">(</span><span class="s">"6. List"</span><span class="p">)</span>
+                <span class="o">.</span><span class="n">toolbar</span> <span class="p">{</span>
+                    <span class="kt">Button</span><span class="p">(</span><span class="s">"Swap Abby &amp; Craig"</span><span class="p">)</span> <span class="p">{</span>
+                        <span class="n">withAnimation</span> <span class="p">{</span>
+                            <span class="k">let</span> <span class="nv">swap</span> <span class="o">=</span> <span class="n">viewData</span><span class="o">.</span><span class="n">userTop</span>
+                            <span class="n">viewData</span><span class="o">.</span><span class="n">userTop</span> <span class="o">=</span> <span class="n">viewData</span><span class="o">.</span><span class="n">userBottom</span>
+                            <span class="n">viewData</span><span class="o">.</span><span class="n">userBottom</span> <span class="o">=</span> <span class="n">swap</span>
+                        <span class="p">}</span>
+                    <span class="p">}</span>
+                <span class="p">}</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="kt">ContentView</span><span class="p">()</span>
+<span class="p">}</span>
+
+</code></pre>
+</div>
+
+  </article>
+
+</div>
+
+      </div>
+    </div>
+
+    <footer class="site-footer">
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">twocentstudios</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col  footer-col-1">
+        <ul class="contact-list">
+          <li><a href="mailto:chris@twocentstudios.com">chris@twocentstudios.com</a></li>
+          
+          <li>
+            <a href="https://github.com/twocentstudios">
+              <span class="icon  icon--github">
+                <svg viewBox="0 0 16 16">
+                  <path fill="#828282" d="M7.999,0.431c-4.285,0-7.76,3.474-7.76,7.761 c0,3.428,2.223,6.337,5.307,7.363c0.388,0.071,0.53-0.168,0.53-0.374c0-0.184-0.007-0.672-0.01-1.32 c-2.159,0.469-2.614-1.04-2.614-1.04c-0.353-0.896-0.862-1.135-0.862-1.135c-0.705-0.481,0.053-0.472,0.053-0.472 c0.779,0.055,1.189,0.8,1.189,0.8c0.692,1.186,1.816,0.843,2.258,0.645c0.071-0.502,0.271-0.843,0.493-1.037 C4.86,11.425,3.049,10.76,3.049,7.786c0-0.847,0.302-1.54,0.799-2.082C3.768,5.507,3.501,4.718,3.924,3.65 c0,0,0.652-0.209,2.134,0.796C6.677,4.273,7.34,4.187,8,4.184c0.659,0.003,1.323,0.089,1.943,0.261 c1.482-1.004,2.132-0.796,2.132-0.796c0.423,1.068,0.157,1.857,0.077,2.054c0.497,0.542,0.798,1.235,0.798,2.082 c0,2.981-1.814,3.637-3.543,3.829c0.279,0.24,0.527,0.713,0.527,1.437c0,1.037-0.01,1.874-0.01,2.129 c0,0.208,0.14,0.449,0.534,0.373c3.081-1.028,5.302-3.935,5.302-7.362C15.76,3.906,12.285,0.431,7.999,0.431z"/>
+                </svg>
+              </span>
+
+              <span class="username">twocentstudios</span>
+            </a>
+          </li>
+          
+
+          <li>
+            <a href="https://hackyderm.io/@twocentstudios">
+              <span class="icon">
+                <svg viewBox="0 0 24 24">
+                  <path fill="#828282" d="M21.327 8.566c0-4.339-2.843-5.61-2.843-5.61-1.433-.658-3.894-.935-6.451-.956h-.063c-2.557.021-5.016.298-6.45.956 0 0-2.843 1.272-2.843 5.61 0 .993-.019 2.181.012 3.441.103 4.243.778 8.425 4.701 9.463 1.809.479 3.362.579 4.612.51 2.268-.126 3.541-.809 3.541-.809l-.075-1.646s-1.621.511-3.441.449c-1.804-.062-3.707-.194-3.999-2.409a4.523 4.523 0 0 1-.04-.621s1.77.433 4.014.536c1.372.063 2.658-.08 3.965-.236 2.506-.299 4.688-1.843 4.962-3.254.434-2.223.398-5.424.398-5.424zm-3.353 5.59h-2.081V9.057c0-1.075-.452-1.62-1.357-1.62-1 0-1.501.647-1.501 1.927v2.791h-2.069V9.364c0-1.28-.501-1.927-1.502-1.927-.905 0-1.357.546-1.357 1.62v5.099H6.026V8.903c0-1.074.273-1.927.823-2.558.566-.631 1.307-.955 2.228-.955 1.065 0 1.872.409 2.405 1.228l.518.869.519-.869c.533-.819 1.34-1.228 2.405-1.228.92 0 1.662.324 2.228.955.549.631.822 1.484.822 2.558v5.253z"/>
+                </svg>
+              </span>
+
+              <span class="username">twocentstudios</span>
+            </a>
+          </li>
+
+          
+          <li>
+            <a href="https://twitter.com/twocentstudios">
+              <span class="icon  icon--twitter">
+                <svg viewBox="0 0 16 16">
+                  <path fill="#828282" d="M15.969,3.058c-0.586,0.26-1.217,0.436-1.878,0.515c0.675-0.405,1.194-1.045,1.438-1.809
+                  c-0.632,0.375-1.332,0.647-2.076,0.793c-0.596-0.636-1.446-1.033-2.387-1.033c-1.806,0-3.27,1.464-3.27,3.27 c0,0.256,0.029,0.506,0.085,0.745C5.163,5.404,2.753,4.102,1.14,2.124C0.859,2.607,0.698,3.168,0.698,3.767 c0,1.134,0.577,2.135,1.455,2.722C1.616,6.472,1.112,6.325,0.671,6.08c0,0.014,0,0.027,0,0.041c0,1.584,1.127,2.906,2.623,3.206 C3.02,9.402,2.731,9.442,2.433,9.442c-0.211,0-0.416-0.021-0.615-0.059c0.416,1.299,1.624,2.245,3.055,2.271 c-1.119,0.877-2.529,1.4-4.061,1.4c-0.264,0-0.524-0.015-0.78-0.046c1.447,0.928,3.166,1.469,5.013,1.469 c6.015,0,9.304-4.983,9.304-9.304c0-0.142-0.003-0.283-0.009-0.423C14.976,4.29,15.531,3.714,15.969,3.058z"/>
+                </svg>
+              </span>
+
+              <span class="username">twocentstudios</span>
+            </a>
+          </li>
+          
+        </ul>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+
+
+  </body>
+
+</html>
