@@ -50,7 +50,7 @@ Links to posts in this blog look like `[Timehop: A Retrospective](/2015/11/03/ti
 
 ```zsh
 bundle exec jekyll build
-bundle exec jekyll serve --livereload
+bundle exec jekyll serve --livereload --drafts
 ```
 
 ## Deployment
