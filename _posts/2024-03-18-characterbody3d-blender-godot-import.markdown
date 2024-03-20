@@ -80,4 +80,5 @@ _Why change Root Type in Advanced Import Settings?_ If you use `Change Type...` 
 
 - Start by simply instancing Blender files directly in the scene(s) they'll being used. Only create an Inherited Scene (as shown in this post) when you need to add sibling or child nodes, or change the type of the root node.
 - It's still possible (although perhaps discouraged) to change attributes of the yellow-colored nodes imported from Blender in the scene's node tree, such as `Transform`.
+- If you need to use the same Blender file as the root of two different scenes – for example, your hero character and NPCs – and these two use cases have different root types (e.g. CharacterBody3D, StaticBody3D), then you'll need to find a workaround since the import settings are tied to the Blender file and not the individual Inherited Scenes.
 - I'm not a seasoned Blender/Godot/game developer, so if you find any inaccuracies in this post, please [contact me](/about).
