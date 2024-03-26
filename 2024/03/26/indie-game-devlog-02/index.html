@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>Indie Game Devlog 02 - 3D Level Blockout</title>
+
+  <meta property="og:type" content="article" />
+  <meta property="og:title" content="Indie Game Devlog 02 - 3D Level Blockout" />
+  <meta property="og:url" content="https://twocentstudios.com/2024/03/26/indie-game-devlog-02/" />
+  
+    <meta property="og:article:published_time" content="2024-03-26T18:31:00-05:00" />
+  
+  
+    <meta property="og:image" content="https://twocentstudios.com/images/devlog02-10.jpg" />
+  
+  
+  <link href='https://fonts.googleapis.com/css2?family=Work+Sans:wght@300;350;400;600' rel='stylesheet' type='text/css'>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="canonical" href="https://twocentstudios.com/2024/03/26/indie-game-devlog-02/">
+  <link rel="alternate" type="application/rss+xml" title="twocentstudios" href="https://twocentstudios.com/feed.xml" />
+</head>
+
+  <!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-NE82N02W8S"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-NE82N02W8S');
+</script>
+
+  <body>
+
+    <header class="site-header">
+
+  <div class="wrapper">
+
+    <a class="site-title" href="/">twocentstudios</a>
+
+    <nav class="site-nav">
+      <a href="#" class="menu-icon">
+        <svg viewBox="0 0 18 15">
+          <path fill="#424242" d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.031C17.335,0,18,0.665,18,1.484L18,1.484z"/>
+          <path fill="#424242" d="M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0c0-0.82,0.665-1.484,1.484-1.484 h15.031C17.335,6.031,18,6.696,18,7.516L18,7.516z"/>
+          <path fill="#424242" d="M18,13.516C18,14.335,17.335,15,16.516,15H1.484C0.665,15,0,14.335,0,13.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.031C17.335,12.031,18,12.696,18,13.516L18,13.516z"/>
+        </svg>
+      </a>
+
+      <div class="trigger">
+        
+          
+          <a class="page-link" href="/about/">About</a>
+          
+        
+          
+          <a class="page-link" href="/blog/">Blog</a>
+          
+        
+          
+        
+          
+        
+          
+          <a class="page-link" href="/portfolio/">Portfolio</a>
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      </div>
+    </nav>
+
+  </div>
+
+</header>
+
+
+    <div class="page-content">
+      <div class="wrapper">
+        <div class="post">
+
+  <header class="post-header">
+    <h1 class="post-title">Indie Game Devlog 02 - 3D Level Blockout</h1>
+    <p class="post-meta">Mar 26, 2024</p>
+  </header>
+
+  <article class="post-content">
+    <p>It was tough, but I knew I had to break away from my 2D project sooner than later if my ultimate goal was to make a 3D or 2.5D game.</p>
+
+<p>I started a new Godot project and clicked into the 3D tab.</p>
+
+<h2 id="back-to-prototyping">Back to prototyping</h2>
+
+<p>I wanted to start small again, getting the entire intro act working in an “art-light” style before trying to integrate any sort of custom 3D models, materials, or animations.</p>
+
+<p>I started remaking the world by creating a default environment with a sun to light everything. The best way to prototype objects was to use Godot’s very basic support for 3D shapes. I created a MeshInstance3D for the floor and a capsule to represent the player, and collisions to prevent the player from falling through the floor.</p>
+
+<div class="caption-wrapper"><img class="caption" src="/images/devlog02-01.jpg" width="" height="" alt="Entering the 3rd dimension" title="Entering the 3rd dimension" /><div class="caption-text">Entering the 3rd dimension</div></div>
+
+<p>Next was the most basic player and camera controller code. Player code is provided in an optional template by Godot so I started with that.</p>
+
+<video src="/images/devlog02-02.mp4" controls="" width="100%"></video>
+
+<p>I immediately needed to pause to make a decision of exactly what kind of camera and navigation style I wanted to support. Camera and navigation are two of the fundamental components that give a game its identity. Imagine your favorite FPS with a third person camera instead of first person. It’s arguably a completely different game. This decision has knock-on effects that can decimate or compound the future work required. For example, a first-person-only camera may not require any sort of player character model at all. However, the camera and navigation decision is not set in stone, and the goal at this point is to do just enough work to feel confident making that decision before adding more detail across all assets.</p>
+
+<p>At this point, I’ve decided on a third-person camera with classic PC 3D platformer controls of WASD keys for moving and strafing, and the mouse to pan the viewport up and down within fixed bounds.</p>
+
+<p>I did a little copying and pasting for the NPCs, then gave it a test run.</p>
+
+<div class="caption-wrapper"><img class="caption" src="/images/devlog02-04.jpg" width="" height="" alt="Entering the 3rd dimension" title="Entering the 3rd dimension" /><div class="caption-text">Entering the 3rd dimension</div></div>
+
+<p>The simplicity of the main game code from the 2D version of the game allowed me to port it almost trivially to a 3D context. The primary difficulties were actually in modifying the hardcoded position and rotation animations (via tweens) for a 3D context. There’s an <a href="https://docs.godotengine.org/en/stable/tutorials/3d/using_transforms.html">introductory walkthrough</a> in Godot docs that helped me begin to understand the complexities of transforms in 3D. I wanted to spend a little time digging into it even if I’d be throwing this code out simply to prime my brain for the next time I encounter this problem.</p>
+
+<p>After porting, the demo looked like this:</p>
+
+<video src="/images/devlog02-03.mp4" controls="" width="100%"></video>
+
+<p>The demo above isn’t 1-to-1 feature complete compared to the 2D version. It doesn’t include the intro cutscene, nor the custom overhead dialogue bubbles, nor the splash scene or end game scenes. But those aren’t really important yet because I won’t be doing any playtesting for this version without 3D assets at the next level of fidelity.</p>
+
+<h2 id="blender-as-a-3d-tool">Blender as a 3D tool</h2>
+
+<p>Although Godot is a 2D and 3D game engine with a full IDE and GUI, it intentionally leans on external tools for complex 3D modeling and animation. One of the reasons I chose Godot as the game engine is its first class support for multifunction 3D design tool Blender.</p>
+
+<p>I’m already familiar with Blender, taking my first baby steps with the free, OSS application 3 or 4 years ago. Over that time, my dabbling has become more regular and started to cover more of the tools available in Blender. Separately, this includes basic 3D modeling, environment modeling, character modeling, material creation, rigging, lighting, 2D animation, and 3D animation.</p>
+
+<p>This past experience making 3D assets, although at varying degrees of beginner level, is what gave me enough confidence to commit to a 3D game. I’m very much clear on that fact it’s going to be an uphill battle, but I legitimately enjoy working in 3D enough to push through most of the challenges I’ll face. Additionally, working in 3D makes up for my non-mastery (to say the least) of art fundamentals like perspective, lighting and shadows, and anatomy.</p>
+
+<p>For the level of quality I’m targeting, I need to create the environments, characters, and most animations in Blender and import them into Godot. In game development, the flow of assets between different applications is called an asset pipeline.</p>
+
+<p>There will always be impedance mismatches between tools; most tools’ export formats will not be 100% readable by the importing application. My next goal was to quickly and efficiently understand the current (but changing) limitations of the interface between Blender and Godot.</p>
+
+<p>I started where I usually start by skimming the official Godot documentation, then watching a few tutorials. These two sources were enough to get the broad strokes:</p>
+
+<ul>
+  <li>When imported into the Godot project’s file system, Blender files can be used as-is and even dragged into an existing Godot scene (this is <em>huge</em>). <a href="https://docs.godotengine.org/en/stable/tutorials/assets_pipeline/importing_3d_scenes/available_formats.html#importing-blend-files-directly-within-godot">Under the hood</a>, Godot is transparently monitoring changes in the file, then running Blender’s glTF exporter automatically.</li>
+  <li>Appending a special suffix to your objects in Blender will automatically add functionality on the Godot side, such as making a sidecar collision Node3D or ignoring import on that object.</li>
+  <li>There is very basic support in Godot for the default physically-based rendering shaders in Blender and their user-defined relationship to the mesh via the UV map.</li>
+</ul>
+
+<p>The only way to find the exact limits was to get modeling.</p>
+
+<h2 id="3d-modeling">3D Modeling</h2>
+
+<p>I started with the environment model <a href="https://book.leveldesignbook.com/process/blockout">blockout</a>. In the case of my game, the environment model is an indoor bar and venue stage area. It’s essentially 3 linked rooms.</p>
+
+<p>One of the toughest parts of modeling environments for me is getting the proportions right. In my first attempt, I tried to work in all 3 dimensions at the same time, which resulted in me getting the initial measurements incorrect to the point where it was easier just to start over.</p>
+
+<div class="caption-wrapper"><img class="caption" src="/images/devlog02-05.jpg" width="" height="" alt="I messed up the proportions really bad on this one and had to start over." title="I messed up the proportions really bad on this one and had to start over." /><div class="caption-text">I messed up the proportions really bad on this one and had to start over.</div></div>
+
+<p>However, even with a very incorrectly proportioned room, I still found that the asset pipeline was functioning properly so far and I could even explore a room with walls in 3D for the first time.</p>
+
+<video src="/images/devlog02-06.mp4" controls="" width="100%"></video>
+
+<p>In my second attempt, I went with a tried-and-true approach of starting with a top-down floor plan first. Additionally, I found a properly proportioned humanoid 3D model that I could duplicate liberally around the scene to keep my room proportions in check.</p>
+
+<div class="caption-wrapper"><img class="caption" src="/images/devlog02-07.jpg" width="" height="" alt="A 2D top-down floor plan seems like the best place to start for me." title="A 2D top-down floor plan seems like the best place to start for me." /><div class="caption-text">A 2D top-down floor plan seems like the best place to start for me.</div></div>
+
+<p>I felt okay about the 2D proportions enough to begin extruding the planes into boxes. This step was also hard!</p>
+
+<ul>
+  <li>I wasn’t sure which meshes I should keep in one object.</li>
+  <li>I wasn’t sure how to share walls between adjacent rooms.</li>
+  <li>I wasn’t sure how to properly extrude walls to a proper thickness, or whether I should at all.</li>
+  <li>I wasn’t sure whether it was right to use a template model for each door frame.</li>
+  <li>I wasn’t sure how to handle the face normal direction on planar walls.</li>
+</ul>
+
+<p>I spent a lot of time Googling Chicago bar floor plan templates, dimensions of toilets, bar and chair heights, etc. The aesthetic I’m going for certainly isn’t going to by hyper-realistic, but I don’t trust myself as an artist enough yet to wing it. Leaning on reality harder at first is probably the best way to keep myself in the ballpark.</p>
+
+<p>I did the best I could and finished a 3D blockout, keeping furniture shapes very simple and spending no time on detail.</p>
+
+<div class="caption-wrapper"><img class="caption" src="/images/devlog02-08.jpg" width="" height="" alt="Deeper into the 3D blockout." title="Deeper into the 3D blockout." /><div class="caption-text">Deeper into the 3D blockout.</div></div>
+
+<p>I mostly used separate objects for logically different meshes, if only to better match the Blender/Godot import conventions. I did add some stairs and inclines because I felt their relationship with the player movement code was important to de-risk early.</p>
+
+<p>I did a couple quick rounds of iteration importing the room into Godot, positioning the NPCs, and fixing layout issues.</p>
+
+<video src="/images/devlog02-09.mp4" controls="" preload="none" width="100%"></video>
+
+<h2 id="lighting">Lighting</h2>
+
+<p>The next task was lighting. In theory, it’d be nice to be able to import as much from Blender as possible, including all lighting, materials, and shader definitions.</p>
+
+<p>Although Godot has limited support for importing light objects from Blender, the Godot docs recommend creating and placing lights in Godot instead. The light object types don’t match one-to-one in Blender/Godot, nor do their parameters.</p>
+
+<p>I gave it a shot though, adding some light types into Blender and seeing how they were handled in Godot. The result wasn’t great nor useful. Adding lights in Godot directly definitely seemed like the right direction.</p>
+
+<p>I pulled each of the different native light types into the Godot level scene and jockeyed the parameters. Godot’s live preview pane is super helpful in expediting the feedback cycle.</p>
+
+<p>The Godot WorldEnvironment node has lots of inscrutably-named rendering settings like SSR, SSAO, SSIL, and SDFGI. Some are new and experimental. I watched a few YouTube tutorials again to get the lay of the land, but otherwise I tried to keep my changes from the baseline to a minimum in this experimental stage.</p>
+
+<p>I decided to settle on subdued and moody lighting that produces plenty of shadows. I only lit half the venue area though.</p>
+
+<div class="caption-wrapper"><img class="caption" src="/images/devlog02-10.jpg" width="" height="" alt="More interesting lighting than a sun." title="More interesting lighting than a sun." /><div class="caption-text">More interesting lighting than a sun.</div></div>
+
+<h2 id="materials-and-shaders">Materials and shaders</h2>
+
+<p>With lighting, I could now properly see the effect of materials. Up to now, I was using the base white-ish shader.</p>
+
+<p>From what I’d read, shaders, like lighting, are another part of the Blender/Godot interface that is intentionally underbaked. Each app has its own rendering engine and shaders are necessarily tailored to it. Regardless, it’s still nice to be able to understand the limitations.</p>
+
+<p>I know eventually I’ll have to write/design my own shaders in Godot, either as the base layer or on top of the base materials configured in Blender. <a href="https://godotshaders.com/">Godot shaders</a> has a bunch of recipes I’ll be looking at once I’m at the stage where I’m digging deep into polishing the aesthetic.</p>
+
+<p>If my skills as an artist were stronger, I’d probably start with polished concept art then do the hard work of finding out how to execute that concept art by writing shaders and tweaking lighting. However, my approach is to experiment with the tools at my disposal in a sandbox until I find an aesthetic both I’m satisfied with and know I can execute (by nature of already having executed it).</p>
+
+<p>Back to the practical:</p>
+
+<p>My first experiment in probing the Blender/Godot interface was adding a material in Blender with a single Principled BSDF node with a flat color. Applying this to a one face of a wall worked as expected. So far so good.</p>
+
+<p>Next was doing some kind of interesting variation of the base color with a color ramp or voronoi texture generator. The color input was completely ignored in Godot. Strike out there.</p>
+
+<p>Next was applying an image texture node to base color. I downloaded a few realistic textures from PolyHaven including roughness and normal maps.</p>
+
+<div class="caption-wrapper"><img class="caption" src="/images/devlog02-11.jpg" width="" height="" alt="Simple material setup." title="Simple material setup." /><div class="caption-text">Simple material setup.</div></div>
+
+<p>I wired these up and they worked! However, it’s hard to tell whether any of the normal or displacement is appearing correctly.</p>
+
+<div class="caption-wrapper"><img class="caption" src="/images/devlog02-12.jpg" width="" height="" alt="Slapping a few textures on." title="Slapping a few textures on." /><div class="caption-text">Slapping a few textures on.</div></div>
+
+<p>This is certainly not the aesthetic I’m going for, but it’s good to know that a image texture plus PBR node system in Blender is possible.</p>
+
+<p>There’s still plenty to explore regarding materials in Godot. While I ponder my target aesthetic more, my next move is to continue onto base character modeling, rigging, and animation.</p>
+
+<p>Until next time.</p>
+
+  </article>
+
+</div>
+
+      </div>
+    </div>
+
+    <footer class="site-footer">
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">twocentstudios</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col  footer-col-1">
+        <ul class="contact-list">
+          <li><a href="mailto:chris@twocentstudios.com">chris@twocentstudios.com</a></li>
+          
+          <li>
+            <a href="https://github.com/twocentstudios">
+              <span class="icon  icon--github">
+                <svg viewBox="0 0 16 16">
+                  <path fill="#828282" d="M7.999,0.431c-4.285,0-7.76,3.474-7.76,7.761 c0,3.428,2.223,6.337,5.307,7.363c0.388,0.071,0.53-0.168,0.53-0.374c0-0.184-0.007-0.672-0.01-1.32 c-2.159,0.469-2.614-1.04-2.614-1.04c-0.353-0.896-0.862-1.135-0.862-1.135c-0.705-0.481,0.053-0.472,0.053-0.472 c0.779,0.055,1.189,0.8,1.189,0.8c0.692,1.186,1.816,0.843,2.258,0.645c0.071-0.502,0.271-0.843,0.493-1.037 C4.86,11.425,3.049,10.76,3.049,7.786c0-0.847,0.302-1.54,0.799-2.082C3.768,5.507,3.501,4.718,3.924,3.65 c0,0,0.652-0.209,2.134,0.796C6.677,4.273,7.34,4.187,8,4.184c0.659,0.003,1.323,0.089,1.943,0.261 c1.482-1.004,2.132-0.796,2.132-0.796c0.423,1.068,0.157,1.857,0.077,2.054c0.497,0.542,0.798,1.235,0.798,2.082 c0,2.981-1.814,3.637-3.543,3.829c0.279,0.24,0.527,0.713,0.527,1.437c0,1.037-0.01,1.874-0.01,2.129 c0,0.208,0.14,0.449,0.534,0.373c3.081-1.028,5.302-3.935,5.302-7.362C15.76,3.906,12.285,0.431,7.999,0.431z"/>
+                </svg>
+              </span>
+
+              <span class="username">twocentstudios</span>
+            </a>
+          </li>
+          
+
+          <li>
+            <a href="https://hackyderm.io/@twocentstudios">
+              <span class="icon">
+                <svg viewBox="0 0 24 24">
+                  <path fill="#828282" d="M21.327 8.566c0-4.339-2.843-5.61-2.843-5.61-1.433-.658-3.894-.935-6.451-.956h-.063c-2.557.021-5.016.298-6.45.956 0 0-2.843 1.272-2.843 5.61 0 .993-.019 2.181.012 3.441.103 4.243.778 8.425 4.701 9.463 1.809.479 3.362.579 4.612.51 2.268-.126 3.541-.809 3.541-.809l-.075-1.646s-1.621.511-3.441.449c-1.804-.062-3.707-.194-3.999-2.409a4.523 4.523 0 0 1-.04-.621s1.77.433 4.014.536c1.372.063 2.658-.08 3.965-.236 2.506-.299 4.688-1.843 4.962-3.254.434-2.223.398-5.424.398-5.424zm-3.353 5.59h-2.081V9.057c0-1.075-.452-1.62-1.357-1.62-1 0-1.501.647-1.501 1.927v2.791h-2.069V9.364c0-1.28-.501-1.927-1.502-1.927-.905 0-1.357.546-1.357 1.62v5.099H6.026V8.903c0-1.074.273-1.927.823-2.558.566-.631 1.307-.955 2.228-.955 1.065 0 1.872.409 2.405 1.228l.518.869.519-.869c.533-.819 1.34-1.228 2.405-1.228.92 0 1.662.324 2.228.955.549.631.822 1.484.822 2.558v5.253z"/>
+                </svg>
+              </span>
+
+              <span class="username">twocentstudios</span>
+            </a>
+          </li>
+
+          
+          <li>
+            <a href="https://twitter.com/twocentstudios">
+              <span class="icon  icon--twitter">
+                <svg viewBox="0 0 16 16">
+                  <path fill="#828282" d="M15.969,3.058c-0.586,0.26-1.217,0.436-1.878,0.515c0.675-0.405,1.194-1.045,1.438-1.809
+                  c-0.632,0.375-1.332,0.647-2.076,0.793c-0.596-0.636-1.446-1.033-2.387-1.033c-1.806,0-3.27,1.464-3.27,3.27 c0,0.256,0.029,0.506,0.085,0.745C5.163,5.404,2.753,4.102,1.14,2.124C0.859,2.607,0.698,3.168,0.698,3.767 c0,1.134,0.577,2.135,1.455,2.722C1.616,6.472,1.112,6.325,0.671,6.08c0,0.014,0,0.027,0,0.041c0,1.584,1.127,2.906,2.623,3.206 C3.02,9.402,2.731,9.442,2.433,9.442c-0.211,0-0.416-0.021-0.615-0.059c0.416,1.299,1.624,2.245,3.055,2.271 c-1.119,0.877-2.529,1.4-4.061,1.4c-0.264,0-0.524-0.015-0.78-0.046c1.447,0.928,3.166,1.469,5.013,1.469 c6.015,0,9.304-4.983,9.304-9.304c0-0.142-0.003-0.283-0.009-0.423C14.976,4.29,15.531,3.714,15.969,3.058z"/>
+                </svg>
+              </span>
+
+              <span class="username">twocentstudios</span>
+            </a>
+          </li>
+          
+        </ul>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+
+
+  </body>
+
+</html>
