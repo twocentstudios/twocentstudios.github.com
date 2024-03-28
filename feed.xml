@@ -6,9 +6,214 @@
 </description>
     <link>https://twocentstudios.com/</link>
     <atom:link href="https://twocentstudios.com/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Tue, 26 Mar 2024 09:49:08 -0500</pubDate>
-    <lastBuildDate>Tue, 26 Mar 2024 09:49:08 -0500</lastBuildDate>
+    <pubDate>Thu, 28 Mar 2024 13:31:00 -0500</pubDate>
+    <lastBuildDate>Thu, 28 Mar 2024 13:31:00 -0500</lastBuildDate>
     <generator>Jekyll v3.9.3</generator>
+    
+      <item>
+        <title>Indie Game Devlog 03 - Experimental Character Design and Animation</title>
+        <description>&lt;p&gt;In the last post, I had finished the blockout for our main level in 3D and did a very basic lighting pass. I also tested the limitations of material transfer between Blender and Godot.&lt;/p&gt;
+
+&lt;p&gt;My player character being a big floating capsule wasn’t making it easy to ensure the proportions of the level are passible. Plus, I still didn’t know much about the very complex art of character modeling, rigging, and animation.&lt;/p&gt;
+
+&lt;h2 id=&quot;my-background-in-character-design&quot;&gt;My background in character design&lt;/h2&gt;
+
+&lt;p&gt;I have very limited history of designing characters as an adult.&lt;/p&gt;
+
+&lt;p&gt;My first foray into reinterpreting an existing character in 3D was modeling Dory from my previous team Tabedori.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog03-01.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;My previous team&apos;s mascot Dory, from a coworker&apos;s original design&quot; title=&quot;My previous team&apos;s mascot Dory, from a coworker&apos;s original design&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;My previous team&apos;s mascot Dory, from a coworker&apos;s original design&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;The unusual bamboo shoot body shape was an ambitious task for a beginner 3D modeler.&lt;/p&gt;
+
+&lt;p&gt;I tried rigging Dory so that I could do some basic poses or even try an animation. But my first attempt failed and I shelved that stretch goal.&lt;/p&gt;
+
+&lt;p&gt;Rigging is tough, and not particularly rewarding in my opinion. There are many ways to accomplish the same thing depending on how you’d like to use the rig, so it took me some time to find the &lt;em&gt;right&lt;/em&gt; YouTube tutorial to match my goals and skill level.&lt;/p&gt;
+
+&lt;p&gt;Last year, I did a few other character projects. One was a full modeling, rigging, and animation project from a tutorial.&lt;/p&gt;
+
+&lt;video src=&quot;/images/devlog03-02.mp4&quot; controls=&quot;&quot; width=&quot;100%&quot;&gt;&lt;/video&gt;
+
+&lt;p&gt;The next was a self portrait, again based on the original 2D design by a friend.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog03-03.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Self portrait&quot; title=&quot;Self portrait&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Self portrait&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;This all led up to my first original character design was a vampire rabbit named Biki for my iOS app &lt;a href=&quot;https://apps.apple.com/us/app/count-biki/id6463796779&quot;&gt;Count Biki&lt;/a&gt;.&lt;/p&gt;
+
+&lt;video src=&quot;/images/count-biki-blender-animation-correct.mov&quot; controls=&quot;&quot; preload=&quot;none&quot; poster=&quot;/images/count-biki-blender-animation-correct-poster.png&quot; width=&quot;100%&quot;&gt;&lt;/video&gt;
+
+&lt;p&gt;Biki was an ambitious project in that it not only was my first original character design, but it also required exporting the rigged and animated model from Blender into SceneKit on iOS.&lt;/p&gt;
+
+&lt;p&gt;It took at least one major revision on the design to get something that looked like a rabbit instead of a hamster. I also cut scope by keeping Biki in a sitting position and only rigging his body, arms, head, and ears. Creating the animations was actually my favorite part. Overall, I’m pretty happy with the result. For more on this process, see &lt;a href=&quot;/2023/10/30/count-biki-app-and-character-design/&quot;&gt;Count Biki - App and Character Design&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;All this is to say that I’m intentionally starting the character design, modeling, rigging, animation, and import/export process slowly, not aiming for full fidelity or even going beyond answering “what am I and what is Godot capable of?”.&lt;/p&gt;
+
+&lt;h2 id=&quot;the-next-iteration-of-the-player-character&quot;&gt;The next iteration of the player character&lt;/h2&gt;
+
+&lt;p&gt;I found a solid and succinct YouTube tutorial addressing Blender and Godot specifically: &lt;a href=&quot;https://www.youtube.com/watch?v=VasHZZyPpYU&quot;&gt;Godot 4 / Blender - Third Person Character From Scratch&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;I especially liked this tutorial because the rigging section was barebones enough for my to wrap my head around the fundamentals and plumbing of rigging within Blender for the first time. This is the first tutorial I’d seen that showed how to manually assign mesh vertices to bones instead of using automatic weights or weight painting. I finally understood the relationship between the armature and vertex groups, which makes it a lot easier to debug inevitable problems in the future.&lt;/p&gt;
+
+&lt;h3 id=&quot;modeling&quot;&gt;Modeling&lt;/h3&gt;
+
+&lt;p&gt;I wasn’t ready to commit to a character design until I’d finished a test run with this potential character pipeline. Therefore, I just wanted to find an existing design that was in the ballpark, and could throw away down the line.&lt;/p&gt;
+
+&lt;p&gt;I randomly found a character turnaround of Trent from the late 90’s MTV show Daria and used that as my base for the low-poly model. This modeling part went pretty well. My thoughts at this point were:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Should I keep limb components (e.g. upper arm, forearm) as separate meshes in my final design?&lt;/li&gt;
+  &lt;li&gt;I need to find a lot of head references. My intuition for head shapes (even though I possess one) is way off.&lt;/li&gt;
+  &lt;li&gt;How many bones should I use? Especially for hands, neck, and face.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog03-04.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Modeling low-poly from a character turnaround sheet&quot; title=&quot;Modeling low-poly from a character turnaround sheet&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Modeling low-poly from a character turnaround sheet&lt;/div&gt;&lt;/div&gt;
+
+&lt;h3 id=&quot;rigging&quot;&gt;Rigging&lt;/h3&gt;
+
+&lt;p&gt;Next part was the dreaded rigging, although as mentioned above, it clicked more this time than it had in the past. I still don’t think I’ve internalized the process well enough to do it on my own without reference (especially doing IK), but I’m not planning on becoming a professional rigging artist so no problems there.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog03-05.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;No bones about it, this rig is ready to go&quot; title=&quot;No bones about it, this rig is ready to go&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;No bones about it, this rig is ready to go&lt;/div&gt;&lt;/div&gt;
+
+&lt;h3 id=&quot;animation&quot;&gt;Animation&lt;/h3&gt;
+
+&lt;p&gt;Animation was next. I still find Blender’s &lt;em&gt;Action&lt;/em&gt;, &lt;em&gt;NLA Editor&lt;/em&gt;, &lt;em&gt;Dope Sheet&lt;/em&gt;, &lt;em&gt;F-Curve Editor&lt;/em&gt;, and other animation widgets intimidating, but following the tutorial helped avoid some complexity from the jump.&lt;/p&gt;
+
+&lt;p&gt;I started on the walk cycle animation by following a classic walk cycle breakdown chart, but this walk was way too fast and intense for my character.&lt;/p&gt;
+
+&lt;video src=&quot;/images/devlog03-06.mp4&quot; controls=&quot;&quot; width=&quot;100%&quot;&gt;&lt;/video&gt;
+
+&lt;p&gt;Regardless, I wanted to press on to see the animation in context before polishing.&lt;/p&gt;
+
+&lt;p&gt;Importing into Godot the first time was relatively pain free. I created an AnimationTree node and wired up a BlendSpace1D between the idle and walk animation.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog03-07.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Setting up the blend between idle and walk animations based on the player&apos;s velocity&quot; title=&quot;Setting up the blend between idle and walk animations based on the player&apos;s velocity&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Setting up the blend between idle and walk animations based on the player&apos;s velocity&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;It technically worked, but the synchronization between the walk speed and animation speed left a lot to be desired.&lt;/p&gt;
+
+&lt;p&gt;I obviously wasn’t satisfied with this walk, so I started over once, twice, three times, four times. Sometimes the joints would lock in weird ways. In general, all the steps felt &lt;em&gt;heavy&lt;/em&gt; in a way I couldn’t debug. I spent some time pacing around my apartment looking at my legs and trying to &lt;em&gt;walk normal&lt;/em&gt;.&lt;/p&gt;
+
+&lt;p&gt;I hit the point of diminishing returns and threw in the towel. Making all the movements less pronounced produced a slower and more casual walk, but it still wasn’t perfect. I learned that before I start &lt;em&gt;the real&lt;/em&gt; animation, I need to find some more animation reference books and budget time to practice.&lt;/p&gt;
+
+&lt;p&gt;I saved my latest walk and moved back into Godot. This was where I hit a big roadblock. I had needed to make a new scene for my character in order to use AnimationTree because:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;AnimationTree requires an AnimationPlayer in the same scene.&lt;/li&gt;
+  &lt;li&gt;AnimationPlayer is created as read-only from the Blender scene.&lt;/li&gt;
+  &lt;li&gt;The scene root must be a CharacterBody3D.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Trying to untangle the web of dependencies in my head while Googling, I finally came up with a solution. If you’re interested in the details, it’s in a separate &lt;a href=&quot;/2024/03/18/characterbody3d-blender-godot-import/&quot;&gt;blog post&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;The new node configuration for my player scene allowed quick iteration on the walk cycle animation while tweaking the character.&lt;/p&gt;
+
+&lt;video src=&quot;/images/devlog03-08.mp4&quot; controls=&quot;&quot; width=&quot;100%&quot;&gt;&lt;/video&gt;
+
+&lt;p&gt;Still quite robotic, especially considering the low-poly look.&lt;/p&gt;
+
+&lt;h3 id=&quot;reconsidering-the-player-controls&quot;&gt;Reconsidering the player controls&lt;/h3&gt;
+
+&lt;p&gt;In context, having this animation in place also made me start reconsidering my player control scheme. With only a forward walk-cycle created, my side-strafing controls look weird: the legs are moving forward and backward while the character slides sideways.&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Do I keep side-strafing as a control option (and therefore require more unique animations)?&lt;/li&gt;
+  &lt;li&gt;Do I remove side-strafing controls completely, forcing the player to move their mouse to rotate the character in place before moving forward?&lt;/li&gt;
+  &lt;li&gt;Do revise the control scheme so that pressing left both turns and moves the character that direction without affecting the camera?&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;I’m not ready to commit to a decision yet, so for now I’m going to keep the weird side-strafing animation.&lt;/p&gt;
+
+&lt;video src=&quot;/images/devlog03-09.mp4&quot; controls=&quot;&quot; width=&quot;100%&quot;&gt;&lt;/video&gt;
+
+&lt;h3 id=&quot;stop-motion-style-animation&quot;&gt;Stop-motion style animation&lt;/h3&gt;
+
+&lt;p&gt;I started thinking about aesthetics again too. While watching YouTube tutorials for research into my next big task (face rigs), I rediscovered YouTuber SouthernShotty who does really great stylized characters and animation.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog03-10.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;An example of SouthernShotty&apos;s craft material style&quot; title=&quot;An example of SouthernShotty&apos;s craft material style&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;An example of SouthernShotty&apos;s craft material style&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;He wrote a &lt;a href=&quot;https://www.youtube.com/watch?v=u9ZPrrLDxsY&quot;&gt;Blender add-on&lt;/a&gt; that automates some steps in converting regular animation timing to stop-motion style animation. I wanted to give it a shot to see how it looked in context of my (very underbaked) game world.&lt;/p&gt;
+
+&lt;p&gt;What is stop-motion style animation?&lt;/p&gt;
+
+&lt;p&gt;By default, when you make an animation in Blender, you create keyframes along a timeline at critical poses. Each row represents a different &lt;em&gt;value&lt;/em&gt; of each of the character’s bones (e.g. x position, y rotation). In professional rigs there can be hundreds if not thousands of possible control points! In the dope sheet, it looks something like this:&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog03-11.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Keyframes in the dope sheet&quot; title=&quot;Keyframes in the dope sheet&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Keyframes in the dope sheet&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Blender then uses the default smooth F-curves to interpolate the unspecified keyframe values in between the values the animator explicitly set. This both saves the animator a lot of work while also allowing a smooth result by default. F-curves are nearly infinitely tweakable, and real animators will spend a significant amount of time going through control-point by control-point to get the timings &lt;em&gt;just&lt;/em&gt; right.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog03-12.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;F-curves show how Blender interpolates values between artist-defined keyframes&quot; title=&quot;F-curves show how Blender interpolates values between artist-defined keyframes&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;F-curves show how Blender interpolates values between artist-defined keyframes&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;The F-curves are usually Bezier curves, but there’s no reason they can’t be linear or constant. Linear animation curves tend to look very &lt;em&gt;unnatural&lt;/em&gt; because very few things in the real world move with a constant velocity and then stop abruptly. Constant curves look &lt;em&gt;choppy&lt;/em&gt; because the poses jump at intervals slower than our eyes are capable of detecting.&lt;/p&gt;
+
+&lt;p&gt;In classic stop-motion animation (or relatedly, hand-drawn animation), there’s no such thing as automatic easing. The animator must take a picture for each pose &lt;em&gt;and&lt;/em&gt; inbetween position between the poses. However, it’s generally considered prohibitively expensive to take a picture at rates that are “smooth” to the human vision system like 60 frames per second. Usually this type of animation alternates between 24 frames per second (reasonably smooth) and 12 frames per second (noticeably choppy).&lt;/p&gt;
+
+&lt;p&gt;Although animating stop-motion at a nominal 12 frames per second can be a budgetary constraint, it’s often just as much an artistic choice. It produces an aesthetically pleasing and unique style of animation that, especially when the frame rate is varied with a professional eye, results in even more emotional impact for the viewer.&lt;/p&gt;
+
+&lt;p&gt;It’s not only frame rate that produces the stop-motion style (as mentioned above, hand-drawn animation has the same fundamental limitation). Handing physical objects changes them in subtle ways between frames. With clay, it might be a thumbprint added between frames. With puppets, it might be a strands of hair moving unpredictably. All the randomness adds to the stop-motion vibe.&lt;/p&gt;
+
+&lt;p&gt;SouthernShotty’s plugin tries to automate both the frame rate and random material adjustments. Since I haven’t decided on materials yet, I’m more focused on the frame rate adjustments.&lt;/p&gt;
+
+&lt;h3 id=&quot;implementing-reduced-framerate-in-blender&quot;&gt;Implementing reduced framerate in Blender&lt;/h3&gt;
+
+&lt;p&gt;The plugin works by simply adding a Stepped Interpolation modifier to the F-curve in Blender. This modifier locks in whatever position the original smoothly interpolated curve was at a specified frame interval.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog03-13.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;The Stepped Interpolation modifier and its result (in green)&quot; title=&quot;The Stepped Interpolation modifier and its result (in green)&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The Stepped Interpolation modifier and its result (in green)&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;I could just as well manually create poses and keyframes every 2 frames of animation like a stop-motion animator would. But using the &lt;a href=&quot;https://docs.blender.org/manual/en/4.1/editors/graph_editor/fcurves/modifiers.html#stepped-interpolation-modifier&quot;&gt;Stepped Interpolation&lt;/a&gt; modifier gets most of the effect without most of the work. For a solo animator, if this can meet my self-imposed quality standards, it’s a big win. It also allows me to experiment with different frame rates just by changing a number from 2 to 3 instead of having to spend hours recreating the animation from scratch.&lt;/p&gt;
+
+&lt;p&gt;With all that motivation outlined, I began applying the F-curve modifier to all channels and checking the result in the viewport. It looked interesting for sure.&lt;/p&gt;
+
+&lt;h3 id=&quot;implementing-reduced-framerate-for-godot&quot;&gt;Implementing reduced framerate for Godot&lt;/h3&gt;
+
+&lt;p&gt;However, when exported to Blender, it was clear the modifier wasn’t being applied. It wasn’t that surprising that modifiers in this corner of the Blender interface wouldn’t automatically be applied on export/import as opposed to object modifiers which are critical to most workflows.&lt;/p&gt;
+
+&lt;p&gt;I needed to find a way to apply the modifier to the raw data so that Godot would read the results of the operation. And ideally there’d be a way to do so non-destructively, so I could continue to iterate on the less dense keyframe data.&lt;/p&gt;
+
+&lt;p&gt;At the time was first investigating this, I was using Blender 4.0.2. At that time, the best I could do to bake the keyframes was:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Apply the Stepped Interpolation modifier to all channels.&lt;/li&gt;
+  &lt;li&gt;Use the Keys to Samples operator. This effectively removes the keyframes and replaces them with samples (honestly not really sure what this means under the hood).&lt;/li&gt;
+  &lt;li&gt;Remove the modifier from all channels.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog03-14.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;The result of applying Keys to Samples (notice the keyframe points are gone)&quot; title=&quot;The result of applying Keys to Samples (notice the keyframe points are gone)&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The result of applying Keys to Samples (notice the keyframe points are gone)&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Saving the animation will make the original keyframes unrecoverable, so it’s best to do this on a duplicate of the Action.&lt;/p&gt;
+
+&lt;p&gt;Switching back over Godot and selecting the new animation, it’s working!&lt;/p&gt;
+
+&lt;video src=&quot;/images/devlog03-15.mp4&quot; controls=&quot;&quot; width=&quot;100%&quot;&gt;&lt;/video&gt;
+
+&lt;p&gt;By some stroke of luck, Blender 4.1 (just released the day I’m writing this) includes a new &lt;a href=&quot;https://docs.blender.org/manual/en/4.1/editors/graph_editor/channels/editing.html#bake-channels&quot;&gt;Bake Channels&lt;/a&gt; operator. This streamlines my use case slightly:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;The Stepped Interpolation modifier is no longer necessary.&lt;/li&gt;
+  &lt;li&gt;Select all channels then select the Bake Channels operator.&lt;/li&gt;
+  &lt;li&gt;From the options, choose the range of the animation, the desired step, and an interpolation type of constant.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Unfortunately, this is still a destructive operation, so duplicating the Action is still required.&lt;/p&gt;
+
+&lt;p&gt;If I decide to use this workflow for most/all animations in my game, I’ll spend the time making a custom Blender plugin to automate this process. For now I’m happy enough with the manual process.&lt;/p&gt;
+
+&lt;p&gt;I like this effect. It’s opinionated, and I think it will put a stake in the ground and help guide the aesthetics of the rest of the game. I’m already thinking about paper or wood textures to lean into the “real life” stop-motion vibe.&lt;/p&gt;
+
+&lt;p&gt;In this example, I have the step set to 6 which is quite extreme! I’m not sure how far I’m going to push this yet. Starting on the extreme side and dialing back isn’t such a bad way to get things rolling.&lt;/p&gt;
+
+&lt;h2 id=&quot;next-steps&quot;&gt;Next steps&lt;/h2&gt;
+
+&lt;p&gt;We’re definitely getting into more unfamiliar territory. It’s fun seeing these small steps of progress, but each step just reminds me how much more there is to discover before I even get the point where I need to go heads down churning out assets and content.&lt;/p&gt;
+
+&lt;p&gt;Even though it could be considered a flourish, the next thing I’d like to explore is configurable/animatable face shapes for the characters. It turns out there are a lot of problems to solve in this workflow too!&lt;/p&gt;
+
+&lt;p&gt;Until next time.&lt;/p&gt;
+</description>
+        <pubDate>Thu, 28 Mar 2024 17:00:00 -0500</pubDate>
+        <link>https://twocentstudios.com/2024/03/28/indie-game-devlog-03/</link>
+        <guid isPermaLink="true">https://twocentstudios.com/2024/03/28/indie-game-devlog-03/</guid>
+        
+        
+      </item>
     
       <item>
         <title>Indie Game Devlog 02 - 3D Level Blockout</title>
@@ -3252,152 +3457,6 @@
         <pubDate>Mon, 30 Oct 2023 14:36:58 -0500</pubDate>
         <link>https://twocentstudios.com/2023/10/30/count-biki-app-and-character-design/</link>
         <guid isPermaLink="true">https://twocentstudios.com/2023/10/30/count-biki-app-and-character-design/</guid>
-        
-        
-      </item>
-    
-      <item>
-        <title>Count Biki - Drill Japanese Numbers</title>
-        <description>&lt;p&gt;I’m proud to present my latest iOS app, Count Biki.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/count-biki-app-icon.png&quot; width=&quot;&quot; height=&quot;300&quot; alt=&quot;Count Biki app icon&quot; title=&quot;Count Biki app icon&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Count Biki app icon&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;Count Biki a self-guided utility app for drilling numbers of all shapes and sizes in Japanese.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/count-biki-v1-listening-quiz.png&quot; width=&quot;&quot; height=&quot;650&quot; alt=&quot;The listening quiz screen: the screen you&apos;ll spend the most time on&quot; title=&quot;The listening quiz screen: the screen you&apos;ll spend the most time on&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The listening quiz screen: the screen you&apos;ll spend the most time on&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;In this series of posts I’ll talk about:&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;&lt;strong&gt;This post&lt;/strong&gt; - the motivation behind the app and the solution I’ve begun to explore from the learner (user) perspective&lt;/li&gt;
-  &lt;li&gt;&lt;strong&gt;&lt;a href=&quot;/2023/10/30/count-biki-app-and-character-design/&quot;&gt;Count Biki - App and Character Design&lt;/a&gt;&lt;/strong&gt; - the design process and specifics of creating the Count Biki character&lt;/li&gt;
-  &lt;li&gt;&lt;strong&gt;&lt;a href=&quot;/2023/10/31/count-biki-developing-the-app-for-ios/&quot;&gt;Count Biki - Developing the App for iOS&lt;/a&gt;&lt;/strong&gt; - the high-level implementation details&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;Japanese learners can download the app from the &lt;a href=&quot;https://apps.apple.com/us/app/count-biki/id6463796779&quot;&gt;App Store&lt;/a&gt;.&lt;/p&gt;
-
-&lt;p&gt;Like many of my other apps, Count Biki is open source on &lt;a href=&quot;https://github.com/twocentstudios/count-biki&quot;&gt;GitHub&lt;/a&gt;.&lt;/p&gt;
-
-&lt;h2 id=&quot;background&quot;&gt;Background&lt;/h2&gt;
-
-&lt;p&gt;Counting to ten is one of the first things we learn in a foreign language. Each language has its own rules about how numbers combine to form larger numbers, how they combine with objects, and how they associate with the concept of time.&lt;/p&gt;
-
-&lt;p&gt;When I first moved to Japan, every couple shops or restaurants I’d visit wouldn’t have a display at the cash register. The cashier would speak my 4 or 5 digit total aloud at native speed and I’d be lucky to get the first digit. I’d panic and fumble through the transaction, then forget about it until the next time. It was tough skill to practice.&lt;/p&gt;
-
-&lt;p&gt;Japanese has unique readings for days of the month, e.g. July 1st, October 9th, etc. We learn them in the 101-level course, but in daily conversation I’d rarely need to recall each specific reading with native accuracy to get my point across. The knowledge gracefully slipped away as it usually does.&lt;/p&gt;
-
-&lt;p&gt;Fast forward to now, and there are more language learning apps than ever. Even ones that help with numbers. However, I wanted a more streamlined way to practice all types of numbers, and I wanted to focus my development on Japanese and, as a learner, ensure I could practice the uniquely difficult parts of the language.&lt;/p&gt;
-
-&lt;p&gt;In cases like dealing with money, the numbers are essentially random. Therefore, I didn’t want to rely on just hard coding a couple dozen entries. Computers are great at:&lt;/p&gt;
-
-&lt;ol&gt;
-  &lt;li&gt;generating random numbers&lt;/li&gt;
-  &lt;li&gt;generating speech from text&lt;/li&gt;
-  &lt;li&gt;generating spelled out text from numbers&lt;/li&gt;
-&lt;/ol&gt;
-
-&lt;p&gt;All the rules about our language systems are already encoded into our devices. I saw my role as being able to surfaces these tools in a convenient wrapper so we can drill the particular weak points of numbers endlessly.&lt;/p&gt;
-
-&lt;h2 id=&quot;available-topics&quot;&gt;Available Topics&lt;/h2&gt;
-
-&lt;p&gt;First in the UX flow, the learner choses a topic category. In the first release there are 4 categories: numbers, money, time durations, and dates &amp;amp; times.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/count-biki-v1-topic-categories.png&quot; width=&quot;&quot; height=&quot;350&quot; alt=&quot;The topic categories screen&quot; title=&quot;The topic categories screen&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The topic categories screen&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;Within each topic category, there are several topics.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/count-biki-v1-topic-money.png&quot; width=&quot;&quot; height=&quot;350&quot; alt=&quot;The topics screen within the money category&quot; title=&quot;The topics screen within the money category&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The topics screen within the money category&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;My goal in dividing up topics and categories was to remove the burden of configuring complicated sets of ranges and digit sliders from users. Of course, infinite customization can be added later. But for my first release, I wanted to make some guesses as to how the app can be immediately useful to many different skill levels, and also suggest scenarios that learners may not even recognize as unique and useful.&lt;/p&gt;
-
-&lt;p&gt;In the numbers category, the app covers ranges of numbers mostly based on the number of significant digits you need to input. It’s rare to encounter someone reading you a 9-digit number with every digit as non-zero. People generally work with significant digits, maybe 3 or 4. So although there’s a “Master” category that covers 5 significant digits, the higher order drills for 100 million (億) and 10 trillion (兆) still only use 3 or 4 significant digits (with the remainder being zeros).&lt;/p&gt;
-
-&lt;p&gt;In the money category, the app adds the 円 suffix and tailors the number ranges to cover common situations like the convenience store or restaurant. This category has been my most used so far.&lt;/p&gt;
-
-&lt;p&gt;In the time durations category, the app covers the main groupings from seconds to years. Although I considered adding some topics to mix them, I’d like to do some more research to determine what the most common pairings in daily life situations are. This also adds complexity to the user input section (what’s the lowest friction way to enter in multiple unrelated numbers? The system date picker? One text box?).&lt;/p&gt;
-
-&lt;p&gt;In the dates &amp;amp; times category, the app covers similar variants as the time durations. However, these represent individual moments in time. And there are many variants that are commonly used. For example, 24-hour time is very common in the language, as is AM/PM (午前、午後). Days of the month and months have several exception readings. The app even (for fun) has an experimental topic for converting Japanese calendar years to Gregorian calendar years (this is not easy!).&lt;/p&gt;
-
-&lt;h2 id=&quot;listening-quiz&quot;&gt;Listening Quiz&lt;/h2&gt;
-
-&lt;p&gt;At launch, the only quiz skill supported is listening.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/count-biki-v1-listening-quiz.png&quot; width=&quot;&quot; height=&quot;650&quot; alt=&quot;The listening quiz screen&quot; title=&quot;The listening quiz screen&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The listening quiz screen&lt;/div&gt;&lt;/div&gt;
-
-&lt;ol&gt;
-  &lt;li&gt;behind the scenes, the app generates a number based on the topic as the question&lt;/li&gt;
-  &lt;li&gt;the on-device text-to-speech engine speaks the question&lt;/li&gt;
-  &lt;li&gt;the learner types their proposed answer in the input box&lt;/li&gt;
-  &lt;li&gt;the learner taps the submit button to check their answer&lt;/li&gt;
-  &lt;li&gt;if the answer is correct, the app plays some animations (Count Biki nods, confetti is thrown, and the device plays haptics) and the flow starts over&lt;/li&gt;
-  &lt;li&gt;if the answer is incorrect, the app shows a red bar and play some other animations&lt;/li&gt;
-  &lt;li&gt;the learner can tap the play button to replay the question&lt;/li&gt;
-  &lt;li&gt;the learner can tap the show answer button to give up and show the answer&lt;/li&gt;
-&lt;/ol&gt;
-
-&lt;p&gt;The app keeps track of the number of questions answered correctly, incorrectly, and skipped. But as of the initial release, this data is only kept for the duration of the session and is not persisted.&lt;/p&gt;
-
-&lt;p&gt;The only session mode available at launch is infinite drill mode. The app will keep generating questions forever, and it’s up to the learner to decide when they’d like to quit or a switch to a different topic. I chose this mode as the default intentionally, as it matches well with the ethos of the app: it’s a utility for additional practice. Although it adds some burden to the learner to choose their own curriculum, there’s power in “staying out of the learner’s way”). Eventually, I’d like to add a time attack mode and question attack mode to give learners the option of deciding on bounded study sessions in advance.&lt;/p&gt;
-
-&lt;h2 id=&quot;voices&quot;&gt;Voices&lt;/h2&gt;
-
-&lt;p&gt;The app uses iOS’s built-in text-to-speech (TTS) engine. Although the on-device TTS is not perfect and requires some user configuration, I felt it was a good starting point in keeping the complexity, cost, and potential failure points low.&lt;/p&gt;
-
-&lt;p&gt;The iOS binary has a standard-quality TTS voice predownloaded for most languages. For Japanese, this voice is called Kyoko. As of iOS 17, there are 4 available Japanese voices: Kyoto, Otoya, Hattori, and O-ren. Kyoto and Otoya have a separate “enhanced” quality voice.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/count-biki-v1-accessibility-settings-voices.png&quot; width=&quot;&quot; height=&quot;350&quot; alt=&quot;iOS spoken content voices accessibility settings in iOS 17&quot; title=&quot;iOS spoken content voices accessibility settings in iOS 17&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;iOS spoken content voices accessibility settings in iOS 17&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;As of the initial release of Count Biki, the learner can choose any of the voices they’ve downloaded from the iOS settings to use in their listening quiz. Using alternate voices requires going deep into the iOS accessibility settings and downloading ~70MB voice files. We’ve included instructions within the Count Biki settings that show the step-by-step of how to add voices, but unfortunately there’s no way to make this process more automated yet.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/count-biki-v1-get-more-voices.png&quot; width=&quot;&quot; height=&quot;550&quot; alt=&quot;The in-app explainer for how to download voices from iOS system settings&quot; title=&quot;The in-app explainer for how to download voices from iOS system settings&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The in-app explainer for how to download voices from iOS system settings&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;As AI-powered TTS engines become commodities over the next few years, I’ll be looking to increase the variety, accuracy, and aesthetics of the TTS component of the app.&lt;/p&gt;
-
-&lt;p&gt;The iOS TTS engine does include APIs for changing the speaking rate and pitch. I find the default rate to be a little quick. In the Count Biki app settings the app includes sliders for modifying both the rate and pitch. The extreme settings are definitely extreme, but I didn’t want to artificially limit them for the initial release.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/count-biki-v1-voice-settings.png&quot; width=&quot;&quot; height=&quot;350&quot; alt=&quot;Voice settings within the session settings screen&quot; title=&quot;Voice settings within the session settings screen&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Voice settings within the session settings screen&lt;/div&gt;&lt;/div&gt;
-
-&lt;h2 id=&quot;quiz-results&quot;&gt;Quiz results&lt;/h2&gt;
-
-&lt;p&gt;Generally, seeing the results of a quiz is important for a few reasons. You want to spend more time practicing questions you’ve missed. You want an overview of your progress over time in mastering a topic.&lt;/p&gt;
-
-&lt;p&gt;Going along with the utility ethos of the app, I’ve only included the most basic quiz results; the results are displayed inline on the listening quiz screen and  slightly more detailed on the session settings screen.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/count-biki-v1-session-results.png&quot; width=&quot;&quot; height=&quot;350&quot; alt=&quot;Results as displayed on the session settings screen&quot; title=&quot;Results as displayed on the session settings screen&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Results as displayed on the session settings screen&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;As much as I wanted to create an elaborate results system for the initial release, the more I considered it, the more work I realized it would take to make it useful and not get in the way. It also seemed like it’d end up as an endless rabbit hole of complexity that would make implementing other skills and topics more difficult.&lt;/p&gt;
-
-&lt;p&gt;The naive solution of showing a big list or correct or incorrect questions doesn’t seem like it’d add a lot of value on its own. I’d rather spend more time considering a few key metrics that I could extract for the user that are 1. understandable at a glance and 2. immediately actionable. I’m regretfully offloading the burden of progress tracking onto the user while the app is still taking shape.&lt;/p&gt;
-
-&lt;h2 id=&quot;app-info&quot;&gt;App info&lt;/h2&gt;
-
-&lt;p&gt;Most apps have an info/settings page that collects all kinds of disparate non-essential functions. Count Biki will probably end up with its mutable settings spread out across a few different contexts, so this page is more about tips, support, and legal info.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/count-biki-v1-info-screen-top.png&quot; width=&quot;&quot; height=&quot;650&quot; alt=&quot;The info screen&quot; title=&quot;The info screen&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The info screen&lt;/div&gt;&lt;/div&gt;
-
-&lt;h2 id=&quot;in-app-purchases&quot;&gt;In app purchases&lt;/h2&gt;
-
-&lt;p&gt;When I was first charging for my apps, the App Store didn’t have in app purchases. It was actually still the era of the “lite version” - a completely separate binary and listing on the App Store with only a subset of features that would link users to pay for and download the full version.&lt;/p&gt;
-
-&lt;p&gt;Since I’m starting to dip my toes in the water in building a self-sustaining independent app business, but my app isn’t at subscription-level value yet (in my opinion), I figured I’d try out the tip jar payment model. The plan is that almost all features are free upon first release, but features added in the future will require a pay-what-you-want-once upgrade. I called this “Transylvania Tier” as a nod to the vampire theme.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/count-biki-v1-transylvania-tier.png&quot; width=&quot;&quot; height=&quot;750&quot; alt=&quot;The tip-jar screen for unlocking &apos;Transylvania Tier&apos;&quot; title=&quot;The tip-jar screen for unlocking &apos;Transylvania Tier&apos;&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The tip-jar screen for unlocking &apos;Transylvania Tier&apos;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;There is one unlockable feature: alternate app icons.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/count-biki-v1-app-icons.png&quot; width=&quot;&quot; height=&quot;350&quot; alt=&quot;The tip-jar screen for unlocking &apos;Transylvania Tier&apos;&quot; title=&quot;The tip-jar screen for unlocking &apos;Transylvania Tier&apos;&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The tip-jar screen for unlocking &apos;Transylvania Tier&apos;&lt;/div&gt;&lt;/div&gt;
-
-&lt;h2 id=&quot;conclusion&quot;&gt;Conclusion&lt;/h2&gt;
-
-&lt;p&gt;I’m hoping Count Biki will prove to be an invaluable addition to learners’ study materials. There are plenty more topics and features that complement the theme and goal of the app that I’ll continue to chip away at over time and as I get more feedback from learners.&lt;/p&gt;
-
-&lt;p&gt;Thanks for reading this little checkpoint summary, and if you’re a Japanese learner or developer, please check out the app on the &lt;a href=&quot;https://apps.apple.com/us/app/count-biki/id6463796779&quot;&gt;App Store&lt;/a&gt; or the source on &lt;a href=&quot;https://github.com/twocentstudios/count-biki&quot;&gt;GitHub&lt;/a&gt;.&lt;/p&gt;
-
-&lt;p&gt;The next post in the series is &lt;a href=&quot;/2023/10/30/count-biki-app-and-character-design/&quot;&gt;Count Biki - App and Character Design&lt;/a&gt;.&lt;/p&gt;
-</description>
-        <pubDate>Sun, 29 Oct 2023 14:49:00 -0500</pubDate>
-        <link>https://twocentstudios.com/2023/10/29/count-biki-japanese-numbers/</link>
-        <guid isPermaLink="true">https://twocentstudios.com/2023/10/29/count-biki-japanese-numbers/</guid>
         
         
       </item>
