@@ -6,9 +6,203 @@
 </description>
     <link>https://twocentstudios.com/</link>
     <atom:link href="https://twocentstudios.com/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Thu, 28 Mar 2024 13:31:00 -0500</pubDate>
-    <lastBuildDate>Thu, 28 Mar 2024 13:31:00 -0500</lastBuildDate>
+    <pubDate>Mon, 01 Apr 2024 12:58:33 -0500</pubDate>
+    <lastBuildDate>Mon, 01 Apr 2024 12:58:33 -0500</lastBuildDate>
     <generator>Jekyll v3.9.3</generator>
+    
+      <item>
+        <title>Indie Game Devlog 04 - Animating Faces</title>
+        <description>&lt;p&gt;Last time, I’d prototyped a 3D character with an idle and walk animation.&lt;/p&gt;
+
+&lt;p&gt;Next, I wanted to prototype face animations.&lt;/p&gt;
+
+&lt;h2 id=&quot;finding-the-balance-in-character-expression&quot;&gt;Finding the balance in character expression&lt;/h2&gt;
+
+&lt;p&gt;My game is going to be heavily narrative focused. Meaning I need to tell a good story where the player can quickly connect and empathize with the characters.&lt;/p&gt;
+
+&lt;p&gt;Of course you can tell a good story through words alone (a novel) or actions alone (a silent movie). But many media use a balance of the two.&lt;/p&gt;
+
+&lt;p&gt;I need to find a balance that supports my story, but is also feasible for a solo developer with my level of experience making a game at this scale.&lt;/p&gt;
+
+&lt;p&gt;What does balance mean? What are my options?&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;At the low end of fidelity, we have games that have either no faces or a face with a static expression.&lt;/li&gt;
+  &lt;li&gt;In the middle, we have games with no lip-syncing (or even voice acting), but still a library of facial expressions that match the tone of the current dialogue. Example: The Legend of Zelda - Ocarina of Time.&lt;/li&gt;
+  &lt;li&gt;At the high end of fidelity, we have AAA games with fully rigged character faces that have fully motion captured or hand-animated lip-syncing for both cut-scenes and gameplay. Example: The Last of Us.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog04-01.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Saria from Ocarina of Time changes her facial expression to match her written dialogue. There&apos;s limited animation between expressions, with blinking being an exception.&quot; title=&quot;Saria from Ocarina of Time changes her facial expression to match her written dialogue. There&apos;s limited animation between expressions, with blinking being an exception.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Saria from Ocarina of Time changes her facial expression to match her written dialogue. There&apos;s limited animation between expressions, with blinking being an exception.&lt;/div&gt;&lt;/div&gt;
+
+&lt;h2 id=&quot;my-goal-scripted-expressions&quot;&gt;My goal: scripted expressions&lt;/h2&gt;
+
+&lt;p&gt;I’d like to shoot for something similar to the medium fidelity, like Ocarina of Time.&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Make a library of a dozen or so facial expressions per character.&lt;/li&gt;
+  &lt;li&gt;Don’t bother with animating between expressions.&lt;/li&gt;
+  &lt;li&gt;Support a limited set of looping animations like blinking.&lt;/li&gt;
+  &lt;li&gt;Allow specific animations to be triggered from the script that contains the dialogue.&lt;/li&gt;
+  &lt;li&gt;Don’t bother with full voice acting.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;As great as it’d be to have full voice acting and lip sync, I’m confident it would be way too ambitious.&lt;/p&gt;
+
+&lt;p&gt;Even having a dozen facial expressions may be overly ambitious for the number of characters I’m already planning. That’s part of what I wanted to find out at this stage of prototyping.&lt;/p&gt;
+
+&lt;h2 id=&quot;options-for-faces&quot;&gt;Options for faces&lt;/h2&gt;
+
+&lt;p&gt;Since I’ve yet to decide on an aesthetic for my character/environment art, it’s still possible for me to adapt the character style to the difficulty of implementation. In a world with infinite resources the art could 100% drive the implementation, but that’s not the world I currently inhabit.&lt;/p&gt;
+
+&lt;p&gt;I need full access to change any character’s facial expression from the game engine at any time. Identifying all the levers in Godot that allow me to do so is also part of this exploration.&lt;/p&gt;
+
+&lt;p&gt;There are 3 art/implementation pairs that fulfill the target requirements I listed above:&lt;/p&gt;
+
+&lt;h3 id=&quot;1-independent-2d-textures-projected-on-static-3d-face-geometry&quot;&gt;1. Independent 2D textures projected on static 3D face geometry&lt;/h3&gt;
+
+&lt;p&gt;This option shrinkwraps a bitmap 2D texture onto the 3D model. All faces can be on one texture like a sprite sheet, or as separate textures that are swapped in and out.&lt;/p&gt;
+
+&lt;p&gt;Most characters from Ocarina of Time have faces like this, although noses and ears are usually part of the base model.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog04-02.jpg&quot; width=&quot;400&quot; height=&quot;&quot; alt=&quot;Saria from Ocarina of Time has a bitmap 2D face texture&quot; title=&quot;Saria from Ocarina of Time has a bitmap 2D face texture&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Saria from Ocarina of Time has a bitmap 2D face texture&lt;/div&gt;&lt;/div&gt;
+
+&lt;h3 id=&quot;2-independent-3d-geometry-for-each-facial-expression&quot;&gt;2. Independent 3D geometry for each facial expression&lt;/h3&gt;
+
+&lt;p&gt;This option adds a separate object for each expression on top of the main face/body geometry. Only one object is displayed at a time. The style is similar to (1), but the implementation is different and the 3D geometry allows the face to participate in lighting.&lt;/p&gt;
+
+&lt;p&gt;This is the way I modeled Dory.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog04-10.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Dory has 3D face geometry for its eyes and mouth, but the vertices do not morph and they are not integrated into the main body. They even cast shadows onto the main body.&quot; title=&quot;Dory has 3D face geometry for its eyes and mouth, but the vertices do not morph and they are not integrated into the main body. They even cast shadows onto the main body.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Dory has 3D face geometry for its eyes and mouth, but the vertices do not morph and they are not integrated into the main body. They even cast shadows onto the main body.&lt;/div&gt;&lt;/div&gt;
+
+&lt;h3 id=&quot;3-single-3d-geometry-that-morphs-for-each-facial-expression&quot;&gt;3. Single 3D geometry that morphs for each facial expression&lt;/h3&gt;
+
+&lt;p&gt;This option produces the most “realistic” results. The face will deform the way a human face does.&lt;/p&gt;
+
+&lt;p&gt;The downsides are that a humble face rig can take lots of time and expertise to set up, having more control points requires more time spent animating, and it’s easy to fall into the uncanny valley where the character looks creepy and unsettling.&lt;/p&gt;
+
+&lt;p&gt;The upside is that the current tools for executing this style are well tailored to the job. This even includes live video motion capture from a smartphone that can drive an animated rig.&lt;/p&gt;
+
+&lt;p&gt;I found a solo indie dev working on a game called Farewell North who talks about implementing this kind of facial animation &lt;a href=&quot;https://www.youtube.com/watch?v=fkB3tK6zZSo&quot;&gt;in this devlog&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;An easy example is The Last of Us. &lt;a href=&quot;https://www.youtube.com/watch?v=myZcUvU8YWc&quot;&gt;A demo from 2013&lt;/a&gt; shows some behind the scenes materials on the rigging process.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog04-03.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;The Last of Us like most AAA games targets realism with a full face rig&quot; title=&quot;The Last of Us like most AAA games targets realism with a full face rig&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The Last of Us like most AAA games targets realism with a full face rig&lt;/div&gt;&lt;/div&gt;
+
+&lt;h2 id=&quot;independent-expressions&quot;&gt;Independent expressions&lt;/h2&gt;
+
+&lt;p&gt;At the moment, I’m leaning towards (1) or (2). I’m not confident enough in my character modeling skills or my art direction or time/effort estimation skills to gamble with the downsides of (3).&lt;/p&gt;
+
+&lt;p&gt;Designing independent expressions lends itself to stylization, and therefore it may be easier for me to avoid the uncanny valley when eventually finalizing my character designs.&lt;/p&gt;
+
+&lt;p&gt;The next decision is whether to use 2D or 3D.&lt;/p&gt;
+
+&lt;p&gt;I’m drawn towards the look of 3D, so I decided to explore that implementation first.&lt;/p&gt;
+
+&lt;h2 id=&quot;implementing-3d-independent-expressions&quot;&gt;Implementing 3D independent expressions&lt;/h2&gt;
+
+&lt;p&gt;I started by modeling opened eyes and closed eyes in two separate objects.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog04-04.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Open and closed eyes, with simple geometry and modifiers added&quot; title=&quot;Open and closed eyes, with simple geometry and modifiers added&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Open and closed eyes, with simple geometry and modifiers added&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;For a simple case like this, using the same object/mesh and using a shape key to tween between open and closed would definitely be possible. However, for the more complicated expressions I’m planning for, deforming a single mesh isn’t going to cut it.&lt;/p&gt;
+
+&lt;p&gt;I realized quickly that these eye objects needed to be parented and weighted to the existing armature in order to follow the head with its existing idle animation.&lt;/p&gt;
+
+&lt;p&gt;As separate meshes, the opened and closed eyes appear in Godot’s scene tree automatically.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog04-05.jpg&quot; width=&quot;&quot; height=&quot;200&quot; alt=&quot;Access to objects in the imported Godot scene&quot; title=&quot;Access to objects in the imported Godot scene&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Access to objects in the imported Godot scene&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;That means I can reference them in code and turn them on and off with a code snippet.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&quot;language-gdscript&quot;&gt;func toggleEyeBlink():
+    $Armature/Skeleton3D/eye_blink.visible = !$Armature/Skeleton3D/eye_blink.visible
+    $Armature/Skeleton3D/eye_neutral.visible = !$Armature/Skeleton3D/eye_neutral.visible
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;For testing purposes, I rotated the player model towards the camera and triggered toggling the eye open and close with the existing action button (spacebar).&lt;/p&gt;
+
+&lt;video src=&quot;/images/devlog04-06.mp4&quot; controls=&quot;&quot; loop=&quot;&quot; width=&quot;100%&quot;&gt;&lt;/video&gt;
+
+&lt;p&gt;Awesome. I’ve got full manual control over eye meshes. From here it’s reasonable to see how expanding this could work:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;I add a bunch more eye shapes as separate objects.&lt;/li&gt;
+  &lt;li&gt;I add a bunch of mouth shapes as separate objects.&lt;/li&gt;
+  &lt;li&gt;I create some helpers in code to associate a facial expression with all but one eye object and all but one mouth object visible.&lt;/li&gt;
+  &lt;li&gt;I trigger a named facial expression from the dialogue script.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&quot;blendergodot-integration-woes&quot;&gt;Blender/Godot integration woes&lt;/h2&gt;
+
+&lt;p&gt;There’s a missing piece in the above plan though, and it has to do with Blender integration.&lt;/p&gt;
+
+&lt;p&gt;The idle and walk animations are defined on the Blender side and imported into Godot in an AnimationPlayer node.&lt;/p&gt;
+
+&lt;p&gt;It’s easy to imagine wanting a looping “blink” animation that alternates between opened and closed eyes. So I tried to imagine how I’d implement that animation in Blender. It’s surprisingly convoluted! And it’s exposing my lack of fundamental understanding of both Blender and Godot.&lt;/p&gt;
+
+&lt;p&gt;The first problem is animating visibility. The eye_open object needs to disappear when the eye_closed object appears and vice-versa. If I want to keep all my animations source-of-truth in Blender, I’ve identified these options:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;&lt;strong&gt;Scale the object to a near-zero value.&lt;/strong&gt; This is not a robust solution for several reasons: Some modifiers will break the geometry, it’s not as ergonomic as just having a single boolean, and the rendering engine still needs to account for the scaled-down geometry.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Use the object visibility setting.&lt;/strong&gt; This would my preferred option, but it’s not possible. In Blender there’s a toggle for viewport visibility and render visibility. And it’s animatable. It requires changing an import setting in Godot for the blend file under “Blender &amp;gt; Nodes &amp;gt; Visible” to “Renderable”. However, this only applies during the import process, so the object in question is either imported or ignored. The setting is not read after import, including during animation.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Move the “hidden” mesh inside the head.&lt;/strong&gt; Reasonable, but requires setting up shape keys for every object, and potentially taking a performance hit.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Move the “hidden” mesh far off screen.&lt;/strong&gt; This has the benefit of presumably being able to participate in the Godot renderer’s automatic distance culling &lt;a href=&quot;https://docs.godotengine.org/en/stable/tutorials/3d/mesh_lod.html&quot;&gt;mesh level of detail&lt;/a&gt; (LOD) system, and therefore avoid the performance hit. But still makes the animation process unergonomic.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Set the material to transparent.&lt;/strong&gt; Might not play nice with whatever material or shader I choose. Presumably takes a performance hit.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Enforce all eyes use the same number of vertices.&lt;/strong&gt; This would allow me to use Blender’s shape keys as designed. However, it imposes serious limitations on the art style, including using different colors. Modeling all potential eye shapes would end up being a puzzle beyond my current skillset.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;Not only does the problem of visibility have no clear solution, but the animation process itself within Blender is not as straightforward as the existing armature animation:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;The separate eye_open and eye_closed objects will have separate animation Actions in Blender. This means I need to create two separate but mirroring animation timelines that toggle the visibility. But I can’t even see them on the same dope sheet.&lt;/li&gt;
+  &lt;li&gt;The bigger problem is that animation actions are only imported from one object. In my case it’s the armature. Actions attached to other objects are ignored by Godot. This would require more research to understand its limitations.&lt;/li&gt;
+  &lt;li&gt;From some investigation, it seems as if the right way to handle this kind of animation is to make a driver system or another armature that combines the eye_open and eye_closed visibility behavior into one parameter. It may require putting all the eye meshes into the single body object. This is all beyond my current understanding of Blender.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog04-09.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Trying to set up a blinking animation in Blender via the render visibility property. Shown is only one half of the animation. It&apos;s not very ergonomic.&quot; title=&quot;Trying to set up a blinking animation in Blender via the render visibility property. Shown is only one half of the animation. It&apos;s not very ergonomic.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Trying to set up a blinking animation in Blender via the render visibility property. Shown is only one half of the animation. It&apos;s not very ergonomic.&lt;/div&gt;&lt;/div&gt;
+
+&lt;h2 id=&quot;solution-all-face-animations-in-godot&quot;&gt;Solution: all face animations in Godot&lt;/h2&gt;
+
+&lt;p&gt;To reduce complexity, I’d prefer to keep all animations Blender. That way, I could continue to use Blender’s superior tooling and I wouldn’t have to keep track of which program contains which animation.&lt;/p&gt;
+
+&lt;p&gt;But in this case, it seems like I’ve eliminated all the convenient and sustainable options of using Blender for face animations.&lt;/p&gt;
+
+&lt;p&gt;My primary use case is going to be triggering facial expression changes from the dialogue. It’s the more rare secondary use case of looping animations like blinking that I’m currently investigating. So maybe keeping all face animations within Godot is the least complex strategy after all.&lt;/p&gt;
+
+&lt;p&gt;I’m already confident I know how I’d implement facial expression changes from the dialogue in Godot. But I’m not clear on how I’d author animations in Godot on the imported Blender object and have them play nicely with the existing animation from Blender. For example, how do I keep a walk cycle loop going while also having a blink cycle loop with a different frame length?&lt;/p&gt;
+
+&lt;p&gt;AnimationTree, Godot’s node for combining various animations from an AnimationPlayer, is tied to one AnimationPlayer. The AnimationPlayer it’s currently tied to is imported from Blender as read-only. The whole point of AnimationTree is to assist in blending and transitioning between multiple animations, so having more than one is an anti-pattern. However, in this case, since my face animations are completely separate from the body animations, I think it should be okay.&lt;/p&gt;
+
+&lt;p&gt;And although I originally thought a second AnimationTree would be required specifically for face animations, I now realize that a second AnimationPlayer alone may be fine in my case. After all, in theory most things that AnimationPlayer and AnimationTree do can be accomplished with raw code (if not very verbosely). The way I see it, I can switch between static face objects (like a frown) and cyclical animations (like a blink cycle) in single function driven by the dialogue script. This would only require a single AnimationPlayer with all the animations configured ahead of time. It wouldn’t require an AnimationTree at all.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog04-07.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Configuration of the blink animation directly in Godot using the separate eye objects from Blender&quot; title=&quot;Configuration of the blink animation directly in Godot using the separate eye objects from Blender&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Configuration of the blink animation directly in Godot using the separate eye objects from Blender&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;The blinks are automatic on a loop in the demo below.&lt;/p&gt;
+
+&lt;video src=&quot;/images/devlog04-08.mp4&quot; controls=&quot;&quot; loop=&quot;&quot; preload=&quot;none&quot; width=&quot;100%&quot;&gt;&lt;/video&gt;
+
+&lt;p&gt;OK, so this strategy seems pretty reasonable taking into account my current constraints. It’s a shame I can’t use Blender, but in the end, I have to use all the flexibility available to me to my advantage and not be afraid to commit to making my own systems and tools.&lt;/p&gt;
+
+&lt;p&gt;A lingering question is whether I can easily reuse an AnimationPlayer node for the player and all NPCs if all meshes have face objects with the same names. Similarly, how can I reuse code to accept a facial expression name and update the face of the relevant character.&lt;/p&gt;
+
+&lt;h2 id=&quot;next-steps&quot;&gt;Next steps&lt;/h2&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;NPCs represent a crucial concept that’s both the same (interactions, face shapes) and different (names, appearances) from existing code/assets. Although I don’t want to spend time designing and modeling details of every character yet, I do want to make sure that I understand how to set up NPCs so that I can share the similar bits while allowing enough configuration to support the differing bits. That includes their similarities to both the player character and one another.&lt;/li&gt;
+  &lt;li&gt;I’d like to explore materials and shaders again. I’ve been doing a little more aesthetics research and have a few styles I’d like to try.&lt;/li&gt;
+  &lt;li&gt;Designing the conversation experience – basically the view and interaction patterns while two characters are speaking – is important enough to the overall experience that it deserves its own prototypes.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Sidenote: this is the first post of the devlog series where I was writing while actively experimenting, so please excuse the past/present tense changes.&lt;/p&gt;
+
+&lt;p&gt;Until next time.&lt;/p&gt;
+</description>
+        <pubDate>Fri, 29 Mar 2024 18:00:00 -0500</pubDate>
+        <link>https://twocentstudios.com/2024/03/29/indie-game-devlog-04/</link>
+        <guid isPermaLink="true">https://twocentstudios.com/2024/03/29/indie-game-devlog-04/</guid>
+        
+        
+      </item>
     
       <item>
         <title>Indie Game Devlog 03 - Experimental Character Design and Animation</title>
@@ -3243,220 +3437,6 @@
         <pubDate>Tue, 31 Oct 2023 14:16:28 -0500</pubDate>
         <link>https://twocentstudios.com/2023/10/31/count-biki-developing-the-app-for-ios/</link>
         <guid isPermaLink="true">https://twocentstudios.com/2023/10/31/count-biki-developing-the-app-for-ios/</guid>
-        
-        
-      </item>
-    
-      <item>
-        <title>Count Biki - App and Character Design</title>
-        <description>&lt;p&gt;Continuing my series of posts about my latest iOS app, Count Biki, I’ll discuss the planning, design, and character design details.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/count-biki-app-icon.png&quot; width=&quot;&quot; height=&quot;300&quot; alt=&quot;Count Biki app icon, featuring the character Count Biki&quot; title=&quot;Count Biki app icon, featuring the character Count Biki&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Count Biki app icon, featuring the character Count Biki&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;Please check out the other posts in the series:&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;&lt;strong&gt;&lt;a href=&quot;/2023/10/29/count-biki-japanese-numbers/&quot;&gt;Count Biki - Drill Japanese Numbers&lt;/a&gt;&lt;/strong&gt; - the motivation behind the app and the solution I’ve begun to explore from the learner (user) perspective&lt;/li&gt;
-  &lt;li&gt;&lt;strong&gt;This post&lt;/strong&gt; - the design process and specifics of creating the Count Biki character&lt;/li&gt;
-  &lt;li&gt;&lt;strong&gt;&lt;a href=&quot;/2023/10/31/count-biki-developing-the-app-for-ios/&quot;&gt;Count Biki - Developing the App for iOS&lt;/a&gt;&lt;/strong&gt; - the high-level implementation details&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;Japanese learners can download the app from the &lt;a href=&quot;https://apps.apple.com/us/app/count-biki/id6463796779&quot;&gt;App Store&lt;/a&gt;.&lt;/p&gt;
-
-&lt;p&gt;Like many of my other apps, Count Biki is open source on &lt;a href=&quot;https://github.com/twocentstudios/count-biki&quot;&gt;GitHub&lt;/a&gt;.&lt;/p&gt;
-
-&lt;h2 id=&quot;planning&quot;&gt;Planning&lt;/h2&gt;
-
-&lt;p&gt;I made a big list of every number-adjacent concept in the language and the different modes I wanted to practice.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/count-biki-enumerating-concepts.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Brainstorming which topics I could cover and how I could test them&quot; title=&quot;Brainstorming which topics I could cover and how I could test them&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Brainstorming which topics I could cover and how I could test them&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;This was a bit overwhelming at first.&lt;/p&gt;
-
-&lt;p&gt;I did a bit of prototyping in a Swift Playground to figure out which of Apple’s APIs – speech recognition, numeral-to-text transliteration – were feasible to use.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/count-biki-swift-playground-prototyping.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Starting in Swift Playgrounds to test out the system APIs&quot; title=&quot;Starting in Swift Playgrounds to test out the system APIs&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Starting in Swift Playgrounds to test out the system APIs&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;I decided to start with the flow of:&lt;/p&gt;
-
-&lt;ol&gt;
-  &lt;li&gt;generate a random number&lt;/li&gt;
-  &lt;li&gt;speak the number out loud&lt;/li&gt;
-  &lt;li&gt;the user types the number on a 10-key keyboard&lt;/li&gt;
-&lt;/ol&gt;
-
-&lt;p&gt;My first sketches looked like this:&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/count-biki-sketch-listening-quiz.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;The first UI sketch in my notebook&quot; title=&quot;The first UI sketch in my notebook&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The first UI sketch in my notebook&lt;/div&gt;&lt;/div&gt;
-
-&lt;h2 id=&quot;prototyping&quot;&gt;Prototyping&lt;/h2&gt;
-
-&lt;p&gt;And the first prototype looked like this:&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/count-biki-first-prototype.jpg&quot; width=&quot;&quot; height=&quot;450&quot; alt=&quot;The first prototype&quot; title=&quot;The first prototype&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The first prototype&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;I made a fun little animated barber pole to imply that review sessions were infinite:&lt;/p&gt;
-
-&lt;video src=&quot;/images/count-biki-animated-barber-pole.mp4&quot; controls=&quot;&quot; preload=&quot;none&quot; poster=&quot;/images/count-biki-animated-barber-pole-poster.png&quot; width=&quot;100%&quot;&gt;&lt;/video&gt;
-
-&lt;p&gt;And cleaned up the design a little bit:&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/count-biki-second-prototype.jpg&quot; width=&quot;&quot; height=&quot;450&quot; alt=&quot;The cleaned up prototype&quot; title=&quot;The cleaned up prototype&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The cleaned up prototype&lt;/div&gt;&lt;/div&gt;
-
-&lt;h2 id=&quot;designing-an-original-character&quot;&gt;Designing an original character&lt;/h2&gt;
-
-&lt;p&gt;You may have noticed in the top right corner of the above sketch, there’s a little character I marked “The Count”.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/count-biki-sketch-the-count.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;A sketch of The Count&quot; title=&quot;A sketch of The Count&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;A sketch of The Count&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;I wanted to riff on Duolingo’s use of characters to motivate the learner and keep the app lighthearted. Duolingo &lt;a href=&quot;https://blog.duolingo.com/world-character-visemes/&quot;&gt;uses a tool&lt;/a&gt; called &lt;a href=&quot;https://rive.app/&quot;&gt;Rive&lt;/a&gt; (although I didn’t know this at the time). I’ve been dabbling in &lt;a href=&quot;https://blender.org&quot;&gt;Blender&lt;/a&gt; for 3D modeling for the last few years, so I thought I’d experiment with creating a 3D modeled character with animations and rendering it in the app with Apple’s native &lt;a href=&quot;https://developer.apple.com/documentation/scenekit/&quot;&gt;SceneKit&lt;/a&gt; framework.&lt;/p&gt;
-
-&lt;p&gt;Of course, this little maneuver set me back a couple weeks 😅. And to be clear, adding an animated character to the app was way more of an “I’m interested in learning something new” rather than “the app will be useless without this feature”. However, this did make naming and branding and making an icon for the app way easier!&lt;/p&gt;
-
-&lt;h3 id=&quot;animated-character-proof-of-concept&quot;&gt;Animated character proof of concept&lt;/h3&gt;
-
-&lt;p&gt;Before spending an awful lot of time perfecting a character and its animations, I wanted to get a proof of concept working that covered the entire use case end-to-end, namely:&lt;/p&gt;
-
-&lt;ol&gt;
-  &lt;li&gt;a 3D-character model&lt;/li&gt;
-  &lt;li&gt;textured with either physically-based shaders or UV-unwrapping on a bitmap&lt;/li&gt;
-  &lt;li&gt;rigged with at least one bone&lt;/li&gt;
-  &lt;li&gt;with multiple animations defined in Blender&lt;/li&gt;
-  &lt;li&gt;with lighting and a camera&lt;/li&gt;
-  &lt;li&gt;exportable from Blender and importable with Xcode&lt;/li&gt;
-  &lt;li&gt;displayable in a SceneView in SwiftUI&lt;/li&gt;
-  &lt;li&gt;with each animation triggerable on demand from a SwiftUI button&lt;/li&gt;
-&lt;/ol&gt;
-
-&lt;p&gt;This is a lot of new concepts for me! Some of the Blender tasks I’d done once or twice under the guidance of random YouTube tutorials, but the SceneKit integration was completely unknown.&lt;/p&gt;
-
-&lt;p&gt;I started by modeling a character with only 3 objects, UV-unwrapping him, and painting the texture.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/count-biki-blender-proto-modeling.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Modeling and UV-unwrapping the prototype character&quot; title=&quot;Modeling and UV-unwrapping the prototype character&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Modeling and UV-unwrapping the prototype character&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;Then I rigged him with a single bone and added 3 animations (doing my best to understand how the non-linear animation editor worked).&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/count-biki-blender-proto-animation.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Rigging and animating the prototype character&quot; title=&quot;Rigging and animating the prototype character&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Rigging and animating the prototype character&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;Here’s the “you got the question incorrect” animation rendered out of Blender for reference:&lt;/p&gt;
-
-&lt;video src=&quot;/images/count-biki-blender-proto-incorrect.mp4&quot; controls=&quot;&quot; preload=&quot;none&quot; poster=&quot;/images/count-biki-blender-proto-incorrect-poster.png&quot; width=&quot;100%&quot;&gt;&lt;/video&gt;
-
-&lt;p&gt;Next was probably the hardest part of the entire process: the exporting/importing dance. Like &lt;a href=&quot;https://xkcd.com/979/&quot;&gt;DenverCoder9&lt;/a&gt;, I found only a &lt;a href=&quot;https://developer.apple.com/forums/thread/79321?answerId=751657022#751657022&quot;&gt;few faint traces&lt;/a&gt; on the internet of how I’d go about getting both a model and its separate animations out of Blender and into SceneKit. I naively followed the instructions from the thread, made some tweaks to the SceneKit file, tweaked the camera and lighting, mocked out a SwiftUI view with some buttons, and the result was:&lt;/p&gt;
-
-&lt;video src=&quot;/images/count-biki-blender-proto-swiftui.mp4&quot; controls=&quot;&quot; preload=&quot;none&quot; poster=&quot;/images/count-biki-blender-proto-swiftui-poster.png&quot; height=&quot;600&quot;&gt;&lt;/video&gt;
-
-&lt;p&gt;I noticed that the animations were more subdued in app version than they were in the Blender version. I wasn’t sure why, but I decided to move on since it was a gamble of whether the subtle differences in the production version of the model would surface the same problem.&lt;/p&gt;
-
-&lt;h3 id=&quot;animated-character-production-version&quot;&gt;Animated character production version&lt;/h3&gt;
-
-&lt;p&gt;Now that I had a working proof of concept, it was time to do the hard work of actually designing the real character.&lt;/p&gt;
-
-&lt;p&gt;First, I did a short interlude of powering through a few character modeling and animation tutorials on YouTube. &lt;a href=&quot;https://www.youtube.com/watch?v=PTWV67qUX2k&quot;&gt;This long tutorial&lt;/a&gt; from Imphenzia was particularly influential and useful.&lt;/p&gt;
-
-&lt;p&gt;Like many ideas, I can’t say exactly where or when all the parts of the Count Biki branding came to me. I knew I wanted to riff on the &lt;a href=&quot;https://en.wikipedia.org/wiki/Count_von_Count&quot;&gt;Count von Count&lt;/a&gt; character from Sesame Street. However, I also wanted to incorporate Japanese counters. I always thought 匹 (ひき hiki), the small animals counter, was kind of cute sounding. The version for 3 small animals is pronounced biki (びき).&lt;/p&gt;
-
-&lt;p&gt;Why a rabbit? I can’t remember for sure, but the ironic part is that rabbits are traditionally &lt;em&gt;not&lt;/em&gt; counted with 匹 (ひき hiki), but 羽 (わ wa) due to &lt;a href=&quot;https://www.tofugu.com/japanese/japanese-counter-wa/#rabbits&quot;&gt;rumored historical reasons&lt;/a&gt;. Regardless, a cute, vampiric rabbit felt like a unique take.&lt;/p&gt;
-
-&lt;p&gt;I did some Dribbble hunting for references and mood board creation, did a few notebook sketches (that are much too embarrassing to post publicly), then began 3D modeling.&lt;/p&gt;
-
-&lt;p&gt;My first attempt was… not great. Luckily, a few friends gave some very useful feedback and my next iteration was much better.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/count-biki-first-render.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Revised model of Count Biki rendered in Blender&quot; title=&quot;Revised model of Count Biki rendered in Blender&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Revised model of Count Biki rendered in Blender&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;I specifically modeled Biki sitting so I could simplify the rig. Rigging – adding virtual bones that stretch the polygons and are easier to animate – was my next step.&lt;/p&gt;
-
-&lt;p&gt;I can’t emphasize enough how complex rigging is. It may seem like an afterthought, but it’s an entire division at 3D studios, and for good reason. Below is Biki’s humble rig showing his suit in weight painting mode.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/count-biki-rig.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Biki with his rig bones visible&quot; title=&quot;Biki with his rig bones visible&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Biki with his rig bones visible&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;With all that in place, I moved on to the animation part. Even though I’d never done keyframe animation in Blender for a 3D character before, getting the basics done felt surprisingly natural to me. This was probably the most fun part of the entire process.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/count-biki-blender-animation.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Animating Biki one keyframe at a time&quot; title=&quot;Animating Biki one keyframe at a time&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Animating Biki one keyframe at a time&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;The final result for the “you got the answer correct” animation looked like this straight out of Blender:&lt;/p&gt;
-
-&lt;video src=&quot;/images/count-biki-blender-animation-correct.mov&quot; controls=&quot;&quot; preload=&quot;none&quot; poster=&quot;/images/count-biki-blender-animation-correct-poster.png&quot; width=&quot;100%&quot;&gt;&lt;/video&gt;
-
-&lt;p&gt;Getting the model and animations out of Blender… this part was dreadful. I tried so hard to use Apple’s newest, most blessed workflow of USDZ, but some combination of the Blender exporter and the Xcode importer made this impossible. In the end, I used the same combination of one DAE (Collada) file with just the model and armature, and one DAE file per animation.&lt;/p&gt;
-
-&lt;p&gt;I imported the model file into Xcode, creating a new SceneKit scene, then painstakingly re-added the camera, lights, and materials, all of which look and work differently (read: worse) in SceneKit than they do in Blender. I couldn’t get Biki to look as clean in the app as he does in Blender.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/count-biki-model-scn.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Biki moved into his new home in an SCN file&quot; title=&quot;Biki moved into his new home in an SCN file&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Biki moved into his new home in an SCN file&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;I exported the animations next. When playing them back in the app, I found that some polygons on the suit were getting caught during the animation. This was somewhat expected due to my inexperience modeling and rigging and weight painting. I powered my way through these issues and ended up with the final result: Biki in the test app, playing his idle animation and reacting to questions being answered right and wrong.&lt;/p&gt;
-
-&lt;video src=&quot;/images/count-biki-test-app-demo.mp4&quot; controls=&quot;&quot; preload=&quot;none&quot; poster=&quot;/images/count-biki-test-app-demo-poster.png&quot; height=&quot;720&quot;&gt;&lt;/video&gt;
-
-&lt;h2 id=&quot;app-ux-design&quot;&gt;App UX Design&lt;/h2&gt;
-
-&lt;p&gt;After integrating Biki and doing a little cleanup, the listening quiz screen looked like this:&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/count-biki-v01-listening-quiz.png&quot; width=&quot;&quot; height=&quot;700&quot; alt=&quot;A beta version of the listening quiz screen including an integrated Biki&quot; title=&quot;A beta version of the listening quiz screen including an integrated Biki&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;A beta version of the listening quiz screen including an integrated Biki&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;The listening quiz screen was still the “base” app screen. You could switch to a short list of topics from a modal settings screen, but since this didn’t seem sustainable for the dozens of topics I wanted to target for v1.0 release, I started preparing to have a new root app screen.&lt;/p&gt;
-
-&lt;p&gt;For this app, I was basically doing the static UI design step straight in SwiftUI. The main reason for this is that I was primarily using the build-in SwiftUI components and styling for lists, etc., and therefore it would have taken me more time to make pixel perfect mockup in Figma than it took to throw together some SwiftUI code in Xcode.&lt;/p&gt;
-
-&lt;p&gt;I made a topic categories view mockup with some additional features I didn’t plan on implementing right away. I did this in order to see how the screen could adapt to these planned features. The v1.0 doesn’t include favorites, recent topics, or the reading skill.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/count-biki-v01-topic-categories-planning.png&quot; width=&quot;&quot; height=&quot;700&quot; alt=&quot;A SwiftUI-based mockup for the topic categories screen with some yet-to-be-developed features&quot; title=&quot;A SwiftUI-based mockup for the topic categories screen with some yet-to-be-developed features&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;A SwiftUI-based mockup for the topic categories screen with some yet-to-be-developed features&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;Back on the listening screen, I had to make some changes to support the screen no longer being the root of the app. The session settings screen needed a way to exit the current session.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/count-biki-v01-session-settings.png&quot; width=&quot;&quot; height=&quot;700&quot; alt=&quot;The session settings screen with an end session button&quot; title=&quot;The session settings screen with an end session button&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The session settings screen with an end session button&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;Next, I added more voice settings for rate and pitch. And a test voice button for easy preview.&lt;/p&gt;
-
-&lt;p&gt;Adding a very simple counter for correct and incorrect answers to the listening quiz screen and the session settings screen rounded out all the main UI elements I wanted for the first release.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/count-biki-v02-listening-quiz.png&quot; width=&quot;&quot; height=&quot;700&quot; alt=&quot;The listening quiz screen for v1.0&quot; title=&quot;The listening quiz screen for v1.0&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The listening quiz screen for v1.0&lt;/div&gt;&lt;/div&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/count-biki-v02-session-settings.png&quot; width=&quot;&quot; height=&quot;700&quot; alt=&quot;The session settings screen for v1.0&quot; title=&quot;The session settings screen for v1.0&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The session settings screen for v1.0&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;Although I knew it’d delay my first release, I wanted to get an app info screen out of the way. This was mostly because I wanted my in app purchase tip jar system in place out of the gate.&lt;/p&gt;
-
-&lt;p&gt;I approached the design of the info screen by checking out what was included in some similar apps, doing a rough UI sketch in my notebook, then jumping straight into coding it up in SwiftUI.&lt;/p&gt;
-
-&lt;p&gt;I landed on this:&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/count-biki-v1-info-screen-top.png&quot; width=&quot;&quot; height=&quot;700&quot; alt=&quot;The top of the app info screen for v1.0&quot; title=&quot;The top of the app info screen for v1.0&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The top of the app info screen for v1.0&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;I followed the same design process for the in app purchase tip jar screen. I got really into fleshing out the “lore” of the app, and I really wanted to 3D model all the whimsical objects I introduced, but I knew it’d take some time and wouldn’t really impact my first batch of users enough to warrant delaying the release any further.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/count-biki-v1-transylvania-tier.png&quot; width=&quot;&quot; height=&quot;700&quot; alt=&quot;The unlocked variant of the Transylvania Tier screen for v1.0&quot; title=&quot;The unlocked variant of the Transylvania Tier screen for v1.0&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The unlocked variant of the Transylvania Tier screen for v1.0&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;With the info screen complete, I was ready to release the app! Well, I still needed to do all the App Store preparation: designing screenshots, writing the description, etc.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/count-biki-v1-app-screenshots-figma.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Putting together the app screenshots in Figma&quot; title=&quot;Putting together the app screenshots in Figma&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Putting together the app screenshots in Figma&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;My first submission was denied by the App Store reviewers. (I think it was an issue with the in-review in app purchases not being available from the Store Kit 2 API on the reviewer’s device). I resubmitted with a few more guards, and luckily it was approved and released!&lt;/p&gt;
-
-&lt;p&gt;Some initial user feedback helped me realize that my “end session” button shouldn’t be so buried, especially in the infinite session mode. I did some design concepting with paper sketches and directly in SwiftUI (which in retrospect was probably slower than leaning on Figma).&lt;/p&gt;
-
-&lt;p&gt;Honestly, the listening quiz screen is very busy. It has a lot of elements and it’s tough to look at it with fresh eyes to understand which parts could be removed.&lt;/p&gt;
-
-&lt;p&gt;I think that including the Count Biki avatar makes fitting in the other elements more difficult, but I’m planning to keep him in for at least a few versions to gather feedback about him.&lt;/p&gt;
-
-&lt;p&gt;I’d also like to remove the progress bar completely, but when I add time attack mode, I think it will be necessary, so I don’t want to eliminate the progress bar now and have to solve the design problem again later.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/count-biki-v1-listening-quiz-rejected-concepts.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Rejected concepts for redesigning the listening quiz&quot; title=&quot;Rejected concepts for redesigning the listening quiz&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Rejected concepts for redesigning the listening quiz&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;In the end, I moved the progress bar closer to the keyboard and surfaced the end session and settings buttons with clear labels.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/count-biki-v1-listening-quiz.png&quot; width=&quot;&quot; height=&quot;700&quot; alt=&quot;Updated design of the listening quiz for v1.1 to allow quicker access to ending the current session&quot; title=&quot;Updated design of the listening quiz for v1.1 to allow quicker access to ending the current session&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Updated design of the listening quiz for v1.1 to allow quicker access to ending the current session&lt;/div&gt;&lt;/div&gt;
-
-&lt;h2 id=&quot;conclusion&quot;&gt;Conclusion&lt;/h2&gt;
-
-&lt;p&gt;This is just the beginning of the design journey. I’ve intentionally leaned towards a generic iOS design, but I would love to make the app more stylized and personable. New topics and new features will undoubtedly require rethinking my original design assumptions. And I’ll need to decide whether I want to double-down on the character Count Biki and add more animations, new outfits, etc.&lt;/p&gt;
-
-&lt;p&gt;Thanks for reading this design walkthrough, and if you’re a Japanese learner or developer, please check out the app on the &lt;a href=&quot;https://apps.apple.com/us/app/count-biki/id6463796779&quot;&gt;App Store&lt;/a&gt; or the source on &lt;a href=&quot;https://github.com/twocentstudios/count-biki&quot;&gt;GitHub&lt;/a&gt;.&lt;/p&gt;
-
-&lt;p&gt;The next post in the series is &lt;a href=&quot;/2023/10/31/count-biki-developing-the-app-for-ios/&quot;&gt;Count Biki - Developing the App for iOS&lt;/a&gt;.&lt;/p&gt;
-</description>
-        <pubDate>Mon, 30 Oct 2023 14:36:58 -0500</pubDate>
-        <link>https://twocentstudios.com/2023/10/30/count-biki-app-and-character-design/</link>
-        <guid isPermaLink="true">https://twocentstudios.com/2023/10/30/count-biki-app-and-character-design/</guid>
         
         
       </item>
