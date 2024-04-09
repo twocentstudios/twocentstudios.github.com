@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>Indie Game Devlog 05 - Materials and Shaders</title>
+
+  <meta property="og:type" content="article" />
+  <meta property="og:title" content="Indie Game Devlog 05 - Materials and Shaders" />
+  <meta property="og:url" content="https://twocentstudios.com/2024/04/09/indie-game-devlog-05/" />
+  
+    <meta property="og:article:published_time" content="2024-04-09T12:05:00-05:00" />
+  
+  
+    <meta property="og:image" content="https://twocentstudios.com/images/devlog05-22.jpg" />
+  
+  
+  <link href='https://fonts.googleapis.com/css2?family=Work+Sans:wght@300;350;400;600' rel='stylesheet' type='text/css'>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="canonical" href="https://twocentstudios.com/2024/04/09/indie-game-devlog-05/">
+  <link rel="alternate" type="application/rss+xml" title="twocentstudios" href="https://twocentstudios.com/feed.xml" />
+</head>
+
+  <!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-NE82N02W8S"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-NE82N02W8S');
+</script>
+
+  <body>
+
+    <header class="site-header">
+
+  <div class="wrapper">
+
+    <a class="site-title" href="/">twocentstudios</a>
+
+    <nav class="site-nav">
+      <a href="#" class="menu-icon">
+        <svg viewBox="0 0 18 15">
+          <path fill="#424242" d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.031C17.335,0,18,0.665,18,1.484L18,1.484z"/>
+          <path fill="#424242" d="M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0c0-0.82,0.665-1.484,1.484-1.484 h15.031C17.335,6.031,18,6.696,18,7.516L18,7.516z"/>
+          <path fill="#424242" d="M18,13.516C18,14.335,17.335,15,16.516,15H1.484C0.665,15,0,14.335,0,13.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.031C17.335,12.031,18,12.696,18,13.516L18,13.516z"/>
+        </svg>
+      </a>
+
+      <div class="trigger">
+        
+          
+          <a class="page-link" href="/about/">About</a>
+          
+        
+          
+          <a class="page-link" href="/blog/">Blog</a>
+          
+        
+          
+        
+          
+        
+          
+          <a class="page-link" href="/portfolio/">Portfolio</a>
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      </div>
+    </nav>
+
+  </div>
+
+</header>
+
+
+    <div class="page-content">
+      <div class="wrapper">
+        <div class="post">
+
+  <header class="post-header">
+    <h1 class="post-title">Indie Game Devlog 05 - Materials and Shaders</h1>
+    <p class="post-meta">Apr 9, 2024</p>
+  </header>
+
+  <article class="post-content">
+    <p>Last time, I was deriving a pipeline for face animations. In the process I was making an implicit decision about how much time I’ll be committing to this part of the game versus what sort of impact and clarity into the characters it will provide for my audience.</p>
+
+<p>Materials are similar.</p>
+
+<p>I know I have neither the talent nor the time to commit to hand painting textures for my environments, hundreds of assets, and perhaps dozens of characters. But I also know flat colors on low poly models isn’t going to be visually interesting enough. What’s in the middle of these two extremes?</p>
+
+<h2 id="the-possibilities-space-is-too-large">The possibilities space is too large</h2>
+
+<p>The constraints of “looks good” but “doesn’t take forever to make” still don’t give me a lot of direction. I guess that’s where my personal taste comes into play.</p>
+
+<p>I’ve been enjoying all sorts of “hand-crafted” looks lately. Imitating certain real-world crafty materials in 3D feels like a it doesn’t have the same sort of uncanny valley that hyper-realism does. Modeling clay, paper, felt, wool; these have all been used in stop-motion filmmaking since its early days. By picking one material it’ll theoretically be easier for me to keep to a theme, optimize performance, and optimize development time.</p>
+
+<div class="caption-wrapper"><img class="caption" src="/images/devlog05-01.jpg" width="" height="" alt="I love the commitment to craft materials and diorama lighting in Yoshi's Crafted World." title="I love the commitment to craft materials and diorama lighting in Yoshi's Crafted World." /><div class="caption-text">I love the commitment to craft materials and diorama lighting in Yoshi's Crafted World.</div></div>
+
+<p>I felt one material and a constrained color palette was a good north star.</p>
+
+<h2 id="the-goal-clay">The goal: clay</h2>
+
+<p>I can’t really articulate why, but I think my game’s world realized in clay would be fun to see. It obviously works well with the stop-motion animation style I was experimenting with last post.</p>
+
+<p>For learning and prototyping purposes, I decided to go with clay. But of course, this is all still prototyping.</p>
+
+<p>Other potential materials might be paper or wool knit. The goal at this point is to understand whether any of these choices imposes additional technical constraints or pitfalls.</p>
+
+<h2 id="untangling-the-complexities-of-materials">Untangling the complexities of materials</h2>
+
+<p>This is where my self-taught background starts to leak through again.</p>
+
+<p>I’ve been mostly working inside the world of Blender and its shader editor during my 3D journey. Thus, it wasn’t clear to me whether I was learning fundamental properties of shaders or specific Blender quirks. I first confronted this while porting my Biki character from Blender to SceneKit, but due to the nature (limited timescale) of that project, I just did my best to get to the finish line without really tackling the problems I was facing head on.</p>
+
+<div class="caption-wrapper"><img class="caption" src="/images/devlog05-02.jpg" width="" height="" alt="Biki as rendered in Blender (left) and SceneKit (right)." title="Biki as rendered in Blender (left) and SceneKit (right)." /><div class="caption-text">Biki as rendered in Blender (left) and SceneKit (right).</div></div>
+
+<p>This week I’ve needed to rectify all those knowledge gaps.</p>
+
+<p>Let’s start in Blender and try to work through all the complexities of materials.</p>
+
+<h3 id="shaders">Shaders</h3>
+
+<p>Shaders in Blender can be written in code, but more commonly they are described as nodes in a graph with the primary output “describing lighting interaction at the surface…, rather than the color of the surface,” quoting the <a href="https://docs.blender.org/manual/en/latest/render/shader_nodes/introduction.html#shaders">Blender docs</a>.</p>
+
+<p>Shaders really only have meaning when applied by a rendering engine to a mesh. It’s common to see a preview of shaders on a spherical mesh under neutral lighting from an HDRI.</p>
+
+<div class="caption-wrapper"><img class="caption" src="/images/devlog05-03.jpg" width="" height="" alt="A common preview of a shader in Blender. Other mesh options are selectable on the right." title="A common preview of a shader in Blender. Other mesh options are selectable on the right." /><div class="caption-text">A common preview of a shader in Blender. Other mesh options are selectable on the right.</div></div>
+
+<p>Blender has two built-in rendering engines: EEVEE (simple) and Cycles (complex). Each has its own supported feature set, which means shaders can produce similar results but are by no means “universal”. We’ll discuss this further when considering how our shaders import into Godot, which has its own rendering engines.</p>
+
+<p>When you create a new material in Blender, by default it creates a principled BSDF node in the shader graph. For a beginner, the principled BSDF node has an overwhelming number of parameters, but the most commonly used are base color (diffuse), metallic, roughness, and normal.</p>
+
+<div class="caption-wrapper"><img class="caption" src="/images/devlog05-04.jpg" width="" height="" alt="The principled BSDF shader node in Blender. Look at all those inputs and options." title="The principled BSDF shader node in Blender. Look at all those inputs and options." /><div class="caption-text">The principled BSDF shader node in Blender. Look at all those inputs and options.</div></div>
+
+<p>In theory, the principled BSDF base shader can describe the light bounce behavior of any photorealistic material.</p>
+
+<p>Setting a few of these parameters to constants can get you in the ballpark of some interesting looks.</p>
+
+<div class="caption-wrapper"><img class="caption" src="/images/devlog05-05.jpg" width="" height="" alt="Preview of an especially shiny material created with only a principled BSDF shader." title="Preview of an especially shiny material created with only a principled BSDF shader." /><div class="caption-text">Preview of an especially shiny material created with only a principled BSDF shader.</div></div>
+
+<p>But most materials in real life do not have the exact same property values across their entire surface. For example, an orange has lots of tiny bumps all over it, and some parts are shinier than others. We need some way to vary the properties of the material.</p>
+
+<h3 id="varying-shader-inputs">Varying shader inputs</h3>
+
+<p>The shader program is run in parallel on the GPU for every point of the mesh it’s applied to. There are two options for controlling the mapping between each point and the value reported to the shader input.</p>
+
+<ol>
+  <li>Texture and UV map - provide a 2D bitmap and specify how the flattened mesh maps onto it</li>
+  <li>Procedural - provide a mathematical function that takes an input value and produces an output value</li>
+</ol>
+
+<p>These two options are not mutually exclusive, and are very commonly mixed and matched across the shader graph.</p>
+
+<div class="caption-wrapper"><img class="caption" src="/images/devlog05-07.jpg" width="" height="" alt="The various 2D bitmaps included in a texture pack." title="The various 2D bitmaps included in a texture pack." /><div class="caption-text">The various 2D bitmaps included in a texture pack.</div></div>
+
+<div class="caption-wrapper"><img class="caption" src="/images/devlog05-06.jpg" width="" height="" alt="The node setup for the above image texture pack. The stacked brown nodes on the left are the inputs for each image." title="The node setup for the above image texture pack. The stacked brown nodes on the left are the inputs for each image." /><div class="caption-text">The node setup for the above image texture pack. The stacked brown nodes on the left are the inputs for each image.</div></div>
+
+<div class="caption-wrapper"><img class="caption" src="/images/devlog05-08.jpg" width="" height="" alt="The node setup for an unremarkable but fully procedural shader. The interest is created by a noise generator function using generated texture coordinates (discussed later) as an input." title="The node setup for an unremarkable but fully procedural shader. The interest is created by a noise generator function using generated texture coordinates (discussed later) as an input." /><div class="caption-text">The node setup for an unremarkable but fully procedural shader. The interest is created by a noise generator function using generated texture coordinates (discussed later) as an input.</div></div>
+
+<p>Texture is the most <em>compatible</em> while procedural is the most <em>flexible</em>. Textures trade off less computation for more memory, since the data for each pixel will be stored instead of calculated on the fly.</p>
+
+<p>The <em>compatibility</em> of textures is reflected in websites hosting thousands of both free and paid textures in the form of groups of image files (for example, the above clay texture is from <a href="https://cgaxis.com/product/red-sculpting-clay-pbr-texture-3/">CGAxis</a>). These files can mostly be plugged directly into any rendering engine that supports PBR shaders (like Blender’s principled BSDF) with similar rendered results.</p>
+
+<h3 id="shaders-in-godot">Shaders in Godot</h3>
+
+<p>Godot has its own rendering engine and shader support. There are 4 ways to make shaders in Godot:</p>
+
+<ol>
+  <li>Write shaders in Godot’s <a href="https://docs.godotengine.org/en/stable/tutorials/shaders/shader_reference/shading_language.html">shader language</a>, with many examples available on <a href="https://godotshaders.com/">godotshaders.com</a>, or <a href="https://docs.godotengine.org/en/stable/tutorials/shaders/converting_glsl_to_godot_shaders.html">converted</a> from the more common GLSL shader language.</li>
+  <li>Use a <a href="https://docs.godotengine.org/en/stable/tutorials/shaders/shader_materials.html">StandardMaterial3D</a>, a PBR shader similar to Godot’s principled BSDF shader.</li>
+  <li>Use visual shader language to create a custom shader, most similar to Blender’s shader nodes.</li>
+  <li>Import the shaders from Blender, and they will be best-effort mapped into a StandardMaterial3D automatically.</li>
+</ol>
+
+<div class="caption-wrapper"><img class="caption" src="/images/devlog05-09.jpg" width="" height="" alt="A few options in Godot's PBR shader StandardMaterial3D, in this case imported from the Blender material." title="A few options in Godot's PBR shader StandardMaterial3D, in this case imported from the Blender material." /><div class="caption-text">A few options in Godot's PBR shader StandardMaterial3D, in this case imported from the Blender material.</div></div>
+
+<p>All shaders are eventually converted to the platform’s shader language. The other non-text options can often be automatically or manually mapped between one another, for example from <a href="https://docs.godotengine.org/en/stable/tutorials/shaders/shader_materials.html#converting-to-shadermaterial">StandardMaterial3D to a text shader</a>.</p>
+
+<p>Note that there actually several types of shaders: spatial (3D), canvas item (2D), particle, sky, and fog. In this post we’re primarily discussing spatial (3D).</p>
+
+<h2 id="implementing-a-clay-texture">Implementing a clay texture</h2>
+
+<p>With that background, let’s jump into the process of actually getting a clay material onto our character in Godot.</p>
+
+<h3 id="goals-slash-success-criteria">Goals slash success criteria</h3>
+
+<p>First off, there are myriad ways of implementing a clay-looking material so I’ll enumerate my goals.</p>
+
+<ul>
+  <li><strong>Prefer creating and configuring shaders in Blender over Godot</strong> - Blender not only has the most mature tools, but I’m most comfortable with them. There is less chance of upstream changes breaking the downstream source data.</li>
+  <li><strong>Make the shader look good, but not perfect</strong> - I’m still at the point where all parts of the project are in flux, so perfecting one vertical doesn’t make sense.</li>
+  <li><strong>Minimize manual conversion steps in the pipeline</strong> - I want to avoid needing to click a hundred buttons in a certain order after each small change to the source data. If I can reuse the existing automation, that’s best. If it’s possible to eventually write my own automation scripts, that’s second best.</li>
+  <li><strong>Ensure content creation is as easy as possible</strong> - Making content (e.g. characters, props, environments) is a manual process, so ensuring the artistic parts of modeling and coloring are straightforward is ideal.</li>
+  <li><strong>Keep performance and optimization in mind</strong> - I know very little about how to keep performance in the ballpark, but I want to be careful that intense rework at the end of the development process due to poor performance will not be required.</li>
+</ul>
+
+<h3 id="options-for-the-source-material">Options for the source material</h3>
+
+<p>There are a few options for getting the bulk of the clay shader in place.</p>
+
+<ol>
+  <li><strong>Buy a procedural shader</strong> - <a href="https://blendermarket.com/products/claydoh">Clay Doh</a> is a paid Blender shader graph that seems to be the industry standard for very customizable procedural clay material.</li>
+  <li><strong>Set up a custom procedural shader</strong> - There are <a href="https://www.youtube.com/watch?v=nqy-dxAadIY">number</a> of <a href="https://www.youtube.com/watch?v=rOcj7HMFbpE">tutorials</a> on <a href="https://www.youtube.com/watch?v=wTu3Xssw67Q">YouTube</a> that walk through how to make a custom procedural shader, each of varying quality.</li>
+  <li><strong>Start from a texture</strong> - There are <a href="https://cgaxis.com/product/red-sculpting-clay-pbr-texture-3/">several</a> clay shaders image texture packs that include diffuse, normal, roughness, etc. images that can be plugged directly into the principled BSDF node after the mesh is UV mapped.</li>
+</ol>
+
+<h3 id="using-raw-textures-option-3">Using raw textures (option 3)</h3>
+
+<p>I downloaded an overstylized clay texture and dragged in the material to my project. The node setup was relatively simple: UVs mapped to each type of image texture plugged into the corresponding inputs of the principled BSDF shader. As shown earlier, it seemed like there was some extra channel flipping for the normal map.</p>
+
+<div class="caption-wrapper"><img class="caption" src="/images/devlog05-06.jpg" width="" height="" alt="The default node setup for the clay image texture pack. There are some procedural bits happening in the middle to presumably alter the coordinate system of the normal map to match Blender's." title="The default node setup for the clay image texture pack. There are some procedural bits happening in the middle to presumably alter the coordinate system of the normal map to match Blender's." /><div class="caption-text">The default node setup for the clay image texture pack. There are some procedural bits happening in the middle to presumably alter the coordinate system of the normal map to match Blender's.</div></div>
+
+<p>This looked somewhat okay at first pass in Godot.</p>
+
+<div class="caption-wrapper"><img class="caption" src="/images/devlog05-10.jpg" width="" height="" alt="The clay texture setup imported onto our character in Godot. It looks a little flat." title="The clay texture setup imported onto our character in Godot. It looks a little flat." /><div class="caption-text">The clay texture setup imported onto our character in Godot. It looks a little flat.</div></div>
+
+<p>Spot checking the imported StandardMaterial3D, most of it was imported correctly. One big missing piece was the displacement map though.</p>
+
+<h3 id="displacement">Displacement</h3>
+
+<p>In shading, there are 2 ways to make meshes look deformed (not perfectly smooth): normal maps and displacement maps. They’re not mutually exclusive.</p>
+
+<p>Normal maps tell the rendering engine which direction every point on the mesh is facing. The rendering engine then can “fake” depth that doesn’t exist on the mesh. In many cases, this sort of depth is convincing. Normal maps are always the first choice over displacement maps because they’re cheap to for the renderer to calculate and widely supported across renderers.</p>
+
+<p>Displacement maps in contrast actually alter the positions of vertices on the mesh before the renderer performs shading. This results in more realistic shading, especially noticeable on the silhouette of the mesh (which the normal map has no control over). The displacement process can be costly though, and is not as well supported across renderers.</p>
+
+<div class="caption-wrapper"><img class="caption" src="/images/devlog05-11.jpg" width="" height="" alt="Normal map bump (left) vs. displacement map (right). Notice the silhouette on the normal map (left) is smooth." title="Normal map bump (left) vs. displacement map (right). Notice the silhouette on the normal map (left) is smooth." /><div class="caption-text">Normal map bump (left) vs. displacement map (right). Notice the silhouette on the normal map (left) is smooth.</div></div>
+
+<p>In order to displace vertices the vertices must exist on the mesh. That means low poly meshes with simple geometry must be subdivided to create enough vertices for the displacement map to be applied and have the intended effect. Normal maps don’t have this limitation: they can fake depth on a low poly mesh at the level of detail of the input texture or input function.</p>
+
+<div class="caption-wrapper"><img class="caption" src="/images/devlog05-12.jpg" width="" height="" alt="The displacement shader on a cube with only 8 vertices (left) vs. millions of vertices (right)." title="The displacement shader on a cube with only 8 vertices (left) vs. millions of vertices (right)." /><div class="caption-text">The displacement shader on a cube with only 8 vertices (left) vs. millions of vertices (right).</div></div>
+
+<p>Godot’s build in shaders have no direct support for displacement maps at the shader level. A (<a href="https://godotshaders.com/shader/noise-vertex-displacement/">relatively simple</a>) custom spatial shader must be used. Blender’s EEVEE rendering engine also has no support for displacement maps at the shader level. Blender’s Cycles rendering engine however does have direct support for displacement at the shader level.</p>
+
+<p>The workaround for implementing displacement before the shader is to use Blender’s displacement object modifier. The displacement modifier simply applies the displacement map to the mesh before handing the mesh off to the shader.</p>
+
+<div class="caption-wrapper"><img class="caption" src="/images/devlog05-13.jpg" width="" height="" alt="The displacement modifier on a subdivided cube driven by a musgrave texture and rendered by EEVEE." title="The displacement modifier on a subdivided cube driven by a musgrave texture and rendered by EEVEE." /><div class="caption-text">The displacement modifier on a subdivided cube driven by a musgrave texture and rendered by EEVEE.</div></div>
+
+<h3 id="the-result-of-raw-textures">The result of raw textures</h3>
+
+<p>I applied a subdivision surface modifier (to create more vertices) and the displacement modifier to my character in Blender. I didn’t use the displacement texture supplied in the clay texture pack, instead using a generated noise texture to get a more modeling clay look.</p>
+
+<div class="caption-wrapper"><img class="caption" src="/images/devlog05-14.jpg" width="" height="" alt="The test character model with the red clay shader texture pack applied (and maybe a little too much displacement)." title="The test character model with the red clay shader texture pack applied (and maybe a little too much displacement)." /><div class="caption-text">The test character model with the red clay shader texture pack applied (and maybe a little too much displacement).</div></div>
+
+<p>The subdivision surface modifier splitting the joints was an unintended side-effect, but it’s an interesting stylistic choice that’s also inconsequential implementation-wise, so I let it go.</p>
+
+<p>This was looking alright! I was already itching to swap out the clay texture for a different one or otherwise tweak settings, but I prioritized solving the next big problem: diffuse color.</p>
+
+<h3 id="investigating-a-flat-color-workflow">Investigating a flat color workflow</h3>
+
+<p>The clay shader came with its own diffuse texture. The detail of the texture matches that of the roughness, specular, etc. textures. The difference with those is that the diffuse texture’s primary color is a bold red.</p>
+
+<div class="caption-wrapper"><img class="caption" src="/images/devlog05-15.jpg" width="" height="" alt="Diffuse, roughness, and normal textures, respectively. By nature, all but the diffuse texture are non-color." title="Diffuse, roughness, and normal textures, respectively. By nature, all but the diffuse texture are non-color." /><div class="caption-text">Diffuse, roughness, and normal textures, respectively. By nature, all but the diffuse texture are non-color.</div></div>
+
+<p>I certainly don’t want all my characters and environments to be the same color red, so I needed a way to give myself the flexibility to reuse this material across meshes and faces.</p>
+
+<p>I started by adding a simple hue shift node between the diffuse texture and the base color input of the PBR texture to remap the color. For example, red to blue.</p>
+
+<div class="caption-wrapper"><img class="caption" src="/images/devlog05-16.jpg" width="" height="" alt="Adding a hue/saturation/value node to alter the diffuse texture's red color in Blender." title="Adding a hue/saturation/value node to alter the diffuse texture's red color in Blender." /><div class="caption-text">Adding a hue/saturation/value node to alter the diffuse texture's red color in Blender.</div></div>
+
+<p>Although this works in Blender, in Godot the color ramp was ignored. This was another reminder that even the simplest of procedural operations would not work out of the box in Godot.</p>
+
+<p>Then I tried disconnecting the diffuse texture and using a solid color. In my opinion, this looked good enough that I felt comfortable pursuing a diffuse color mapping solution that ignored the base material’s diffuse texture entirely. The normal map and other PBR components provided enough detail.</p>
+
+<div class="caption-wrapper"><img class="caption" src="/images/devlog05-17.jpg" width="" height="" alt="There's a little detail missing, but using a flat diffuse looks good enough to ignore the more intricate diffuse texture, at least for now." title="There's a little detail missing, but using a flat diffuse looks good enough to ignore the more intricate diffuse texture, at least for now." /><div class="caption-text">There's a little detail missing, but using a flat diffuse looks good enough to ignore the more intricate diffuse texture, at least for now.</div></div>
+
+<h3 id="assigning-flat-colors-to-vertices-with-uv-maps-and-a-palette-texture">Assigning flat colors to vertices with UV maps and a palette texture</h3>
+
+<p>I now needed to tackle the second part of the problem: mapping individual vertices to separate base colors, perhaps on a fixed palette.</p>
+
+<p>One of the more popular ways to map vertex colors to a flat color palette is to use UV maps.</p>
+
+<ol>
+  <li>Associate a palette to a material as 2D bitmap texture.</li>
+  <li>Create a UV map for each mesh.</li>
+  <li>Scale and move vertices of the mesh around the UV map over top of the pallete.</li>
+</ol>
+
+<div class="caption-wrapper"><img class="caption" src="/images/devlog05-18.jpg" width="" height="" alt="I've manually mapped vertices from the mesh on the right to the color palette on left." title="I've manually mapped vertices from the mesh on the right to the color palette on left." /><div class="caption-text">I've manually mapped vertices from the mesh on the right to the color palette on left.</div></div>
+
+<p>This workflow is relatively ergonomic to author. It allows flexibility within meshes when necessary but is also easy to use with meshes that are a single-color. There’s consistency by using a single palette. It’s performant since we can reuse the same material and texture across any number of meshes.</p>
+
+<p>And it exports to Godot without any problems… well, as long as you only need one UV map.</p>
+
+<h3 id="multiple-uv-maps">Multiple UV maps</h3>
+
+<p>Why would I need multiple UV maps? The roughness, specular, normal map, etc. textures all require a more standard UV map; one that utilizes the full area of the texture.</p>
+
+<div class="caption-wrapper"><img class="caption" src="/images/devlog05-19.jpg" width="" height="" alt="A (crude) UV map on the normal texture that uses the whole area of the texture." title="A (crude) UV map on the normal texture that uses the whole area of the texture." /><div class="caption-text">A (crude) UV map on the normal texture that uses the whole area of the texture.</div></div>
+
+<p>That meant I needed two UV maps: one for diffuse (base color) and one for the other non-diffuse PBR components.</p>
+
+<p>Luckily, Blender can do multiple UV maps!</p>
+
+<div class="caption-wrapper"><img class="caption" src="/images/devlog05-20.jpg" width="" height="" alt="On the left, using the UV map node to specify the secondary UV map be used to select the colors from the color palette texture. On the right, the object data panel showing 2 UV maps: one for the diffuse and one for the non-color textures." title="On the left, using the UV map node to specify the secondary UV map be used to select the colors from the color palette texture. On the right, the object data panel showing 2 UV maps: one for the diffuse and one for the non-color textures." /><div class="caption-text">On the left, using the UV map node to specify the secondary UV map be used to select the colors from the color palette texture. On the right, the object data panel showing 2 UV maps: one for the diffuse and one for the non-color textures.</div></div>
+
+<p>However, when I checked the result in Godot I found that my second UV map was ignored. Godot has support for a second UV map, but it seems like its purpose is for some sort of light map. I investigated for a while, but eventually gave up.</p>
+
+<p>In parallel to this thread of investigation, I was also jumping back to explore the options for procedural shaders.</p>
+
+<h3 id="the-problem-with-procedural-shaders">The problem with procedural shaders</h3>
+
+<p>With the earlier tests, including altering the base color texture with a hue/saturation/value node, I figured out that the automatic Blender-to-Godot import/export feature (via the GLFT format) does not handle procedural shaders well. It makes sense, after all the shader languages and visual node features are quite different.</p>
+
+<p>There’s not much I can do to get around this limitation directly (e.g. somehow implement better support directly in the import/export pipeline).</p>
+
+<p>I was nearly stumped at this part, but stumbled into a potential solution along the same lines as my previous solution to the <a href="/2024/03/28/indie-game-devlog-03#implementing-reduced-framerate-for-godot">animation modifier problem</a> from last time: baking.</p>
+
+<h3 id="texture-baking">Texture baking</h3>
+
+<p>The solution to using procedural nodes in my shaders seemed obvious in retrospect once I started to internalize the relationship between the PBR base shader (aka principled BSDF shader in Blender) and its inputs.</p>
+
+<p>The inputs to the PBR texture could always be converted to separate 2D bitmap textures as long as there was a UV map for each mesh to provide a frame of reference for the mapping.</p>
+
+<p>That means I could perform a process called texture baking for each PBR texture input. Texture baking takes each input to the PBR texture and converts it to a flat 2D bitmap texture. Blender supports texture baking with its Cycles rendering engine. The process is <a href="https://www.youtube.com/watch?v=Se8GdHptD4A">somewhat manual</a> and error prone, requiring the creation of 2D bitmaps, plugging and unplugging nodes, waiting for the render to complete, and more. But the process can be at least partially automated with a choice of Blender plugins.</p>
+
+<div class="caption-wrapper"><img class="caption" src="/images/devlog05-21.jpg" width="" height="400" alt="The various texture bake options built into Blender, found in the render panel when Cycles is selected." title="The various texture bake options built into Blender, found in the render panel when Cycles is selected." /><div class="caption-text">The various texture bake options built into Blender, found in the render panel when Cycles is selected.</div></div>
+
+<p>With texture baking, I had essentially found an escape hatch to ensure anything I dreamt up in Blender could be realized in Godot. Of course with some caveats I’ll discuss later.</p>
+
+<h3 id="texture-baking-a-base-color-texture-map">Texture baking a base color texture map</h3>
+
+<p>Jumping back to my multiple UV maps problem, I realized I could solve this problem with texture baking.</p>
+
+<ul>
+  <li>For each mesh:
+    <ol>
+      <li>Create a second UV map targeting the color palette texture and set these in shader node graph.</li>
+      <li>Run the texture baking process for just the base color/diffuse PBR input.</li>
+      <li>Unplug the color pallete texture node graph from the PBR shader.</li>
+      <li>Plug in the baked texture’s node into the PBR shader.</li>
+    </ol>
+  </li>
+</ul>
+
+<p>The baked texture matching the primary UV map looks like this:</p>
+
+<div class="caption-wrapper"><img class="caption" src="/images/devlog05-22.jpg" width="" height="" alt="The baked diffuse texture (top left), and the simple node setup (bottom)." title="The baked diffuse texture (top left), and the simple node setup (bottom)." /><div class="caption-text">The baked diffuse texture (top left), and the simple node setup (bottom).</div></div>
+
+<p>(Seems like I messed up the UV map for the lower arms.)</p>
+
+<p>And importing it into Godot looks like this:</p>
+
+<video src="/images/devlog05-23.mp4" loop="" controls="" preload="" width="100%"></video>
+
+<p>So baked textures work in Godot!</p>
+
+<p>However, the downsides are that:</p>
+
+<ul>
+  <li>The texture baking process is at least somewhat manual and tedious.</li>
+  <li>The texture baking process must be re-run if the mesh or shader graph changes.</li>
+  <li>One diffuse texture per mesh is required, at (presumably?) the same resolution as the other textures.</li>
+  <li>The diffuse texture will end up with a lot of duplicate/wasted space.</li>
+</ul>
+
+<p>It was great to have discovered the texture baking option. Not only because it allowed flexibility in color mapping, but also because it opened the door for using fully procedural shaders in Blender.</p>
+
+<h3 id="generated-texture-space">Generated texture space</h3>
+
+<p>UV maps aren’t the only way we can associate a texture to points on a mesh. If we look at Blender’s texture coordinate node, we can see that there are several options:</p>
+
+<div class="caption-wrapper"><img class="caption" src="/images/devlog05-24.jpg" width="" height="" alt="The texture coordinate node in Blender. Notice its many outputs, rarely discussed in detail in tutorials." title="The texture coordinate node in Blender. Notice its many outputs, rarely discussed in detail in tutorials." /><div class="caption-text">The texture coordinate node in Blender. Notice its many outputs, rarely discussed in detail in tutorials.</div></div>
+
+<p>The Generated texture coordinate is something we can explore. Generated is controlled by another panel in the object data properties called Texture Space.</p>
+
+<div class="caption-wrapper"><img class="caption" src="/images/devlog05-25.jpg" width="" height="" alt="Texture space section in the object data panel." title="Texture space section in the object data panel." /><div class="caption-text">Texture space section in the object data panel.</div></div>
+
+<p>By default, the generated texture coordinate is created automatically by calculating a fitted rectangular bounding box around the object. We can view the bounding box by going to the object properties panel and checking Texture Space under Viewport Display.</p>
+
+<div class="caption-wrapper"><img class="caption" src="/images/devlog05-26.jpg" width="" height="" alt="The texture space viewport display option (right), and how it displays in the viewport (orange, left)." title="The texture space viewport display option (right), and how it displays in the viewport (orange, left)." /><div class="caption-text">The texture space viewport display option (right), and how it displays in the viewport (orange, left).</div></div>
+
+<p>I’d never understood why sometimes my procedural textures looked weirdly stretched on one axis if applied to an obviously non-square mesh.</p>
+
+<p>The way to fix this (besides manually creating a UV map), is to disable Auto Texture Space and change the size XYZ values to be equal.</p>
+
+<p>In theory, using the generated texture coordinates for the non-diffuse parts of the clay material would free up the UV map to be used for the palette texture technique discussed earlier.</p>
+
+<p>I tried setting this up in Blender and checking the results in Godot. Unfortunately, it seems like Godot will always use the UV map.</p>
+
+<p>Another swing and a miss; generated texture coordinates couldn’t be a solution to my multiple UV map problem.</p>
+
+<h3 id="texture-painting">Texture painting</h3>
+
+<p>I’ll give an honorable mention to texture painting as an option for assigning colors to the diffuse input, even if I’m not planning on using it (I simply don’t need the level of detail it provides).</p>
+
+<p>The most flexible option for assigning base colors is to create a blank texture and paint colors on it. The downside of course is that, like the texture baking option above, you’ll end up with one texture per mesh.</p>
+
+<div class="caption-wrapper"><img class="caption" src="/images/devlog05-27.jpg" width="" height="" alt="The model in texture paint mode, using the previously baked texture as a base. It's possible to draw directly on the model in the viewport (right) or the 2D bitmap texture (left)." title="The model in texture paint mode, using the previously baked texture as a base. It's possible to draw directly on the model in the viewport (right) or the 2D bitmap texture (left)." /><div class="caption-text">The model in texture paint mode, using the previously baked texture as a base. It's possible to draw directly on the model in the viewport (right) or the 2D bitmap texture (left).</div></div>
+
+<p>The upside is that this is a well-beaten workflow path that has lots of tooling support.</p>
+
+<h3 id="using-one-material-per-base-color">Using one material per base color</h3>
+
+<p>Another option for a flexible base color worflow I want to add to the list is using one material per base color.</p>
+
+<p>An overview of this workflow:</p>
+
+<ol>
+  <li>Create the material that will be used as a template.</li>
+  <li>Separate out the material so it has a single color RGB input node.</li>
+  <li>Optionally group all other nodes except the RGB input node into a node group.</li>
+  <li>Duplicate the material for each required color.</li>
+  <li>In Edit mode, select each face and assign the proper material to it until all faces are assigned.</li>
+</ol>
+
+<div class="caption-wrapper"><img class="caption" src="/images/devlog05-28.jpg" width="" height="" alt="Assigning multiple materials to mesh faces. In the example there are 2 materials (Body, Clothes), and I select faces on the mesh in edit mode and click the Assign button." title="Assigning multiple materials to mesh faces. In the example there are 2 materials (Body, Clothes), and I select faces on the mesh in edit mode and click the Assign button." /><div class="caption-text">Assigning multiple materials to mesh faces. In the example there are 2 materials (Body, Clothes), and I select faces on the mesh in edit mode and click the Assign button.</div></div>
+
+<p>I’ve used this workflow regularly in the past. It’s relatively ergonomic for meshes whose base colors are limited and map closely to their faces. Or if you have the flexibility to modify the mesh to add vertices where you need color separation.</p>
+
+<p>I’ll definitely have to use this workflow in the case that the characters or environment have a non-clay material. Perhaps something transparent or emissive (like a neon light). But in the general case, the one-material-per-color can become cumbersome to maintain when there are lots of colors in use across meshes and files.</p>
+
+<p>The Godot importer handles this workflow without a problem.</p>
+
+<h3 id="assigning-base-colors-using-color-attributes-and-vertex-paint-mode">Assigning base colors using color attributes and vertex paint mode</h3>
+
+<p>The last option I found for base colors is assigning colors via the Color Attributes and vertex paint mode in Blender.</p>
+
+<p>Under the object data panel, there’s a section called Color Attributes. Creating a new entry here allows color data to be associated with individual vertices on the mesh.</p>
+
+<div class="caption-wrapper"><img class="caption" src="/images/devlog05-29.jpg" width="" height="" alt="Yet another useful section in the object data properties panel, Color Attributes. It stores color values assigned to vertices." title="Yet another useful section in the object data properties panel, Color Attributes. It stores color values assigned to vertices." /><div class="caption-text">Yet another useful section in the object data properties panel, Color Attributes. It stores color values assigned to vertices.</div></div>
+
+<p>Switching to Vertex Paint mode in the viewport allows us to paint colors on directly on the vertices of the mesh using a few basic painting tools.</p>
+
+<div class="caption-wrapper"><img class="caption" src="/images/devlog05-30.jpg" width="" height="" alt="Assigning colors to vertices in the viewport's vertex paint mode. A little less ergonomic than texture paint mode." title="Assigning colors to vertices in the viewport's vertex paint mode. A little less ergonomic than texture paint mode." /><div class="caption-text">Assigning colors to vertices in the viewport's vertex paint mode. A little less ergonomic than texture paint mode.</div></div>
+
+<p>Then in the shader, we add a Color Attributes node and plug it directly into the base color input of the principled BSDF node.</p>
+
+<div class="caption-wrapper"><img class="caption" src="/images/devlog05-31.jpg" width="" height="" alt="The simple node setup for the color attribute node." title="The simple node setup for the color attribute node." /><div class="caption-text">The simple node setup for the color attribute node.</div></div>
+
+<p>I was very much not expecting this to import into Godot. But I gave it a shot anyway and… wow, it worked!</p>
+
+<div class="caption-wrapper"><img class="caption" src="/images/devlog05-32.jpg" width="" height="" alt="The color attributes/vertex paint workflow imports properly into Godot." title="The color attributes/vertex paint workflow imports properly into Godot." /><div class="caption-text">The color attributes/vertex paint workflow imports properly into Godot.</div></div>
+
+<p>I found the actual process of using vertex paint mode a bit clunky. Generally, I feel like I want to paint faces rather than vertices, but that workflow is much less streamlined than rotating around the model and painting the individual vertices.</p>
+
+<h2 id="summarizing-the-options">Summarizing the options</h2>
+
+<p>OK, so that’s a lot of options to consider. It’s still tough to weigh the pros and cons of each without doing a dry run of modeling, texturing, and exporting a handful of character and environment models.</p>
+
+<p>I may be able to get away with finding a decent clay texture pack, using that directly for the non-diffuse PBR inputs, then committing to a vertex painting workflow for the diffuse input.</p>
+
+<p>However, I’m still considering buying the Clay Doh procedural shader because it looks really nice. Going the full procedural route would require experimenting with a texture baking workflow and then UV mapping all my objects in reference to the baked textures.</p>
+
+<p>For now, I feel good about having explored the problem and solution space well enough to be able to implement a pipeline that makes realistic aesthetic compromises a bit further down the line.</p>
+
+<p>And I’m sure there’s at least <em>something</em> I’ve missed in the Blender/Godot importer that could make any of the above options more streamlined.</p>
+
+<h2 id="whats-next">What’s next?</h2>
+
+<p>I think diving deep into character design is the next important step. Character design is probably something I should have spent the last few years studying and practicing before getting to this point but… we’ll see what I can pull off!</p>
+
+<p>Until next time.</p>
+
+  </article>
+
+</div>
+
+      </div>
+    </div>
+
+    <footer class="site-footer">
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">twocentstudios</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col  footer-col-1">
+        <ul class="contact-list">
+          <li><a href="mailto:chris@twocentstudios.com">chris@twocentstudios.com</a></li>
+          
+          <li>
+            <a href="https://github.com/twocentstudios">
+              <span class="icon  icon--github">
+                <svg viewBox="0 0 16 16">
+                  <path fill="#828282" d="M7.999,0.431c-4.285,0-7.76,3.474-7.76,7.761 c0,3.428,2.223,6.337,5.307,7.363c0.388,0.071,0.53-0.168,0.53-0.374c0-0.184-0.007-0.672-0.01-1.32 c-2.159,0.469-2.614-1.04-2.614-1.04c-0.353-0.896-0.862-1.135-0.862-1.135c-0.705-0.481,0.053-0.472,0.053-0.472 c0.779,0.055,1.189,0.8,1.189,0.8c0.692,1.186,1.816,0.843,2.258,0.645c0.071-0.502,0.271-0.843,0.493-1.037 C4.86,11.425,3.049,10.76,3.049,7.786c0-0.847,0.302-1.54,0.799-2.082C3.768,5.507,3.501,4.718,3.924,3.65 c0,0,0.652-0.209,2.134,0.796C6.677,4.273,7.34,4.187,8,4.184c0.659,0.003,1.323,0.089,1.943,0.261 c1.482-1.004,2.132-0.796,2.132-0.796c0.423,1.068,0.157,1.857,0.077,2.054c0.497,0.542,0.798,1.235,0.798,2.082 c0,2.981-1.814,3.637-3.543,3.829c0.279,0.24,0.527,0.713,0.527,1.437c0,1.037-0.01,1.874-0.01,2.129 c0,0.208,0.14,0.449,0.534,0.373c3.081-1.028,5.302-3.935,5.302-7.362C15.76,3.906,12.285,0.431,7.999,0.431z"/>
+                </svg>
+              </span>
+
+              <span class="username">twocentstudios</span>
+            </a>
+          </li>
+          
+
+          <li>
+            <a href="https://hackyderm.io/@twocentstudios">
+              <span class="icon">
+                <svg viewBox="0 0 24 24">
+                  <path fill="#828282" d="M21.327 8.566c0-4.339-2.843-5.61-2.843-5.61-1.433-.658-3.894-.935-6.451-.956h-.063c-2.557.021-5.016.298-6.45.956 0 0-2.843 1.272-2.843 5.61 0 .993-.019 2.181.012 3.441.103 4.243.778 8.425 4.701 9.463 1.809.479 3.362.579 4.612.51 2.268-.126 3.541-.809 3.541-.809l-.075-1.646s-1.621.511-3.441.449c-1.804-.062-3.707-.194-3.999-2.409a4.523 4.523 0 0 1-.04-.621s1.77.433 4.014.536c1.372.063 2.658-.08 3.965-.236 2.506-.299 4.688-1.843 4.962-3.254.434-2.223.398-5.424.398-5.424zm-3.353 5.59h-2.081V9.057c0-1.075-.452-1.62-1.357-1.62-1 0-1.501.647-1.501 1.927v2.791h-2.069V9.364c0-1.28-.501-1.927-1.502-1.927-.905 0-1.357.546-1.357 1.62v5.099H6.026V8.903c0-1.074.273-1.927.823-2.558.566-.631 1.307-.955 2.228-.955 1.065 0 1.872.409 2.405 1.228l.518.869.519-.869c.533-.819 1.34-1.228 2.405-1.228.92 0 1.662.324 2.228.955.549.631.822 1.484.822 2.558v5.253z"/>
+                </svg>
+              </span>
+
+              <span class="username">twocentstudios</span>
+            </a>
+          </li>
+
+          
+          <li>
+            <a href="https://twitter.com/twocentstudios">
+              <span class="icon  icon--twitter">
+                <svg viewBox="0 0 16 16">
+                  <path fill="#828282" d="M15.969,3.058c-0.586,0.26-1.217,0.436-1.878,0.515c0.675-0.405,1.194-1.045,1.438-1.809
+                  c-0.632,0.375-1.332,0.647-2.076,0.793c-0.596-0.636-1.446-1.033-2.387-1.033c-1.806,0-3.27,1.464-3.27,3.27 c0,0.256,0.029,0.506,0.085,0.745C5.163,5.404,2.753,4.102,1.14,2.124C0.859,2.607,0.698,3.168,0.698,3.767 c0,1.134,0.577,2.135,1.455,2.722C1.616,6.472,1.112,6.325,0.671,6.08c0,0.014,0,0.027,0,0.041c0,1.584,1.127,2.906,2.623,3.206 C3.02,9.402,2.731,9.442,2.433,9.442c-0.211,0-0.416-0.021-0.615-0.059c0.416,1.299,1.624,2.245,3.055,2.271 c-1.119,0.877-2.529,1.4-4.061,1.4c-0.264,0-0.524-0.015-0.78-0.046c1.447,0.928,3.166,1.469,5.013,1.469 c6.015,0,9.304-4.983,9.304-9.304c0-0.142-0.003-0.283-0.009-0.423C14.976,4.29,15.531,3.714,15.969,3.058z"/>
+                </svg>
+              </span>
+
+              <span class="username">twocentstudios</span>
+            </a>
+          </li>
+          
+        </ul>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+
+
+  </body>
+
+</html>

@@ -6,9 +6,388 @@
 </description>
     <link>https://twocentstudios.com/</link>
     <atom:link href="https://twocentstudios.com/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Mon, 01 Apr 2024 12:59:44 -0500</pubDate>
-    <lastBuildDate>Mon, 01 Apr 2024 12:59:44 -0500</lastBuildDate>
+    <pubDate>Tue, 09 Apr 2024 03:05:52 -0500</pubDate>
+    <lastBuildDate>Tue, 09 Apr 2024 03:05:52 -0500</lastBuildDate>
     <generator>Jekyll v3.9.3</generator>
+    
+      <item>
+        <title>Indie Game Devlog 05 - Materials and Shaders</title>
+        <description>&lt;p&gt;Last time, I was deriving a pipeline for face animations. In the process I was making an implicit decision about how much time I’ll be committing to this part of the game versus what sort of impact and clarity into the characters it will provide for my audience.&lt;/p&gt;
+
+&lt;p&gt;Materials are similar.&lt;/p&gt;
+
+&lt;p&gt;I know I have neither the talent nor the time to commit to hand painting textures for my environments, hundreds of assets, and perhaps dozens of characters. But I also know flat colors on low poly models isn’t going to be visually interesting enough. What’s in the middle of these two extremes?&lt;/p&gt;
+
+&lt;h2 id=&quot;the-possibilities-space-is-too-large&quot;&gt;The possibilities space is too large&lt;/h2&gt;
+
+&lt;p&gt;The constraints of “looks good” but “doesn’t take forever to make” still don’t give me a lot of direction. I guess that’s where my personal taste comes into play.&lt;/p&gt;
+
+&lt;p&gt;I’ve been enjoying all sorts of “hand-crafted” looks lately. Imitating certain real-world crafty materials in 3D feels like a it doesn’t have the same sort of uncanny valley that hyper-realism does. Modeling clay, paper, felt, wool; these have all been used in stop-motion filmmaking since its early days. By picking one material it’ll theoretically be easier for me to keep to a theme, optimize performance, and optimize development time.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog05-01.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;I love the commitment to craft materials and diorama lighting in Yoshi&apos;s Crafted World.&quot; title=&quot;I love the commitment to craft materials and diorama lighting in Yoshi&apos;s Crafted World.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;I love the commitment to craft materials and diorama lighting in Yoshi&apos;s Crafted World.&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;I felt one material and a constrained color palette was a good north star.&lt;/p&gt;
+
+&lt;h2 id=&quot;the-goal-clay&quot;&gt;The goal: clay&lt;/h2&gt;
+
+&lt;p&gt;I can’t really articulate why, but I think my game’s world realized in clay would be fun to see. It obviously works well with the stop-motion animation style I was experimenting with last post.&lt;/p&gt;
+
+&lt;p&gt;For learning and prototyping purposes, I decided to go with clay. But of course, this is all still prototyping.&lt;/p&gt;
+
+&lt;p&gt;Other potential materials might be paper or wool knit. The goal at this point is to understand whether any of these choices imposes additional technical constraints or pitfalls.&lt;/p&gt;
+
+&lt;h2 id=&quot;untangling-the-complexities-of-materials&quot;&gt;Untangling the complexities of materials&lt;/h2&gt;
+
+&lt;p&gt;This is where my self-taught background starts to leak through again.&lt;/p&gt;
+
+&lt;p&gt;I’ve been mostly working inside the world of Blender and its shader editor during my 3D journey. Thus, it wasn’t clear to me whether I was learning fundamental properties of shaders or specific Blender quirks. I first confronted this while porting my Biki character from Blender to SceneKit, but due to the nature (limited timescale) of that project, I just did my best to get to the finish line without really tackling the problems I was facing head on.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog05-02.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Biki as rendered in Blender (left) and SceneKit (right).&quot; title=&quot;Biki as rendered in Blender (left) and SceneKit (right).&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Biki as rendered in Blender (left) and SceneKit (right).&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;This week I’ve needed to rectify all those knowledge gaps.&lt;/p&gt;
+
+&lt;p&gt;Let’s start in Blender and try to work through all the complexities of materials.&lt;/p&gt;
+
+&lt;h3 id=&quot;shaders&quot;&gt;Shaders&lt;/h3&gt;
+
+&lt;p&gt;Shaders in Blender can be written in code, but more commonly they are described as nodes in a graph with the primary output “describing lighting interaction at the surface…, rather than the color of the surface,” quoting the &lt;a href=&quot;https://docs.blender.org/manual/en/latest/render/shader_nodes/introduction.html#shaders&quot;&gt;Blender docs&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;Shaders really only have meaning when applied by a rendering engine to a mesh. It’s common to see a preview of shaders on a spherical mesh under neutral lighting from an HDRI.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog05-03.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;A common preview of a shader in Blender. Other mesh options are selectable on the right.&quot; title=&quot;A common preview of a shader in Blender. Other mesh options are selectable on the right.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;A common preview of a shader in Blender. Other mesh options are selectable on the right.&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Blender has two built-in rendering engines: EEVEE (simple) and Cycles (complex). Each has its own supported feature set, which means shaders can produce similar results but are by no means “universal”. We’ll discuss this further when considering how our shaders import into Godot, which has its own rendering engines.&lt;/p&gt;
+
+&lt;p&gt;When you create a new material in Blender, by default it creates a principled BSDF node in the shader graph. For a beginner, the principled BSDF node has an overwhelming number of parameters, but the most commonly used are base color (diffuse), metallic, roughness, and normal.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog05-04.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;The principled BSDF shader node in Blender. Look at all those inputs and options.&quot; title=&quot;The principled BSDF shader node in Blender. Look at all those inputs and options.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The principled BSDF shader node in Blender. Look at all those inputs and options.&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;In theory, the principled BSDF base shader can describe the light bounce behavior of any photorealistic material.&lt;/p&gt;
+
+&lt;p&gt;Setting a few of these parameters to constants can get you in the ballpark of some interesting looks.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog05-05.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Preview of an especially shiny material created with only a principled BSDF shader.&quot; title=&quot;Preview of an especially shiny material created with only a principled BSDF shader.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Preview of an especially shiny material created with only a principled BSDF shader.&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;But most materials in real life do not have the exact same property values across their entire surface. For example, an orange has lots of tiny bumps all over it, and some parts are shinier than others. We need some way to vary the properties of the material.&lt;/p&gt;
+
+&lt;h3 id=&quot;varying-shader-inputs&quot;&gt;Varying shader inputs&lt;/h3&gt;
+
+&lt;p&gt;The shader program is run in parallel on the GPU for every point of the mesh it’s applied to. There are two options for controlling the mapping between each point and the value reported to the shader input.&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Texture and UV map - provide a 2D bitmap and specify how the flattened mesh maps onto it&lt;/li&gt;
+  &lt;li&gt;Procedural - provide a mathematical function that takes an input value and produces an output value&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;These two options are not mutually exclusive, and are very commonly mixed and matched across the shader graph.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog05-07.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;The various 2D bitmaps included in a texture pack.&quot; title=&quot;The various 2D bitmaps included in a texture pack.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The various 2D bitmaps included in a texture pack.&lt;/div&gt;&lt;/div&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog05-06.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;The node setup for the above image texture pack. The stacked brown nodes on the left are the inputs for each image.&quot; title=&quot;The node setup for the above image texture pack. The stacked brown nodes on the left are the inputs for each image.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The node setup for the above image texture pack. The stacked brown nodes on the left are the inputs for each image.&lt;/div&gt;&lt;/div&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog05-08.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;The node setup for an unremarkable but fully procedural shader. The interest is created by a noise generator function using generated texture coordinates (discussed later) as an input.&quot; title=&quot;The node setup for an unremarkable but fully procedural shader. The interest is created by a noise generator function using generated texture coordinates (discussed later) as an input.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The node setup for an unremarkable but fully procedural shader. The interest is created by a noise generator function using generated texture coordinates (discussed later) as an input.&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Texture is the most &lt;em&gt;compatible&lt;/em&gt; while procedural is the most &lt;em&gt;flexible&lt;/em&gt;. Textures trade off less computation for more memory, since the data for each pixel will be stored instead of calculated on the fly.&lt;/p&gt;
+
+&lt;p&gt;The &lt;em&gt;compatibility&lt;/em&gt; of textures is reflected in websites hosting thousands of both free and paid textures in the form of groups of image files (for example, the above clay texture is from &lt;a href=&quot;https://cgaxis.com/product/red-sculpting-clay-pbr-texture-3/&quot;&gt;CGAxis&lt;/a&gt;). These files can mostly be plugged directly into any rendering engine that supports PBR shaders (like Blender’s principled BSDF) with similar rendered results.&lt;/p&gt;
+
+&lt;h3 id=&quot;shaders-in-godot&quot;&gt;Shaders in Godot&lt;/h3&gt;
+
+&lt;p&gt;Godot has its own rendering engine and shader support. There are 4 ways to make shaders in Godot:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Write shaders in Godot’s &lt;a href=&quot;https://docs.godotengine.org/en/stable/tutorials/shaders/shader_reference/shading_language.html&quot;&gt;shader language&lt;/a&gt;, with many examples available on &lt;a href=&quot;https://godotshaders.com/&quot;&gt;godotshaders.com&lt;/a&gt;, or &lt;a href=&quot;https://docs.godotengine.org/en/stable/tutorials/shaders/converting_glsl_to_godot_shaders.html&quot;&gt;converted&lt;/a&gt; from the more common GLSL shader language.&lt;/li&gt;
+  &lt;li&gt;Use a &lt;a href=&quot;https://docs.godotengine.org/en/stable/tutorials/shaders/shader_materials.html&quot;&gt;StandardMaterial3D&lt;/a&gt;, a PBR shader similar to Godot’s principled BSDF shader.&lt;/li&gt;
+  &lt;li&gt;Use visual shader language to create a custom shader, most similar to Blender’s shader nodes.&lt;/li&gt;
+  &lt;li&gt;Import the shaders from Blender, and they will be best-effort mapped into a StandardMaterial3D automatically.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog05-09.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;A few options in Godot&apos;s PBR shader StandardMaterial3D, in this case imported from the Blender material.&quot; title=&quot;A few options in Godot&apos;s PBR shader StandardMaterial3D, in this case imported from the Blender material.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;A few options in Godot&apos;s PBR shader StandardMaterial3D, in this case imported from the Blender material.&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;All shaders are eventually converted to the platform’s shader language. The other non-text options can often be automatically or manually mapped between one another, for example from &lt;a href=&quot;https://docs.godotengine.org/en/stable/tutorials/shaders/shader_materials.html#converting-to-shadermaterial&quot;&gt;StandardMaterial3D to a text shader&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;Note that there actually several types of shaders: spatial (3D), canvas item (2D), particle, sky, and fog. In this post we’re primarily discussing spatial (3D).&lt;/p&gt;
+
+&lt;h2 id=&quot;implementing-a-clay-texture&quot;&gt;Implementing a clay texture&lt;/h2&gt;
+
+&lt;p&gt;With that background, let’s jump into the process of actually getting a clay material onto our character in Godot.&lt;/p&gt;
+
+&lt;h3 id=&quot;goals-slash-success-criteria&quot;&gt;Goals slash success criteria&lt;/h3&gt;
+
+&lt;p&gt;First off, there are myriad ways of implementing a clay-looking material so I’ll enumerate my goals.&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;strong&gt;Prefer creating and configuring shaders in Blender over Godot&lt;/strong&gt; - Blender not only has the most mature tools, but I’m most comfortable with them. There is less chance of upstream changes breaking the downstream source data.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Make the shader look good, but not perfect&lt;/strong&gt; - I’m still at the point where all parts of the project are in flux, so perfecting one vertical doesn’t make sense.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Minimize manual conversion steps in the pipeline&lt;/strong&gt; - I want to avoid needing to click a hundred buttons in a certain order after each small change to the source data. If I can reuse the existing automation, that’s best. If it’s possible to eventually write my own automation scripts, that’s second best.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Ensure content creation is as easy as possible&lt;/strong&gt; - Making content (e.g. characters, props, environments) is a manual process, so ensuring the artistic parts of modeling and coloring are straightforward is ideal.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Keep performance and optimization in mind&lt;/strong&gt; - I know very little about how to keep performance in the ballpark, but I want to be careful that intense rework at the end of the development process due to poor performance will not be required.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;options-for-the-source-material&quot;&gt;Options for the source material&lt;/h3&gt;
+
+&lt;p&gt;There are a few options for getting the bulk of the clay shader in place.&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;&lt;strong&gt;Buy a procedural shader&lt;/strong&gt; - &lt;a href=&quot;https://blendermarket.com/products/claydoh&quot;&gt;Clay Doh&lt;/a&gt; is a paid Blender shader graph that seems to be the industry standard for very customizable procedural clay material.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Set up a custom procedural shader&lt;/strong&gt; - There are &lt;a href=&quot;https://www.youtube.com/watch?v=nqy-dxAadIY&quot;&gt;number&lt;/a&gt; of &lt;a href=&quot;https://www.youtube.com/watch?v=rOcj7HMFbpE&quot;&gt;tutorials&lt;/a&gt; on &lt;a href=&quot;https://www.youtube.com/watch?v=wTu3Xssw67Q&quot;&gt;YouTube&lt;/a&gt; that walk through how to make a custom procedural shader, each of varying quality.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Start from a texture&lt;/strong&gt; - There are &lt;a href=&quot;https://cgaxis.com/product/red-sculpting-clay-pbr-texture-3/&quot;&gt;several&lt;/a&gt; clay shaders image texture packs that include diffuse, normal, roughness, etc. images that can be plugged directly into the principled BSDF node after the mesh is UV mapped.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;h3 id=&quot;using-raw-textures-option-3&quot;&gt;Using raw textures (option 3)&lt;/h3&gt;
+
+&lt;p&gt;I downloaded an overstylized clay texture and dragged in the material to my project. The node setup was relatively simple: UVs mapped to each type of image texture plugged into the corresponding inputs of the principled BSDF shader. As shown earlier, it seemed like there was some extra channel flipping for the normal map.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog05-06.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;The default node setup for the clay image texture pack. There are some procedural bits happening in the middle to presumably alter the coordinate system of the normal map to match Blender&apos;s.&quot; title=&quot;The default node setup for the clay image texture pack. There are some procedural bits happening in the middle to presumably alter the coordinate system of the normal map to match Blender&apos;s.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The default node setup for the clay image texture pack. There are some procedural bits happening in the middle to presumably alter the coordinate system of the normal map to match Blender&apos;s.&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;This looked somewhat okay at first pass in Godot.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog05-10.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;The clay texture setup imported onto our character in Godot. It looks a little flat.&quot; title=&quot;The clay texture setup imported onto our character in Godot. It looks a little flat.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The clay texture setup imported onto our character in Godot. It looks a little flat.&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Spot checking the imported StandardMaterial3D, most of it was imported correctly. One big missing piece was the displacement map though.&lt;/p&gt;
+
+&lt;h3 id=&quot;displacement&quot;&gt;Displacement&lt;/h3&gt;
+
+&lt;p&gt;In shading, there are 2 ways to make meshes look deformed (not perfectly smooth): normal maps and displacement maps. They’re not mutually exclusive.&lt;/p&gt;
+
+&lt;p&gt;Normal maps tell the rendering engine which direction every point on the mesh is facing. The rendering engine then can “fake” depth that doesn’t exist on the mesh. In many cases, this sort of depth is convincing. Normal maps are always the first choice over displacement maps because they’re cheap to for the renderer to calculate and widely supported across renderers.&lt;/p&gt;
+
+&lt;p&gt;Displacement maps in contrast actually alter the positions of vertices on the mesh before the renderer performs shading. This results in more realistic shading, especially noticeable on the silhouette of the mesh (which the normal map has no control over). The displacement process can be costly though, and is not as well supported across renderers.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog05-11.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Normal map bump (left) vs. displacement map (right). Notice the silhouette on the normal map (left) is smooth.&quot; title=&quot;Normal map bump (left) vs. displacement map (right). Notice the silhouette on the normal map (left) is smooth.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Normal map bump (left) vs. displacement map (right). Notice the silhouette on the normal map (left) is smooth.&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;In order to displace vertices the vertices must exist on the mesh. That means low poly meshes with simple geometry must be subdivided to create enough vertices for the displacement map to be applied and have the intended effect. Normal maps don’t have this limitation: they can fake depth on a low poly mesh at the level of detail of the input texture or input function.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog05-12.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;The displacement shader on a cube with only 8 vertices (left) vs. millions of vertices (right).&quot; title=&quot;The displacement shader on a cube with only 8 vertices (left) vs. millions of vertices (right).&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The displacement shader on a cube with only 8 vertices (left) vs. millions of vertices (right).&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Godot’s build in shaders have no direct support for displacement maps at the shader level. A (&lt;a href=&quot;https://godotshaders.com/shader/noise-vertex-displacement/&quot;&gt;relatively simple&lt;/a&gt;) custom spatial shader must be used. Blender’s EEVEE rendering engine also has no support for displacement maps at the shader level. Blender’s Cycles rendering engine however does have direct support for displacement at the shader level.&lt;/p&gt;
+
+&lt;p&gt;The workaround for implementing displacement before the shader is to use Blender’s displacement object modifier. The displacement modifier simply applies the displacement map to the mesh before handing the mesh off to the shader.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog05-13.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;The displacement modifier on a subdivided cube driven by a musgrave texture and rendered by EEVEE.&quot; title=&quot;The displacement modifier on a subdivided cube driven by a musgrave texture and rendered by EEVEE.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The displacement modifier on a subdivided cube driven by a musgrave texture and rendered by EEVEE.&lt;/div&gt;&lt;/div&gt;
+
+&lt;h3 id=&quot;the-result-of-raw-textures&quot;&gt;The result of raw textures&lt;/h3&gt;
+
+&lt;p&gt;I applied a subdivision surface modifier (to create more vertices) and the displacement modifier to my character in Blender. I didn’t use the displacement texture supplied in the clay texture pack, instead using a generated noise texture to get a more modeling clay look.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog05-14.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;The test character model with the red clay shader texture pack applied (and maybe a little too much displacement).&quot; title=&quot;The test character model with the red clay shader texture pack applied (and maybe a little too much displacement).&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The test character model with the red clay shader texture pack applied (and maybe a little too much displacement).&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;The subdivision surface modifier splitting the joints was an unintended side-effect, but it’s an interesting stylistic choice that’s also inconsequential implementation-wise, so I let it go.&lt;/p&gt;
+
+&lt;p&gt;This was looking alright! I was already itching to swap out the clay texture for a different one or otherwise tweak settings, but I prioritized solving the next big problem: diffuse color.&lt;/p&gt;
+
+&lt;h3 id=&quot;investigating-a-flat-color-workflow&quot;&gt;Investigating a flat color workflow&lt;/h3&gt;
+
+&lt;p&gt;The clay shader came with its own diffuse texture. The detail of the texture matches that of the roughness, specular, etc. textures. The difference with those is that the diffuse texture’s primary color is a bold red.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog05-15.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Diffuse, roughness, and normal textures, respectively. By nature, all but the diffuse texture are non-color.&quot; title=&quot;Diffuse, roughness, and normal textures, respectively. By nature, all but the diffuse texture are non-color.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Diffuse, roughness, and normal textures, respectively. By nature, all but the diffuse texture are non-color.&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;I certainly don’t want all my characters and environments to be the same color red, so I needed a way to give myself the flexibility to reuse this material across meshes and faces.&lt;/p&gt;
+
+&lt;p&gt;I started by adding a simple hue shift node between the diffuse texture and the base color input of the PBR texture to remap the color. For example, red to blue.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog05-16.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Adding a hue/saturation/value node to alter the diffuse texture&apos;s red color in Blender.&quot; title=&quot;Adding a hue/saturation/value node to alter the diffuse texture&apos;s red color in Blender.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Adding a hue/saturation/value node to alter the diffuse texture&apos;s red color in Blender.&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Although this works in Blender, in Godot the color ramp was ignored. This was another reminder that even the simplest of procedural operations would not work out of the box in Godot.&lt;/p&gt;
+
+&lt;p&gt;Then I tried disconnecting the diffuse texture and using a solid color. In my opinion, this looked good enough that I felt comfortable pursuing a diffuse color mapping solution that ignored the base material’s diffuse texture entirely. The normal map and other PBR components provided enough detail.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog05-17.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;There&apos;s a little detail missing, but using a flat diffuse looks good enough to ignore the more intricate diffuse texture, at least for now.&quot; title=&quot;There&apos;s a little detail missing, but using a flat diffuse looks good enough to ignore the more intricate diffuse texture, at least for now.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;There&apos;s a little detail missing, but using a flat diffuse looks good enough to ignore the more intricate diffuse texture, at least for now.&lt;/div&gt;&lt;/div&gt;
+
+&lt;h3 id=&quot;assigning-flat-colors-to-vertices-with-uv-maps-and-a-palette-texture&quot;&gt;Assigning flat colors to vertices with UV maps and a palette texture&lt;/h3&gt;
+
+&lt;p&gt;I now needed to tackle the second part of the problem: mapping individual vertices to separate base colors, perhaps on a fixed palette.&lt;/p&gt;
+
+&lt;p&gt;One of the more popular ways to map vertex colors to a flat color palette is to use UV maps.&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Associate a palette to a material as 2D bitmap texture.&lt;/li&gt;
+  &lt;li&gt;Create a UV map for each mesh.&lt;/li&gt;
+  &lt;li&gt;Scale and move vertices of the mesh around the UV map over top of the pallete.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog05-18.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;I&apos;ve manually mapped vertices from the mesh on the right to the color palette on left.&quot; title=&quot;I&apos;ve manually mapped vertices from the mesh on the right to the color palette on left.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;I&apos;ve manually mapped vertices from the mesh on the right to the color palette on left.&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;This workflow is relatively ergonomic to author. It allows flexibility within meshes when necessary but is also easy to use with meshes that are a single-color. There’s consistency by using a single palette. It’s performant since we can reuse the same material and texture across any number of meshes.&lt;/p&gt;
+
+&lt;p&gt;And it exports to Godot without any problems… well, as long as you only need one UV map.&lt;/p&gt;
+
+&lt;h3 id=&quot;multiple-uv-maps&quot;&gt;Multiple UV maps&lt;/h3&gt;
+
+&lt;p&gt;Why would I need multiple UV maps? The roughness, specular, normal map, etc. textures all require a more standard UV map; one that utilizes the full area of the texture.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog05-19.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;A (crude) UV map on the normal texture that uses the whole area of the texture.&quot; title=&quot;A (crude) UV map on the normal texture that uses the whole area of the texture.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;A (crude) UV map on the normal texture that uses the whole area of the texture.&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;That meant I needed two UV maps: one for diffuse (base color) and one for the other non-diffuse PBR components.&lt;/p&gt;
+
+&lt;p&gt;Luckily, Blender can do multiple UV maps!&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog05-20.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;On the left, using the UV map node to specify the secondary UV map be used to select the colors from the color palette texture. On the right, the object data panel showing 2 UV maps: one for the diffuse and one for the non-color textures.&quot; title=&quot;On the left, using the UV map node to specify the secondary UV map be used to select the colors from the color palette texture. On the right, the object data panel showing 2 UV maps: one for the diffuse and one for the non-color textures.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;On the left, using the UV map node to specify the secondary UV map be used to select the colors from the color palette texture. On the right, the object data panel showing 2 UV maps: one for the diffuse and one for the non-color textures.&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;However, when I checked the result in Godot I found that my second UV map was ignored. Godot has support for a second UV map, but it seems like its purpose is for some sort of light map. I investigated for a while, but eventually gave up.&lt;/p&gt;
+
+&lt;p&gt;In parallel to this thread of investigation, I was also jumping back to explore the options for procedural shaders.&lt;/p&gt;
+
+&lt;h3 id=&quot;the-problem-with-procedural-shaders&quot;&gt;The problem with procedural shaders&lt;/h3&gt;
+
+&lt;p&gt;With the earlier tests, including altering the base color texture with a hue/saturation/value node, I figured out that the automatic Blender-to-Godot import/export feature (via the GLFT format) does not handle procedural shaders well. It makes sense, after all the shader languages and visual node features are quite different.&lt;/p&gt;
+
+&lt;p&gt;There’s not much I can do to get around this limitation directly (e.g. somehow implement better support directly in the import/export pipeline).&lt;/p&gt;
+
+&lt;p&gt;I was nearly stumped at this part, but stumbled into a potential solution along the same lines as my previous solution to the &lt;a href=&quot;/2024/03/28/indie-game-devlog-03#implementing-reduced-framerate-for-godot&quot;&gt;animation modifier problem&lt;/a&gt; from last time: baking.&lt;/p&gt;
+
+&lt;h3 id=&quot;texture-baking&quot;&gt;Texture baking&lt;/h3&gt;
+
+&lt;p&gt;The solution to using procedural nodes in my shaders seemed obvious in retrospect once I started to internalize the relationship between the PBR base shader (aka principled BSDF shader in Blender) and its inputs.&lt;/p&gt;
+
+&lt;p&gt;The inputs to the PBR texture could always be converted to separate 2D bitmap textures as long as there was a UV map for each mesh to provide a frame of reference for the mapping.&lt;/p&gt;
+
+&lt;p&gt;That means I could perform a process called texture baking for each PBR texture input. Texture baking takes each input to the PBR texture and converts it to a flat 2D bitmap texture. Blender supports texture baking with its Cycles rendering engine. The process is &lt;a href=&quot;https://www.youtube.com/watch?v=Se8GdHptD4A&quot;&gt;somewhat manual&lt;/a&gt; and error prone, requiring the creation of 2D bitmaps, plugging and unplugging nodes, waiting for the render to complete, and more. But the process can be at least partially automated with a choice of Blender plugins.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog05-21.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;The various texture bake options built into Blender, found in the render panel when Cycles is selected.&quot; title=&quot;The various texture bake options built into Blender, found in the render panel when Cycles is selected.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The various texture bake options built into Blender, found in the render panel when Cycles is selected.&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;With texture baking, I had essentially found an escape hatch to ensure anything I dreamt up in Blender could be realized in Godot. Of course with some caveats I’ll discuss later.&lt;/p&gt;
+
+&lt;h3 id=&quot;texture-baking-a-base-color-texture-map&quot;&gt;Texture baking a base color texture map&lt;/h3&gt;
+
+&lt;p&gt;Jumping back to my multiple UV maps problem, I realized I could solve this problem with texture baking.&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;For each mesh:
+    &lt;ol&gt;
+      &lt;li&gt;Create a second UV map targeting the color palette texture and set these in shader node graph.&lt;/li&gt;
+      &lt;li&gt;Run the texture baking process for just the base color/diffuse PBR input.&lt;/li&gt;
+      &lt;li&gt;Unplug the color pallete texture node graph from the PBR shader.&lt;/li&gt;
+      &lt;li&gt;Plug in the baked texture’s node into the PBR shader.&lt;/li&gt;
+    &lt;/ol&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;The baked texture matching the primary UV map looks like this:&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog05-22.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;The baked diffuse texture (top left), and the simple node setup (bottom).&quot; title=&quot;The baked diffuse texture (top left), and the simple node setup (bottom).&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The baked diffuse texture (top left), and the simple node setup (bottom).&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;(Seems like I messed up the UV map for the lower arms.)&lt;/p&gt;
+
+&lt;p&gt;And importing it into Godot looks like this:&lt;/p&gt;
+
+&lt;video src=&quot;/images/devlog05-23.mp4&quot; loop=&quot;&quot; controls=&quot;&quot; preload=&quot;&quot; width=&quot;100%&quot;&gt;&lt;/video&gt;
+
+&lt;p&gt;So baked textures work in Godot!&lt;/p&gt;
+
+&lt;p&gt;However, the downsides are that:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;The texture baking process is at least somewhat manual and tedious.&lt;/li&gt;
+  &lt;li&gt;The texture baking process must be re-run if the mesh or shader graph changes.&lt;/li&gt;
+  &lt;li&gt;One diffuse texture per mesh is required, at (presumably?) the same resolution as the other textures.&lt;/li&gt;
+  &lt;li&gt;The diffuse texture will end up with a lot of duplicate/wasted space.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;It was great to have discovered the texture baking option. Not only because it allowed flexibility in color mapping, but also because it opened the door for using fully procedural shaders in Blender.&lt;/p&gt;
+
+&lt;h3 id=&quot;generated-texture-space&quot;&gt;Generated texture space&lt;/h3&gt;
+
+&lt;p&gt;UV maps aren’t the only way we can associate a texture to points on a mesh. If we look at Blender’s texture coordinate node, we can see that there are several options:&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog05-24.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;The texture coordinate node in Blender. Notice its many outputs, rarely discussed in detail in tutorials.&quot; title=&quot;The texture coordinate node in Blender. Notice its many outputs, rarely discussed in detail in tutorials.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The texture coordinate node in Blender. Notice its many outputs, rarely discussed in detail in tutorials.&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;The Generated texture coordinate is something we can explore. Generated is controlled by another panel in the object data properties called Texture Space.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog05-25.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Texture space section in the object data panel.&quot; title=&quot;Texture space section in the object data panel.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Texture space section in the object data panel.&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;By default, the generated texture coordinate is created automatically by calculating a fitted rectangular bounding box around the object. We can view the bounding box by going to the object properties panel and checking Texture Space under Viewport Display.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog05-26.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;The texture space viewport display option (right), and how it displays in the viewport (orange, left).&quot; title=&quot;The texture space viewport display option (right), and how it displays in the viewport (orange, left).&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The texture space viewport display option (right), and how it displays in the viewport (orange, left).&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;I’d never understood why sometimes my procedural textures looked weirdly stretched on one axis if applied to an obviously non-square mesh.&lt;/p&gt;
+
+&lt;p&gt;The way to fix this (besides manually creating a UV map), is to disable Auto Texture Space and change the size XYZ values to be equal.&lt;/p&gt;
+
+&lt;p&gt;In theory, using the generated texture coordinates for the non-diffuse parts of the clay material would free up the UV map to be used for the palette texture technique discussed earlier.&lt;/p&gt;
+
+&lt;p&gt;I tried setting this up in Blender and checking the results in Godot. Unfortunately, it seems like Godot will always use the UV map.&lt;/p&gt;
+
+&lt;p&gt;Another swing and a miss; generated texture coordinates couldn’t be a solution to my multiple UV map problem.&lt;/p&gt;
+
+&lt;h3 id=&quot;texture-painting&quot;&gt;Texture painting&lt;/h3&gt;
+
+&lt;p&gt;I’ll give an honorable mention to texture painting as an option for assigning colors to the diffuse input, even if I’m not planning on using it (I simply don’t need the level of detail it provides).&lt;/p&gt;
+
+&lt;p&gt;The most flexible option for assigning base colors is to create a blank texture and paint colors on it. The downside of course is that, like the texture baking option above, you’ll end up with one texture per mesh.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog05-27.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;The model in texture paint mode, using the previously baked texture as a base. It&apos;s possible to draw directly on the model in the viewport (right) or the 2D bitmap texture (left).&quot; title=&quot;The model in texture paint mode, using the previously baked texture as a base. It&apos;s possible to draw directly on the model in the viewport (right) or the 2D bitmap texture (left).&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The model in texture paint mode, using the previously baked texture as a base. It&apos;s possible to draw directly on the model in the viewport (right) or the 2D bitmap texture (left).&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;The upside is that this is a well-beaten workflow path that has lots of tooling support.&lt;/p&gt;
+
+&lt;h3 id=&quot;using-one-material-per-base-color&quot;&gt;Using one material per base color&lt;/h3&gt;
+
+&lt;p&gt;Another option for a flexible base color worflow I want to add to the list is using one material per base color.&lt;/p&gt;
+
+&lt;p&gt;An overview of this workflow:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Create the material that will be used as a template.&lt;/li&gt;
+  &lt;li&gt;Separate out the material so it has a single color RGB input node.&lt;/li&gt;
+  &lt;li&gt;Optionally group all other nodes except the RGB input node into a node group.&lt;/li&gt;
+  &lt;li&gt;Duplicate the material for each required color.&lt;/li&gt;
+  &lt;li&gt;In Edit mode, select each face and assign the proper material to it until all faces are assigned.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog05-28.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Assigning multiple materials to mesh faces. In the example there are 2 materials (Body, Clothes), and I select faces on the mesh in edit mode and click the Assign button.&quot; title=&quot;Assigning multiple materials to mesh faces. In the example there are 2 materials (Body, Clothes), and I select faces on the mesh in edit mode and click the Assign button.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Assigning multiple materials to mesh faces. In the example there are 2 materials (Body, Clothes), and I select faces on the mesh in edit mode and click the Assign button.&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;I’ve used this workflow regularly in the past. It’s relatively ergonomic for meshes whose base colors are limited and map closely to their faces. Or if you have the flexibility to modify the mesh to add vertices where you need color separation.&lt;/p&gt;
+
+&lt;p&gt;I’ll definitely have to use this workflow in the case that the characters or environment have a non-clay material. Perhaps something transparent or emissive (like a neon light). But in the general case, the one-material-per-color can become cumbersome to maintain when there are lots of colors in use across meshes and files.&lt;/p&gt;
+
+&lt;p&gt;The Godot importer handles this workflow without a problem.&lt;/p&gt;
+
+&lt;h3 id=&quot;assigning-base-colors-using-color-attributes-and-vertex-paint-mode&quot;&gt;Assigning base colors using color attributes and vertex paint mode&lt;/h3&gt;
+
+&lt;p&gt;The last option I found for base colors is assigning colors via the Color Attributes and vertex paint mode in Blender.&lt;/p&gt;
+
+&lt;p&gt;Under the object data panel, there’s a section called Color Attributes. Creating a new entry here allows color data to be associated with individual vertices on the mesh.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog05-29.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Yet another useful section in the object data properties panel, Color Attributes. It stores color values assigned to vertices.&quot; title=&quot;Yet another useful section in the object data properties panel, Color Attributes. It stores color values assigned to vertices.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Yet another useful section in the object data properties panel, Color Attributes. It stores color values assigned to vertices.&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Switching to Vertex Paint mode in the viewport allows us to paint colors on directly on the vertices of the mesh using a few basic painting tools.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog05-30.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Assigning colors to vertices in the viewport&apos;s vertex paint mode. A little less ergonomic than texture paint mode.&quot; title=&quot;Assigning colors to vertices in the viewport&apos;s vertex paint mode. A little less ergonomic than texture paint mode.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Assigning colors to vertices in the viewport&apos;s vertex paint mode. A little less ergonomic than texture paint mode.&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Then in the shader, we add a Color Attributes node and plug it directly into the base color input of the principled BSDF node.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog05-31.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;The simple node setup for the color attribute node.&quot; title=&quot;The simple node setup for the color attribute node.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The simple node setup for the color attribute node.&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;I was very much not expecting this to import into Godot. But I gave it a shot anyway and… wow, it worked!&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog05-32.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;The color attributes/vertex paint workflow imports properly into Godot.&quot; title=&quot;The color attributes/vertex paint workflow imports properly into Godot.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The color attributes/vertex paint workflow imports properly into Godot.&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;I found the actual process of using vertex paint mode a bit clunky. Generally, I feel like I want to paint faces rather than vertices, but that workflow is much less streamlined than rotating around the model and painting the individual vertices.&lt;/p&gt;
+
+&lt;h2 id=&quot;summarizing-the-options&quot;&gt;Summarizing the options&lt;/h2&gt;
+
+&lt;p&gt;OK, so that’s a lot of options to consider. It’s still tough to weigh the pros and cons of each without doing a dry run of modeling, texturing, and exporting a handful of character and environment models.&lt;/p&gt;
+
+&lt;p&gt;I may be able to get away with finding a decent clay texture pack, using that directly for the non-diffuse PBR inputs, then committing to a vertex painting workflow for the diffuse input.&lt;/p&gt;
+
+&lt;p&gt;However, I’m still considering buying the Clay Doh procedural shader because it looks really nice. Going the full procedural route would require experimenting with a texture baking workflow and then UV mapping all my objects in reference to the baked textures.&lt;/p&gt;
+
+&lt;p&gt;For now, I feel good about having explored the problem and solution space well enough to be able to implement a pipeline that makes realistic aesthetic compromises a bit further down the line.&lt;/p&gt;
+
+&lt;p&gt;And I’m sure there’s at least &lt;em&gt;something&lt;/em&gt; I’ve missed in the Blender/Godot importer that could make any of the above options more streamlined.&lt;/p&gt;
+
+&lt;h2 id=&quot;whats-next&quot;&gt;What’s next?&lt;/h2&gt;
+
+&lt;p&gt;I think diving deep into character design is the next important step. Character design is probably something I should have spent the last few years studying and practicing before getting to this point but… we’ll see what I can pull off!&lt;/p&gt;
+
+&lt;p&gt;Until next time.&lt;/p&gt;
+</description>
+        <pubDate>Tue, 09 Apr 2024 12:05:00 -0500</pubDate>
+        <link>https://twocentstudios.com/2024/04/09/indie-game-devlog-05/</link>
+        <guid isPermaLink="true">https://twocentstudios.com/2024/04/09/indie-game-devlog-05/</guid>
+        
+        
+      </item>
     
       <item>
         <title>Indie Game Devlog 04 - Animating Faces</title>
@@ -2713,730 +3092,6 @@
         <pubDate>Mon, 13 Nov 2023 04:00:00 -0600</pubDate>
         <link>https://twocentstudios.com/2023/11/13/tca-strategies-sharing-state/</link>
         <guid isPermaLink="true">https://twocentstudios.com/2023/11/13/tca-strategies-sharing-state/</guid>
-        
-        
-      </item>
-    
-      <item>
-        <title>Count Biki - Developing the App for iOS</title>
-        <description>&lt;p&gt;Continuing my series of posts about my latest iOS app, Count Biki, I’ll discuss the more interesting parts of app at version 1.1.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/count-biki-app-icon.png&quot; width=&quot;&quot; height=&quot;300&quot; alt=&quot;Count Biki app icon, featuring the character Count Biki&quot; title=&quot;Count Biki app icon, featuring the character Count Biki&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Count Biki app icon, featuring the character Count Biki&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;Please check out the other posts in the series:&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;&lt;strong&gt;&lt;a href=&quot;/2023/10/29/count-biki-japanese-numbers/&quot;&gt;Count Biki - Drill Japanese Numbers&lt;/a&gt;&lt;/strong&gt; - the motivation behind the app and the solution I’ve begun to explore from the learner (user) perspective&lt;/li&gt;
-  &lt;li&gt;&lt;strong&gt;&lt;a href=&quot;/2023/10/30/count-biki-app-and-character-design/&quot;&gt;Count Biki - App and Character Design&lt;/a&gt;&lt;/strong&gt; - the design process and specifics of creating the Count Biki character&lt;/li&gt;
-  &lt;li&gt;&lt;strong&gt;This post&lt;/strong&gt; - a guided tour of the codebase and implementation details&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;Japanese learners can download the app from the &lt;a href=&quot;https://apps.apple.com/us/app/count-biki/id6463796779&quot;&gt;App Store&lt;/a&gt;.&lt;/p&gt;
-
-&lt;p&gt;Like many of my other apps, Count Biki is open source on &lt;a href=&quot;https://github.com/twocentstudios/count-biki&quot;&gt;GitHub&lt;/a&gt;. The commit/tag referenced in this post is &lt;a href=&quot;https://github.com/twocentstudios/count-biki/tree/v1.1&quot;&gt;v1.1&lt;/a&gt;, so the main branch will not fully align with the post’s content.&lt;/p&gt;
-
-&lt;h2 id=&quot;stats&quot;&gt;Stats&lt;/h2&gt;
-
-&lt;p&gt;Before starting digging into the details, I’ll go over some stats about the app for context.&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;The app has 6 screens (5 with behavior).&lt;/li&gt;
-  &lt;li&gt;The app has around 3600 lines of Swift code.&lt;/li&gt;
-  &lt;li&gt;The app has a minimum deployment target of iOS 16.4.&lt;/li&gt;
-  &lt;li&gt;The app supports only portrait mode and the iPhone form factor. There’s no technical reason for this. It was mostly to reduce complexity, promotional material requirements, and testing for the first release.&lt;/li&gt;
-  &lt;li&gt;The app uses about 5 packages via Swift Package Manager: ComposableArchitecture, Collections, AsyncExtensions, DependenciesAdditions, ConfettiSwiftUI. ComposableArchitecture relies on several other pointfreeco packages, which I also use directly.&lt;/li&gt;
-  &lt;li&gt;The app uses a basic xcodeproj file.&lt;/li&gt;
-  &lt;li&gt;The app was archived with Xcode 17.0.1, which includes support for Swift 5.9, iOS 17, and (colloquially) SwiftUI 4, although I don’t use any iOS 17 specific APIs.&lt;/li&gt;
-  &lt;li&gt;The app has a SwiftUI &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;App&lt;/code&gt; entrypoint.&lt;/li&gt;
-  &lt;li&gt;The only network requests made by the app are via StoreKit 2.&lt;/li&gt;
-  &lt;li&gt;The app embeds an &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;scnassets&lt;/code&gt; file for SceneKit-related files.&lt;/li&gt;
-  &lt;li&gt;The app uses the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;licenseplist&lt;/code&gt; library installed via Homebrew for generating a license file for packages.&lt;/li&gt;
-  &lt;li&gt;The app embeds no analytics framework.&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h2 id=&quot;architecture&quot;&gt;Architecture&lt;/h2&gt;
-
-&lt;p&gt;The app is built all-in with &lt;a href=&quot;https://github.com/pointfreeco/swift-composable-architecture&quot;&gt;The Composable Architecture (TCA) 1.0&lt;/a&gt;. This includes passing and scoping &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Store&lt;/code&gt;s through the view layer, creating &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Reducer&lt;/code&gt;s with &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;State&lt;/code&gt; and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Action&lt;/code&gt;s for most screens, and creating dependencies in the style of the &lt;a href=&quot;https://github.com/pointfreeco/swift-dependencies&quot;&gt;swift-dependencies&lt;/a&gt; library.&lt;/p&gt;
-
-&lt;p&gt;This post is not a tutorial on using TCA. However, I will do my best to describe my experience learning TCA by writing this app, and mention the convenient points and the points that tripped me up while developing it.&lt;/p&gt;
-
-&lt;p&gt;I started rewriting an existing app with TCA back in 2020, but never finished it. I got stuck due to performance problems and the rewrite fell off my radar. Since then I’ve used SwiftUI extensively for both production and prototyping. The architecture of most of those projects has been either loose MVVM or everything-in-the-view style. This includes &lt;a href=&quot;https://github.com/twocentstudios/goalie&quot;&gt;Goalie&lt;/a&gt;, which I consider MVVM style.&lt;/p&gt;
-
-&lt;p&gt;I started off development for Count Biki by prototyping the &lt;a href=&quot;https://github.com/twocentstudios/count-biki/blob/8195c7fde3703166d5b3a41743c8a19486448a14/count/Feature/ListeningQuizFeature.swift&quot;&gt;listening quiz feature&lt;/a&gt;. This is the core of the app and the most complex feature (although the in app purchase support is arguably more complex).&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/count-biki-v1-listening-quiz.png&quot; width=&quot;&quot; height=&quot;700&quot; alt=&quot;the listening quiz screen&quot; title=&quot;the listening quiz screen&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;the listening quiz screen&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;Even as the most complex screen, it’s not particularly complex. But getting started was relatively slow because I was referencing the TCA 1.0 &lt;a href=&quot;https://www.pointfree.co/collections/composable-architecture/composable-architecture-1-0&quot;&gt;guided tour videos&lt;/a&gt; (as they were being released), the TCA &lt;a href=&quot;https://github.com/pointfreeco/swift-composable-architecture/tree/main/Examples/CaseStudies/SwiftUICaseStudies&quot;&gt;case studies&lt;/a&gt;, and the OSS &lt;a href=&quot;https://github.com/pointfreeco/isowords/&quot;&gt;isowords&lt;/a&gt; codebase.&lt;/p&gt;
-
-&lt;p&gt;Even though TCA is more ergonomic than it was when I first started experimenting with it a few years ago, there were a lot more concepts to digest this time around, particularly around navigation. &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;BindableAction&lt;/code&gt;, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;@Bindable&lt;/code&gt;, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;@PresentationState&lt;/code&gt;, the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Destination&lt;/code&gt; reducer pattern.&lt;/p&gt;
-
-&lt;h3 id=&quot;shared-state&quot;&gt;Shared state&lt;/h3&gt;
-
-&lt;p&gt;The most difficult conceptual problem I had with TCA was the techniques for sharing state across an app.&lt;/p&gt;
-
-&lt;h4 id=&quot;parent-and-child-reducer-intercommunication&quot;&gt;Parent and child reducer intercommunication&lt;/h4&gt;
-
-&lt;p&gt;My preconception of Redux-like systems such as TCA was that there was one big bag of state and any reducer could grab any part of it. The scoping part of TCA – paring down the state and actions to hand off to a subsystem – tripped me up. It wasn’t clear to me whether changes to state made in child stores would change that same state in the parent part. In other words, I think it’s similar to the sort of implicit learning curve there was while learning SwiftUI, namely:&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;how does a parent communicate to a child?&lt;/li&gt;
-  &lt;li&gt;how does a child communicate to a parent?&lt;/li&gt;
-  &lt;li&gt;where is the source of truth for a piece of state?&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;I know the answers to the SwiftUI variant of these questions much better than the TCA variant, but they were certainly hard-won answers.&lt;/p&gt;
-
-&lt;h4 id=&quot;quiz-and-settings-example--source-of-truth-in-parent-state&quot;&gt;Quiz and settings example – source of truth in parent state&lt;/h4&gt;
-
-&lt;p&gt;A simple example of my sharing state confusion is with my listening quiz and settings screen. The system has the following behavior:&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;The quiz screen needs read-only settings values.&lt;/li&gt;
-  &lt;li&gt;The settings screen allows read/write access to settings values.&lt;/li&gt;
-  &lt;li&gt;The quiz presents the settings screen modally.&lt;/li&gt;
-  &lt;li&gt;The settings values are persisted to disk.&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/count-biki-v1-quiz-settings-parent-child.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;The quiz and settings screens (parent and child)&quot; title=&quot;The quiz and settings screens (parent and child)&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The quiz and settings screens (parent and child)&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;In view terms, the quiz screen is the parent and the settings screen is the child. But the quiz reducer needs access to the settings values immediately, which means that settings state can’t be modeled as optional view state. The “is the settings view visible?” part of the state and the “what are the settings?” part of the state can’t be combined in this case.&lt;/p&gt;
-
-&lt;p&gt;I modeled this by:&lt;/p&gt;
-
-&lt;ol&gt;
-  &lt;li&gt;having a full copy of the settings values owned by the quiz reducer.&lt;/li&gt;
-  &lt;li&gt;keeping a copy of the settings values as optional destination state.&lt;/li&gt;
-  &lt;li&gt;loading the settings values from the dependency on initialization of the quiz state.&lt;/li&gt;
-  &lt;li&gt;copying the current settings values to the settings state when the settings button is tapped as representation that the view is presented.&lt;/li&gt;
-  &lt;li&gt;updating the “source of truth” version of settings values when the settings reducer sends an updated version, and ensuring the latest value is persisted to disk.&lt;/li&gt;
-&lt;/ol&gt;
-
-&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ListeningQuizFeature&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Reducer&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;State&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Equatable&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;speechSettings&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;SpeechSynthesisSettings&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// 1&lt;/span&gt;
-        &lt;span class=&quot;kd&quot;&gt;@PresentationState&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;destination&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Destination&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;State&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// 2&lt;/span&gt;
-        &lt;span class=&quot;c1&quot;&gt;// ...&lt;/span&gt;
-
-        &lt;span class=&quot;nf&quot;&gt;init&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-            &lt;span class=&quot;kd&quot;&gt;@Dependency(\.speechSynthesisSettingsClient)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;speechSettingsClient&lt;/span&gt;
-            &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;speechSettings&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;speechSettingsClient&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;get&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// 3&lt;/span&gt;
-        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-    
-    &lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Destination&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Reducer&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-        &lt;span class=&quot;kd&quot;&gt;enum&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;State&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Equatable&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-            &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;settings&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;SettingsFeature&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;State&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// 2&lt;/span&gt;
-        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-        &lt;span class=&quot;c1&quot;&gt;// ...&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-
-    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;body&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;some&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ReducerOf&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;Self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-        &lt;span class=&quot;kt&quot;&gt;Reduce&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;state&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;action&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt;
-            &lt;span class=&quot;k&quot;&gt;switch&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;action&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-
-            &lt;span class=&quot;c1&quot;&gt;// 4&lt;/span&gt;
-            &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;titleButtonTapped&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
-                &lt;span class=&quot;n&quot;&gt;state&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;destination&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;settings&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;init&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
-                    &lt;span class=&quot;nv&quot;&gt;topicID&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;state&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;topicID&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
-                    &lt;span class=&quot;nv&quot;&gt;speechSettings&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;state&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;speechSettings&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
-                    &lt;span class=&quot;nv&quot;&gt;sessionChallenges&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;state&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;completedChallenges&lt;/span&gt;
-                &lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;
-                &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;none&lt;/span&gt;
-            
-            &lt;span class=&quot;c1&quot;&gt;// 5&lt;/span&gt;
-            &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;destination&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;presented&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;settings&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;delegate&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;speechSettingsUpdated&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;newSpeechSettings&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))))):&lt;/span&gt;
-                &lt;span class=&quot;n&quot;&gt;state&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;speechSettings&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;newSpeechSettings&lt;/span&gt;
-                &lt;span class=&quot;k&quot;&gt;do&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-                    &lt;span class=&quot;k&quot;&gt;try&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;speechSettingsClient&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;set&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;newSpeechSettings&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-                &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;catch&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-                    &lt;span class=&quot;kt&quot;&gt;XCTFail&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;SpeechSettingsClient unexpectedly failed to write&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-                &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-                &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;none&lt;/span&gt;
-            &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-    &lt;span class=&quot;c1&quot;&gt;// ...&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;This strategy of keeping source-of-truth state in a parent, passing a copy to the child reducer, and playing back changes from child to parent to ensure the state is in sync is seemingly the strategy shared in the &lt;a href=&quot;https://github.com/pointfreeco/swift-composable-architecture/blob/9b0f600253f467f61cbd53f60ccc243cc4ff27cd/Examples/SyncUps/SyncUps/AppFeature.swift#L28-L73&quot;&gt;SyncUps&lt;/a&gt; example app.&lt;/p&gt;
-
-&lt;p&gt;I’m not 100% happy with my strategy. For this simple app, it’s fine. But it perhaps unnecessarily spreads responsibility for the settings across multiple reducers.&lt;/p&gt;
-
-&lt;h4 id=&quot;about-and-iap-example---source-of-truth-in-a-dependency&quot;&gt;About and IAP example - source-of-truth in a dependency&lt;/h4&gt;
-
-&lt;p&gt;Another way to go about sharing state between parent, child, or sibling reducers is:&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;keep the source-of-truth state in a dependency&lt;/li&gt;
-  &lt;li&gt;mutating the state through the dependency&lt;/li&gt;
-  &lt;li&gt;set up a one-way binding to copy the dependency state into the reducer state from any number of reducers&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;My first impression of this strategy was that it goes against the ethos of TCA/Redux. Especially for cases where the state is &lt;em&gt;not&lt;/em&gt; owned by an external subsystem under only loose control by the application, like from an Apple framework. However, reading &lt;a href=&quot;https://github.com/pointfreeco/swift-composable-architecture/discussions/2320&quot;&gt;this discussion&lt;/a&gt; made me consider dependency-managed state as more often the preferred option.&lt;/p&gt;
-
-&lt;p&gt;Concretely, this means a dependency with a get/set/observe interface. As a very generic example:&lt;/p&gt;
-
-&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;CurrentUserClient&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-  &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;currentUser&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;User&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;
-  &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;setCurrentUser&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;User&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;as&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ync&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Void&lt;/span&gt;
-  &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;currentUserStream&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;as&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ync&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;AsyncStream&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;User&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;Then each reducer that reads/writes/observes the current user can use &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CurrentUserClient&lt;/code&gt; like so:&lt;/p&gt;
-
-&lt;ol&gt;
-  &lt;li&gt;Create a reducer-local derived copy of the state as &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;var currentUser: User?&lt;/code&gt; in &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;UserReducer.State&lt;/code&gt;.&lt;/li&gt;
-  &lt;li&gt;In &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;State.init&lt;/code&gt;, read in &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;currentUser&lt;/code&gt; from the dependency.&lt;/li&gt;
-  &lt;li&gt;Add a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Action.setCurrentUser(User)&lt;/code&gt; action.&lt;/li&gt;
-  &lt;li&gt;On receiving the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;setCurrentUser&lt;/code&gt; action, update the state iff the current user has changed.&lt;/li&gt;
-  &lt;li&gt;Add a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.onChangeOf(\.currentUser)&lt;/code&gt; modifier to the reducer to write updated values to the dependency’s setter.&lt;/li&gt;
-  &lt;li&gt;In &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Action.onTask&lt;/code&gt;, set up a long running async stream that sends new values back into the system as actions through &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Action.setCurrentUser&lt;/code&gt;.&lt;/li&gt;
-  &lt;li&gt;The reducer should make changes to its local copy of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;State.currentUser&lt;/code&gt;.&lt;/li&gt;
-&lt;/ol&gt;
-
-&lt;p&gt;The get/set/observe-style state allows both push and pull state management in reducers. For example, a pull-style read-only version would only need (1) (2), then an &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Action.refreshButtonTapped&lt;/code&gt; that copies the current value from the dependency into local reducer state.&lt;/p&gt;
-
-&lt;p&gt;Unfortunately, I’ve yet to find a more automated version of encapsulating the read/write/observe system.&lt;/p&gt;
-
-&lt;p&gt;The closest I got to implementing this type of system was while implementing my &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;About&lt;/code&gt; and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;TransylvaniaTier&lt;/code&gt; (In app purchase) features.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/count-biki-v1-about-tier-parent-child.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;the about and IAP screens (as parent and child)&quot; title=&quot;the about and IAP screens (as parent and child)&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;the about and IAP screens (as parent and child)&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;The about screen is the parent. The IAP screen is the child. The about screen observes the purchases state from a dependency and updates its own state and its child state in response to changes. The key parts of the &lt;a href=&quot;https://github.com/twocentstudios/count-biki/blob/8195c7fde3703166d5b3a41743c8a19486448a14/count/Feature/AboutFeature.swift&quot;&gt;full reducer&lt;/a&gt; are clipped out below:&lt;/p&gt;
-
-&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;AboutFeature&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Reducer&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;State&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Equatable&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;appIcon&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;AppIconFeature&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;State&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;transylvaniaTier&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;TransylvaniaTierFeature&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;State&lt;/span&gt;
-
-        &lt;span class=&quot;nf&quot;&gt;init&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-            &lt;span class=&quot;kd&quot;&gt;@Dependency(\.tierProductsClient.purchaseHistory)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;purchaseHistory&lt;/span&gt;
-            &lt;span class=&quot;n&quot;&gt;appIcon&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;init&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;isAppIconChangingAvailable&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;purchaseHistory&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;status&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;unlocked&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-            &lt;span class=&quot;n&quot;&gt;transylvaniaTier&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;init&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;tierHistory&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;purchaseHistory&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;())&lt;/span&gt;
-        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-
-    &lt;span class=&quot;c1&quot;&gt;// ...&lt;/span&gt;
-
-    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;body&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;some&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ReducerOf&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;Self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-        &lt;span class=&quot;c1&quot;&gt;// ...&lt;/span&gt;
-        &lt;span class=&quot;kt&quot;&gt;Reduce&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;state&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;action&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt;
-            &lt;span class=&quot;k&quot;&gt;switch&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;action&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-            &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;onPurchaseHistoryUpdated&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;newHistory&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;):&lt;/span&gt;
-                &lt;span class=&quot;n&quot;&gt;state&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;appIcon&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;isAppIconChangingAvailable&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;newHistory&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;status&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;unlocked&lt;/span&gt;
-                &lt;span class=&quot;n&quot;&gt;state&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;transylvaniaTier&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tierHistory&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;newHistory&lt;/span&gt;
-                &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;none&lt;/span&gt;
-            &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;onTask&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
-                &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;run&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;send&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt;
-                    &lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;await&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;newHistory&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;purchaseHistoryStream&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-                        &lt;span class=&quot;n&quot;&gt;await&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;send&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;onPurchaseHistoryUpdated&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;newHistory&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;
-                    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-                &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-            &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-            &lt;span class=&quot;c1&quot;&gt;// ...&lt;/span&gt;
-        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;I will probably refactor the about and IAP reducers to be more independent in the future. I will probably want to present the IAP screen from more places throughout the app, which will require it to handle its own purchase history state updates.&lt;/p&gt;
-
-&lt;h4 id=&quot;reducers-with-no-state-sharing&quot;&gt;Reducers with no state sharing&lt;/h4&gt;
-
-&lt;p&gt;For the record, I found writing TCA reducers without inter-system state sharing to be very straightforward and exhibit all the benefits of TCA (testability, side-effect isolation, previewability, etc.). Of course, this app has not had multiple contributors nor survived years of releases, so take my experience as you will.&lt;/p&gt;
-
-&lt;h4 id=&quot;sidebar-starting-with-one-reducer&quot;&gt;Sidebar: starting with one reducer&lt;/h4&gt;
-
-&lt;p&gt;During the exploratory phase of development, what I really wanted to do was have one reducer with one state and one action enum shared across all the views in my app. Of course this doesn’t scale and perhaps would cause performance problems sooner than later. But after I was more confident in the view structure, it’d be obvious how to split up the reducers and communicate state changes between them, avoiding a lot of rework. I’m sure there’s a way to do this, but while I was learning TCA I didn’t feel confident enough to stray from the case studies.&lt;/p&gt;
-
-&lt;h3 id=&quot;navigation&quot;&gt;Navigation&lt;/h3&gt;
-
-&lt;p&gt;Navigation was one of the later additions to the TCA 1.0 release. Since the app only has a few screens, and I did at least a little reconfiguration of the UX, I never felt like I put the navigation tools through their paces.&lt;/p&gt;
-
-&lt;h4 id=&quot;going-by-the-book&quot;&gt;Going “by-the-book”&lt;/h4&gt;
-
-&lt;p&gt;I consider navigation “by-the-book” as storing each piece of navigation state in the reducer, usually with a separate &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Destination&lt;/code&gt; reducer.&lt;/p&gt;
-
-&lt;p&gt;I did this in a few places in the app that have obvious boundaries of behavior: The topics screen, the quiz screen, the settings screen, the about screen, etc.&lt;/p&gt;
-
-&lt;p&gt;However, in a few places within &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;NavigationStack&lt;/code&gt;, I decided to take the lazy way and use raw &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;NavigationLink&lt;/code&gt;s. The obvious downside to this is that the navigation state can only be directly manipulated by the user and not programmatically (notably through deep linking). In practice, I haven’t found this to be an issue yet. I found the TCA &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;NavigationStack&lt;/code&gt; modeling to feel &lt;em&gt;heavy&lt;/em&gt; enough at the outset that I didn’t want to delay my release implementing it by-the-book.&lt;/p&gt;
-
-&lt;p&gt;The topics screen in particular felt like there was little benefit in creating an additional reducer to handle a screen of static data. I wanted the flexibility to keep all that topic view structure and logic in one place, even though in reality it’s covering both &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;TopicCategory&lt;/code&gt; and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Topic&lt;/code&gt; entities. (Aside: it’s kind of similar how SwiftUI forms give you the ability to configure a picker as inline or as a completely separate screen added to the stack, and the presentation parts are abstracted away from the developer.)&lt;/p&gt;
-
-&lt;p&gt;As I get more comfortable with TCA, I’ll probably go back and move some of the navigation primitives into the TCA world.&lt;/p&gt;
-
-&lt;h4 id=&quot;scoping-stores&quot;&gt;Scoping stores&lt;/h4&gt;
-
-&lt;p&gt;When implementing store scoping within the view layer, I found myself struggling a bit to craft the correct syntax to express the relationship between the parent and child features.&lt;/p&gt;
-
-&lt;p&gt;When going by-the-book, the store scoping feels like boilerplate (there’s not a lot to think about). But when I did want to play outside the sandbox a bit, I realized I was in over my head and couldn’t even get the scoping statement to compile.&lt;/p&gt;
-
-&lt;p&gt;The frustrating part was that I knew I either had to:&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;look at a lot more store scoping examples as the raw syntax&lt;/li&gt;
-  &lt;li&gt;go back and rewatch the pointfree episodes about the theory behind store scoping&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;Or perhaps both? At this point, I can definitely tell I’m missing a key piece of my understanding of the &lt;em&gt;composable&lt;/em&gt; part of TCA, but I’m not sure yet how to fill in that missing piece. Or at least what the most efficient way to do so is.&lt;/p&gt;
-
-&lt;p&gt;In the end, I mostly avoided the issue entirely by either going more by-the-book with the structure of my features or completely eschewing TCA navigation as discussed in the previous section.&lt;/p&gt;
-
-&lt;h3 id=&quot;dependencies&quot;&gt;Dependencies&lt;/h3&gt;
-
-&lt;p&gt;I consider TCA to have 4 interdependent domains of complexity:&lt;/p&gt;
-
-&lt;ol&gt;
-  &lt;li&gt;Reducers - composing the app logic by defining &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;State&lt;/code&gt; and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Action&lt;/code&gt;, and modifying state and kicking off side-effects on each action.&lt;/li&gt;
-  &lt;li&gt;View-layer integration - using &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ViewStore&lt;/code&gt; and scoping &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Store&lt;/code&gt;.&lt;/li&gt;
-  &lt;li&gt;Dependencies - the distinct layer of world state and side-effects.&lt;/li&gt;
-  &lt;li&gt;Testing Reducers - exploiting the malleability of the dependency protocol in order to isolate the reducer layer from the dependency layer, and exploiting the one-way dependency of the view layer on the reducer layer to ignore the view layer.&lt;/li&gt;
-&lt;/ol&gt;
-
-&lt;p&gt;The TCA philosophy is to divide responsibilities amongst the reducer, view, and dependency layers to enable maximum testing ability of the reducer layer, in both unit and integration tests (for some definition of “unit” and “integration”). UI testing is reasonable but discouraged. Dependency testing is rarely mentioned, but is of course possible depending on how you the developer choose to design your dependencies.&lt;/p&gt;
-
-&lt;h4 id=&quot;writing-dependencies-in-the-pointfreeco-style&quot;&gt;Writing dependencies in the pointfreeco-style&lt;/h4&gt;
-
-&lt;p&gt;The pointfreeco-style of dependency design is unique (in my experience). And there are three distinct attributes:&lt;/p&gt;
-
-&lt;ol&gt;
-  &lt;li&gt;The dependency interface as a struct containing one or more variables of functions.&lt;/li&gt;
-  &lt;li&gt;Writing the dependency implementation as a class/actor in a way that you can create an instance of it within a static initializer of the dependency interface. When wrapping a system class as a dependency, often the system class is &lt;a href=&quot;https://github.com/pointfreeco/isowords/blob/40d59a899bbe54810bb0d7af0f3b72379c56bafb/Sources/FeedbackGeneratorClient/LiveKey.swift#L5-L11&quot;&gt;used directly&lt;/a&gt; in the static initializer.&lt;/li&gt;
-  &lt;li&gt;Treating this dependency interface as a singleton throughout your application, including being initialized independently at app startup and having the same lifetime as the app.&lt;/li&gt;
-&lt;/ol&gt;
-
-&lt;p&gt;My impression is that none of the above three attributes are &lt;em&gt;absolute requirements&lt;/em&gt; to use TCA or the &lt;a href=&quot;https://github.com/pointfreeco/swift-dependencies&quot;&gt;swift-dependencies&lt;/a&gt; library. However, most of the official examples contain the three attributes. (One notable exception is &lt;a href=&quot;https://github.com/tgrapperon/swift-dependencies-additions&quot;&gt;swift-dependencies-additions&lt;/a&gt;, which has its own internal system of &lt;a href=&quot;https://github.com/tgrapperon/swift-dependencies-additions/blob/main/Sources/DependenciesAdditionsBasics/Proxies.swift&quot;&gt;proxies&lt;/a&gt; to enable a more convenient interface for simple getters and setters).&lt;/p&gt;
-
-&lt;p&gt;For reference from the TCA case studies, an example of (1), the dependency interface as a struct &lt;a href=&quot;https://github.com/pointfreeco/swift-composable-architecture/blob/9b0f600253f467f61cbd53f60ccc243cc4ff27cd/Examples/SyncUps/SyncUps/Dependencies/SpeechRecognizer.swift#L4-L11&quot;&gt;(SpeechClient)&lt;/a&gt;:&lt;/p&gt;
-
-&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;SpeechClient&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-  &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;authorizationStatus&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;@Sendable&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;SFSpeechRecognizerAuthorizationStatus&lt;/span&gt;
-  &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;requestAuthorization&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;@Sendable&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;as&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ync&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;SFSpeechRecognizerAuthorizationStatus&lt;/span&gt;
-  &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;startTask&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;@Sendable&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;SFSpeechAudioBufferRecognitionRequest&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;as&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ync&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;AsyncThrowingStream&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;SpeechRecognitionResult&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Error&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;And an example of (2), creating an actor and then using it in a static initializer:&lt;/p&gt;
-
-&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;private&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;actor&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Speech&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-  &lt;span class=&quot;kd&quot;&gt;private&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;audioEngine&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;AVAudioEngine&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;nil&lt;/span&gt;
-  &lt;span class=&quot;kd&quot;&gt;private&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;recognitionTask&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;SFSpeechRecognitionTask&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;nil&lt;/span&gt;
-  &lt;span class=&quot;kd&quot;&gt;private&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;recognitionContinuation&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
-    &lt;span class=&quot;kt&quot;&gt;AsyncThrowingStream&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;SpeechRecognitionResult&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Error&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Continuation&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;
-
-  &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;startTask&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
-    &lt;span class=&quot;nv&quot;&gt;request&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;SFSpeechAudioBufferRecognitionRequest&lt;/span&gt;
-  &lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;AsyncThrowingStream&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;SpeechRecognitionResult&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Error&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-      &lt;span class=&quot;c1&quot;&gt;// ...&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-  &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-
-&lt;span class=&quot;kd&quot;&gt;extension&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;SpeechClient&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;DependencyKey&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-  &lt;span class=&quot;kd&quot;&gt;static&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;liveValue&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;SpeechClient&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;speech&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Speech&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;SpeechClient&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
-      &lt;span class=&quot;nv&quot;&gt;authorizationStatus&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;SFSpeechRecognizer&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;authorizationStatus&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;},&lt;/span&gt;
-      &lt;span class=&quot;nv&quot;&gt;requestAuthorization&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;cm&quot;&gt;/* ... */&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;},&lt;/span&gt;
-      &lt;span class=&quot;nv&quot;&gt;startTask&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;request&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;await&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;speech&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;startTask&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;request&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;request&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-  &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;Regarding (3), the “global-ness” of dependencies, in theory, the store-scoping initializers allow you to override dependencies all the way down a reducer hierarchy. For example:&lt;/p&gt;
-
-&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kt&quot;&gt;Store&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;initialState&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;SettingsFeature&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;State&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;())&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;kt&quot;&gt;SettingsFeature&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;withDependencies&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;deps&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt;
-    &lt;span class=&quot;c1&quot;&gt;// TODO: Does this create a new instance each time an action is sent to the reducer?&lt;/span&gt;
-    &lt;span class=&quot;n&quot;&gt;deps&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;speechSynthesisClient&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;init&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; 
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;Or at the reducer-level:&lt;/p&gt;
-
-&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;// TODO: Does this create a new instance each time an action is sent to the reducer?&lt;/span&gt;
-&lt;span class=&quot;kt&quot;&gt;Reduce&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;state&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;action&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt;
-    &lt;span class=&quot;c1&quot;&gt;// ...&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;dependency&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;\&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;speechSynthesisClient&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;init&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;())&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;However, the feasibility of initializing a fresh dependency with data from the system is unclear to me. Especially since it seems like the above code would initialize a fresh instance of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;speechSynthesisClient&lt;/code&gt; each time a reducer is run (thousands of times per app run!).&lt;/p&gt;
-
-&lt;p&gt;There are a few other topics on the discussion boards that mention the global lifetime of dependencies:&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;&lt;a href=&quot;https://github.com/pointfreeco/swift-composable-architecture/discussions/1287&quot;&gt;Dynamic dependencies · pointfreeco/swift-composable-architecture · Discussion #1287&lt;/a&gt;&lt;/li&gt;
-  &lt;li&gt;&lt;a href=&quot;https://github.com/pointfreeco/swift-dependencies/discussions/42&quot;&gt;How to handle session-based dependencies? · pointfreeco/swift-dependencies · Discussion #42&lt;/a&gt;&lt;/li&gt;
-  &lt;li&gt;&lt;a href=&quot;https://github.com/pointfreeco/swift-composable-architecture/discussions/1775&quot;&gt;Dependencies that depend on dynamic values · pointfreeco/swift-composable-architecture · Discussion #1775&lt;/a&gt;&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;For more complex applications than my own, I consider this limitation to be something to be carefully considered and architected around.&lt;/p&gt;
-
-&lt;p&gt;The related problem of doing some sort of one-time dependency initialization and setting up relationships between dependencies at app startup is also unclear to me. I &lt;a href=&quot;https://github.com/pointfreeco/swift-composable-architecture/discussions/1713#discussioncomment-6681618&quot;&gt;asked about it&lt;/a&gt; on the TCA discussions board, and &lt;a href=&quot;https://github.com/pointfreeco/swift-composable-architecture/discussions/1287&quot;&gt;discussion #1287&lt;/a&gt; touches on it briefly, but due to a change in my app requirements, I no longer needed to follow up on it.&lt;/p&gt;
-
-&lt;p&gt;There is certainly a wealth of information in the discussion boards I’ve yet to fully digest in the context of a more complex app. (Just a reminder that I’m writing this blog post for myself too as a way to process my thoughts and understanding on these inter-related concerns.)&lt;/p&gt;
-
-&lt;h4 id=&quot;heisenbugs-encountered-while-overriding-dependencies&quot;&gt;Heisenbugs encountered while overriding dependencies&lt;/h4&gt;
-
-&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;withDependencies&lt;/code&gt; is most often used as a developer tool – for testing, SwiftUI previews, or temporary debugging.&lt;/p&gt;
-
-&lt;p&gt;There were a few times where I ran into heisenbugs where my overridden dependencies at the app root or in previews weren’t getting overridden. Or they were getting overridden in a parent reducer but not a child. These situations felt nearly impossible to debug without doing a full code-review of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;swift-dependencies&lt;/code&gt; and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;TaskLocal&lt;/code&gt;s.&lt;/p&gt;
-
-&lt;h4 id=&quot;overriding-dependencies-for-use-with-swiftui-previews&quot;&gt;Overriding dependencies for use with SwiftUI Previews&lt;/h4&gt;
-
-&lt;p&gt;A key piece of the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ListeningQuiz&lt;/code&gt; screen is the text-to-speech playback for each question. &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;AVSpeechSynthesizer&lt;/code&gt; does not work on SwiftUI Previews or even the iOS simulator. TCA allowed me to easily mock out this dependency on just Previews and the simulator so it didn’t become a blocker for quick UI development. I could spend as much time as I normally would developing off-device when I wasn’t doing TTS-related tasks.&lt;/p&gt;
-
-&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;extension&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;SpeechSynthesisClient&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;TestDependencyKey&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;kd&quot;&gt;static&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;previewValue&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;Self&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-        &lt;span class=&quot;kd&quot;&gt;@Dependency(\.continuousClock)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;clock&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
-            &lt;span class=&quot;nv&quot;&gt;availableVoices&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;mock1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;mock2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;},&lt;/span&gt;
-            &lt;span class=&quot;n&quot;&gt;defaultVoice&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;mock1&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;},&lt;/span&gt;
-            &lt;span class=&quot;nv&quot;&gt;speak&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;_&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt;
-                &lt;span class=&quot;c1&quot;&gt;// Simulate 2 seconds of speech time&lt;/span&gt;
-                &lt;span class=&quot;k&quot;&gt;try&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;await&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;clock&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;sleep&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;for&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;seconds&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;
-            &lt;span class=&quot;p&quot;&gt;},&lt;/span&gt;
-            &lt;span class=&quot;nv&quot;&gt;speechRateAttributes&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-                &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;init&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;minimumRate&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mf&quot;&gt;0.0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;maximumRate&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mf&quot;&gt;1.0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;defaultRate&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mf&quot;&gt;0.5&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-            &lt;span class=&quot;p&quot;&gt;},&lt;/span&gt;
-            &lt;span class=&quot;nv&quot;&gt;pitchMultiplierAttributes&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-                &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;init&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;minimumPitch&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mf&quot;&gt;0.5&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;maximumPitch&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mf&quot;&gt;2.0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;defaultPitch&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mf&quot;&gt;1.0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-            &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-        &lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;h4 id=&quot;the-use-of-dependencies-in-count-biki&quot;&gt;The use of dependencies in Count Biki&lt;/h4&gt;
-
-&lt;p&gt;After all that foreword, I can talk at least a little bit about how I used dependencies in CountBiki.&lt;/p&gt;
-
-&lt;h5 id=&quot;stateless-clients&quot;&gt;Stateless clients&lt;/h5&gt;
-
-&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;SpeechSynthesisClient&lt;/code&gt; is responsible for wrapping &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;AVSpeechSynthesizer&lt;/code&gt;, Apple’s top-level API for text-to-speech.&lt;/p&gt;
-
-&lt;p&gt;My tendency for designing clients is to separate configuration and side-effects. In other words, clients should be stateless by default. For example, most &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;NetworkClient&lt;/code&gt; APIs are designed like:&lt;/p&gt;
-
-&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;// Set configuration on app init or when current user is updated&lt;/span&gt;
-&lt;span class=&quot;kt&quot;&gt;NetworkClient&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;shared&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;setSessionToken&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;123abc&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;span class=&quot;kt&quot;&gt;NetworkClient&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;shared&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;setCacheSize&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mf&quot;&gt;1024*10*&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;10&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-
-&lt;span class=&quot;c1&quot;&gt;// Make an authenticated network request in some other part of the app&lt;/span&gt;
-&lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;users&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;try&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;await&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;NetworkClient&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;shared&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;fetchFriends&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;In the above example, the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;NetworkClient&lt;/code&gt; is both a source-of-truth for network-related state &lt;em&gt;and&lt;/em&gt; a way to perform side-effects.&lt;/p&gt;
-
-&lt;p&gt;For most use cases, this style of API is very reasonable. The benefit is that the caller of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;fetchFriends&lt;/code&gt; needs zero knowledge of the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;NetworkClient&lt;/code&gt; configuration details.&lt;/p&gt;
-
-&lt;p&gt;I prefer to have &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;NetworkClient&lt;/code&gt; be stateless. At the callsite, the above example would look like this instead:&lt;/p&gt;
-
-&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;// `networkConfiguration` is passed around a subsystem via dependency injection or generated from existing state&lt;/span&gt;
-&lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;networkConfiguration&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;NetworkClient&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Configuration&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;...&lt;/span&gt;
-&lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;users&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;try&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;await&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;NetworkClient&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;fetchFriends&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;networkConfiguration&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;One benefit of stateless clients is that it’s trivial (or at least more-so) to add multi-account support and use the same &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;NetworkClient&lt;/code&gt; instance.&lt;/p&gt;
-
-&lt;p&gt;Another benefit is that it avoids the dependency initialization catch-22 we discussed earlier. A &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;NetworkClient&lt;/code&gt; initialized at app startup and with the same lifetime as the app has no initialization race condition for needing its configuration set to a valid state before making calls.&lt;/p&gt;
-
-&lt;p&gt;The &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;NetworkClient&lt;/code&gt; example is probably a bad one though. The underlying &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;URLSession&lt;/code&gt; is stateful by design. It maintains its own cache, so wrapping it with a stateless interface could actually increase the chance of bugs, or completely break caching functionality. Another downside is that functions that could be encapsulated within the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;NetworkClient&lt;/code&gt; such as seamlessly renewing expired session tokens.&lt;/p&gt;
-
-&lt;p&gt;All of that is to say I used the stateless client pattern for &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;SpeechSynthesisClient&lt;/code&gt;.&lt;/p&gt;
-
-&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;SpeechSynthesisSettings&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Equatable&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Codable&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;voiceIdentifier&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;pitchMultiplier&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Float&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;volume&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Float&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;rate&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Float&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;preUtteranceDelay&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;TimeInterval&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;postUtteranceDelay&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;TimeInterval&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-
-&lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;SpeechSynthesisUtterance&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;speechString&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;settings&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;SpeechSynthesisSettings&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-
-&lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;SpeechSynthesisClient&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;speak&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;@Sendable&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;SpeechSynthesisUtterance&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;as&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ync&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;throws&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Void&lt;/span&gt;
-    &lt;span class=&quot;c1&quot;&gt;// ...&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;SpeechSynthesisSettings&lt;/code&gt; are persisted using their own client &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;SpeechSynthesisSettingsClient&lt;/code&gt;. The top-level feature is responsible for fetching the settings and configuring an utterance to provide to the stateless &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;SpeechSynthesisClient&lt;/code&gt;.&lt;/p&gt;
-
-&lt;p&gt;The implementation of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;SpeechSynthesisClient&lt;/code&gt; is admittedly weak. I should be using an actor.&lt;/p&gt;
-
-&lt;h5 id=&quot;separating-settings&quot;&gt;Separating settings&lt;/h5&gt;
-
-&lt;p&gt;I erred on the side of splitting persisted settings into separate clients, even though they all use the same underlying storage. Specifically: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;SpeechSynthesisSettingsClient&lt;/code&gt; and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;TierPurchaseHistoryClient&lt;/code&gt;. There’s some unnecessary indirection at this point.&lt;/p&gt;
-
-&lt;h5 id=&quot;wrapping-storekit&quot;&gt;Wrapping StoreKit&lt;/h5&gt;
-
-&lt;p&gt;Implementing StoreKit for a consumables tip jar was a bit of a headache.&lt;/p&gt;
-
-&lt;p&gt;Consumables act differently than subscriptions, so there were a few misunderstanding before I landed on an API for the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;TierProductsClient&lt;/code&gt; dependency.&lt;/p&gt;
-
-&lt;p&gt;The API I wanted for consumers of the dependency was similar to the read/write/observe API I mentioned previously. However, several of the mutations happen within the dependency itself while it’s observing internals of StoreKit.&lt;/p&gt;
-
-&lt;p&gt;I wanted to use Combine’s &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CurrentValueSubject&lt;/code&gt;. Swift Concurrency does not have a built-in replacement for &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CurrentValueSubject&lt;/code&gt;, and using &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CurrentValueSubject&lt;/code&gt; safely within the confines of Swift Concurrency is not a fully endorsed activity (especially with compiler warnings set to maximum). I didn’t want to add another package dependency, however &lt;a href=&quot;https://github.com/sideeffect-io/AsyncExtensions&quot;&gt;AsyncExtensions&lt;/a&gt; seemed to provide exactly the tool I needed.&lt;/p&gt;
-
-&lt;h5 id=&quot;topics&quot;&gt;Topics&lt;/h5&gt;
-
-&lt;p&gt;I somewhat regret my &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Topic&lt;/code&gt; interface. A &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Topic&lt;/code&gt; is a wrapper for generating question/answer pairs. I thought my interface would be generic enough for all kinds of topics.&lt;/p&gt;
-
-&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Topic&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Identifiable&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Equatable&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;kd&quot;&gt;enum&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Skill&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;listening&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;reading&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-
-    &lt;span class=&quot;kd&quot;&gt;enum&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Category&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;number&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;money&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;duration&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;dateTime&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;counter&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-
-    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;id&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;UUID&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;skill&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Skill&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;category&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Category&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;title&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;description&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;A &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Topic&lt;/code&gt; itself is only a bag of data attributes. However, I create a wrapper struct internally called &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;TopicGenerator&lt;/code&gt; when defining each &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Topic&lt;/code&gt; that also provides a question generator function. This allows me to expose &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Topic&lt;/code&gt; to the rest of the app as behaviorless and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Equatable&lt;/code&gt;, but still behavior associated with each &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Topic&lt;/code&gt; and defined inline with it.&lt;/p&gt;
-
-&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;private&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;TopicGenerator&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Identifiable&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;id&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;UUID&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;topic&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;id&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;topic&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Topic&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;generateQuestion&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;@Sendable&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;WithRandomNumberGenerator&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;throws&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Question&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;The &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;WithRandomNumberGenerator&lt;/code&gt; part turned out to be pretty useless. I thought it might be useful for testing or otherwise seeding and keeping some control over values generated, but in the end it was just another field I had to work around.&lt;/p&gt;
-
-&lt;p&gt;An example of a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;TopicGenerator&lt;/code&gt; definition within the code:&lt;/p&gt;
-
-&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kt&quot;&gt;TopicGenerator&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
-    &lt;span class=&quot;nv&quot;&gt;topic&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Topic&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
-        &lt;span class=&quot;nv&quot;&gt;id&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Topic&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;id&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;for&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;201&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt;
-        &lt;span class=&quot;nv&quot;&gt;skill&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;listening&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
-        &lt;span class=&quot;nv&quot;&gt;category&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;duration&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
-        &lt;span class=&quot;nv&quot;&gt;title&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;Hours&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
-        &lt;span class=&quot;nv&quot;&gt;description&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;1-48時間&quot;&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;),&lt;/span&gt;
-    &lt;span class=&quot;nv&quot;&gt;generateQuestion&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;rng&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;answer&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;rng&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Int&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;random&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;in&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;...&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;48&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;using&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;postfix&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;時間&quot;&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;displayText&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;answer&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;)\(&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;postfix&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;acceptedAnswer&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;answer&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Question&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
-            &lt;span class=&quot;nv&quot;&gt;topicID&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Topic&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;id&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;for&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;201&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt;
-            &lt;span class=&quot;nv&quot;&gt;displayText&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;displayText&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
-            &lt;span class=&quot;nv&quot;&gt;spokenText&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;displayText&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
-            &lt;span class=&quot;nv&quot;&gt;answerPrefix&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;nil&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
-            &lt;span class=&quot;nv&quot;&gt;answerPostfix&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;postfix&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
-            &lt;span class=&quot;nv&quot;&gt;acceptedAnswer&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;acceptedAnswer&lt;/span&gt;
-        &lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;I’m defining a static ID for each &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Topic&lt;/code&gt; for a future where user answers are persisted and need to be associated back to a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Topic&lt;/code&gt; internally.&lt;/p&gt;
-
-&lt;p&gt;Another part of the interface I went back and forth on was whether I should keep the generated question and user answer as &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Int&lt;/code&gt; or whether all answers should converge to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;String&lt;/code&gt;. I kept the latter method (&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;String&lt;/code&gt;) but realized during development that allowing access to the numerical values would give more flexibility in comparing and reformatting values.&lt;/p&gt;
-
-&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;TopicClient&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;allTopics&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;@Sendable&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;IdentifiedArrayOf&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Topic&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;generateQuestion&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;@Sendable&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;UUID&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;throws&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Question&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;The &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;TopicClient&lt;/code&gt; itself simply abstracts away looking up a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Topic&lt;/code&gt; by its ID and generating a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Question&lt;/code&gt; for it.&lt;/p&gt;
-
-&lt;p&gt;A downside to this stateless design is that all &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;TopicGenerator&lt;/code&gt;s must have the input signature (they can’t take distinct parameters). Additionally, I can’t guarantee within the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;TopicClient&lt;/code&gt; that subsequently generated questions aren’t the same.&lt;/p&gt;
-
-&lt;h4 id=&quot;bikianimation&quot;&gt;BikiAnimation&lt;/h4&gt;
-
-&lt;p&gt;There’s a unique friction point we sometimes encounter with SwiftUI being a declarative system but needing to interface with imperative events.&lt;/p&gt;
-
-&lt;p&gt;One of these friction points is animations.&lt;/p&gt;
-
-&lt;p&gt;For my Count Biki SceneKit model, I have 1 idle animation and 2 brief animations that play for a second or two each. One animation is triggered when the user gets a question right. One animation is played when the user gets a question wrong.&lt;/p&gt;
-
-&lt;p&gt;What’s the right way to model this in SwiftUI?&lt;/p&gt;
-
-&lt;p&gt;This problem is easier to solve for something like the confetti animation that plays when the user gets a question right. We can model this as an integer that counts up by one each time the animation should play. The SwiftUI view will playback the animation any time that value changes (whether it be by 1 or 100).&lt;/p&gt;
-
-&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;State&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Equatable&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;confettiAnimation&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Int&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;
-    &lt;span class=&quot;c1&quot;&gt;// ...&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-
-&lt;span class=&quot;c1&quot;&gt;// Change `confettiAnimation` when a correct answer is submitted&lt;/span&gt;
-&lt;span class=&quot;kt&quot;&gt;Reduce&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;state&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;action&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;switch&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;action&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;answerSubmitButtonTapped&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
-        &lt;span class=&quot;c1&quot;&gt;// ...&lt;/span&gt;
-        &lt;span class=&quot;n&quot;&gt;state&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;confettiAnimation&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;
-    &lt;span class=&quot;c1&quot;&gt;// ...&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-
-&lt;span class=&quot;c1&quot;&gt;// `ConfettiCannon` will observe changes to this value&lt;/span&gt;
-&lt;span class=&quot;kt&quot;&gt;VStack&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;cm&quot;&gt;/* ... */&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-    &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;confettiCannon&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;counter&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;viewStore&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;confettiAnimation&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-
-&lt;span class=&quot;c1&quot;&gt;// Or we can use `.animation` with any `Equatable` value&lt;/span&gt;
-&lt;span class=&quot;kt&quot;&gt;VStack&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;cm&quot;&gt;/* ... */&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-    &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;animation&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;default&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;value&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;viewStore&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;confettiAnimation&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;But for 2 different types of animation, how can we model it? Well we could just have 2 different counter variables and keep increasing the number of variables and the number of change observers. But this doesn’t scale well.&lt;/p&gt;
-
-&lt;p&gt;Another way to model this is with a UUID wrapper:&lt;/p&gt;
-
-&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;BikiAnimation&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Equatable&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;kd&quot;&gt;enum&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Kind&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;correct&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;incorrect&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-
-    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;id&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;UUID&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;kind&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Kind&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-
-&lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;State&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Equatable&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;bikiAnimation&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;BikiAnimation&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;
-    &lt;span class=&quot;c1&quot;&gt;// ...&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-
-&lt;span class=&quot;kt&quot;&gt;Reduce&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;state&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;action&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;switch&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;action&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;answerSubmitButtonTapped&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
-        &lt;span class=&quot;c1&quot;&gt;// ...&lt;/span&gt;
-        &lt;span class=&quot;n&quot;&gt;state&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;bikiAnimation&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;init&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;id&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;UUID&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(),&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;kind&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;correct&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-    &lt;span class=&quot;c1&quot;&gt;// ...&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-
-&lt;span class=&quot;kt&quot;&gt;SceneView&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;cm&quot;&gt;/* ... */&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-    &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;onChange&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;of&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;bikiAnimation&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;newValue&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;switch&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;newValue&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;kind&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;correct&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
-            &lt;span class=&quot;n&quot;&gt;sceneState&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;playCorrect&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;incorrect&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
-            &lt;span class=&quot;n&quot;&gt;sceneState&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;playIncorrect&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;nil&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
-            &lt;span class=&quot;k&quot;&gt;break&lt;/span&gt;
-        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;h3 id=&quot;testing&quot;&gt;Testing&lt;/h3&gt;
-
-&lt;p&gt;One of TCA’s biggest wins is ease of testing. I dabbled in testing, but as of the 1.1 release I’ve only written 1 test. My reasons for this lack of tests are the usual excuses: it’s an MVP; I wanted to ship and get user feedback ASAP; the view-layer and dependency-layers were actually more error prone than the reducer-layer logic; the structure of the app was constantly in flux during initial development.&lt;/p&gt;
-
-&lt;p&gt;Regardless of these excuses, I appreciate the testability facilitated by TCA and I’ll certainly be adding more, not fewer, tests over time to the project.&lt;/p&gt;
-
-&lt;h2 id=&quot;swiftui&quot;&gt;SwiftUI&lt;/h2&gt;
-
-&lt;p&gt;Although the focus of this post has been its architecture and relationship to TCA, I do want to mention a few parts of the view layer that stand out in some way.&lt;/p&gt;
-
-&lt;h3 id=&quot;bikiview&quot;&gt;BikiView&lt;/h3&gt;
-
-&lt;p&gt;&lt;a href=&quot;https://github.com/twocentstudios/count-biki/blob/8195c7fde3703166d5b3a41743c8a19486448a14/count/View/CountBikiView.swift&quot;&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;BikiView&lt;/code&gt;&lt;/a&gt; is the wrapper for the Count Biki character avatar derived from a SceneKit .scn file.&lt;/p&gt;
-
-&lt;p&gt;Wrapping stateful view architecture like SceneKit or UIKit in SwiftUI can sometime be tricky.&lt;/p&gt;
-
-&lt;p&gt;The &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;SceneState&lt;/code&gt; struct holds onto the loaded &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;SCNScene&lt;/code&gt; containing Biki, and also handles loading and playing back the animations on demand from the separate .dae files.&lt;/p&gt;
-
-&lt;p&gt;Note that adding this view to a hierarchy non-trivially increases CPU usage and energy usage for the device. For now, I think this is an okay trade off, but SceneKit’s relative resource intensiveness is something to be aware of.&lt;/p&gt;
-
-&lt;h3 id=&quot;styling-with-base-ios-classes&quot;&gt;Styling with base iOS classes&lt;/h3&gt;
-
-&lt;p&gt;Apple’s human interface guidelines define &lt;a href=&quot;https://developer.apple.com/design/human-interface-guidelines/color&quot;&gt;system colors&lt;/a&gt; and &lt;a href=&quot;https://developer.apple.com/design/human-interface-guidelines/typography&quot;&gt;system typography&lt;/a&gt;.&lt;/p&gt;
-
-&lt;p&gt;When I’m not working closely with a designer, it’s much easier to rely on the Apple-provided design system than create my own one-off design system. It takes a lot of the burden off of me as an individual to ensure proper accessibility, support dark mode, ensure a base-level of visual quality, and spend time designing my own controls.&lt;/p&gt;
-
-&lt;p&gt;The tradeoff is that the visual style is a lot less &lt;em&gt;fun&lt;/em&gt; and &lt;em&gt;unique&lt;/em&gt; than it could/should be.&lt;/p&gt;
-
-&lt;p&gt;For now, I feel okay about this compromise. After ensuring a base level of functionality, I feel more comfortable spending time exploring visual style adjustments.&lt;/p&gt;
-
-&lt;p&gt;Even after 5 versions, I still feel using the Apple design system primitives can be unintuitive. For example, many of the system colors are still defined only in &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;UIKit.UIColor&lt;/code&gt; and not &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;SwiftUI.Color&lt;/code&gt; – for example &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;UIColor.secondarySystemBackground&lt;/code&gt;. &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;SwiftUI.Color&lt;/code&gt; has the limited &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;primary&lt;/code&gt; and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;secondary&lt;/code&gt; variants.&lt;/p&gt;
-
-&lt;p&gt;The meaning of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;tint&lt;/code&gt; and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;accentColor&lt;/code&gt; is subtly different, as are their SwiftUI modifiers (&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.accentColor()&lt;/code&gt; was deprecated and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.tintColor()&lt;/code&gt; added in iOS 15).&lt;/p&gt;
-
-&lt;p&gt;Semantic/Dynamic Type font styles like &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Font.title&lt;/code&gt; and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Font.body&lt;/code&gt; don’t always map well to app styles, and there’s never been much guidance from Apple on how to do so.&lt;/p&gt;
-
-&lt;p&gt;Aside: I’ve never worked with a designer who understood or considered these semantic font styles or Dynamic Type. The most Apple advertises Dynamic Type to designers is these three sentences from the &lt;a href=&quot;https://developer.apple.com/design/human-interface-guidelines/typography&quot;&gt;HIG&lt;/a&gt;:&lt;/p&gt;
-
-&lt;blockquote&gt;
-  &lt;p&gt;Consider using the built-in text styles. The system-defined text styles give you a convenient and consistent way to convey your information hierarchy through font size and weight. Using text styles with the system fonts also supports Dynamic Type and the larger accessibility type sizes (where available), which let people choose the text size that works for them.&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;h3 id=&quot;laying-out-the-quiz-screen-without-a-scroll-view&quot;&gt;Laying out the quiz screen without a scroll view&lt;/h3&gt;
-
-&lt;p&gt;It’s arguably &lt;a href=&quot;https://lickability.com/blog/every-screen-in-your-app-should-be-a-scrolling-view/&quot;&gt;best practice&lt;/a&gt; to use a scroll view for every screen in your app by default.&lt;/p&gt;
-
-&lt;p&gt;The quiz screen is designed to be rapid fire, and wouldn’t really make sense to force the user to scroll up and down constantly while they are trying to power through questions.&lt;/p&gt;
-
-&lt;p&gt;However, I was of course going against the laws of physics trying to fit in all the UI elements I wanted while still supporting all small screen sizes and accessibility Dynamic Type sizes. This was not an easy problem to solve, and for the version 1.1 release I had to cheat a bit by limiting the accessibility Dynamic Type size to the second level. I feel shame doing so, but at the moment it’s better to artificially enforce a limit rather than have a broken layout.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/count-biki-v1-listening-quiz-accessibility.png&quot; width=&quot;&quot; height=&quot;600&quot; alt=&quot;The listening quiz screen at maximum supported accessibility size&quot; title=&quot;The listening quiz screen at maximum supported accessibility size&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The listening quiz screen at maximum supported accessibility size&lt;/div&gt;&lt;/div&gt;
-
-&lt;h3 id=&quot;adding-commas-dynamically-to-the-textfield&quot;&gt;Adding commas dynamically to the TextField&lt;/h3&gt;
-
-&lt;p&gt;Text input is way more difficult than it seems. There’s a ton of complexity wrapped around the simple SwiftUI interface of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;TextField($text)&lt;/code&gt;.&lt;/p&gt;
-
-&lt;p&gt;Answering a quiz question with only numbers is much simpler than all the functionality needed for a multi-lingual, editable text field. However, since &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;TextField&lt;/code&gt; already exists, I preferred to use it with as few customizations as possible before implementing my own text input system from scratch.&lt;/p&gt;
-
-&lt;p&gt;However, my beta users ran into problems when answering questions with long numbers like &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;125400000&lt;/code&gt;. Without comma separators, it quickly becomes impossible to know exactly which number you’ve entered.&lt;/p&gt;
-
-&lt;p&gt;Although it’s certainly possible, I felt uncomfortable modifying the TextField’s string while the user is typing to add separators, thinking that there’d be edge cases (especially with moving the cursor) I didn’t have time to thoroughly test. As a pragmatic (and hopefully temporary) solution, I instead added formatted text that mirrors the input string right above the TextField.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/count-biki-v1-listening-quiz-formatted-text.png&quot; width=&quot;&quot; height=&quot;200&quot; alt=&quot;A temporary solution for formatting the input string without interrupting the default TextField handling&quot; title=&quot;A temporary solution for formatting the input string without interrupting the default TextField handling&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;A temporary solution for formatting the input string without interrupting the default TextField handling&lt;/div&gt;&lt;/div&gt;
-
-&lt;h2 id=&quot;conclusion&quot;&gt;Conclusion&lt;/h2&gt;
-
-&lt;p&gt;These were the various concerns running through my head while developing this simple app.&lt;/p&gt;
-
-&lt;p&gt;Usually when working in a team I write these kind of explanations in pull request descriptions. But in this case I’ve saved everything until the first release.&lt;/p&gt;
-
-&lt;p&gt;I don’t like to share “solutions” to problems before I’m completely sure they’re robust enough to survive the long term. That’s why the slant of the above text is more “here was X problem and how I solved it” than “here’s exactly how to solve X problem”.&lt;/p&gt;
-
-&lt;p&gt;I also share some of these thoughts day-to-day on &lt;a href=&quot;https://hachyderm.io/@twocentstudios&quot;&gt;Mastodon&lt;/a&gt;, so feel free to follow me there. And if you want to dig into the codebase, here’s &lt;a href=&quot;https://github.com/twocentstudios/count-biki&quot;&gt;one more link&lt;/a&gt;.&lt;/p&gt;
-
-&lt;p&gt;Thanks for reading this post or the whole series.&lt;/p&gt;
-</description>
-        <pubDate>Tue, 31 Oct 2023 14:16:28 -0500</pubDate>
-        <link>https://twocentstudios.com/2023/10/31/count-biki-developing-the-app-for-ios/</link>
-        <guid isPermaLink="true">https://twocentstudios.com/2023/10/31/count-biki-developing-the-app-for-ios/</guid>
         
         
       </item>
