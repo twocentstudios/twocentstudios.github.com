@@ -15,7 +15,7 @@ I know I have neither the talent nor the time to commit to hand painting texture
 
 The constraints of "looks good" but "doesn't take forever to make" still don't give me a lot of direction. I guess that's where my personal taste comes into play.
 
-I've been enjoying all sorts of "hand-crafted" looks lately. Imitating certain real-world crafty materials in 3D feels like a it doesn't have the same sort of uncanny valley that hyper-realism does. Modeling clay, paper, felt, wool; these have all been used in stop-motion filmmaking since its early days. By picking one material it'll theoretically be easier for me to keep to a theme, optimize performance, and optimize development time.
+I've been enjoying all sorts of "hand-crafted" looks lately. Imitating certain real-world crafty materials in 3D feels like it doesn't have the same sort of uncanny valley that hyper-realism does. Modeling clay, paper, felt, wool; these have all been used in stop-motion filmmaking since its early days. By picking one material it'll theoretically be easier for me to keep to a theme, optimize performance, and optimize development time.
 
 {% caption_img /images/devlog05-01.jpg I love the commitment to craft materials and diorama lighting in Yoshi's Crafted World. %}
 
