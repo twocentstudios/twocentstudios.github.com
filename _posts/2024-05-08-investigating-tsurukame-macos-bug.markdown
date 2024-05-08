@@ -21,17 +21,17 @@ I noticed this bug as well and it was honestly causing enough friction in my rev
 
 ### Setting up project and building
 
-I forked the repo, then cloned my fork to my local machine. I followed the instructions on the README to `pod install`, open the xcworkspace in Xcode 15.3, change the signing identifiers, and run the signing identifiers helper script.
+I fork the repo, then clone my fork to my local machine. I follow the instructions on the README to `pod install`, open the xcworkspace in Xcode 15.3, change the signing identifiers, and run the signing identifiers helper script.
 
-Since on the App Store the app was listed under "iPhone & iPad Apps" section, I chose the "My Mac (Designed for iPad)" build destination.
+Since on the App Store the app is listed under "iPhone & iPad Apps" section, I choose the "My Mac (Designed for iPad)" build destination.
 
-When trying to build, Xcode complained about not having the WatchOS SDK, I deleted simply deleted the two WatchOS targets and tried to build again. It built without any problems.
+When trying to build, Xcode complains about not having the WatchOS SDK, so I simply delete the two WatchOS targets and try to build again. It builds without any problems.
 
-I set up the simulator app with my API key and verified I could reproduce the bug.
+I set up the simulator app with my API key and verify I can reproduce the bug.
 
 ### Finding the relevant view controller
 
-I started by figuring out the name of the view controller.
+I start by figuring out the name of the view controller.
 
 #### Strategy 1: View Debugger
 
@@ -132,6 +132,8 @@ I change the breakpoint condition to be:
 (BOOL)[textField.selectedTextRange isEmpty] == NO
 ```
 
+{% caption_img /images/tsurukame-bug-05.png Using Xcode's conditional breakpoint functionality to ignore the many irrelevant calls to this method. %}
+
 Note: when I used `false` instead of `NO` the breakpoint would always catch no matter what.
 
 I build and run the app, submit a reading answer, then immediately start typing. The breakpoint triggers!
@@ -155,7 +157,7 @@ Ascending the stack trace, I see a hit in app code within `ReviewViewController`
 
 This makes sense for a few reasons:
 
-- The selection bug was occuring ~0.5-1.0 seconds after switching review items; this amount of time is consistent with animations.
+- The selection bug was occurring ~0.5-1.0 seconds after switching review items; this amount of time is consistent with animations.
 - The responder chain is one of the few ways to programmatically alter `UITextField` and `UITextView`.
 - The UIKit internal behavior for text-related tasks especially is opaque and notoriously fickle between even point releases of iOS.
 - Mapping iOS input behavior to macOS is never 1-to-1, and is a hot-spot for leaky abstractions.
@@ -166,7 +168,11 @@ I've found the offending line of code, so now I can decide how to fix it.
 
 Before modifying the code in any way, it's best to try to understand why this code was written.
 
-I pop open Xcode's git blame viewer (named "Authors" in the Editor Options). The commit includes a pull request number #186. I open [this PR in GitHub](https://github.com/davidsansome/tsurukame/pull/186).
+I pop open Xcode's git blame viewer (named "Authors" in the Editor Options). The commit includes a pull request number #186. 
+
+{% caption_img /images/tsurukame-bug-06.png Git blame in Xcode (no blame being thrown from here though). %}
+
+I open [this PR in GitHub](https://github.com/davidsansome/tsurukame/pull/186).
 
 The line of code was added by itself in this PR, and it was added specifically for macOS support back in 10.15 (it's now 14.4):
 
@@ -186,7 +192,7 @@ I remove the line and:
 2. The errant selection behavior no longer occurs. Our bug is fixed!
 3. No behavior changes occur on iPhone. No problem there.
 
-### Comitting, submitting, and documenting the fix
+### Committing, submitting, and documenting the fix
 
 - I make a new local branch.
 - I commit the code with a decent commit title and description.
