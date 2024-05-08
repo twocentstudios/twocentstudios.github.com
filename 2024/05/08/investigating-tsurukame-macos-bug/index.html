@@ -169,17 +169,17 @@
 
 <h3 id="setting-up-project-and-building">Setting up project and building</h3>
 
-<p>I forked the repo, then cloned my fork to my local machine. I followed the instructions on the README to <code class="language-plaintext highlighter-rouge">pod install</code>, open the xcworkspace in Xcode 15.3, change the signing identifiers, and run the signing identifiers helper script.</p>
+<p>I fork the repo, then clone my fork to my local machine. I follow the instructions on the README to <code class="language-plaintext highlighter-rouge">pod install</code>, open the xcworkspace in Xcode 15.3, change the signing identifiers, and run the signing identifiers helper script.</p>
 
-<p>Since on the App Store the app was listed under “iPhone &amp; iPad Apps” section, I chose the “My Mac (Designed for iPad)” build destination.</p>
+<p>Since on the App Store the app is listed under “iPhone &amp; iPad Apps” section, I choose the “My Mac (Designed for iPad)” build destination.</p>
 
-<p>When trying to build, Xcode complained about not having the WatchOS SDK, I deleted simply deleted the two WatchOS targets and tried to build again. It built without any problems.</p>
+<p>When trying to build, Xcode complains about not having the WatchOS SDK, so I simply delete the two WatchOS targets and try to build again. It builds without any problems.</p>
 
-<p>I set up the simulator app with my API key and verified I could reproduce the bug.</p>
+<p>I set up the simulator app with my API key and verify I can reproduce the bug.</p>
 
 <h3 id="finding-the-relevant-view-controller">Finding the relevant view controller</h3>
 
-<p>I started by figuring out the name of the view controller.</p>
+<p>I start by figuring out the name of the view controller.</p>
 
 <h4 id="strategy-1-view-debugger">Strategy 1: View Debugger</h4>
 
@@ -280,6 +280,8 @@
 </code></pre>
 </div>
 
+<div class="caption-wrapper"><img class="caption" src="/images/tsurukame-bug-05.png" width="" height="" alt="Using Xcode's conditional breakpoint functionality to ignore the many irrelevant calls to this method." title="Using Xcode's conditional breakpoint functionality to ignore the many irrelevant calls to this method." /><div class="caption-text">Using Xcode's conditional breakpoint functionality to ignore the many irrelevant calls to this method.</div></div>
+
 <p>Note: when I used <code class="language-plaintext highlighter-rouge">false</code> instead of <code class="language-plaintext highlighter-rouge">NO</code> the breakpoint would always catch no matter what.</p>
 
 <p>I build and run the app, submit a reading answer, then immediately start typing. The breakpoint triggers!</p>
@@ -304,7 +306,7 @@
 <p>This makes sense for a few reasons:</p>
 
 <ul>
-  <li>The selection bug was occuring ~0.5-1.0 seconds after switching review items; this amount of time is consistent with animations.</li>
+  <li>The selection bug was occurring ~0.5-1.0 seconds after switching review items; this amount of time is consistent with animations.</li>
   <li>The responder chain is one of the few ways to programmatically alter <code class="language-plaintext highlighter-rouge">UITextField</code> and <code class="language-plaintext highlighter-rouge">UITextView</code>.</li>
   <li>The UIKit internal behavior for text-related tasks especially is opaque and notoriously fickle between even point releases of iOS.</li>
   <li>Mapping iOS input behavior to macOS is never 1-to-1, and is a hot-spot for leaky abstractions.</li>
@@ -316,7 +318,11 @@
 
 <p>Before modifying the code in any way, it’s best to try to understand why this code was written.</p>
 
-<p>I pop open Xcode’s git blame viewer (named “Authors” in the Editor Options). The commit includes a pull request number #186. I open <a href="https://github.com/davidsansome/tsurukame/pull/186">this PR in GitHub</a>.</p>
+<p>I pop open Xcode’s git blame viewer (named “Authors” in the Editor Options). The commit includes a pull request number #186.</p>
+
+<div class="caption-wrapper"><img class="caption" src="/images/tsurukame-bug-06.png" width="" height="" alt="Git blame in Xcode (no blame being thrown from here though)." title="Git blame in Xcode (no blame being thrown from here though)." /><div class="caption-text">Git blame in Xcode (no blame being thrown from here though).</div></div>
+
+<p>I open <a href="https://github.com/davidsansome/tsurukame/pull/186">this PR in GitHub</a>.</p>
 
 <p>The line of code was added by itself in this PR, and it was added specifically for macOS support back in 10.15 (it’s now 14.4):</p>
 
@@ -342,7 +348,7 @@
   <li>No behavior changes occur on iPhone. No problem there.</li>
 </ol>
 
-<h3 id="comitting-submitting-and-documenting-the-fix">Comitting, submitting, and documenting the fix</h3>
+<h3 id="committing-submitting-and-documenting-the-fix">Committing, submitting, and documenting the fix</h3>
 
 <ul>
   <li>I make a new local branch.</li>
