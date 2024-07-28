@@ -7,7 +7,11 @@ permalink: /portfolio/
 
 ## Independent Apps
 
-#### Count Biki - [appstore](https://apps.apple.com/us/app/count-biki/id6463796779) | [source](https://github.com/twocentstudios/count-biki)
+#### Eki Bright - [appstore](https://apps.apple.com/app/%E9%A7%85%E3%83%96%E3%83%A9%E3%82%A4%E3%83%88/id6504702463) | [post](/2024/07/27/eki-bright-tokyo-area-train-timetables/)
+
+An iOS app for viewing Tokyo-area station and train timetables.
+
+#### Count Biki - [appstore](https://apps.apple.com/us/app/count-biki/id6463796779) | [source](https://github.com/twocentstudios/count-biki) | [post](/2023/10/29/count-biki-japanese-numbers/)
 
 An iOS app for drilling numbers in Japanese.
 
