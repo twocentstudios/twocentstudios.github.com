@@ -2,7 +2,7 @@
 layout: post
 title: "Images Into Music: Deconstruction"
 date: 2016-10-11 22:29:44
-tags: apple ios app
+tags: apple ios photophono
 ---
 
 This post discusses _deconstructors_, the first module of the turning-an-image-into-an-original-piece-of-music project I outlined in [this post](http://twocentstudios.com/2016/10/10/transforming-images-into-music/). Skim that post first to understand the goal of the project.

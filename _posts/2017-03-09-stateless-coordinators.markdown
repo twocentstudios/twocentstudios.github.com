@@ -2,6 +2,7 @@
 layout: post
 title: Stateless Coordinators
 date: 2017-03-09 19:09:33
+tags: apple ios
 ---
 
 In this post, I'm presenting an experimental iOS architecture I'm calling **Stateless Coordinators**. Consider what I'll present as still a work in progress. Along the way I'll be posing questions and considerations for changes or improvements.
