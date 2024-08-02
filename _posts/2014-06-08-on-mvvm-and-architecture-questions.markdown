@@ -3,7 +3,7 @@ layout: post
 title: On MVVM, and Architecture Questions
 date: 2014-06-08 15:31:52.000000000 -05:00
 comments: true
-categories: ReactiveCocoa, MVVM
+categories: apple ios
 redirect_from: "/blog/2014/06/08/on-mvvm-and-architecture-questions/"
 ---
 

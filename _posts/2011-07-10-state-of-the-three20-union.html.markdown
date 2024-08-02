@@ -2,9 +2,10 @@
 layout: post
 title: State of the Three20 Union
 tags:
-- Commentary
-- iOS
-- Three20
+- commentary
+- apple
+- ios
+- three20
 status: publish
 type: post
 published: true

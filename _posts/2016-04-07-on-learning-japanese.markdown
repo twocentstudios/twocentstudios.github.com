@@ -2,6 +2,7 @@
 layout: post
 title: On Learning Japanese
 date: 2016-04-07 00:26:31
+tags: japanese commentary
 ---
 
 > This is a heavily autobiographical (and most likely boring) post. If you've ever done a deep dive into language learning, you may find it interesting.

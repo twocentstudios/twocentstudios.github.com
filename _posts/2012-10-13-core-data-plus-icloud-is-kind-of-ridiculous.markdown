@@ -3,7 +3,7 @@ layout: post
 title: Core Data + iCloud is Kind Of Ridiculous
 date: 2012-10-13 19:48
 comments: true
-categories: iOS, Core Data, iCloud
+tags: apple ios 
 redirect_from: "/blog/2012/10/13/core-data-plus-icloud-is-kind-of-ridiculous/"
 ---
 

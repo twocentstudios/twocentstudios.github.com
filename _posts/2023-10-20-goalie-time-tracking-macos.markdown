@@ -3,6 +3,7 @@ layout: post
 title: "Goalie - A Bespoke macOS App for Time Tracking"
 date: 2023-10-20 19:20:00
 image: /images/goalie-icon.png 
+tags: apple ios app
 ---
 
 I self-released a bespoke time tracking app for macOS called Goalie in July 2023. I also [open sourced](https://github.com/twocentstudios/goalie) it. It looks like this:

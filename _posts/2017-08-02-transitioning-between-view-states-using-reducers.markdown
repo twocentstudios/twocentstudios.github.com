@@ -2,6 +2,7 @@
 layout: post
 title: Transitioning Between View States Using Reducers
 date: 2017-08-02 22:40:30
+tags: apple ios
 ---
 
 In this post we'll take a look at a technique to model transitions between view states in Swift. We'll also look at how to model the commands that will initiate view state transitions, and the effects that will be produced by view state transitions.

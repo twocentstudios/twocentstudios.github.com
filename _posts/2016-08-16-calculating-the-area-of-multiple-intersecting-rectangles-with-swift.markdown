@@ -2,6 +2,7 @@
 layout: post
 title: Calculating the Area of Multiple Intersecting Rectangles with Swift
 date: 2016-08-16 20:26:22
+tags: apple ios
 ---
 
 A piece of palate data I'm creating in my image to music generating app is the total ratio of the area faces in an image i.e. `totalAreaOfFaces / totalAreaOfPhoto`.

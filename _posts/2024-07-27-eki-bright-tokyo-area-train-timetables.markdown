@@ -3,6 +3,7 @@ layout: post
 title: "Eki Bright - Tokyo Area Train Timetables"
 date: 2024-07-27 14:02:00
 image: /images/eki-bright-app-icon.jpg
+tags: ekibright app
 ---
 
 My latest app is called Eki Bright or 駅ブライト in Japanese.

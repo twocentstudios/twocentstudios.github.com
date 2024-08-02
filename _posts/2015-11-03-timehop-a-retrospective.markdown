@@ -2,6 +2,7 @@
 layout: post
 title: "Timehop: A Retrospective"
 date: 2015-11-03 12:19:53
+tags: retro commentary
 ---
 
 I worked at [Timehop](http://timehop.com) as an iOS Engineer for almost two and a half years. The experience meant a lot to me both personally and professionally, and I believe it set me on the right course for my future in this industry.

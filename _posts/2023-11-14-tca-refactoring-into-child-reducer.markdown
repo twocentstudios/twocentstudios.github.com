@@ -3,6 +3,7 @@ layout: post
 title: Refactoring and Composing a Feature in The Composable Architecture
 date: 2023-11-14 12:00:00
 image: /images/count-reducer-refactor-screens.png
+tags: apple ios tca
 ---
 
 In this post, I'll show an example of how I refactored a reusable feature/view pair from two screen-level reducers in my app Count Biki that uses [The Composable Architecture](https://github.com/pointfreeco/swift-composable-architecture) (TCA). This post acts as a simplified walkthrough of the [pull request](https://github.com/twocentstudios/count-biki/pull/4) on the project's [open source repo](https://github.com/twocentstudios/count-biki).

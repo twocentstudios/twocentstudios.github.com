@@ -2,10 +2,8 @@
 layout: post
 title: didShowModel Blues
 tags:
-- Animation
-- showMenu
-- TTTableViewController
-- UX
+- apple
+- ios
 status: publish
 type: post
 published: true

@@ -3,6 +3,7 @@ layout: post
 title: Indie Game Devlog 00
 date: 2024-03-09 14:17:22
 image:
+tags: indiegame
 ---
 
 As of last month, I've started making a narrative indie game.

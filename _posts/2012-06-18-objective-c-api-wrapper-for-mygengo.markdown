@@ -3,7 +3,7 @@ layout: post
 title: Objective-C API Wrapper for myGengo
 date: 2012-06-18 20:28
 comments: true
-categories: 
+tags: apple ios 
 redirect_from: "/blog/2012/06/18/objective-c-api-wrapper-for-mygengo/"
 ---
 

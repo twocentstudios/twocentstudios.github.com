@@ -3,8 +3,9 @@ layout: post
 title: My Review of the New Facebook Login Review Process
 date: 2014-07-05 21:40:42.000000000 -05:00
 comments: true
-categories:
+tags:
 - facebook
+- apple
 - ios
 redirect_from: "/blog/2014/07/05/my-review-of-the-new-facebook-login-review-process/"
 ---

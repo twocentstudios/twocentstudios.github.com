@@ -2,10 +2,9 @@
 layout: post
 title: TTTabStrip Controlled Multi-table Lazy-loading TTTableViewController
 tags:
-- iOS
-- Three20
-- TTTableViewController
-- TTTabStrip
+- apple
+- ios
+- three20
 status: publish
 type: post
 published: true

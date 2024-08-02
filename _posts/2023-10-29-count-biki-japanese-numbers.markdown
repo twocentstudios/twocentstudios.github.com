@@ -3,6 +3,7 @@ layout: post
 title: "Count Biki - Drill Japanese Numbers"
 date: 2023-10-29 19:49:00
 image: /images/count-biki-app-icon.png
+tags: app countbiki
 ---
 
 I'm proud to present my latest iOS app, Count Biki.

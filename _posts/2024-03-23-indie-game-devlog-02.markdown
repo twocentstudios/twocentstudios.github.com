@@ -3,6 +3,7 @@ layout: post
 title: Indie Game Devlog 02 - 3D Level Blockout
 date: 2024-03-26 23:31:00
 image: /images/devlog02-10.jpg
+tags: indiegame
 ---
 
 It was tough, but I knew I had to break away from my 2D project sooner than later if my ultimate goal was to make a 3D or 2.5D game.

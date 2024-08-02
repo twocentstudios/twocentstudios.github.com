@@ -3,6 +3,7 @@ layout: post
 title: Importing and Auto-updating a CharacterBody3D from Blender into Godot 
 date: 2024-03-18 18:17:22
 image: /images/char-import-blender-init2.png
+tags: godot
 ---
 
 This is a quick guide related to Godot, Blender, and an auto-update import workflow between the two for rigged 3D characters with animation.

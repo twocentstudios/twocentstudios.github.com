@@ -4,7 +4,7 @@ title: How Do We Develop Taste?
 date: 2012-03-31 17:09
 comments: true
 published: false
-categories: 
+tags: commentary
 redirect_from: "/blog/2012/03/31/how-do-we-develop-taste/"
 ---
 

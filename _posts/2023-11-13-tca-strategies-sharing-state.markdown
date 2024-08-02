@@ -2,6 +2,7 @@
 layout: post
 title: Strategies for Sharing State in The Composable Architecture
 date: 2023-11-13 10:00:00
+tags: apple ios tca
 ---
 
 While working on new features for [Count Biki](/2023/10/29/count-biki-japanese-numbers/), I've started to clarify some of the [confusion points](/2023/10/31/count-biki-developing-the-app-for-ios#shared-state) I had about sharing state in a TCA app.

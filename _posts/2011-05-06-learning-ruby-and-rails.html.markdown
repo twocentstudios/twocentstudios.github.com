@@ -2,9 +2,7 @@
 layout: post
 title: Learning Ruby and Rails
 tags:
-- Commentary
-- learning
-- Rails
+- commentary
 - rails
 - ruby
 status: publish

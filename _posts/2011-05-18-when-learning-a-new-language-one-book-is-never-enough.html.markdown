@@ -2,7 +2,7 @@
 layout: post
 title: When Learning a New Language, One Book is Never Enough
 tags:
-- Commentary
+- commentary
 status: publish
 type: post
 published: true

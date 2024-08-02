@@ -2,6 +2,7 @@
 layout: post
 title: Transforming Images Into Music
 date: 2016-10-10 8:42:43
+tags: photophono
 ---
 
 Although I usually don't specifically outline ongoing projects, I've decided to write up a non-technical summary of my current project so that future related technical posts will have some context.

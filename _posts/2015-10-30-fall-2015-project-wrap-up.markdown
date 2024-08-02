@@ -2,6 +2,7 @@
 layout: post
 title: Fall 2015 Project Wrap Up
 date: 2015-10-30 13:30:51
+tags: retro
 ---
 
 I've been back in Chicago left to my own devices for the past two months now. I'll be shipping out to Japan in a few weeks for a three month stint doing more of the same. I've had plenty of time to dig into a few various development areas I've wanted to explore. This is a quick wrap up of what I've been up to.

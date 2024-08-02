@@ -2,6 +2,7 @@
 layout: post
 title: "Cookpad: A Retrospective"
 date: 2023-10-18 22:25:00
+tags: retro commentary
 ---
 
 It's been almost 5 years since my last series of posts, and 8 since [Timehop: A Retrospective](/2015/11/03/timehop-a-retrospective/). As my last day as an iOS engineer at Cookpad was June 30th, 2023, it's time to start another chapter of this blog.

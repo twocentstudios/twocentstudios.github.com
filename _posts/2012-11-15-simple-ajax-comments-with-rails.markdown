@@ -3,7 +3,7 @@ layout: post
 title: Simple AJAX Comments with Rails
 date: 2012-11-15 09:50
 comments: true
-categories: rails
+tags: rails
 redirect_from: "/blog/2012/11/15/simple-ajax-comments-with-rails/"
 ---
 

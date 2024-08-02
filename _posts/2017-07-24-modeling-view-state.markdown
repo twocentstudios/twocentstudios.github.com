@@ -2,6 +2,7 @@
 layout: post
 title: Modeling View State
 date: 2017-07-24 17:31:40
+tags: apple ios
 ---
 
 In this post we'll take a look at techniques to model view state in Swift. The goal of this post is to show how we'd go about translating a mockup like the one we'd receive from a designer and convert it into a set of inert view models that fully describe all possible states of our view, but without referencing `UIKit`.

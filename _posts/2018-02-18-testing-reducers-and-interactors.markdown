@@ -2,6 +2,7 @@
 layout: post
 title: Testing Reducers and Interactors
 date: 2018-02-18 22:21:38
+tags: apple ios
 ---
 
 In this post we'll discuss some techniques for testing the reducers and interactors we introduced in the previous [reducers post](/2017/08/02/transitioning-between-view-states-using-reducers/) and [interactors post](/2017/11/05/interactors/).

@@ -3,7 +3,7 @@ layout: post
 title: Six Months at Timehop
 date: 2013-10-06 20:52
 comments: true
-categories: 
+tags: retro
 redirect_from: "/blog/2013/10/06/six-months-at-timehop/"
 ---
 

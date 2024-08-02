@@ -2,6 +2,7 @@
 layout: post
 title: "Probability Distributions of Image Data"
 date: 2016-10-13 11:02:41
+tags: apple ios photophono
 ---
 
 > This post discusses more details about how to use deconstructors, the first module of the turning-an-image-into-an-original-piece-of-music project I outlined in [this post](http://twocentstudios.com/2016/10/10/transforming-images-into-music/). Skim that post first to understand the goal of the project. Then read about deconstructors in [this post](http://twocentstudios.com/2016/10/11/images-into-music-deconstruction/)

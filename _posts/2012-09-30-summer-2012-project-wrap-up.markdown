@@ -3,7 +3,7 @@ layout: post
 title: Summer 2012 Project Wrap Up
 date: 2012-09-30 07:08
 comments: true
-categories: wrap-up
+tags: retro
 redirect_from: "/blog/2012/09/30/summer-2012-project-wrap-up/"
 ---
 

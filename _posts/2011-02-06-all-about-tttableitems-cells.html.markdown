@@ -2,10 +2,9 @@
 layout: post
 title: All About TTTableItems & Cells
 tags:
-- iOS
-- Three20
-- TTTableCell
-- TTTableItem
+- apple
+- ios
+- three20
 status: publish
 type: post
 published: true

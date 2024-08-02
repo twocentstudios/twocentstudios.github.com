@@ -3,7 +3,7 @@ layout: post
 title: My Jekyll/Octopress Cheatsheet
 date: 2011-12-27 21:26
 comments: true
-categories: 
+tags: jekyll
 redirect_from: "/blog/2011/12/27/my-jekyll-slash-octopress-cheatsheet/"
 ---
 

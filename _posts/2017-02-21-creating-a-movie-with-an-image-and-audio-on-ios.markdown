@@ -2,6 +2,7 @@
 layout: post
 title: Creating a Movie with an Image and Audio on iOS
 date: 2017-02-21 01:21:54
+tags: apple ios
 ---
 
 I'm going to cover a few data conversions in this post:

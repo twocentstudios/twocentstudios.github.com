@@ -2,6 +2,7 @@
 layout: post
 title: Photo/Phono - Your Photos as Music
 date: 2017-02-24 07:10:39
+tags: apple ios photophono app
 ---
 
 My latest app is called Photo/Photo. It's an iOS app that turns your photos into original musical compositions. It's an experiment in procedurally/algorithmically generated music.

@@ -3,7 +3,7 @@ layout: post
 title: Spring 2012 Project Wrap Up
 date: 2012-05-05 09:01
 comments: true
-categories: 
+tags: retro 
 redirect_from: "/blog/2012/05/05/spring-2012-project-wrap-up/"
 ---
 

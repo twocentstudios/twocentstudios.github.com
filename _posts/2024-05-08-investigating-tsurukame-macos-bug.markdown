@@ -3,6 +3,7 @@ layout: post
 title: Investigating a Bug in the Tsurukame macOS App
 date: 2024-05-08 14:45:00
 image: /images/tsurukame-bug-04.png
+tags: apple ios
 ---
 
 I procrastinated on doing my kanji reviews over the weekend by [fixing a bug](https://github.com/davidsansome/tsurukame/pull/709) in the open source [Tsurukame for Wanikani app](https://github.com/davidsansome/tsurukame/). This is a quick write-up about how I went about diagnosing and fixing the bug from fork to pull request.

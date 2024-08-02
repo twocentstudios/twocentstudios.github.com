@@ -3,6 +3,7 @@ layout: post
 title: Indie Game Devlog 01 - Intro Act in 2D
 date: 2024-03-21 16:32:00
 image: /images/devlog01-title.png 
+tags: indiegame
 ---
 
 I'm making an indie game about a high school rock band playing a show and trying to decide their future.

@@ -3,6 +3,7 @@ layout: post
 title: Exploring SwiftUI Explicit Identity
 date: 2023-11-28 23:17:22
 image: /images/explicit-identity-1-1.png
+tags: apple ios
 ---
 
 In this post, I'll show a few examples of how specifying the explicit identity of a simple SwiftUI view affects the behavior of the view over time depending on its container view.

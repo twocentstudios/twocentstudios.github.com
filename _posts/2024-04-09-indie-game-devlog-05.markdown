@@ -3,6 +3,7 @@ layout: post
 title: Indie Game Devlog 05 - Materials and Shaders
 date: 2024-04-09 17:05:00
 image: /images/devlog05-22.jpg
+tags: indiegame
 ---
 
 Last time, I was deriving a pipeline for face animations. In the process I was making an implicit decision about how much time I'll be committing to this part of the game versus what sort of impact and clarity into the characters it will provide for my audience.

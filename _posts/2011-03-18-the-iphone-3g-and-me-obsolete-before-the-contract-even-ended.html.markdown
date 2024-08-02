@@ -2,9 +2,7 @@
 layout: post
 title: 'The iPhone 3G and Me: Obsolete Before the Contract Even Ended'
 tags:
-- 3G
-- Commentary
-- iOS
+- commentary
 status: publish
 type: post
 published: true

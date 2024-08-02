@@ -3,7 +3,7 @@ layout: post
 title: Deconstructing a chirp.io
 date: 2012-10-12 15:22
 comments: true
-categories: 
+tags: 
 redirect_from: "/blog/2012/10/12/deconstructing-a-chirp-dot-io/"
 ---
 

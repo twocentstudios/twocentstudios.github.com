@@ -2,6 +2,7 @@
 layout: post
 title: Bouncing MIDI to Audio on iOS
 date: 2017-02-20 18:58:18
+tags: apple ios photophono
 ---
 
 This post shows one way to create an audio file from MIDI data and a soundfont (.sf2) file on iOS. It targets iOS 10.2 and Swift 3.0.1.

@@ -2,6 +2,7 @@
 layout: post
 title: Asynchronous Changes to View Models Using Interactors
 date: 2017-11-05 17:08:47
+tags: apple ios
 ---
 
 In this post we'll take a look at a technique to facilitate the changes to our view states in Swift, as well as how to incorporate asynchronous behavior into this system. I'll refer to this system by the name _interactor_ throughout this post.

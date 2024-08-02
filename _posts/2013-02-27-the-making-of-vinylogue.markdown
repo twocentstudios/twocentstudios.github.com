@@ -4,7 +4,7 @@ title: How I Wrote Vinylogue for iOS with ReactiveCocoa
 date: 2013-04-03 12:36
 comments: true
 published: true
-categories: iOS, ReactiveCocoa
+tags: apple ios app
 redirect_from: "/blog/2013/04/03/the-making-of-vinylogue/"
 ---
 

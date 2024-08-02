@@ -2,9 +2,9 @@
 layout: post
 title: Inset Square with Three20 & TTStyle
 tags:
-- iOS
-- Three20
-- TTStyle
+- apple
+- ios
+- three20
 status: publish
 type: post
 published: true

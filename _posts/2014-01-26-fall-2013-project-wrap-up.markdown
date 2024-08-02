@@ -3,7 +3,7 @@ layout: post
 title: Fall 2013 Project Wrap Up
 date: 2014-01-26 18:43:19.000000000 -06:00
 comments: true
-categories: wrap-up
+tags: retro
 redirect_from: "/blog/2014/01/26/fall-2013-project-wrap-up/"
 ---
 

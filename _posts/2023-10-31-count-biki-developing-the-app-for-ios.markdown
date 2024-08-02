@@ -3,6 +3,7 @@ layout: post
 title: Count Biki - Developing the App for iOS
 date: 2023-10-31 19:16:28
 image: /images/count-biki-v1-quiz-settings-parent-child.png
+tags: apple ios countbiki tca
 ---
 
 Continuing my series of posts about my latest iOS app, Count Biki, I'll discuss the more interesting parts of app at version 1.1.

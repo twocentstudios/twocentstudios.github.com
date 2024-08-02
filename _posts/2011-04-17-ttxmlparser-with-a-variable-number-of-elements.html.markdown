@@ -2,9 +2,9 @@
 layout: post
 title: TTXMLParser With a Variable Number of Elements
 tags:
-- iOS
-- TTURLRequestModel
-- TTXMLParser
+- apple
+- ios
+- three20
 status: publish
 type: post
 published: true

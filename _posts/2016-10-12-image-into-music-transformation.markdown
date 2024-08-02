@@ -2,6 +2,7 @@
 layout: post
 title: "Images Into Music: Transformation"
 date: 2016-10-12 06:19:33
+tags: apple ios app
 ---
 
 > This post discusses transformers, the second module of the turning-an-image-into-an-original-piece-of-music project I outlined in [this post](http://twocentstudios.com/2016/10/10/transforming-images-into-music/). Skim that post first to understand the goal of the project. You can also read about the first module, deconstructors, in [this post](http://twocentstudios.com/2016/10/11/images-into-music-deconstruction/).

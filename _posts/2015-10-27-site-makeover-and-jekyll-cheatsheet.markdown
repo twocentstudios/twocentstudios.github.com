@@ -2,6 +2,7 @@
 layout: post
 title: Site Makeover and Jekyll Cheatsheet
 date: 2015-10-27 21:56:36
+tags: blog
 ---
 
 I took a few days to migrate my blog from [Octopress](http://octopress.org/) to [Jekyll](https://jekyllrb.com/). Octopress is an opinionated fork based on Jekyll so it wasn't too crazy. There were a couple hangups though, mostly due to the fact that I never bothered to learn how a lot of the magic of Octopress worked.

@@ -3,7 +3,7 @@ layout: post
 title: 'AppleCart: My First Production Rails App'
 date: 2012-09-18 20:20
 comments: true
-categories: rails
+tags: rails
 redirect_from: "/blog/2012/09/18/applecart-my-first-production-rails-app/"
 ---
 

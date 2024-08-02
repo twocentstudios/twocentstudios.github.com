@@ -3,6 +3,7 @@ layout: post
 title: Count Biki - App and Character Design
 date: 2023-10-30 19:36:58
 image: /images/count-biki-blender-animation.jpg
+tags: apple ios countbiki
 ---
 
 Continuing my series of posts about my latest iOS app, Count Biki, I'll discuss the planning, design, and character design details.

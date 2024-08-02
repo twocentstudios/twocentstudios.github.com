@@ -3,6 +3,7 @@ layout: post
 title: Indie Game Devlog 03 - Experimental Character Design and Animation
 date: 2024-03-28 22:00:00
 image: /images/devlog03-05.jpg
+tags: indiegame
 ---
 
 In the last post, I had finished the blockout for our main level in 3D and did a very basic lighting pass. I also tested the limitations of material transfer between Blender and Godot.

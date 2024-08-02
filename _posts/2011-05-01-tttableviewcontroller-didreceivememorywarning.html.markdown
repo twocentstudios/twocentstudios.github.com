@@ -2,10 +2,9 @@
 layout: post
 title: TTTableViewController & didReceiveMemoryWarning
 tags:
-- didReceiveMemoryWarning
-- iOS
-- TTModelViewController
-- TTTableViewController
+- apple
+- ios
+- three20
 status: publish
 type: post
 published: true

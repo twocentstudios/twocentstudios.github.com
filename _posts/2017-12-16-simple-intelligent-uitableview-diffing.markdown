@@ -2,6 +2,7 @@
 layout: post
 title: Simple Intelligent UITableView Diffing
 date: 2017-12-16 15:44:23
+tags: apple ios
 ---
 
 In this post we'll finally be implementing the view layer of our example application that shows a user profile. 

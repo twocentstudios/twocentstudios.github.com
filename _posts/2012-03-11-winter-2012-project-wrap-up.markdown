@@ -3,7 +3,7 @@ layout: post
 title: Winter 2012 Project Wrap Up
 date: 2012-03-11 16:19
 comments: true
-categories: 
+tags: retro
 redirect_from: "/blog/2012/03/11/winter-2012-project-wrap-up/"
 ---
 

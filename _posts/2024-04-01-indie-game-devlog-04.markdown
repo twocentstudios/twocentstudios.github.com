@@ -3,6 +3,7 @@ layout: post
 title: Indie Game Devlog 04 - Animating Faces
 date: 2024-04-01 23:00:00
 image: /images/devlog04-07.jpg
+tags: indiegame
 ---
 
 Last time, I'd prototyped a 3D character with an idle and walk animation.

@@ -2,6 +2,7 @@
 layout: post
 title: An Experimental iOS Architecture Based on Radical Decoupling
 date: 2015-12-09 3:49:49
+tags: apple ios
 ---
 
 This week I decided to do an experiment on a radically decoupled app architecture. The main thesis I wanted to explore was:

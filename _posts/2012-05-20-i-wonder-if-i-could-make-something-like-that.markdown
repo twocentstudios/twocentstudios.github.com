@@ -3,7 +3,7 @@ layout: post
 title: '"I Wonder If I Could Make Something Like That"'
 date: 2012-05-20 16:29
 comments: true
-categories: 
+tags: commentary 
 redirect_from: "/blog/2012/05/20/i-wonder-if-i-could-make-something-like-that/"
 ---
 

@@ -2,6 +2,7 @@
 layout: post
 title: A Deep Dive Into iOS Messages Extensions
 date: 2016-06-25 01:39:29
+tags: apple ios
 ---
 
 Apple announced Messages Extensions as part of iOS 10 allowing third-party apps to integrate directly with the iMessage platform. This integration follows Facebook Messenger and pretty much every other major messaging platform in the US and abroad.
