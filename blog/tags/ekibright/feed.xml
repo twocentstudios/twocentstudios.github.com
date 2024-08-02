@@ -1,0 +1,274 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>twocentstudios</title>
+    <description>A coding blog covering iOS, Swift, and other programming topics.</description>
+    <link>https://twocentstudios.com/blog/tags/ekibright/index.html</link>
+    <atom:link href="https://twocentstudios.com/blog/tags/ekibright/feed.xml" rel="self" type="application/rss+xml"/>
+    <pubDate>Fri, 02 Aug 2024 06:02:52 -0500</pubDate>
+    <lastBuildDate>Fri, 02 Aug 2024 06:02:52 -0500</lastBuildDate>
+    <generator>Jekyll v3.9.3</generator>
+    
+      <item>
+        <title>Eki Bright - Tokyo Area Train Timetables</title>
+        <description>&lt;p&gt;My latest app is called Eki Bright or 駅ブライト in Japanese.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/eki-bright-app-icon.jpg&quot; width=&quot;&quot; height=&quot;300&quot; alt=&quot;Eki Bright app icon&quot; title=&quot;Eki Bright app icon&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Eki Bright app icon&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;In short, it’s an app for quickly accessing offline station timetables and train timetables for railways in the Tokyo metropolitan area including Kanagawa, Chiba, and Saitama prefectures.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/eki-bright-v1-station-timetable.jpg&quot; width=&quot;&quot; height=&quot;650&quot; alt=&quot;The station timetable screen for Bashamichi station on the Minatomirai Line&quot; title=&quot;The station timetable screen for Bashamichi station on the Minatomirai Line&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The station timetable screen for Bashamichi station on the Minatomirai Line&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;In this series of posts I’ll talk about:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;strong&gt;This post&lt;/strong&gt; - the motivation behind the app and the solution I’ve begun to explore&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;[Coming soon]&lt;/strong&gt; Eki Bright- Developing the App for iOS - the high-level implementation details&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Tokyo-area residents can download the app from the &lt;a href=&quot;https://apps.apple.com/app/%E9%A7%85%E3%83%96%E3%83%A9%E3%82%A4%E3%83%88/id6504702463&quot;&gt;App Store&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;Eki Bright is currently closed source due to data licensing issues, but I’d like to open source it as some point once I get that aspect figured out.&lt;/p&gt;
+
+&lt;h2 id=&quot;background&quot;&gt;Background&lt;/h2&gt;
+
+&lt;p&gt;I’m a public transit (specifically train) fan. And Tokyo is easily one of the best cities in the world to get around by train.&lt;/p&gt;
+
+&lt;p&gt;Due to the large market, there are already plenty of full featured transit apps – &lt;a href=&quot;https://maps.google.com/&quot;&gt;Google Maps&lt;/a&gt;, &lt;a href=&quot;https://www.apple.com/maps/&quot;&gt;Apple Maps&lt;/a&gt;, &lt;a href=&quot;https://www.navitime.co.jp/&quot;&gt;Navitime&lt;/a&gt;, &lt;a href=&quot;https://www.jorudan.co.jp/&quot;&gt;Jorudan&lt;/a&gt;, etc. And I’m a heavy user of all of them, especially Google Maps.&lt;/p&gt;
+
+&lt;p&gt;However, after many years of use, I started to find some pain points.&lt;/p&gt;
+
+&lt;p&gt;I got to know my daily trips well enough that I no longer needed to know all of the below information for each trip:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Which station I needed to walk to&lt;/li&gt;
+  &lt;li&gt;How long it would take to walk to the station&lt;/li&gt;
+  &lt;li&gt;Which railway I needed to use&lt;/li&gt;
+  &lt;li&gt;Which platform I needed to wait at&lt;/li&gt;
+  &lt;li&gt;Which train type I needed to get on&lt;/li&gt;
+  &lt;li&gt;When the target train type would depart&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;I’d memorized 1-5, and only needed the departure times in order to optimize my trip.&lt;/p&gt;
+
+&lt;p&gt;All of the other information requires opening Google Maps, waiting for it to load, entering a destination, occasionally entering an origin, waiting for the route data to load, scrolling, choosing the top result, scrolling.&lt;/p&gt;
+
+&lt;p&gt;Then there were the times that I’d want to check departure times assuming I’d leave in half an hour. In that case I’d also have to manually enter a departure time or manually change the train in the helpful selection dropdown on the route page (surprisingly, a feature still not available on the web app).&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/eki-bright-gmaps-other-departures.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Adjusting the exact train within a chosen route is an essential step in using Google Maps&apos; routing&quot; title=&quot;Adjusting the exact train within a chosen route is an essential step in using Google Maps&apos; routing&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Adjusting the exact train within a chosen route is an essential step in using Google Maps&apos; routing&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;There were also times where I knew more than Google Maps. For example, I know that on weekends, I can sometimes take a local or express train from Bashamichi station to Minatomirai station to catch a limited express train. This little maneuver can save 10-15 minutes into Shibuya. But this information is not easy to access with the Google Maps interface.&lt;/p&gt;
+
+&lt;p&gt;Sure, for the most common situation I could head out from my apartment at whatever time was natural then wait on the platform for however long. But if I could see the next departures board at the station before I left my apartment, I could optimize my time better.&lt;/p&gt;
+
+&lt;p&gt;Thus, the idea of Eki Bright was born.&lt;/p&gt;
+
+&lt;h2 id=&quot;goals&quot;&gt;Goals&lt;/h2&gt;
+
+&lt;p&gt;My north star for this app is, like I mentioned above, to have the same information I’d have while standing on the platform looking at the next departures board.&lt;/p&gt;
+
+&lt;p&gt;The main principle required for that use case is simple: &lt;strong&gt;speed&lt;/strong&gt;.&lt;/p&gt;
+
+&lt;p&gt;Every feature is evaluated against getting the amount of time it takes to see the departure timetable for a station optimized to near zero.&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Offline data: no server roundtrip is required to fetch a station timetable, saving seconds on each tap, especially in slow network environments often expected when outside or underground. (The only reason this is even feasible is because trains in Japan are so rarely late.)&lt;/li&gt;
+  &lt;li&gt;Bookmarked stations: the vast majority of trips are taken from the same stations: near home or work or a third place. Letting the user choose these and putting them on the home screen eliminates a step in getting them the information they need.&lt;/li&gt;
+  &lt;li&gt;Nearby stations: for the next minority of trips, the user wants to see timetables for stations nearby their current location. This is trivial with location services (GPS).&lt;/li&gt;
+  &lt;li&gt;Search: as a catch all for the remaining trips, stations can be found by text search (in romaji, hiragana, katakana, or kanji).&lt;/li&gt;
+  &lt;li&gt;Widgets: for bookmarked stations, users can see timetables without even opening the app. The home screen or lock screen makes it trivial to see departure times at a glance.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/eki-bright-v1-home.jpg&quot; width=&quot;&quot; height=&quot;650&quot; alt=&quot;Nearby and bookmarked stations on the app home screen&quot; title=&quot;Nearby and bookmarked stations on the app home screen&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Nearby and bookmarked stations on the app home screen&lt;/div&gt;&lt;/div&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/eki-bright-v1-widgets.jpg&quot; width=&quot;&quot; height=&quot;650&quot; alt=&quot;Widgets make station timetables available at a glance&quot; title=&quot;Widgets make station timetables available at a glance&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Widgets make station timetables available at a glance&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;My anti-goals – things I specifically did not want to include for fear of overcomplicating the interface and muddying the value proposition – are:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Routing (i.e. inputting an origin and destination and calculating which trains to use)&lt;/li&gt;
+  &lt;li&gt;Covering every city in Japan (or anywhere else in the world)&lt;/li&gt;
+  &lt;li&gt;Covering other modes of public transit (e.g. buses)&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Features I feel could potentially fit into the ethos of the app, but aren’t a high-priority:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Showing any information on a map&lt;/li&gt;
+  &lt;li&gt;Live-updating departure times&lt;/li&gt;
+  &lt;li&gt;Platform number information&lt;/li&gt;
+  &lt;li&gt;Stair/elevator locations on the platform in relation to a train car&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;One feature that wasn’t 100% in line with my north star but turned out to be so useful as to be prioritized for first release: train timetables. Tapping a departure time in the station timetable shows the full path of that particular train as a train timetable. This is useful for two reasons:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Seeing your estimated arrival time at any destination on that line.&lt;/li&gt;
+  &lt;li&gt;Seeing which stations that train stops at, in the case you’re not totally familiar with the local, express, etc. designations for that railway.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/eki-bright-v1-train-timetable.jpg&quot; width=&quot;&quot; height=&quot;650&quot; alt=&quot;train timetables show which stations a particular train will stop at, and at what times&quot; title=&quot;train timetables show which stations a particular train will stop at, and at what times&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;train timetables show which stations a particular train will stop at, and at what times&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;I have many more ideas on how I can make this data alone even more useful to users without further complicating the app.&lt;/p&gt;
+
+&lt;h2 id=&quot;one-example-of-ux-optimization-for-speed&quot;&gt;One example of UX optimization for speed&lt;/h2&gt;
+
+&lt;p&gt;A conceptually-murky yet concretely defined &lt;em&gt;station&lt;/em&gt; in the app usually serves two directions unless it is a terminus.&lt;/p&gt;
+
+&lt;p&gt;I made a decision early on for a &lt;em&gt;bookmark&lt;/em&gt; to represent the combination of a unique &lt;em&gt;station&lt;/em&gt; and a &lt;em&gt;direction&lt;/em&gt;. The reasoning being that it’s quite common for a passenger to only ride one direction from a particular station. For example, from my local station Bashamichi, I’m always going &lt;em&gt;inbound&lt;/em&gt; into Tokyo from my house and never &lt;em&gt;outbound&lt;/em&gt; back towards Motomachi.&lt;/p&gt;
+
+&lt;p&gt;It would significantly slow me down if every time I had to select “inbound” or “outbound” each time I wanted to view the timetable for Bashamichi station.&lt;/p&gt;
+
+&lt;p&gt;As the designer, I could put both timetables on one screen, however that would crowd the screen with useless (to me the user in my particular scenario) information.&lt;/p&gt;
+
+&lt;p&gt;In the case where I do use both directions somewhat equally, it’s perfectly reasonable to have two bookmarks for the same station.&lt;/p&gt;
+
+&lt;p&gt;I consider this well designed for the bookmarks use case. But for nearby stations and text search results users still need to select which direction they’re going before the app can display the correct timetable.&lt;/p&gt;
+
+&lt;p&gt;My original design presented a station detail screen in this case. It showed no timetable data yet. The user had to select one of two (or one) direction first in order to view the timetable.&lt;/p&gt;
+
+&lt;p&gt;This configuration almost immediately felt wrong during use. On one hand, users were less likely to make a mistake and misread the timetable for the opposite direction. On the other hand, it felt so slow having an intermediate step presented in order to see the timetable.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/eki-bright-v1-station-detail.jpg&quot; width=&quot;&quot; height=&quot;650&quot; alt=&quot;The deprecated Station Detail screen, looking alright but adding time and cognitive overhead&quot; title=&quot;The deprecated Station Detail screen, looking alright but adding time and cognitive overhead&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The deprecated Station Detail screen, looking alright but adding time and cognitive overhead&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;For the first release, I made two revisions to the UX:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;I removed the station detail screen. After selecting a search result, the user would now be dropped directly into the timetable for the default direction for that station.&lt;/li&gt;
+  &lt;li&gt;I added a quick swipe between that station’s direction’s timetables. Now users could quickly flip between the two directions with conceptually fewer steps.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/eki-bright-v1-station-timetable-swipe.gif&quot; width=&quot;&quot; height=&quot;650&quot; alt=&quot;Swipe between directions of a station or tap the segmented control at the bottom&quot; title=&quot;Swipe between directions of a station or tap the segmented control at the bottom&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Swipe between directions of a station or tap the segmented control at the bottom&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Again, optimizing for speed.&lt;/p&gt;
+
+&lt;p&gt;I could go further and silently save which direction for any given station the user last viewed. I could also redesign the station detail screen to be more useful to all use cases, whether that be quickly viewing either timetable or just getting metadata about the station of interest. Either way, I don’t want to compromise on the speed of getting a user to the information they’re looking for.&lt;/p&gt;
+
+&lt;h2 id=&quot;data&quot;&gt;Data&lt;/h2&gt;
+
+&lt;p&gt;In my prototyping phase I did a dive into potential data sources, both online and offline, paid and free.&lt;/p&gt;
+
+&lt;p&gt;In the current self-funding phase of my business, I heavily preferred not paying for data. This keeps my indefinite overhead low and means I have more flexibility in pricing in an already crowded and mature market.&lt;/p&gt;
+
+&lt;p&gt;The &lt;a href=&quot;https://developer.odpt.org/&quot;&gt;Association for Open Data of Public Transportation&lt;/a&gt; aggregates and publishes data for transit systems across Japan. They also run a hackathon/contest for websites and apps built with their sourced data. This seemed like a reliable enough source for the data at the foundation of the app.&lt;/p&gt;
+
+&lt;h2 id=&quot;prototyping&quot;&gt;Prototyping&lt;/h2&gt;
+
+&lt;p&gt;I hacked together a widget that ingested the aggregated timetables for Bashamichi station (my most used station) on a weekday and showing them in a widget.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/eki-bright-v1-widget-proto.gif&quot; width=&quot;&quot; height=&quot;350&quot; alt=&quot;One of the first widgets I hacked together&quot; title=&quot;One of the first widgets I hacked together&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;One of the first widgets I hacked together&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;The goal at this point was to evaluate how well this implementation solved my hypothetical pain point. I used it for a couple weeks and, yes, I did feel it was a pretty useful supplement to my go-to Google Maps. I could swipe over on my home screen on my way out the door and see whether I need to hustle out to make the next limited express or whether I could take my time.&lt;/p&gt;
+
+&lt;h2 id=&quot;productionizing&quot;&gt;Productionizing&lt;/h2&gt;
+
+&lt;p&gt;At this point I had to decide whether to leave this as a &lt;em&gt;scratch-my-own-itch&lt;/em&gt; project, or whether it had potential as a full featured app I could offer of the App Store and support indefinitely. This isn’t an easy decision!&lt;/p&gt;
+
+&lt;p&gt;In the end, at my level of business knowledge and sophistication, I made this decision from a selfish perspective:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;How much did I personally want to use the most ideal version of this app?&lt;/li&gt;
+  &lt;li&gt;How interested were my friends in the concept?&lt;/li&gt;
+  &lt;li&gt;How motivated was I to work on this concept for weeks or months? Could I get it to the finish line?&lt;/li&gt;
+  &lt;li&gt;How capable was I of doing the design on my own?&lt;/li&gt;
+  &lt;li&gt;How much revenue did I need from the app to make it worthwhile?&lt;/li&gt;
+  &lt;li&gt;How many monetizable features could I implement while still committing to simplicity and speed?&lt;/li&gt;
+  &lt;li&gt;What other ideas was I more motivated to work on instead?&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&quot;making-sense-of-the-data&quot;&gt;Making sense of the data&lt;/h2&gt;
+
+&lt;p&gt;I was by no means an expert on the intricacies of the vast Tokyo area train network. I’ve done my fair share of rides in the 6 years I’ve lived here, but vast majority of those rides were the same trains going to the same stations, with extracurricular trips being a novelty I quickly forgot the details of.&lt;/p&gt;
+
+&lt;p&gt;Learning not only the train system as it exists in the real world, but also as it exists modeled in my chosen dataset was a process. A couple fun concepts I had to wrap my head around:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;How to model time, especially across midnight and logical day spans&lt;/li&gt;
+  &lt;li&gt;How to choose a weekday, weekend, Saturday, or holiday schedule&lt;/li&gt;
+  &lt;li&gt;How to internally and externally deal with train directions and destinations&lt;/li&gt;
+  &lt;li&gt;How to deal with the one-off case of the one circle line (Yamanote)&lt;/li&gt;
+  &lt;li&gt;How all these concepts were most naturally expressed in Japanese&lt;/li&gt;
+  &lt;li&gt;How to deal with searching via multiple Japanese character sets&lt;/li&gt;
+  &lt;li&gt;How to generalize train types like local, express, etc. over disparate railways&lt;/li&gt;
+  &lt;li&gt;How to display colors and associate them with railway concepts&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/eki-bright-v1-db.png&quot; width=&quot;&quot; height=&quot;450&quot; alt=&quot;A peek into the SQLite database that powers Eki Bright&quot; title=&quot;A peek into the SQLite database that powers Eki Bright&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;A peek into the SQLite database that powers Eki Bright&lt;/div&gt;&lt;/div&gt;
+
+&lt;h2 id=&quot;internationalization&quot;&gt;Internationalization&lt;/h2&gt;
+
+&lt;p&gt;My initial thought was that it’d be reasonable support both English and Japanese localizations at first release. Especially considering my dataset has pretty good English support.&lt;/p&gt;
+
+&lt;p&gt;However, after getting into the details of the design, I realized it’d be a lot more pragmatic to optimize the interface for Japanese at first. Although I’m keen to help the low Japanese-proficiency community in Tokyo, realistically, the vast majority of my users will be comfortable enough with Japanese.&lt;/p&gt;
+
+&lt;p&gt;In the next phase I’ll focus on getting internationalization complete on the interface layer of the app, then focus on the data layer. It will require some design thought because a lot of the time even English speakers will want access to both the English and Japanese station name, train type, etc. when out and looking for their train.&lt;/p&gt;
+
+&lt;h2 id=&quot;icon&quot;&gt;Icon&lt;/h2&gt;
+
+&lt;p&gt;Creating the app icon was the last step for Eki Bright. My intention for much of development was to create an anthropomorphized train character with a happy disposition, similar to the &lt;a href=&quot;/2023/10/30/count-biki-app-and-character-design/&quot;&gt;vampire rabbit mascot&lt;/a&gt; Count Biki.&lt;/p&gt;
+
+&lt;p&gt;Step zero was buying a magazine with lots of various train photos.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/eki-bright-train-magazine.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Luckily, train enthusiast magazines are not difficult to find in Japan&quot; title=&quot;Luckily, train enthusiast magazines are not difficult to find in Japan&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Luckily, train enthusiast magazines are not difficult to find in Japan&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Step one was sketching some trains, then iterating heavily on character designs.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/eki-bright-icon-sketchbook.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;My somewhat embarrassing sketchbook (blue pen/good sketches are by my friend Kazuyo)&quot; title=&quot;My somewhat embarrassing sketchbook (blue pen/good sketches are by my friend Kazuyo)&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;My somewhat embarrassing sketchbook (blue pen/good sketches are by my friend Kazuyo)&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Step two was 3D modeling.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/eki-bright-v1-icon-wip.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;3D design work in progress&quot; title=&quot;3D design work in progress&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;3D design work in progress&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Which unfortunately ended up with me throwing in the towel regarding the character and pivoting into a more traditional icon.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/eki-bright-app-icon.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;The final icon&quot; title=&quot;The final icon&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The final icon&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Although a cute character would be great, I realized it wasn’t a huge loss. Realistically, the app design is extremely utilitarian. A cute character on the book cover wouldn’t really reflect the contents very well.&lt;/p&gt;
+
+&lt;p&gt;In the future, assuming a healthy adoption of the app, I’d love to do a full redesign that emphasizes playfulness alongside usefulness and a streamlined UX. At that point, I think it’d be reasonable to revisit the app icon design.&lt;/p&gt;
+
+&lt;h2 id=&quot;monetization&quot;&gt;Monetization&lt;/h2&gt;
+
+&lt;p&gt;Monetization on the App Store is still a mystery box to me. The entire market is relatively mature closing in on two decades on existence.&lt;/p&gt;
+
+&lt;p&gt;At first release, I decided not to implement any in-app purchase or subscription at all. My focus up front is testing the market and ironing out the rough edges.&lt;/p&gt;
+
+&lt;p&gt;I think there are 3 valid monetization paths (or some combination):&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Themes: offer themes for the app and/or widgets that are each unlockable as a one-time purchase.&lt;/li&gt;
+  &lt;li&gt;Subscription: make the app functionality severely limited outside a subscription: no nearby stations, no train timetables, only one bookmark/widget. Charge a low monthly/yearly rate to cover the ongoing development costs and data renewal costs.&lt;/li&gt;
+  &lt;li&gt;One-time purchase: assume prospective users understand the value, and that I can cover my long-term costs by adding new users. The upside is pricing simplicity.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;One reason I’m not focused on monetization yet is that I’m not confident I can fill the top of the funnel.&lt;/p&gt;
+
+&lt;p&gt;Getting anyone’s attention is often an insurmountable problem, especially when most people already have an okay-ish solution to the problem I’m trying to solve.&lt;/p&gt;
+
+&lt;p&gt;Does anyone have space on their phone for another widget or app? Do they want to build new muscle memory and decide to open app A or app B depending on the situation? Is it a daily-use app that justifies an ongoing payment?&lt;/p&gt;
+
+&lt;p&gt;Although I implemented tips in raw Store Kit for my last app &lt;a href=&quot;/2023/10/29/count-biki-japanese-numbers/&quot;&gt;Count Biki&lt;/a&gt;, and it’ll theoretically be less development this time around, it still requires enough work that could be better spent on marketing, especially while the top of the funnel is so small.&lt;/p&gt;
+
+&lt;p&gt;All that’s to say that for now I’m going to focus on finding a reliable process to get users into the top of the funnel (the ever-reliable VC startup playbook, haha).&lt;/p&gt;
+
+&lt;h2 id=&quot;conclusion&quot;&gt;Conclusion&lt;/h2&gt;
+
+&lt;p&gt;I’m of course happy to see this little app make its way out into the world, and hopefully shave of a few seconds or minutes for train-hopping Tokyo residents. I’m a little biased, but I’ve found myself reaching for Eki Bright before Google Maps for a majority of my trips, even when multiple transfers are involved.&lt;/p&gt;
+
+&lt;p&gt;It may simply be a naive sense of control Eki Bright gives me when bouncing around timetables, but regardless it’s surprisingly entertaining (rather than burdensome) to do my own simple route planning on the fly. And knowing I’m getting the absolute fastest trip from A to B.&lt;/p&gt;
+
+&lt;!-- For developers, see you in the [next post](TODO) for all the fun development details. --&gt;
+</description>
+        <pubDate>Sat, 27 Jul 2024 09:02:00 -0500</pubDate>
+        <link>https://twocentstudios.com/2024/07/27/eki-bright-tokyo-area-train-timetables/</link>
+        <guid isPermaLink="true">https://twocentstudios.com/2024/07/27/eki-bright-tokyo-area-train-timetables/</guid>
+        
+        <category>ekibright</category>
+        
+        <category>app</category>
+        
+        
+      </item>
+    
+  </channel>
+</rss>

@@ -1,0 +1,964 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>twocentstudios</title>
+    <description>A coding blog covering iOS, Swift, and other programming topics.</description>
+    <link>https://twocentstudios.com/blog/tags/retro/index.html</link>
+    <atom:link href="https://twocentstudios.com/blog/tags/retro/feed.xml" rel="self" type="application/rss+xml"/>
+    <pubDate>Fri, 02 Aug 2024 06:02:52 -0500</pubDate>
+    <lastBuildDate>Fri, 02 Aug 2024 06:02:52 -0500</lastBuildDate>
+    <generator>Jekyll v3.9.3</generator>
+    
+      <item>
+        <title>Cookpad: A Retrospective</title>
+        <description>&lt;p&gt;It’s been almost 5 years since my last series of posts, and 8 since &lt;a href=&quot;/2015/11/03/timehop-a-retrospective/&quot;&gt;Timehop: A Retrospective&lt;/a&gt;. As my last day as an iOS engineer at Cookpad was June 30th, 2023, it’s time to start another chapter of this blog.&lt;/p&gt;
+
+&lt;p&gt;While I only published publicly twice on the Cookpad developer blog (&lt;a href=&quot;https://techlife.cookpad.com/entry/2019/06/14/160000&quot;&gt;Working with AWS AppSync on iOS&lt;/a&gt; and &lt;a href=&quot;https://techlife.cookpad.com/entry/2023/06/21/162523&quot;&gt;Path Drawing in SwiftUI&lt;/a&gt;), on our company internal blog I wrote nearly 90 posts, including tutorial videos and recorded presentations. At the time I knew I’d regret publishing internally only, but the ease of writing for a known audience was too hard to break from.&lt;/p&gt;
+
+&lt;p&gt;In my next phase, I’ll be making up for lost time. However, for the moment, I’ll try to recap the last ~6 years at Cookpad.&lt;/p&gt;
+
+&lt;h2 id=&quot;overview&quot;&gt;Overview&lt;/h2&gt;
+
+&lt;p&gt;I worked in some capacity in 7 departments at Cookpad over my tenure, mostly as an iOS engineer, but also in and around AR, IoT, hardware, and ML. From my perspective, management at Cookpad was always encouraging of inter-company movement of engineers, even at smaller scales like 2-3 months (“study abroad”). I certainly appreciated these opportunities.&lt;/p&gt;
+
+&lt;p&gt;For context, I worked for Cookpad remotely from Chicago for Cookpad Japan for 6 months starting in April 2017. I moved to Japan in October 2017 and have lived here since.&lt;/p&gt;
+
+&lt;h2 id=&quot;cookpad-global&quot;&gt;Cookpad Global&lt;/h2&gt;
+
+&lt;p&gt;I started off on the &lt;a href=&quot;https://apps.apple.com/gb/app/cookpad-find-share-recipes/id585332633&quot;&gt;Cookpad Global&lt;/a&gt; team.&lt;/p&gt;
+
+&lt;p&gt;On Global I learned of the complexities of supporting a fully internationalized app, especially in the era where Apple’s support for things like right-to-left languages was still primitive. I learned how intentional distributed work must be while working with groups in the UK and Japan from both Chicago and Japan. I re-learned that premature scaling (choose your preferred definition of “premature” and “scaling”) is perhaps the most irrecoverable mistake startups can make. I continued to refine and put into practice my ideas about unidirectional architecture, immutable view models, and the tradeoffs of functional reactive systems.&lt;/p&gt;
+
+&lt;p&gt;It was a unique team where I worked closely with teammates from dozens of nationalities and cultures.&lt;/p&gt;
+
+&lt;p&gt;My three biggest (non-solo) projects were:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Converting our app’s navigation layer to use the nascent coordinator pattern.&lt;/li&gt;
+  &lt;li&gt;Rewriting our recipe editor.&lt;/li&gt;
+  &lt;li&gt;Rewriting our login module to support region switching, new OAuth services, and Apple’s new Safari APIs specifically for login.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&quot;studio-satellite&quot;&gt;Studio Satellite&lt;/h2&gt;
+
+&lt;p&gt;Next was &lt;a href=&quot;https://apps.apple.com/us/app/cookpad-studio/id1464118207&quot;&gt;Cookpad Studio Satellite&lt;/a&gt;, a startup project within the Cookpad TV organization with a team of around 5. Our goal was to make an app where any cook could easily shoot and edit their own quick-cut recipe video from their iPhone. In later stages pre-launch, we even bolted on a social network that included all the mainstays: a feed, likes, comments, profiles, etc.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/cookpad-studio-satellite.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Video editor timeline of a pre-release version of Cookpad Studio Satellite&quot; title=&quot;Video editor timeline of a pre-release version of Cookpad Studio Satellite&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Video editor timeline of a pre-release version of Cookpad Studio Satellite&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;On this project I learned that I love prototyping, working on zero-to-one ideas, working with small teams, and having input (whether true or imagined) into the full product development process. I learned that there will always be stakeholders and that check will always come due.&lt;/p&gt;
+
+&lt;p&gt;I learned that sometimes your first users aren’t who you originally thought they’d be. Specifically: we had a dedicated group of community managers from the Global division beta testing from the early versions of the app and giving us very detailed feedback, and yet we never treated them as our “real” users, instead sticking to our original plan of eventually launching to more traditional Cookpad users. It’s speculation, but with some hindsight, I think those community managers could have a been the perfect group to seed the app to and grow from.&lt;/p&gt;
+
+&lt;h2 id=&quot;interlude-wwdc-2019&quot;&gt;Interlude: WWDC 2019&lt;/h2&gt;
+
+&lt;p&gt;I attended WWDC for the first time 2019 with a small group of iOS engineers from Cookpad Japan and Cookpad Global. It turned out to be a massive year: iOS 13, SwiftUI, Combine, UICollectionViewDiffableDataSource, dark mode, etc. And it was also the final year of the “classic” in-person WWDC format before COVID19.&lt;/p&gt;
+
+&lt;h2 id=&quot;oicy-smart-kitchen&quot;&gt;OiCy (Smart Kitchen)&lt;/h2&gt;
+
+&lt;p&gt;During a transitional period, I built a one-off app for the Smart Kitchen team. Our team used the app to present a concept during the &lt;a href=&quot;http://smartkitchensummit.mars.bindcloud.jp/food-innovation.co/sksj2019/index.html&quot;&gt;Smart Kitchen Summit Japan 2019&lt;/a&gt; conference. From concept to presenting the fully functioning app at the conference, it was less than 2 weeks. The app interfaced with a connected oven, inductive cooktop, condiment dispenser, and &lt;a href=&quot;https://thespoon.tech/cookpad-has-100m-active-monthly-users-broadens-into-original-hardware-design-with-a-hard-soft-water-device/&quot;&gt;variable hardness water dispenser&lt;/a&gt;, and was remote controlled via the Multipeer Connectivity framework.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/cookpad-oicy-sksj-2019-presentation.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;A video still from the OiCy Smart Kitchen Summit Japan 2019 presentation showing a hardware-integrated recipe app prototype.&quot; title=&quot;A video still from the OiCy Smart Kitchen Summit Japan 2019 presentation showing a hardware-integrated recipe app prototype.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;A video still from the OiCy Smart Kitchen Summit Japan 2019 presentation showing a hardware-integrated recipe app prototype.&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Through the unique scope of this project – a one-off demo app used for a conference presentation – I learned how to radically tailor my development style to some given constraints. It can be surprisingly difficult to choose between development techniques that I know well and work well for 1M+ user-facing apps, and hacky techniques that get the prototype shipped by the end of the day.&lt;/p&gt;
+
+&lt;p&gt;In the end, the presentation was a success, but the smart kitchen division closed down a year or so later in late 2020.&lt;/p&gt;
+
+&lt;h2 id=&quot;rd&quot;&gt;R&amp;amp;D&lt;/h2&gt;
+
+&lt;p&gt;I joined the R&amp;amp;D division with a remit to prototype and productionize various R&amp;amp;D technologies under active research by our team of 5-10. I shipped an MVP that integrated image recognition into an app flow to estimate calories. This was another project that was developed and released internally within a few weeks.&lt;/p&gt;
+
+&lt;p&gt;My next big project was using image recognition to filter food photos in the main Cookpad’s recipe photo picker. The main challenges were converting the machine learning model to Core ML and doing all processing transparently on device as a background task for potentially hundreds of thousands of photos. The feature was released for a brief period in beta, but was later rolled back after changes to privacy settings in iOS 14 rendered it too low impact to justify continued maintenance. However, my teammate and I won &lt;a href=&quot;https://www.j-platpat.inpit.go.jp/c1800/PU/JP-7011011/3CE2815D9318E761AA5124BCD9A289ED1CEE4E6EE230751AC357FDA198F0AC47/15/en&quot;&gt;patent JP,2022-040842,A&lt;/a&gt; (&lt;a href=&quot;https://patents.google.com/patent/US20230196769A1/en?oq=2023/0196769&quot;&gt;US patent&lt;/a&gt; is still pending) for the design of the feature.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/cookpad-patent-art.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Diagram from food photo filter patent&quot; title=&quot;Diagram from food photo filter patent&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Diagram from food photo filter patent&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Next, I worked with a small group of R&amp;amp;D members on an RGB and thermographic camera system placed above one’s stovetop. As an R&amp;amp;D project, the scope of this project changed significantly over its lifetime. I wrote algorithms in Python for image registration, investigated HLS video streaming over AWS, and built myriad apps and tools in Swift and SwiftUI to move this data around.&lt;/p&gt;
+
+&lt;p&gt;Many of my projects during my time in R&amp;amp;D were short explorations. I researched, mostly from the applied technology side, topics like image segmentation, image classification, image inpainting, ML sound classification, pose detection, automatic video editing, and image generation with Stable Diffusion, ControlNet, and Textual Inversion.&lt;/p&gt;
+
+&lt;p&gt;However, my persistent focus in R&amp;amp;D was the field of augmented reality. This started with building a “recipe playground” app built in Unity for the Microsoft HoloLens 2 and used in the kitchen. Later, I began building prototypes with Apple’s ARKit and RealityKit for iOS, with the knowledge that &lt;em&gt;eventually&lt;/em&gt; Apple would release a headset (Apple Vision Pro, announced at WWDC 2023).&lt;/p&gt;
+
+&lt;p&gt;Although my primary role was R&amp;amp;D during this period, I split my time on a few other teams as well, working an average of 2-3 days a week on each.&lt;/p&gt;
+
+&lt;h2 id=&quot;cookpad-japans-recipe-app&quot;&gt;Cookpad Japan’s recipe app&lt;/h2&gt;
+
+&lt;p&gt;I did a brief stint working part-time on Cookpad’s flagship &lt;a href=&quot;https://apps.apple.com/us/app/%E3%82%AF%E3%83%83%E3%82%AF%E3%83%91%E3%83%83%E3%83%89-no-1%E6%96%99%E7%90%86%E3%83%AC%E3%82%B7%E3%83%94%E6%A4%9C%E7%B4%A2%E3%82%A2%E3%83%97%E3%83%AA/id340368403&quot;&gt;recipe app&lt;/a&gt; for the Japanese market as an iOS individual contributor. My biggest contribution was a recipe module presented when opening a recipe from an external source that included paging behavior between recommended recipes. The design spec was surprisingly complex and required significant planning work, experimentation, and eventually a custom UICollectionViewLayout.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/cookpad-japan-recipe-carousel.gif&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Recipe carousel in the Cookpad Japan app&quot; title=&quot;Recipe carousel in the Cookpad Japan app&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Recipe carousel in the Cookpad Japan app&lt;/div&gt;&lt;/div&gt;
+
+&lt;h2 id=&quot;tabedori&quot;&gt;Tabedori&lt;/h2&gt;
+
+&lt;p&gt;I joined the &lt;a href=&quot;https://note.com/tabedori/&quot;&gt;Tabedori&lt;/a&gt; team part-time for around 2 years. Tabedori was service within – but separate from – Cookpad run by a small team of between 4-8 members. I was originally slated to cover iOS duties for the 3 months of a coworker’s childcare leave, but the product and team resonated so well with me that I stayed until the product was discontinued in 2023.&lt;/p&gt;
+
+&lt;p&gt;The service always served to teach people how to cook without recipes, but advanced through nearly 7 different versions over its lifetime, with myself contributing mostly as an iOS engineer for 2.5 versions. The first version I worked on was still primarily a UIKit codebase, but I added a chat system in SwiftUI, and then the final 2 versions of the app were all SwiftUI. It was the perfect environment for me to dive deep into the details of SwiftUI to understand its constantly evolving limitations from iOS 13 through 16 in real shipping app with a very opinionated style guide.&lt;/p&gt;
+
+&lt;p&gt;One of my favorite eras was participating in 2 intense prototyping and exploration periods between versions 5 and 6, then versions 6 and 7. It was during this time we developed, iterated, pitched, and discarded dozens of prototypes individually and as a team, working towards a release. In a short period I learned so much about animations, gestures, navigation, and rapid UI development in SwiftUI, while also considering the product and design angles.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/cookpad-tabedori-v7.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Tabedori version 7, developed with SwiftUI&quot; title=&quot;Tabedori version 7, developed with SwiftUI&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Tabedori version 7, developed with SwiftUI&lt;/div&gt;&lt;/div&gt;
+
+&lt;h2 id=&quot;cookpad-global-redux&quot;&gt;Cookpad Global Redux&lt;/h2&gt;
+
+&lt;p&gt;I was invited to visit the Global headquarters in Bristol, UK for 2 months in late 2022. I had the chance to revisit a codebase I hadn’t touched in 3 years while working alongside new and old coworkers and cooking in the office kitchen.&lt;/p&gt;
+
+&lt;p&gt;By this point the Cookpad Global iOS codebase and development process had matured significantly. I dove back into UIKit and specifically UICollectionViewDiffableDataSource and helped build an interface for exploring machine translated recipes from other countries.&lt;/p&gt;
+
+&lt;h2 id=&quot;cookpad-mart&quot;&gt;Cookpad Mart&lt;/h2&gt;
+
+&lt;p&gt;After a company-wide restructuring in 2023, I found a new home in &lt;a href=&quot;https://apps.apple.com/us/app/%E3%82%AF%E3%83%83%E3%82%AF%E3%83%91%E3%83%83%E3%83%89%E3%83%9E%E3%83%BC%E3%83%88-%E3%82%AF%E3%83%83%E3%82%AF%E3%83%91%E3%83%83%E3%83%89%E5%85%AC%E5%BC%8F/id1434632076&quot;&gt;Cookpad Mart&lt;/a&gt; for my final few months at Cookpad. I had been a long-time user of Cookpad Mart’s unique grocery delivery service since its early days and was looking forward to improving the service through the iOS app, its primary client-side interface.&lt;/p&gt;
+
+&lt;p&gt;As an e-commerce startup, Cookpad Mart has the conflicting goals of being stable, robust, and bug-free enough to support reliable exchanges of goods for payment, while also needing to iterate quickly to find product market fit and profitability. I was incredibly humbled jumping in and seeing the evolution of a 5 year old codebase and how the alumni iOS engineers had handled these constraints. Much of the required reliability came from systems built &lt;em&gt;around&lt;/em&gt; the codebase, rather than the codebase itself: test plans in every pull request, thorough code reviews, a weekly release cadence automated to the bone, “tap parties” where all iOS team members get together to thoroughly test each new feature, rotating QA participation from the product and design departments, and finally a culture of bug fixes being high priority.&lt;/p&gt;
+
+&lt;p&gt;Unfortunately, the Mart service itself underwent a massive pivot almost immediately after I joined the team.&lt;/p&gt;
+
+&lt;h2 id=&quot;the-end-of-the-story&quot;&gt;The End of the Story&lt;/h2&gt;
+
+&lt;p&gt;Cookpad as a company went through some significant turmoil starting in early 2023 with the departure of the Japan CEO, then a call for a round of &lt;a href=&quot;https://pdf.irpocket.com/C2193/NJLt/hAIz/SDEh.pdf&quot;&gt;voluntary retirements (PDF)&lt;/a&gt; in February, a &lt;a href=&quot;https://pdf.irpocket.com/C2193/CaoZ/acVo/MlYT.pdf&quot;&gt;CEO change (PDF)&lt;/a&gt; in May, and finally a &lt;a href=&quot;https://pdf.irpocket.com/C2193/CaoZ/qmSw/IQUI.pdf&quot;&gt;larger round (PDF)&lt;/a&gt; of voluntary retirements in June.&lt;/p&gt;
+
+&lt;p&gt;I was part of that last round of voluntary retirements.&lt;/p&gt;
+
+&lt;p&gt;My honest thoughts? It was good time for me to go. I’ve been immersed in solving problems in the food and cooking domain for these past 6 years. Although I’ve always considered cooking a genuine interest – especially in the context of moving to a different country – there are several other domains that I’d like to explore.&lt;/p&gt;
+
+&lt;p&gt;So cheers to a good ride. The part I’ll miss most is working with so many kind and talented coworkers, hopefully at least a few of which I’ll be able to work with again.&lt;/p&gt;
+
+</description>
+        <pubDate>Wed, 18 Oct 2023 17:25:00 -0500</pubDate>
+        <link>https://twocentstudios.com/2023/10/18/cookpad-retrospective/</link>
+        <guid isPermaLink="true">https://twocentstudios.com/2023/10/18/cookpad-retrospective/</guid>
+        
+        <category>retro</category>
+        
+        <category>commentary</category>
+        
+        
+      </item>
+    
+      <item>
+        <title>Timehop: A Retrospective</title>
+        <description>&lt;p&gt;I worked at &lt;a href=&quot;http://timehop.com&quot;&gt;Timehop&lt;/a&gt; as an iOS Engineer for almost two and a half years. The experience meant a lot to me both personally and professionally, and I believe it set me on the right course for my future in this industry.&lt;/p&gt;
+
+&lt;p&gt;Here are a few thoughts I have about what I learned along the way. Granted, most of them are the kind of lessons you come across every other day in Medium posts from those in the industry, but it feels important to have lived them first hand.&lt;/p&gt;
+
+&lt;h2 id=&quot;shipping&quot;&gt;Shipping&lt;/h2&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;There are a million reasons not to ship… but you have to ship anyway.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;My most important lesson was learning to scope down to the bare essentials and compromise on bugs. It’s easier to argue for project scope than it is for whether a bug is a “show-stopper”, but it’s important to always have the idea of shipping resting heavily on your shoulders pushing you to make the hard decisions.&lt;/p&gt;
+
+&lt;p&gt;Over time I got a lot better at understanding how design and engineering decisions affect scope and shipping schedules. Most of that is gained with experience. When you’re first starting out, coming up with one solution to an engineering problem is cause for celebration. But when you need to get that feature out the door in two weeks instead of two months, that’s when as an engineer, you need to have three potential solutions in your head and understand the cost/benefit for each. Then, you need to communicate those concerns clearly to the rest of the team so that everyone is on the same page with the tradeoffs that have to be made.&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;“I can get a prototype out to our beta group in three days, but if it’s successful, I’ll need to more or less start over with an alternate implementation to make it scale to the rest of our user base. Is that acceptable?”&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;A simple example of this that came up time and again was receiving designs for custom views and components that worked just slightly differently than the standard iOS components. I would have to evaluate each component, create a time estimate, then report back to the product manager and tell them, “hey, this navigation paradigm is slick, but it will stick out like a sore thumb from the rest of our app and I can ship two days faster by using a built-in component. Are you sure you want to do it this way?” Some of the time, the answer would be, “No, it doesn’t affect the core user experience enough to warrant the delay.” The remainder of the time, it would be, “It’s worth it. Our hunch is that the navigation will significantly affect uptake of the feature.”&lt;/p&gt;
+
+&lt;p&gt;Of course, that hunch is a gamble. Which leads me to instincts.&lt;/p&gt;
+
+&lt;h2 id=&quot;product-instincts&quot;&gt;Product Instincts&lt;/h2&gt;
+
+&lt;p&gt;Your product instincts will get better with time. What I mean by instincts is your ability to predict the behavior of a diverse and statistically significant amount of people in response to your product or feature (note: your group of close friends is probably not diverse or statistically significant enough). How will they use it? How long will they use it for? Will they use it like you predict they will? Will they even use it at all?&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;Your product instincts will get better with time… but only if you set up your experiments correctly and are brutally honest with yourself.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;It’s natural to think of product instinct as something “you have or you don’t”. Psychology and sociology are sciences though, and I believe that applying the scientific method to product can lead to better outcomes for users and for those learning from the results.&lt;/p&gt;
+
+&lt;p&gt;It is absolutely more difficult to design a product experience in a way that is based in a few key hypotheses, facilitates the collection of analytics data, and uses that data to ultimately prove or disprove the original hypotheses. &lt;strong&gt;Without this process product development is simply taking disparate stabs in the dark and crossing your fingers that you’ll hit some abstract goal.&lt;/strong&gt; Not only is it impossible to iterate effectively, it also denies the chance to learn from the outcome of an experiment and improve the instincts of the entire team.&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;“I predicted that users would tap the ‘Follow All’ button 60% of the time, but after one week of data collection it’s only at 15%. I can now begin to ask the next questions such as ‘do users understand the value of following others?’ or ‘do users just not see the button?’.”&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Forcing yourself and the rest of the product team to make hypotheses isn’t about seeing who was right and wrong at the end of the experiment. It’s not a competition. It’s about forcing yourself to take all of your collective experience into account (and hopefully your direct experience from previous experiments) and draw a line in the sand. It’s all too easy to forget your original hunches when the analytics numbers start rolling in, and by then you’ve missed a great opportunity to adjust your internal biases.&lt;/p&gt;
+
+&lt;p&gt;More often than not, goals of your product experiments will fail and &lt;em&gt;that’s okay&lt;/em&gt;. You’ve learned something. The worst thing you can do is to sweep your failures under the rug. By ignoring failures, you’ll be skipping the most important part of the iteration process: the part where you don’t repeat your mistakes. When you don’t learn from your experiments, each product cycle will be like starting from scratch, never progressing.&lt;/p&gt;
+
+&lt;h2 id=&quot;making-mistakes&quot;&gt;Making Mistakes&lt;/h2&gt;
+
+&lt;p&gt;Ultimately, someone has decide where to start and what path to take from there. As much as a meme the “idea person” has become, leading a product takes legitimate effort. Sustaining the product development cadence can be brutal and unforgiving (especially if you look at it as taking alternating stabs in the dark, which you shouldn’t). Always having the right idea ready to go at the right time is something I respect greatly.&lt;/p&gt;
+
+&lt;p&gt;When I started at Timehop, my primary goal was to improve my craft of iOS development. Having a new feature spec’d out, designed up, and ready to implement is great for that. There were never a shortage of ideas, and thus there was always interesting development work to do. I’ve touched what feels like a dozen disparate iOS frameworks over my tenure, gaining a breadth of knowledge because I was pushed to implement features that on my own I would have judged to be too time consuming or too far out of my comfort zone.&lt;/p&gt;
+
+&lt;p&gt;On the flip side though, I only got a few chances to put my own ideas to the test. For those few chances, I am undoubtedly grateful. However, the rush of nurturing an idea from start to finish is an intoxicating feeling, one that I started to miss dearly as the day to day became implementing feature after feature. It was ultimately the desire to make my own mistakes that nudged me out the door.&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;No one has all the answers. No one really knows what they’re doing.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;I participated in dozens and dozens of product experiments. Features that were pitched as sure wins often failed the hardest. Features that were incremental improvements or minor changes in response to something as innocuous as required Apple API deprecations sometimes produced our largest user influxes. At some point you have to come to terms with knowing that no one has all the answers and you have to brace yourself for a bumpy ride.&lt;/p&gt;
+
+&lt;h2 id=&quot;the-people&quot;&gt;The People&lt;/h2&gt;
+
+&lt;p&gt;My favorite part about coming into work every day was working with such an amazing team of people. Team Timehop was both fun and talented, and inspired me to do some of my best work.&lt;/p&gt;
+
+&lt;p&gt;It was an honor to be part of something that brings joy to the lives of millions of people.&lt;/p&gt;
+</description>
+        <pubDate>Tue, 03 Nov 2015 06:19:53 -0600</pubDate>
+        <link>https://twocentstudios.com/2015/11/03/timehop-a-retrospective/</link>
+        <guid isPermaLink="true">https://twocentstudios.com/2015/11/03/timehop-a-retrospective/</guid>
+        
+        <category>retro</category>
+        
+        <category>commentary</category>
+        
+        
+      </item>
+    
+      <item>
+        <title>Fall 2015 Project Wrap Up</title>
+        <description>&lt;p&gt;I’ve been back in Chicago left to my own devices for the past two months now. I’ll be shipping out to Japan in a few weeks for a three month stint doing more of the same. I’ve had plenty of time to dig into a few various development areas I’ve wanted to explore. This is a quick wrap up of what I’ve been up to.&lt;/p&gt;
+
+&lt;h2 id=&quot;music-transfer&quot;&gt;Music Transfer&lt;/h2&gt;
+
+&lt;p&gt;I own a &lt;a href=&quot;https://www.synology.com/en-us/products/DS414j&quot;&gt;Synology DS414j&lt;/a&gt; network attached storage device that’s helped me organize and archive all of my personal data including mp3s, FLAC, music recording files, photos, videos, etc. I’m stuck in a weird position of wanting to take a subset of my mp3 collection on the road with me, while also wanting to add to the collection and have everything available to me. I’m still holding out from participating in streaming services since they don’t always carry some of the smaller indie artists that release on Bandcamp and the like. This left me with a weird problem to solve and a lot of time to do it.&lt;/p&gt;
+
+&lt;p&gt;My first shot at this was writing a shell script to rsync a selection of my music from my NAS to a cache on my laptop and still use iTunes to sync from laptop to iPhone. It’s a pretty simple script, but gave me a chance to dive into bash scripting, something I had previously avoided like the plague.&lt;/p&gt;
+
+&lt;div class=&quot;language-sh highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;#!/bin/bash&lt;/span&gt;
+&lt;span class=&quot;nb&quot;&gt;set&lt;/span&gt; -e
+
+&lt;span class=&quot;nv&quot;&gt;src_music_root&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;&apos;/Volumes/music&apos;&lt;/span&gt;
+&lt;span class=&quot;nv&quot;&gt;dest_music_root&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;&apos;/Users/ctrott/Music/Cache&apos;&lt;/span&gt;
+&lt;span class=&quot;nv&quot;&gt;folder_list_path&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;&apos;/Users/ctrott/Code/temp/music_transfer/artists.txt&apos;&lt;/span&gt;
+&lt;span class=&quot;nv&quot;&gt;log_path&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;&apos;/Users/ctrott/Code/temp/music_transfer/log.txt&apos;&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;while &lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;read &lt;/span&gt;folder ; &lt;span class=&quot;k&quot;&gt;do
+    &lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$music_root&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$folder&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;
+    rsync -av &lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$src_music_root&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$folder&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$dest_music_root&lt;/span&gt; &amp;gt;&amp;gt; &lt;span class=&quot;nv&quot;&gt;$log_path&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;done&lt;/span&gt; &amp;lt; &lt;span class=&quot;nv&quot;&gt;$folder_list_path&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;I’m still having a hard time getting my head around the seemly first-class path support. I’m used to having distinct types for &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;NSURL&lt;/code&gt; vs &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;NSString&lt;/code&gt;. Trying to concatenate paths from inputs and variables and literals has led to a lot of confusion. The combination of that confusion and the destructive nature of file system mutations leaves me wanting to use something like Rake or raw Ruby instead.&lt;/p&gt;
+
+&lt;p&gt;To that end, I did run through the &lt;a href=&quot;http://cli.learncodethehardway.org/book/&quot;&gt;Command Line Crash Course&lt;/a&gt; from the Learn Code The Hard Way series to pick up a few techniques I didn’t know from before. I don’t think I retained enough of it, so I might have to breeze through it again soon.&lt;/p&gt;
+
+&lt;h2 id=&quot;graphql--react--react-native&quot;&gt;GraphQL / React / React Native&lt;/h2&gt;
+
+&lt;p&gt;I remember hearing about GraphQL at the Facebook Developer Conference last Spring and then seeing the announcement over the Summer. I read through the spec and it looked very thorough. I’m interested in a lot of the new infrastructure concepts and frameworks that Facebook has been developing over the past years (React, React-Native, Flux, GraphQL, etc.). So when I saw an interactive tutorial called &lt;a href=&quot;https://learngraphql.com/&quot;&gt;Learn GraphQL&lt;/a&gt; I decided to work through it.&lt;/p&gt;
+
+&lt;p&gt;I really enjoyed the tutorial and found it to be a nice intro to the capabilities. Unfortunately, I’m still finding the web world a bit opaque and hard to keep up with. I’ve never been particularly enthralled with js, so although I’m enthusiastic about the architecture concepts, I keep hitting stumbling blocks with the ever-changing ES5/ES6/ES7 syntaxes and toolchains that are required to even get started. Not to mention that these technologies are still rapidly evolving.&lt;/p&gt;
+
+&lt;p&gt;I also spent a few days looking at docs and walkthroughs for React and ReactNative. Again, the underlying concepts (immutability, one-way data flow, coalescing state) of those frameworks are like a siren song to me. The progress that’s been made on those frameworks is very respectable. I’d like to dive in and give React and/or React Native a shot, but it’s an opportunity cost cost-benefit analysis of whether I should be working on learning raw Swift and whether I can find a project that works well within React Native’s limitations.&lt;/p&gt;
+
+&lt;h2 id=&quot;apple-tv&quot;&gt;Apple TV&lt;/h2&gt;
+
+&lt;p&gt;For some reason, I was one of the developers chosen to receive a $1 Apple TV after it was announced at the September Apple event. I used an older Apple TV at the Timehop offices quite often and found the UI and UX to be quite a joy to use, so I was especially interested in what sort of apps I’d be able to make.&lt;/p&gt;
+
+&lt;p&gt;I received my Apple TV in the mail a week later, spent an hour or two downloading binaries and getting it set up, then another couple hours downloading Xcode betas and reading docs. I realized in dismay that I was on the vanguard since all my normal dependencies and dependency managers were unable to deal with a new platform right away.&lt;/p&gt;
+
+&lt;h2 id=&quot;constellations&quot;&gt;Constellations&lt;/h2&gt;
+
+&lt;p&gt;One morning I stumbled across &lt;a href=&quot;https://rocket.chat/&quot;&gt;rocket.chat&lt;/a&gt;, and noticed it had a pretty cool background effect of little particles drifting in space and connecting with a line when they got close enough.&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;After I finished implementing it, I found that they used the open source &lt;a href=&quot;https://github.com/VincentGarreau/particles.js/&quot;&gt;particle.js&lt;/a&gt; for the effect.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;I started working on a Swift and SpriteKit implementation for the Apple TV - a trifecta of things I hadn’t worked with before.&lt;/p&gt;
+
+&lt;p&gt;Here’s a quick demo of the “final” result&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/constellations.gif&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;a low-quality demo of constellations&quot; title=&quot;a low-quality demo of constellations&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;a low-quality demo of constellations&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;I took about two days to get a demo going. It was slow going looking up documentation alternately on SpriteKit and Swift, but I felt proud to see the stars bouncing around the screen.&lt;/p&gt;
+
+&lt;p&gt;I ran into two problems, one of which I was able to fix.&lt;/p&gt;
+
+&lt;p&gt;The first problem was that I was rendering stars using &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;SKShapeNode()&lt;/code&gt; with a circular path. I could only get something like 20fps with 30 stars - not nearly enough to fill the screen. A little googling suggested that &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;SKShapeNode()&lt;/code&gt; is extremely performance adverse and causes constant rerendering. I changed my stars to use square &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;SKSpriteNode()&lt;/code&gt;s instead, and the performance issues were more or less resolved.&lt;/p&gt;
+
+&lt;p&gt;The second problem was that using small stars confuses the physics engine when they bounce off the walls at low angles on incidence due to floating point rounding errors. This causes the stars to stick to the walls on contact and congregate in corners. Unfortunately, this seems to be a known issue with SpriteKit (amongst other game engines).&lt;/p&gt;
+
+&lt;p&gt;After I discovered the source to particles.js, I noticed that particles are allowed to leave the screen bounds and are recreated with a different location and direction. If I decided to release this, I’d probably implement it without using physics.&lt;/p&gt;
+
+&lt;p&gt;Since this project was just for fun and doesn’t have much value outside maybe a screensaver, I decided not to bother releasing it.&lt;/p&gt;
+
+&lt;h2 id=&quot;tinykittens-tv&quot;&gt;TinyKittens TV&lt;/h2&gt;
+
+&lt;p&gt;I got in the habit of having animal livestreams on in the background while I wrote code all day at Timehop. I mostly watched the livestream from &lt;a href=&quot;http://tinykittens.com&quot;&gt;TinyKittens&lt;/a&gt;, a non-profit society which rescues and fosters pregnant cats and their kittens before offering them up for adoption. I thought it’d be convenient to have an Apple TV app for selecting between the streams and viewing them.&lt;/p&gt;
+
+&lt;p&gt;I started digging and found the livestream.com API supported the two endpoints I needed and provided a streaming URL compatible with Apple devices.&lt;/p&gt;
+
+&lt;p&gt;With that, I got to work on another app for Apple TV. I first explored writing the app as a TVML app mostly assembled server-side, but was immediately frustrated trying to wrangle XML without a lot of background knowledge of how to do. There were too many possible languages and frameworks and implementations I could have used on the server side, and I realized I would rather learn more Swift and UIKit than I would writing a custom server backend that did the majority of the heavy lifting.&lt;/p&gt;
+
+&lt;p&gt;The dependency chain was still troublesome (and a moving target), so although I wanted to dive into ReactiveCocoa v4, I decided I should start with a quick and dirty version in Swift with no dependencies at all.&lt;/p&gt;
+
+&lt;p&gt;The first version was a massive view controller that did all the fetching and JSON parsing in line. It was also pretty ugly.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/tinykittenstv-01.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;v0 of TinyKittens TV&quot; title=&quot;v0 of TinyKittens TV&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;v0 of TinyKittens TV&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;I used the app for a few days and enjoyed it. The code was so ugly though, and I wanted to use more of Swift’s language features and see what it was like to try to architect an app without the ReactiveCocoa conveniences I was used to. It was a good experience in that it made me appreciate reactive programming that much more.&lt;/p&gt;
+
+&lt;p&gt;It took about as long to refactor the app as it did to write V0. I added the Gloss JSON parsing library after getting CocoaPods set up (with Orta’s &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;cocoapods-expert-difficulty&lt;/code&gt; gem). I wrote my own simple &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Result&lt;/code&gt; type, wrapped a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;throws&lt;/code&gt; function (I really dislike Swift 2.0’s &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;throws&lt;/code&gt; syntax), set up some struct models, parsed some JSON, wrote a view model protocol, refactored the interface design to mirror Apple’s focus support (with some really ugly frame layout code), added image assets (including a fun parallax icon), did some testing, and packaged it up for the App Store.&lt;/p&gt;
+
+&lt;p&gt;I got a rejection for an error message not being forthright enough, but I fixed that and resubmitted and was accepted in no time. It sounded like a lot of other developers had a hard time with this initial submission process. I’m sure Apple was being extra picky with the public release.&lt;/p&gt;
+
+&lt;p&gt;The app is pretty simple and I was tempted to add lots more bells and whistles, but I knew that I’d rather ship the V1 at launch than to sit on it while I toiled away with garnishes.&lt;/p&gt;
+
+&lt;p&gt;On a side note, I meant to use storyboards for the interface this time, but I got frustrated with them again and bailed. Someday…&lt;/p&gt;
+
+&lt;p&gt;The Apple TV launches today. The App Store right now only has a front page and a search page and links don’t work, so discoverability isn’t really that great yet. Hopefully I get a few downloads though.&lt;/p&gt;
+
+&lt;p&gt;It was a fun project overall. It’s definitely useful to me. And it was great for getting up to speed with Swift without getting bogged down in a large project. I’ve posted the &lt;a href=&quot;https://github.com/twocentstudios/tinykittenstv&quot;&gt;source&lt;/a&gt; on Github. Below is a screenshot of V1.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/tinykittenstv-02.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;V1 of TinyKittens TV released to the App Store&quot; title=&quot;V1 of TinyKittens TV released to the App Store&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;V1 of TinyKittens TV released to the App Store&lt;/div&gt;&lt;/div&gt;
+
+&lt;h2 id=&quot;function-programming-edx-fp101&quot;&gt;Function Programming EdX FP101&lt;/h2&gt;
+
+&lt;p&gt;ReactiveCocoa was sort of my gateway into functional programming. I’ve tried to dive into Haskell a few times over the last year, but always got tripped up before I could implement anything of consequence.&lt;/p&gt;
+
+&lt;p&gt;I saw that Erik Meijer’s &lt;a href=&quot;https://www.edx.org/course/introduction-functional-programming-delftx-fp101x-0&quot;&gt;EdX course&lt;/a&gt; on functional programming was starting soon, so I decided to sign up and take a few hours out of every week to learn Haskell. I’ve done two weeks so far and am feeling good about it so far.&lt;/p&gt;
+
+&lt;h2 id=&quot;blog-migration&quot;&gt;Blog Migration&lt;/h2&gt;
+
+&lt;p&gt;I spent a couple days migrating from Octopress to Jekyll. See &lt;a href=&quot;/2015/10/27/site-makeover-and-jekyll-cheatsheet&quot;&gt;this post&lt;/a&gt; for the details.&lt;/p&gt;
+
+&lt;h2 id=&quot;songwriting-app&quot;&gt;Songwriting App&lt;/h2&gt;
+
+&lt;p&gt;My friend Sarah and I are both musicians who write music. We’ve been kicking around the idea for over a year now of an app to assist songwriters in organizing demos and lyric sheets better than the Voice Recorder app.&lt;/p&gt;
+
+&lt;p&gt;I went back through some early designs I did in Sketch and made a few adjustments after Sarah and I had the chance to do some brainstorming a few weeks back. Once we agree on the design direction, I’m looking forward to getting started on the project.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/songwritingapp-01.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Some rough Sketch mockups of an app for songwriteres&quot; title=&quot;Some rough Sketch mockups of an app for songwriteres&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Some rough Sketch mockups of an app for songwriteres&lt;/div&gt;&lt;/div&gt;
+
+&lt;h2 id=&quot;wrap-up-wrap-up&quot;&gt;Wrap Up Wrap Up&lt;/h2&gt;
+
+&lt;p&gt;It’s been tough to find the right balance of time spent just exploring what’s out there and spending time diving deep into a project. It definitely feels a bit like a waste when you look up and realize you’ve spent half a day just looking at the documentation for some obscure programming language, and then spent the other half of the day trying to get your environment set up just to run a demo for a framework you’ll never use again. But I’m trying to use this time to keep an open mind about these experiences. There is some serendipity involved when trying to find your next big thing.&lt;/p&gt;
+</description>
+        <pubDate>Fri, 30 Oct 2015 08:30:51 -0500</pubDate>
+        <link>https://twocentstudios.com/2015/10/30/fall-2015-project-wrap-up/</link>
+        <guid isPermaLink="true">https://twocentstudios.com/2015/10/30/fall-2015-project-wrap-up/</guid>
+        
+        <category>retro</category>
+        
+        
+      </item>
+    
+      <item>
+        <title>Fall 2013 Project Wrap Up</title>
+        <description>&lt;p&gt;At the end of every quarter or at least biannually I try to wrap up all the little projects I worked on during that time period that weren’t large enough to warrant their own blog post. Here’s a short summary of all the little projects I’ve worked on since I moved to New York to work at Timehop.&lt;/p&gt;
+
+&lt;h2 id=&quot;timehop&quot;&gt;Timehop&lt;/h2&gt;
+
+&lt;p&gt;My full-time job, but worth mentioning that we’ve shipped a lot of features since I started working at Timehop.&lt;/p&gt;
+
+&lt;h3 id=&quot;combined-share-flow&quot;&gt;Combined Share Flow&lt;/h3&gt;
+
+&lt;p&gt;We combined sharing to social networks and dark channels (email/sms) into a two panel pop-up behind a single share button on the home screen. I spent most of my time on the email/sms screen. The tricky parts were dealing with using a field that both showed the contacts you had already selected as well as allowing you to enter search mode. There ended up being several screen states with animations between each.&lt;/p&gt;
+
+&lt;h3 id=&quot;twitter-replies&quot;&gt;Twitter @replies&lt;/h3&gt;
+
+&lt;p&gt;A short project to allow users to see the full thread of a conversation they had on Twitter. Originally planned to be much more detailed, we decided to scope down the project to push out to Twitter’s web version until we understood how much use the feature would get.&lt;/p&gt;
+
+&lt;h3 id=&quot;in-app-private-sharing&quot;&gt;In-App Private Sharing&lt;/h3&gt;
+
+&lt;p&gt;There were two internal prototypes of a feature to share Timehop content within the app before the final released version.&lt;/p&gt;
+
+&lt;p&gt;The first featured a drawer that had a tabular list of people or groups that you shared Timehop content to in a long running thread of content and comments.&lt;/p&gt;
+
+&lt;p&gt;The second was a two column collection view of Timehop content shared to you. Each piece of content was obscured so that tapping it revealed it in a flip animation.&lt;/p&gt;
+
+&lt;p&gt;The released version materialized as a quick share panel of recent contacts or groups that with one tap, you could share Timehop content to. A notification table provided a link to each piece of content, with the content having a detail view with comments.&lt;/p&gt;
+
+&lt;p&gt;During this time, I also got to rewire a lot of the message passing that happened within the codebase. And right before shipping, I also refactored the start up, log in, sign up, and welcome flow, and cleaned up the app delegate.&lt;/p&gt;
+
+&lt;h3 id=&quot;nearby&quot;&gt;Nearby&lt;/h3&gt;
+
+&lt;p&gt;This feature was a one-week project that aggregated Timehop content that happened near the location you opened the app and allowed you to explore the day it happened. There were a lot of cool animations I got to play around with for this feature.&lt;/p&gt;
+
+&lt;h3 id=&quot;journaling&quot;&gt;Journaling&lt;/h3&gt;
+
+&lt;p&gt;We ran a few beta experiments with gathering new content to make next year’s Timehop better.&lt;/p&gt;
+
+&lt;p&gt;The first version showed photos from today’s camera roll and allowed you to upload them to Timehop.&lt;/p&gt;
+
+&lt;p&gt;Another version presented a different daily screenshot challenge to the user.&lt;/p&gt;
+
+&lt;p&gt;Another version showed a front-facing camera window in the bottom of the Timehop day. When you scrolled the window into view it would begin a 3..2..1 countdown and snap a picture of the user. The user could then either upload the photo to see next year or retake it.&lt;/p&gt;
+
+&lt;h2 id=&quot;vinylogue&quot;&gt;Vinylogue&lt;/h2&gt;
+
+&lt;p&gt;&lt;strong&gt;Status: On Hold&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;After ignoring it since its April 2013 release, I did a little bit of house cleaning and updating this app for iOS 7. That part was actually pretty easy since the style was pretty stark to begin with.&lt;/p&gt;
+
+&lt;p&gt;I started working on a new feature to schedule local notifications to alert the user when their weekly charts have refreshed. In theory, all users are on the exact same schedule of being refreshed on Sunday night, but I wanted to use the actual data I get from Last.fm. There were a lot of other decisions as far as how many local notifications I should schedule in advance (I think I ended up at four), if I should do the scheduling on every app open (by canceling all active notifications and rescheduling them), and if I should do it in primary controller when I fetch year data or in a separate call (I ended up doing it doing it in a separate place).&lt;/p&gt;
+
+&lt;p&gt;Unfortunately, I haven’t got around to finishing the feature yet. I’m pretty sure all that’s left is testing. My user base isn’t huge and there hasn’t been much outreach on it, so although it could bring retention numbers up, it hasn’t been at the top of my to do list.&lt;/p&gt;
+
+&lt;p&gt;Another feature I’ve wanted to do is some sort of sharing for the album detail view. The only thing I have to get that going is to minorly refactor the view hierarchy.&lt;/p&gt;
+
+&lt;h2 id=&quot;socketparty&quot;&gt;SocketParty&lt;/h2&gt;
+
+&lt;p&gt;&lt;strong&gt;Status: On Hold&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;One night after work I decided I wanted to play around with websockets on iOS. So I started a new project, pod installed socket rocket, and started reading the docs. Somehow reading the docs wormholed me into making a game based on colors and the accelerometer (and nothing to do with websockets).&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/socketparty-1.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Start screen&quot; title=&quot;Start screen&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Start screen&lt;/div&gt;&lt;/div&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/socketparty-2.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Playing the game&quot; title=&quot;Playing the game&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Playing the game&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;(Ignore the ugliness, I planned on tightening up the design after I finished the mechanics).&lt;/p&gt;
+
+&lt;p&gt;Sort of hard to show in screenshots, but tilting your phone along any of the three axes changes the background color. The goal of the game is to match the randomly selected color on the top by tilting your phone. The player ends up looking like they’re doing a weird dance.&lt;/p&gt;
+
+&lt;p&gt;In theory it’s a nominally fun game. In practice, I ran into some development trouble. I’m still unsure of what the range of the raw accelerometer data is. There is very little info in Apple’s docs. It doesn’t help that I have a 4S and I assume they’ve improved the accuracy of the accelerometer a bit in the newer iPhone models.&lt;/p&gt;
+
+&lt;p&gt;I somewhat solved the problem of showing “fun” colors. If you use RGB and map floats from 0 to 1, you end up with a lot of ugly grayscale. Not something I initially anticipated. I actually ended up switching to HSV, and the colors are now bright and primary by mapping to a reduced scale of saturation and brightness. Much more fun.&lt;/p&gt;
+
+&lt;p&gt;In the current version it’s actually next to impossible to get a match. I thought it would be easy to set a define for the “closeness” that a color match had to be. Something about having three variables and scaling the values along the way makes this not as straightforward as I anticipated.&lt;/p&gt;
+
+&lt;p&gt;One interesting part of this project for me was trying AutoLayout for the first time in a real project. Granted, I’m not using it raw via IB or code. I decided to use the wrapper library &lt;a href=&quot;https://github.com/smileyborg/UIView-AutoLayout&quot;&gt;UIView-Autolayout&lt;/a&gt;. As a taster, here’s some of the layout code:&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;in updateViewConstraints&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-objc&quot; data-lang=&quot;objc&quot;&gt;&lt;span class=&quot;k&quot;&gt;const&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;CGFloat&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;bottomLabelOffset&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;10&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;f&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;const&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;CGFloat&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;bottomInterLabelOffset&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;f&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;matchesLeftBottomLabel&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;autoPinEdge&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ALEdgeBottom&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;toEdge&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ALEdgeBottom&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;ofView&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;matchesLeftBottomLabel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;superview&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;withOffset&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;bottomLabelOffset&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;];&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;matchesLeftBottomLabel&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;autoPinEdge&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ALEdgeLeft&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;toEdge&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ALEdgeLeft&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;ofView&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;matchesLeftBottomLabel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;superview&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;withOffset&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;bottomLabelOffset&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;];&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;matchesLeftTopLabel&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;autoPinEdge&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ALEdgeLeft&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;toEdge&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ALEdgeLeft&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;ofView&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;matchesLeftTopLabel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;superview&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;withOffset&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;bottomLabelOffset&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;];&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;matchesLeftTopLabel&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;autoPinEdge&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ALEdgeBottom&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;toEdge&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ALEdgeTop&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;ofView&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;matchesLeftBottomLabel&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;withOffset&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;bottomInterLabelOffset&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;];&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;It’s actually somewhat similar in API to &lt;a href=&quot;https://github.com/podio/ios-view-frame-builder&quot;&gt;POViewFrameBuilder&lt;/a&gt; which I use often at work. But I remember getting hung up a couple times. It works, but at this point I’m still a little skeptical of what AutoLayout buys you.&lt;/p&gt;
+
+&lt;p&gt;The best part of this project is the unrelated name. If I ever decide to finish it, I’ll have to apply a better moniker. I lost interest for now, but maybe when I get a new iPhone I’ll be more inclined to give it another shot.&lt;/p&gt;
+
+&lt;h2 id=&quot;timesnaphopchat&quot;&gt;TimeSnapHopChat&lt;/h2&gt;
+
+&lt;p&gt;&lt;strong&gt;Status: Dead&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;I mentioned above that our team at Timehop was experimenting with ways to get people to generate more content for their Timehop days next year. I had the idea over Thanksgiving break to create a Snapchat clone with a Timehop twist.&lt;/p&gt;
+
+&lt;p&gt;The idea was that this would be a separate app from Timehop. The interface would be very similar to Snapchat.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/timesnaphopchat-1.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;List of sent and received snaps&quot; title=&quot;List of sent and received snaps&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;List of sent and received snaps&lt;/div&gt;&lt;/div&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/timesnaphopchat-2.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Create a new snap&quot; title=&quot;Create a new snap&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Create a new snap&lt;/div&gt;&lt;/div&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/timesnaphopchat-3.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Pick who you want to send it to&quot; title=&quot;Pick who you want to send it to&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Pick who you want to send it to&lt;/div&gt;&lt;/div&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/timesnaphopchat-4.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Preview what your Snap will look like to the recipient today and in the future&quot; title=&quot;Preview what your Snap will look like to the recipient today and in the future&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Preview what your Snap will look like to the recipient today and in the future&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;The twist to this app would be that the recipient could only see the Snap for a few seconds like Snapchat, but both the sender and the recipient would see the Snap in their Timehop day the next year. It combines the lightweight communication of Snapchat with the idea that photos get more valuable with time (Timehop!).&lt;/p&gt;
+
+&lt;p&gt;I wrote the prototype in about a day in a half. I used some existing Timehop endpoints, but it didn’t have anything as far as user log in or any styling.&lt;/p&gt;
+
+&lt;p&gt;In the end, we decided to go a different direction with the journaling idea. But I enjoyed getting a chance to do more quick prototyping, and to play around with figuring out how to code up the Snapchat mechanics.&lt;/p&gt;
+
+&lt;h2 id=&quot;timestop&quot;&gt;TimeStop&lt;/h2&gt;
+
+&lt;p&gt;&lt;strong&gt;Status: Dead?&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;TimeStop was another Timehop journaling prototype. I can attribute the original idea to my co-worker Kevin’s brother Tom.&lt;/p&gt;
+
+&lt;p&gt;The idea is that you may be out at a restaurant or a rock show and you want to “stop time” for yourself - attempt to gather as much information as possible about your current status so that you can accurately remember this &lt;em&gt;exact&lt;/em&gt; moment later. This might include things like the last 5 posts in your Twitter feed, the Wikipedia article on the concert hall you’re at, the top headline of the New York Times, a few photos tagged at that location from the public Instagram feed, or a million other things.&lt;/p&gt;
+
+&lt;p&gt;It was difficult to explain my vision for the user interface for this feature, so I prototyped it.&lt;/p&gt;
+
+&lt;p&gt;Screenshots don’t do justice for this one either, but you can imagine the user pressing and holding the “STOP” button, and a bunch of photos and articles flying in from the outside of the screen getting sucked into the button. At the same time, the screen fills up blue and increases the amount of time you want to look back to gather data.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&amp;lt;img class=&apos;caption&apos; src=&apos;/images/timestop-1.png&apos; width=&apos;&apos; height=&apos;&apos; alt=&quot;While pressing and holding &quot;STOP&quot;&quot; title=&quot;While pressing and holding &quot;STOP&quot;&quot;&amp;gt;&lt;div class=&quot;caption-text&quot;&gt;While pressing and holding &quot;STOP&quot;&lt;/div&gt;&lt;/div&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/timestop-2.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Representative views fly in from the sides and the blue fills up from bottom to top&quot; title=&quot;Representative views fly in from the sides and the blue fills up from bottom to top&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Representative views fly in from the sides and the blue fills up from bottom to top&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;I threw together this demo after work one night (it really deserves a GIF or a video, my bad). I didn’t code up the next step. The server would begin aggregating content based on the user’s location and then deliver it in some sort of list to the device. The user would then do a quick sort through of the compiled data and delete anything they wouldn’t consider relevant. The server then would create a package of data that could be viewed in next year’s Timehop, or maybe shared at that current moment.&lt;/p&gt;
+
+&lt;p&gt;As far as implementation, I simply schedule a random amount of animations at random locations, at random intervals, and with random images (there are only two right now). A cool thing about this project was that I used ReactiveCocoa in some critical places that made things &lt;em&gt;a lot&lt;/em&gt; easier.&lt;/p&gt;
+
+&lt;p&gt;Here’s a small onslaught of the view controller code:&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;TCSTimeStopDemoViewController.m&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-objc&quot; data-lang=&quot;objc&quot;&gt;&lt;span class=&quot;k&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;btnTouchDown&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;UIButton&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;btn&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;progressView&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;frame&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;view&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;bounds&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;progressView&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;top&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;view&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;bottom&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;progressLabel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;text&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;@&quot;STARTING UP...&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+  &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;progressLabel&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;sizeToFit&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;];&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;progressLabel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;width&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;progressView&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;width&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;progressLabel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;left&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;progressView&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;left&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;progressLabel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;top&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;10&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+  
+  &lt;span class=&quot;c1&quot;&gt;// Blue progress view animates up a slow pace
+&lt;/span&gt;  &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;UIView&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;animateWithDuration&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;10&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;delay&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;options&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;UIViewAnimationOptionCurveLinear&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;animations&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;^&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;progressView&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;top&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;view&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;top&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;;&lt;/span&gt;
+  &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;completion&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;^&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;BOOL&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;finished&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;  &lt;span class=&quot;p&quot;&gt;}];&lt;/span&gt;
+  
+  &lt;span class=&quot;c1&quot;&gt;// Super hacky way of changing the progress text that has to match up with the above animation
+&lt;/span&gt;  &lt;span class=&quot;n&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;progressLabel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tag&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;RACDisposable&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;progressLabelDisposable&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;RACScheduler&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;mainThreadScheduler&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;after&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;NSDate&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;date&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;repeatingEvery&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;withLeeway&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;schedule&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;^&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;progressLabel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tag&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+      &lt;span class=&quot;n&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;progressLabel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;text&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;@&quot;STARTING UP...&quot;&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;else&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;progressLabel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tag&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+      &lt;span class=&quot;n&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;progressLabel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;text&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;@&quot;2 MINUTES&quot;&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;else&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;  &lt;span class=&quot;c1&quot;&gt;// some code removed here
+&lt;/span&gt;      &lt;span class=&quot;n&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;progressLabel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;text&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;@&quot;24 HOURS&quot;&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;progressLabel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tag&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;progressLabel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tag&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;;&lt;/span&gt;
+  &lt;span class=&quot;p&quot;&gt;}];&lt;/span&gt;
+  &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;viewMakers&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;addObject&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;progressLabelDisposable&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;];&lt;/span&gt;
+
+  &lt;span class=&quot;c1&quot;&gt;// A bunch of scaled y-position making
+&lt;/span&gt;  &lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;yPos&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;50&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;yPos&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;600&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;yPos&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;yPos&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;200&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+
+    &lt;span class=&quot;c1&quot;&gt;// Schedule 3 x-position animations at each for-loop y-position.
+&lt;/span&gt;    &lt;span class=&quot;c1&quot;&gt;// The interval at which the three animations are repeated is random.
+&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;RACDisposable&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;viewMaker&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;RACScheduler&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;mainThreadScheduler&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;after&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;NSDate&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;date&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;repeatingEvery&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:(((&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;double&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;arc4random_uniform&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;100&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;100&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;withLeeway&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;schedule&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;^&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+      &lt;span class=&quot;n&quot;&gt;CGFloat&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;leftPos&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;((&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;CGFloat&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;arc4random_uniform&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;200&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;200&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;;&lt;/span&gt;
+      &lt;span class=&quot;n&quot;&gt;CGFloat&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;rightPos&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;((&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;CGFloat&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;arc4random_uniform&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;200&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;320&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;;&lt;/span&gt;
+      &lt;span class=&quot;n&quot;&gt;CGFloat&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;centerPos&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;arc4random_uniform&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;320&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;;&lt;/span&gt;
+      &lt;span class=&quot;n&quot;&gt;CGFloat&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;sidePercentage&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(((&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;CGFloat&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;arc4random_uniform&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;40&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;60&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;100&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;;&lt;/span&gt;
+      &lt;span class=&quot;n&quot;&gt;UIImageView&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;viewLeft&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;UIImageView&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;alloc&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;initWithFrame&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;CGRectMake&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;leftPos&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;yPos&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)]&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;;&lt;/span&gt;
+      &lt;span class=&quot;n&quot;&gt;UIImageView&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;viewRight&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;UIImageView&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;alloc&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;initWithFrame&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;CGRectMake&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rightPos&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;yPos&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)]&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;;&lt;/span&gt;
+      &lt;span class=&quot;n&quot;&gt;UIImageView&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;viewCenter&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;UIImageView&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;alloc&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;initWithFrame&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;CGRectMake&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;centerPos&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;30&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)]&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;;&lt;/span&gt;
+      &lt;span class=&quot;n&quot;&gt;viewLeft&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;image&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;arc4random_uniform&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;?&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;UIImage&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;imageNamed&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;@&quot;newspaper&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;UIImage&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;imageNamed&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;@&quot;poloroid&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;;&lt;/span&gt;
+      &lt;span class=&quot;n&quot;&gt;viewRight&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;image&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;arc4random_uniform&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;?&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;UIImage&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;imageNamed&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;@&quot;newspaper&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;UIImage&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;imageNamed&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;@&quot;poloroid&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;;&lt;/span&gt;
+      &lt;span class=&quot;n&quot;&gt;viewCenter&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;image&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;arc4random_uniform&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;?&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;UIImage&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;imageNamed&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;@&quot;newspaper&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;UIImage&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;imageNamed&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;@&quot;poloroid&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;;&lt;/span&gt;
+      &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;animationCanvasView&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;addSubview&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;viewLeft&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;;&lt;/span&gt;
+      &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;animationCanvasView&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;addSubview&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;viewRight&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;;&lt;/span&gt;
+      &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;animationCanvasView&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;addSubview&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;viewCenter&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;;&lt;/span&gt;
+      &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;viewLeft&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;sizeToFit&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;;&lt;/span&gt;
+      &lt;span class=&quot;n&quot;&gt;viewLeft&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;width&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;sidePercentage&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;;&lt;/span&gt;
+      &lt;span class=&quot;n&quot;&gt;viewLeft&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;height&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;sidePercentage&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;;&lt;/span&gt;
+      &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;viewRight&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;sizeToFit&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;;&lt;/span&gt;
+      &lt;span class=&quot;n&quot;&gt;viewRight&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;width&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;sidePercentage&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;;&lt;/span&gt;
+      &lt;span class=&quot;n&quot;&gt;viewRight&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;height&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;sidePercentage&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;;&lt;/span&gt;
+      &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;viewCenter&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;sizeToFit&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;;&lt;/span&gt;
+      &lt;span class=&quot;n&quot;&gt;viewCenter&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;width&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;sidePercentage&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;;&lt;/span&gt;
+      &lt;span class=&quot;n&quot;&gt;viewCenter&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;height&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;sidePercentage&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;;&lt;/span&gt;
+      &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;UIView&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;animateWithDuration&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:((&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;double&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;arc4random_uniform&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;100&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;100&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;delay&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;options&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;UIViewAnimationOptionCurveEaseIn&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;animations&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;^&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;viewLeft&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;frame&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;CGRectMake&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;timeStopButton&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;x&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;timeStopButton&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;y&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;30&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;30&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;viewRight&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;frame&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;CGRectMake&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;timeStopButton&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;x&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;timeStopButton&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;y&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;30&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;30&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;viewCenter&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;frame&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;CGRectMake&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;timeStopButton&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;x&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;timeStopButton&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;y&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;30&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;30&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;;&lt;/span&gt;
+      &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;completion&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;^&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;BOOL&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;finished&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;viewLeft&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;removeFromSuperview&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;viewRight&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;removeFromSuperview&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;viewCenter&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;removeFromSuperview&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;;&lt;/span&gt;
+      &lt;span class=&quot;p&quot;&gt;}]&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}];&lt;/span&gt;
+
+    &lt;span class=&quot;c1&quot;&gt;// Keep track of all the disposables so that we can cancel the repeating animations when the button is released/
+&lt;/span&gt;    &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;viewMakers&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;addObject&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;viewMaker&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;];&lt;/span&gt;
+  &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;btnTouchRelease&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;UIButton&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;btn&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+  &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;progressView&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;layer&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;removeAllAnimations&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;];&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;progressView&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;top&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;view&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;bottom&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+  
+  &lt;span class=&quot;c1&quot;&gt;// Dispose of all animations (thanks, ReactiveCocoa!)
+&lt;/span&gt;  &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;viewMakers&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;makeObjectsPerformSelector&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;@selector&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;dispose&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)];&lt;/span&gt;
+  &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;viewMakers&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;removeAllObjects&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;];&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Pretty hacky, but much more elegant thanks to ReactiveCocoa. If you’ve ever worked with raw NSTimers, you understand how ugly that API is.&lt;/p&gt;
+
+&lt;p&gt;I don’t think we’re planning on revisiting the TimeStop idea at least in the near future. This demo is definitely fun to show though.&lt;/p&gt;
+
+&lt;h2 id=&quot;technicolor-tv&quot;&gt;Technicolor TV&lt;/h2&gt;
+
+&lt;p&gt;&lt;strong&gt;Status: Under Infrequent Development&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;This project is a little off the beaten path for me, but very dear to my heart in fulfilling an active need. It requires a bit of backstory though.&lt;/p&gt;
+
+&lt;p&gt;One prong in my multi-pronged approach of staying in touch with my Chicago friends is what we call simulcasting/liveblogging TV shows. My friends Bobby and Brian and I have “Wonder Years Wednesdays” in which we each watch an episode of the classic late-80’s tv show &lt;a href=&quot;http://en.wikipedia.org/wiki/The_Wonder_Years&quot;&gt;“The Wonder Years”&lt;/a&gt; (we’re currently nearing the end of season 3).&lt;/p&gt;
+
+&lt;p&gt;We each watch the episode at different times of the day, so our solution to sharing our thoughts and jokes about the week’s episode was for one person to write an email with the episode timestamps of each comment. The next person that watched would reply to that email and fill in their comments the same way, but in a different font color. We did this for several weeks, and I started to get tired of the awkwardness that is line-by-line email replies.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/technicolor-1.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;A very small excerpt of an email thread&quot; title=&quot;A very small excerpt of an email thread&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;A very small excerpt of an email thread&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;I hadn’t done a Rails project in a while, and I was imagining the perfect webapp to automate a lot of what we were doing with the email threads. So I did a quick wireframe.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/technicolor-2.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Quick whiteboard wireframe&quot; title=&quot;Quick whiteboard wireframe&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Quick whiteboard wireframe&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;While thinking through the requirements, I realized that there were times where the times that we watched the episode might conflict. And I know I wouldn’t want to have to deal with refreshing the page if this happened. I put websockets back on my “to consider” list.&lt;/p&gt;
+
+&lt;p&gt;With just my very rough episode page wireframe, I started development. I decided to use Rails 4, because hey, Rails moves kind of fast. I actually did a bunch of research into making this my first foray into making a fully client-side app in Ember. I was mostly grasping the ideas, but bailed after realizing how much of the user authentication code I would have to write. I was much more interested in developing the chat part of the app than I was copying and pasting code from an Ember tutorial. I’m definitely still interested in Ember though. Maybe next time.&lt;/p&gt;
+
+&lt;p&gt;I always start out by making a markdown doc with my app’s models and routes, as well as solutions to any gotchas I think I’ll run into later. I’ve removed a bunch of the models so this post doesn’t stretch on forever.&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;planning.md&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-ruby&quot; data-lang=&quot;ruby&quot;&gt;&lt;span class=&quot;c1&quot;&gt;### Program&lt;/span&gt;
+
+&lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;integer&lt;/span&gt; &lt;span class=&quot;ss&quot;&gt;:id&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;string&lt;/span&gt; &lt;span class=&quot;ss&quot;&gt;:name&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;has_many&lt;/span&gt; &lt;span class=&quot;ss&quot;&gt;:episodes&lt;/span&gt;
+
+&lt;span class=&quot;c1&quot;&gt;### Episode&lt;/span&gt;
+
+&lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;integer&lt;/span&gt; &lt;span class=&quot;ss&quot;&gt;:id&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;string&lt;/span&gt; &lt;span class=&quot;ss&quot;&gt;:name&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;integer&lt;/span&gt; &lt;span class=&quot;ss&quot;&gt;:season&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;integer&lt;/span&gt; &lt;span class=&quot;ss&quot;&gt;:number&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;belongs_to&lt;/span&gt; &lt;span class=&quot;ss&quot;&gt;:program&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;has_many&lt;/span&gt; &lt;span class=&quot;ss&quot;&gt;:rooms&lt;/span&gt;
+
+&lt;span class=&quot;c1&quot;&gt;### Room&lt;/span&gt;
+&lt;span class=&quot;c1&quot;&gt;### Timestamp&lt;/span&gt;
+&lt;span class=&quot;c1&quot;&gt;### Comment&lt;/span&gt;
+&lt;span class=&quot;c1&quot;&gt;### User&lt;/span&gt;
+&lt;span class=&quot;c1&quot;&gt;### RoomsUsers&lt;/span&gt;
+
+&lt;span class=&quot;c1&quot;&gt;## Routes&lt;/span&gt;
+
+&lt;span class=&quot;no&quot;&gt;GET&lt;/span&gt; &lt;span class=&quot;sr&quot;&gt;/dashboard =&amp;gt; shows all rooms for a user
+GET /&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;room&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;ss&quot;&gt;:id&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;shows&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;a&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;room&lt;/span&gt;
+&lt;span class=&quot;no&quot;&gt;POST&lt;/span&gt; &lt;span class=&quot;sr&quot;&gt;/room/&lt;/span&gt;&lt;span class=&quot;ss&quot;&gt;:id&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;timestamp&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;creates&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;timestamp&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;and&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;comment&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;objects&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;From here, I’ll add my standard gem set. Then write my initial database migrations. Then generate models and controllers.&lt;/p&gt;
+
+&lt;p&gt;I’m still in the bad habit of not writing tests for everything. If this project gets serious, it would definitely be a good idea to fill in those blanks.&lt;/p&gt;
+
+&lt;p&gt;I’ll add a view at a time, and use those to knock out any bugs with my models and controllers. I used to use Haml, but I’ve actually switched back to standard erbs because all the extra time I’d spend debugging non-standard line constructs would usually eclipse the amount of extra time I spend writing closing tags.&lt;/p&gt;
+
+&lt;p&gt;The app really only has two screens (besides all the auth screens). The entry point is the Dashboard. It shows a list of all the Rooms the current user is a member of. A room is a place where several users discuss an episode of a program.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/technicolor-3.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;The current user&apos;s Dashboard&quot; title=&quot;The current user&apos;s Dashboard&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The current user&apos;s Dashboard&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;The room detail screen shows the contents of the room.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/technicolor-4.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;A room&quot; title=&quot;A room&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;A room&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;The layout of the room screen is essentially threaded comments by timestamp. Creating a new timestamp and commment is the same action for the user. Typing in a timestamp like 12:41 followed by the comment text will create the timestamp thread if it doesn’t exist, or if it does it will add the comment to the end of the thread. If no timestamp is entered, it’s interpreted as 0:00, which is the defacto general thoughts thread for the room.&lt;/p&gt;
+
+&lt;p&gt;Each user has an avatar and their own text color to help easily scan for a user’s comments.&lt;/p&gt;
+
+&lt;p&gt;I also added some extra text box features. Hitting enter submits the comment. Shift+enter creates a new line in the same comment. Pressing the up key scrolls to the top of the page. Pressing the down key scrolls to the bottom.&lt;/p&gt;
+
+&lt;p&gt;Getting into the more technical details now. It took a few false starts, but I figured out how to incorporate websockets into the room. A websocket channel is opened for user when they load the room for the first time. At that time, the initial representation of the page is rendered by the server and returned. Any time a comment is created on the server, an HTML partial for the comment is rendered by the server and broadcast to the room’s websocket channel. JS on the client-side receives the comment and takes care of adding it to the DOM in the correct spot.&lt;/p&gt;
+
+&lt;p&gt;I could have also had the client send new comments via the websocket channel, but it was conceptually simpler for the server to be the main arbiter and broadcaster of data, instead of treating it as a peer on the channel. It also makes sense that if the server somehow fails to store the comment, the other clients shouldn’t have a copy of that comment.&lt;/p&gt;
+
+&lt;p&gt;Following that logic, adding a comment is a standard AJAX POST to the server. The server receives the comment, stores it, broadcasts it on the room’s websocket channel, and all subscribed clients parse the partial and add it to the DOM. This includes the client that created the comment. It actually saves me a step of having to deal with adding a comment to the DOM that has no server assigned ID, and then updating it once the request from the server is successful.&lt;/p&gt;
+
+&lt;p&gt;It works the same way with deleting comments. I have yet to implement editing (deleting and resubmitting the comment is the workaround for now).&lt;/p&gt;
+
+&lt;p&gt;Working with websockets was pretty magical. I had a bit of a scare though. I had written and tested all the websocket features locally, but didn’t realize that Heroku didn’t support them! Luckily, at almost exactly the time I was ready to deploy to production, Heroku released a websockets beta feature that I could quickly enable.&lt;/p&gt;
+
+&lt;p&gt;I learned a rough lesson that sometimes even when you custom build a solution to your problem, there are nuances you can’t easily conquer. More specifically, my friend Bobby spends a lot of time on his phone, and email is most convenient for him. The app is responsive out of the box enough to read on a mobile device, but I haven’t spent the time to make sure the comment box appears correctly. The app also requires a log in step, which email does not. And email also has built in notifications, and Technicolor doesn’t send out any type of email notifications or push notifications yet when another room member comments.&lt;/p&gt;
+
+&lt;p&gt;None of these feature requests are impossible. But each requires another significant time investment that’s hard to justify for a user base of three. There are several lessons here:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Sometimes it takes significant investment to beat the hack solution to a problem.&lt;/li&gt;
+  &lt;li&gt;Hack solutions often get a lot of features for free that your custom solution needs a custom feature to equal.&lt;/li&gt;
+  &lt;li&gt;It’s important to really know your users. My users are my &lt;em&gt;best friends&lt;/em&gt; and even then I didn’t understand their use cases well enough to make the right solution on the first shot.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;The future of Technicolor is unclear. My friends and I are still planning on using it for Wonder Years Wednesdays and probably some other shows soon (Brian and I used it simultaneously for the last couple episodes of Homeland and it was a lot of fun).&lt;/p&gt;
+
+&lt;p&gt;I’d really like to turn it into a real product, but I doubt this is a common behavior, or that I could convince people how much fun it is. Maybe some day I’ll cobble together an iPhone app (although Brian is an Android user so it would only be two of us that could use it). I could also do email notifications, even if they started out as manually triggered.&lt;/p&gt;
+
+&lt;p&gt;Still a plenty to do, but again, I had a lot of fun writing this (it took a few weekends), and it was great to dive back into Rails and learn a bunch of new stuff about websockets.&lt;/p&gt;
+
+&lt;h2 id=&quot;insurance-app&quot;&gt;Insurance App&lt;/h2&gt;
+
+&lt;p&gt;I committed to a freelance iOS project back in January of last year (wow, time flies) for a small insurance broker in Chicago. My good friend and expert designer &lt;a href=&quot;http://www.waterfallmedia.net/&quot;&gt;CJ&lt;/a&gt; handled the product and design for the app, and after a bit of a hiatus we started working on it again in late November.&lt;/p&gt;
+
+&lt;p&gt;Here’s an &lt;a href=&quot;https://itunes.apple.com/us/app/robert-james-on-the-road/id795304884?mt=8&quot;&gt;App Store link&lt;/a&gt; if you want to download it or see more screenshots.&lt;/p&gt;
+
+&lt;p&gt;There were actually a lot of interesting constraints to this project.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/insuranceapp-1.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;The home screen&quot; title=&quot;The home screen&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The home screen&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;On the front layer of the app there were a few informational screens that I used a template view controller to coordinate. All four view controllers subclassed the base view controller and overrode class methods that returned static data for each. The base controller would gather text or image data from these methods and layout the views the same way.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/insuranceapp-2.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;An informational screen&quot; title=&quot;An informational screen&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;An informational screen&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;I began the project by attempting to put a figurative firewall between the raw content and the layout. I put all the content in a plist and created a framework around drawing that data into the specific controllers. I eventually abandoned that method because it actually makes things a lot more complicated in an app with a very simple scope. It would have been nice to be able to fetch a plist from S3 when the client wanted to update the content of the app, but that was hardly a requirement, and at this point would be over-optimization.&lt;/p&gt;
+
+&lt;p&gt;The bulk of the app was a data collection utility for customers to input and submit data about a car accident.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/insuranceapp-3.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;The table of contents for the accident utility&quot; title=&quot;The table of contents for the accident utility&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The table of contents for the accident utility&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Our goal was to make the flow very predictable, even if all the data sources were very different.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/insuranceapp-4.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Choosing a location for the accident&quot; title=&quot;Choosing a location for the accident&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Choosing a location for the accident&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Each screen has its own development quirks. UIKit can be frustrating sometimes. iOS 7 bugs bit me a lot especially with view controller transitions. But by the end, I think it came together well.&lt;/p&gt;
+
+&lt;p&gt;For the backend of the app, I used another Team Github library called &lt;a href=&quot;https://github.com/MantleFramework/Mantle&quot;&gt;Mantle&lt;/a&gt; which I highly recommend for non-database-backed apps. The requirements for my model were that the accident report needed to be saved between uses and deleted after being submitted to the insurance company.&lt;/p&gt;
+
+&lt;p&gt;The app also had a unconventional saving structure on sub-screens. In where most Mac/iOS apps, it’s customary to save immediately on changing an attribute, this app requires a specific user action in order to execute a save (tapping the save button). Therefore, I had to craft the memory and delegation model to keep a temporary copy of an object in the detail controller, and then pass back that object on save to replace the old one. There was actually two layers of this before the attribute was saved to disk.&lt;/p&gt;
+
+&lt;p&gt;Once an accident report is submitted, I save the file as an archived file with the date and delete the current file. That way, a user always has a copy of their submitted reports. Even though we didn’t have the budget to build a section to browse previously submitted reports, in the current structure, it would be trivial to implement if requested later. As of now, the user could reload a past accident report using the iTunes interface.&lt;/p&gt;
+
+&lt;p&gt;The last unique part of this app was the actual submission from user to the insurance company. If I submitted the data and images using a normal POST, we would immediately need to write a backend webapp to receive and store the data, and an admin interface for the insurance company to access the reports. We would also need to notify the insurance company when the new report was submitted. And to add to the complexity, we would also need to create additional fields for capturing the user name, or possibly even have user authentication. There wasn’t any budget for this additional functionality, so we solved the problem by using good ol’ MFMailComposeController. I formatted the text in an email, adding images as attachments, and let the user send it. This gives the insurance company immediate notification, a CMS that everyone understands (email program), a database with search (email program), user identification (email address and name), and lead generation for users that aren’t currently customers.&lt;/p&gt;
+
+&lt;p&gt;Overall, I think the app turned out pretty well, especially for a smaller budget project.&lt;/p&gt;
+
+&lt;h2 id=&quot;photo-sharing-app&quot;&gt;Photo Sharing App&lt;/h2&gt;
+
+&lt;p&gt;&lt;strong&gt;Status: In Active Development&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;Don’t ask me why, but I’ve decided to write a photo sharing iOS app. This particular idea was spawned from another photo sharing app idea I had a couple weeks ago.&lt;/p&gt;
+
+&lt;p&gt;Last week I made some visual mockups (it’s only seven screens so far, not including authentication or onboarding screens). I’ve spent a couple days writing code.&lt;/p&gt;
+
+&lt;p&gt;The new things I’m focusing on for this project are using Parse for the backend and leveling up with &lt;a href=&quot;https://github.com/ReactiveCocoa/ReactiveCocoa&quot;&gt;ReactiveCocoa&lt;/a&gt;. This is my first time doing things the NoSQL way, so that’s been enlightening. So far Parse has been surprisingly refreshing to use. The API is very clean, and although I’ve run into a couple snags so far, they’re not kidding about being able to get a prototype off the ground extremely quick.&lt;/p&gt;
+
+&lt;p&gt;The other unexpected awesomeness about using Parse and ReactiveCocoa is using the &lt;a href=&quot;https://github.com/kastiglione/Parse-RACExtensions&quot;&gt;ReactiveExtensions&lt;/a&gt;. These are simple RACSignal producing wrappers for parse saving/fetching/deleting/etc. methods that are usually block or delegate based. They make life a lot easier, and allow a lot of elegant chaining operations.&lt;/p&gt;
+
+&lt;p&gt;I will most likely write up an entire post on this project or maybe even open source the code once I’ve hit V1. In the mean time, message me on &lt;a href=&quot;https://twitter.com/TwoCentStudios&quot;&gt;twitter&lt;/a&gt; if you’re interested in beta testing.&lt;/p&gt;
+
+&lt;h2 id=&quot;whats-next&quot;&gt;What’s Next?&lt;/h2&gt;
+
+&lt;p&gt;It’s always good to throw out some general and specific goals for the next quarter.&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;My top priority is getting a beta out of my untitled photo sharing app and seeing if it’s any fun.&lt;/li&gt;
+  &lt;li&gt;Circle back to the backlog of Vinylogue, SocketParty, and Technicolor.&lt;/li&gt;
+  &lt;li&gt;I still think that someday I’ll think of a project I can work on to learn Haskell.&lt;/li&gt;
+  &lt;li&gt;I’d like to open source some sort of generalized iOS component.&lt;/li&gt;
+  &lt;li&gt;Rewrite the backend of the Timehop app once I figure out what strategy I should use (and find the time).&lt;/li&gt;
+  &lt;li&gt;Write a blog post with a little to a lot of sample code at the end of every sprint.&lt;/li&gt;
+  &lt;li&gt;Run the backend stack frequently and start contributing to the backend codebase at Timehop.&lt;/li&gt;
+  &lt;li&gt;Get quicker and more efficient working with git and managing branches.&lt;/li&gt;
+  &lt;li&gt;Learn vim and/or get faster editing with Xcode (is that possible?).&lt;/li&gt;
+  &lt;li&gt;Learn more about OAuth, TLS, Facebook and Twitter login, and general app security.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;That seems like a healthy set of things to do.&lt;/p&gt;
+
+&lt;p&gt;Until next time.&lt;/p&gt;
+
+</description>
+        <pubDate>Sun, 26 Jan 2014 18:43:19 -0600</pubDate>
+        <link>https://twocentstudios.com/2014/01/26/fall-2013-project-wrap-up/</link>
+        <guid isPermaLink="true">https://twocentstudios.com/2014/01/26/fall-2013-project-wrap-up/</guid>
+        
+        <category>retro</category>
+        
+        
+      </item>
+    
+      <item>
+        <title>Six Months at Timehop</title>
+        <description>&lt;p&gt;It was about six months ago I started contracting at &lt;a href=&quot;http://timehop.com&quot;&gt;Timehop&lt;/a&gt;. After six weeks of remote work from Chicago, I decided to move to New York City to join the team full time.&lt;/p&gt;
+
+&lt;p&gt;In late June, I packed up a small U-Haul truck with most of my belongings. My friend Sergio and I drove that truck 14 hours across the mid-west.&lt;/p&gt;
+
+&lt;p&gt;I’ve learned a lot in the past six months, most of it from my co-workers, but some of it from banging my head against a wall until late into the evening. I’ve pushed some solid code and some buggy code to the App Store.&lt;/p&gt;
+
+&lt;p&gt;I’ve had the chance to write features that hundreds of thousands of people will interact with every day. I’ve also had the chance to prototype features and tweak them to get them just right.&lt;/p&gt;
+
+&lt;p&gt;I’ve been to a few meetups, and I’ve met some really cool developers. I’ve met some new friends, and I’ve stayed as close as I can with those back in Chicago (I’m not sure how we’d do it without FaceTime and Google Hangouts).&lt;/p&gt;
+
+&lt;p&gt;It would take me the rest of the year to finish this post if I tried to get anymore specific about all the things I’ve done in the past six months. I think it suffices to say that the adventure has just begun. I’m really excited about what’s ahead.&lt;/p&gt;
+</description>
+        <pubDate>Sun, 06 Oct 2013 20:52:00 -0500</pubDate>
+        <link>https://twocentstudios.com/2013/10/06/six-months-at-timehop/</link>
+        <guid isPermaLink="true">https://twocentstudios.com/2013/10/06/six-months-at-timehop/</guid>
+        
+        <category>retro</category>
+        
+        
+      </item>
+    
+      <item>
+        <title>Summer 2012 Project Wrap Up</title>
+        <description>&lt;p&gt;A lot has happened since my last quarterly project wrap-up. I’ve done a lot of little projects here and there, abandoned a few, and dreamed up a bunch more that I can’t wait to start on. Here’s a summary of the smaller things that might not have gotten their own posts over the last couple months.&lt;/p&gt;
+
+&lt;h2 id=&quot;to-be-titled-music-app&quot;&gt;To-be-titled Music App&lt;/h2&gt;
+
+&lt;p&gt;Early in the summer, I decided to start seriously working on the music app I’ve been talking about since last Winter. It went through several iterations of what format it should be and what the scope of it should be. I coded up a quick Rails app to see the basic concept in a couple days, but left it untouched for a while because at the time it didn’t seem like the browser was the right primary format for it.&lt;/p&gt;
+
+&lt;p&gt;After spending a few more weeks rethinking the purpose of the app, it seemed possible to strip the app down to its core and do an iPad/iPhone only release. Initially everything was going to be local to the user’s device. Then, of course, the scope started to expand, and eventually I found myself and what I considered to be a happy medium of still having a core iOS UI, hosting backend data with Parse, and leveraging existing social media sharing.&lt;/p&gt;
+
+&lt;p&gt;In prep for the iOS app, I circled back to a new iOS library from Github called &lt;a href=&quot;https://github.com/github/ReactiveCocoa&quot;&gt;Reactive Cocoa&lt;/a&gt;. I spent a number of days just wrapping my head around the concept and example code, and finally felt confident enough to start diving in myself.&lt;/p&gt;
+
+&lt;p&gt;I spent a few consecutive weekends with my Graphic Designer friend CJ doing wire framing, prioritizing features, learning some more about the Parse framework, and starting on some prototypes of the backend. We even spent a full day going through vocabulary related to our concept to come up with a good name and good terminology within the app to best describe what the user would be doing.&lt;/p&gt;
+
+&lt;p&gt;At a certain point though, a few things converged and the project sort of sputtered out. CJ and I seemed to have more divergent ideas about what the core purpose of the app was, which was sort of a wakeup call that maybe it would be best to do more of that up-front work of surveying users and seeing if we actually have any interest in what the concept is.&lt;/p&gt;
+
+&lt;p&gt;And so the project is currently on hold. I don’t plan on giving up on it. The plan now is to build a few smaller projects before starting up again in order to be able to leverage that experience. Rails has proven to be a much quicker platform to prototype on, and thus my first steps will be to build out a shell that I can start soliciting user feedback from.&lt;/p&gt;
+
+&lt;h2 id=&quot;testplanit&quot;&gt;TestPlanIt&lt;/h2&gt;
+
+&lt;p&gt;One of the first big Rails undertakings I started almost a year ago was an app targeted at a specific data management task I wanted to solve for a friend of mine at my day job. He is a Test Engineer, which basically means receiving physical samples and a test plan, performing the test, acquiring data, writing a test report, and distributing it.&lt;/p&gt;
+
+&lt;p&gt;My initial cobbled together solution to this problem involved a SharePoint list with a few basic bells and whistles. I always imagined a much better system with full database representation of all the elements he works with, and thus started wire framing a Rails app that could accomplish this on my nights and weekends.&lt;/p&gt;
+
+&lt;p&gt;It turned out that my vision was a little bit too complex to accomplish with my early Rails knowledge. A lot of it had to do with my Javascript deficiencies. And after a ton of work, eventually the project sort of died under the weight of its own complexity.&lt;/p&gt;
+
+&lt;p&gt;Fast-forward now to early summer. My Test Engineer friend brought up his data organization and workflow problems, and I started to think about the problem again. I revised my initial data model to reduce the complexity in a way that didn’t decrease functionality much, and basically started over again. I had dabbled in a few other projects since then and my familiarity with Rails-related technologies had given me enough skill to be able to power through the roadblocks that had hindered me the last time around. I reused some of my haml and some model code which saved time with the tedious aspects.&lt;/p&gt;
+
+&lt;p&gt;In what I think was less than a few weeks, I had already gotten the core of the app working well beyond what I used to have. I was already adding embellishments (PDF export support, amongst others), but realized that there was still a great deal of work left to do making the app enterprise-ready (roles &amp;amp; permissions, deployment). It was at this point that we started working on implementing our new Product Lifecycle/Data Management application (see &lt;a href=&quot;http://twocentstudios.com/blog/2012/05/27/flexible-parts-a-part-attributing-prototype-project/&quot;&gt;this post&lt;/a&gt;). I realized that my app would probably never be used in production, and therefore stopped actively working on it. I took it as a learning experience and used that knowledge to build more apps like Flexible Parts.&lt;/p&gt;
+
+&lt;h2 id=&quot;mygengo-api-wrapper&quot;&gt;myGengo API Wrapper&lt;/h2&gt;
+
+&lt;p&gt;I &lt;a href=&quot;http://twocentstudios.com/blog/2012/06/18/objective-c-api-wrapper-for-mygengo/&quot;&gt;wrote about this&lt;/a&gt; in detail, but the overall summary is that I missed Objective-C and wanted to do a little weekend project.&lt;/p&gt;
+
+&lt;p&gt;Looking back, I don’t think I did myself as much of a service as I should have with this project. I took shortcuts that I shouldn’t have because deep down I knew that I probably wouldn’t be using what I had written at all. Kind of another learning experience in choosing personal/open-source projects.&lt;/p&gt;
+
+&lt;h2 id=&quot;engsurvey&quot;&gt;EngSurvey&lt;/h2&gt;
+
+&lt;p&gt;My Test Engineer friend from work came to me with another request. He also needed an automatic survey system for his test reports. For ISO certification, you need to have some sort of feedback system from your clients (the Engineers that need their samples tested) about your reports.&lt;/p&gt;
+
+&lt;p&gt;I found an almost framework-scale gem called &lt;a href=&quot;https://github.com/NUBIC/surveyor&quot;&gt;Surveyor&lt;/a&gt; which got me almost 80% of the way there. The last 20% is always the hardest. My friend wasn’t great at giving me requirements, I saw a lot of headaches ahead in deploying it internally, and the project wasn’t high on either of our priority lists, so this project died out as well.&lt;/p&gt;
+
+&lt;h2 id=&quot;codecademy&quot;&gt;Codecademy&lt;/h2&gt;
+
+&lt;p&gt;I had read a lot about Codecademy since their New Years push. A non-programming friend of mine had been doing the full course for a few months, so I decided to check out the jQuery course. I finished about half the lessons which helped ready me for the AJAX part of my next few projects.&lt;/p&gt;
+
+&lt;h2 id=&quot;haveread&quot;&gt;HaveRead&lt;/h2&gt;
+
+&lt;p&gt;I got a request from another co-worker to find a solution to a problem she had. Her one requirement was that she needed a way to send off a document to a dozen or so people and simply collect responses of when they had read the document. I explained the voting feature of Outlook mail, but she didn’t seem to think that would be simple enough.&lt;/p&gt;
+
+&lt;p&gt;She needed it urgently of course. I threw together a Rails project to do this in about two half-days of work (naming them is always the hardest part). In the process I learned a little more simple AJAX and using the CarrierWave gem, which would help me in an adjacent project I was working on.&lt;/p&gt;
+
+&lt;p&gt;I showed her what I had, and although she was impressed, she said the limitation I have of running it off my laptop wouldn’t work out in the short term. But that she would consider using it in the future.&lt;/p&gt;
+
+&lt;p&gt;I wasn’t too bothered because it was a quick project and I learned a lot doing it. It was getting a little tiresome though that deployment was becoming a problem. Heroku or other cloud services weren’t an option because they were outside the company firewall. And getting my own VM in the company was blocked by too much red tape since I wasn’t part of the IT department. For the time being, the only way to deploy at work was to run the dev server on my machine and send links to my (non-static) IP, which is the technique I used in my next project.&lt;/p&gt;
+
+&lt;h2 id=&quot;solidworks-model-challenge-friday&quot;&gt;SolidWorks Model Challenge Friday&lt;/h2&gt;
+
+&lt;p&gt;Part of my (new) day job was administrating &lt;a href=&quot;http://www.solidworks.com/&quot;&gt;SolidWorks&lt;/a&gt; for our couple dozen Mechanical Engineers. We have a bunch of younger Engineers that still love a good modeling challenge, and from a seed of an idea sprang “Model Challenge Friday”. We’d spend half an hour on Friday morning designing/modeling various objects. The goal was speed and creativity, and to give the Engineers a sandbox to experiment with new techniques that they might not be comfortable with doing on real mission-critical projects.&lt;/p&gt;
+
+&lt;p&gt;In a lot of ways, it was inspired by the kind of projects I mentioned above. Stuff I never intended to launch and support, but instead used to experiment with new gems or techniques without having to get bogged down in details irrelevant to that goal.&lt;/p&gt;
+
+&lt;p&gt;I tried to participate in the first two weeks, but realized quickly that I could barely model a cylinder in an hour. I spent the next two weeks giving myself a crash course in 3D modeling with some help from my fellow Engineers. Before long, I was modeling up my own chair designs and actually participating in the contests. After a few more Fridays, I was to the point where other judges couldn’t tell which design was mine (because they used to be so simplistic and bad).&lt;/p&gt;
+
+&lt;p&gt;The judging was initially done by passing some unmarked printouts around the office area for an informal poll of the fan favorite design. This process was just begging to be web-appified though.&lt;/p&gt;
+
+&lt;p&gt;The next few weeks I spent several nights and weekend days working on my next Rails app to facilitate this process.&lt;/p&gt;
+
+&lt;p&gt;My design goals were the following.&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;Engineers would have user accounts.&lt;/li&gt;
+  &lt;li&gt;Registered users could submit screenshots of their designs each week to the contest.&lt;/li&gt;
+  &lt;li&gt;Voters would be able to vote without logging in, but they should only be able to vote once per contest.&lt;/li&gt;
+  &lt;li&gt;Entries would not show the creator’s name until the contest was over.&lt;/li&gt;
+  &lt;li&gt;When the contest was declared over, the votes would be automatically tallied and a winner declared.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;This required a good combination of normal CRUD layouts, AJAX for voting, CarrierWave for image uploads, Bootstrap for a basic design, cookies to store voting status, and of course running my ad-hoc “production server” on my laptop.&lt;/p&gt;
+
+&lt;p&gt;After informally launching one Friday as sort of test, things went over really well. The system worked almost flawlessly (except for a few unscrupulous Engineers voting for themselves by not logging in). I realized quickly that I had compromised my dev server by using it to store real production data and thus had a bit of a problem on my hands working on improvements without breaking stuff.&lt;/p&gt;
+
+&lt;p&gt;We used my new creation for a few weeks. It worked well. I made some improvements to the entry browsing using the Bootstrap js components and digging around for other good js plugins. Eventually though, the contest itself died out when suddenly we all seemed to get too busy for that half hour.&lt;/p&gt;
+
+&lt;h2 id=&quot;applecart&quot;&gt;AppleCart&lt;/h2&gt;
+
+&lt;p&gt;I’ve talked about AppleCart in detail &lt;a href=&quot;http://twocentstudios.com/blog/2012/09/18/applecart-my-first-production-rails-app/&quot;&gt;here&lt;/a&gt;, but the long and short of it is that the app has been a big success so far in raising money for the American Cancer Society and keeping things organized in the drive.&lt;/p&gt;
+
+&lt;h2 id=&quot;whats-next&quot;&gt;What’s Next?&lt;/h2&gt;
+
+&lt;p&gt;I’ve started transitioning out of my day job role and into a more freelance/consulting lifestyle. I plan on doing this for a little while to increase my skill level and be able to tackle more theoretical and practical programming problems faster than I would by doing so only on nights and weekends. Time and energy have always been an issue, and especially with a lengthy commute, it just makes more sense to go all-in and laser focus on what I really want to do for the rest of my life.&lt;/p&gt;
+
+&lt;p&gt;Some of the programming related things I’m planning on doing with my time this Fall:&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;Tackle a bunch of small projects I’ve wanted to explore on iOS and Rails.&lt;/li&gt;
+  &lt;li&gt;Really dig into RSpec and TDD.&lt;/li&gt;
+  &lt;li&gt;Finish some programming books I’ve started, and few more I haven’t opened yet.&lt;/li&gt;
+  &lt;li&gt;Start contributing to an open source project.&lt;/li&gt;
+  &lt;li&gt;Immerse myself in the code bases of a few well-known projects to learn more about architecture and best-practices.&lt;/li&gt;
+  &lt;li&gt;Begin learning a functional programming language.&lt;/li&gt;
+  &lt;li&gt;Keep exploring the elements of traditional graphic design.&lt;/li&gt;
+  &lt;li&gt;Do a project with a NoSQL database.&lt;/li&gt;
+  &lt;li&gt;Go to a start-up event in Chicago.&lt;/li&gt;
+  &lt;li&gt;Watch at least one conference talk a week on YouTube.&lt;/li&gt;
+  &lt;li&gt;Organize my browser bookmarks.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;I don’t know where the priorities will end up being for each of those, but here’s to a healthy and productive Fall.&lt;/p&gt;
+</description>
+        <pubDate>Sun, 30 Sep 2012 07:08:00 -0500</pubDate>
+        <link>https://twocentstudios.com/2012/09/30/summer-2012-project-wrap-up/</link>
+        <guid isPermaLink="true">https://twocentstudios.com/2012/09/30/summer-2012-project-wrap-up/</guid>
+        
+        <category>retro</category>
+        
+        
+      </item>
+    
+      <item>
+        <title>Spring 2012 Project Wrap Up</title>
+        <description>&lt;p&gt;My spring has been a little less busy on the coding front than Winter was (I did a lot more recording than I expected these last few months). In any case, here are a few things I’ve started.&lt;/p&gt;
+
+&lt;h2 id=&quot;javascript&quot;&gt;JavaScript&lt;/h2&gt;
+
+&lt;p&gt;For one reason or another, I’ve never dug into JavaScript. The most I’ve needed it has been in my Rails projects, where I have continuously struggled when I get to the front end integration. At those times, it seemed like too much to learn at once, so I tried my best to cobble together bits of code so that I could keep moving with the backend.&lt;/p&gt;
+
+&lt;p&gt;I’ve realized that if I wanted to do things right, I have to stop thinking that I could just pick up JavaScript along the way and actually commit some time to learning it the right way. I picked up Douglas Crockford’s “JavaScript: The Good Parts”, which I’ve worked through about a quarter of so far. I’m enjoying its terse style quite a bit.&lt;/p&gt;
+
+&lt;p&gt;When I started learning Ruby, one of my favorite things was Ruby Koans. Luckily, I found the similar JavaScript Koans on github, and have been working through that as well.&lt;/p&gt;
+
+&lt;p&gt;I’m still unsure of what my end game is right now. Starting with vanilla JS right now seems like a good idea. One of the things that has always intimidated me about JS is all of the frameworks and libraries built on top of it. JQuery is the big one. Then there’s coffeescript. And backbone. Should I only pick these up once I’ve been using vanilla JS for a while and need a way to speed up my workflow?&lt;/p&gt;
+
+&lt;p&gt;Another intimidating thing about JS is how much you need to know about the entire browser eco-system in order to be successful in a practical sense.&lt;/p&gt;
+
+&lt;p&gt;With all that on the table, I need to know enough JavaScript to get done what I want to get done. Currently, that’s writing Rails apps with enough front end support to succesfully interact with the backend. That will be my goal.&lt;/p&gt;
+
+&lt;h2 id=&quot;brightbus&quot;&gt;BrightBus&lt;/h2&gt;
+
+&lt;p&gt;The school year is winding down, which means that app usage will bottom out until August. My goal is to have everything on my bugs and features list completed by then, so that all the new students are guaranteed to have the best bus riding experience possible (and hopefully write good reveiws).&lt;/p&gt;
+
+&lt;h2 id=&quot;railsios-music-app&quot;&gt;Rails/iOS Music App&lt;/h2&gt;
+
+&lt;p&gt;I haven’t worked on my music app idea in a while, but I’m excited about getting back on board with this once CJ and I get some time to do some basic planning and strategy about how things should look and function.&lt;/p&gt;
+
+&lt;h2 id=&quot;functional-programming&quot;&gt;Functional Programming&lt;/h2&gt;
+
+&lt;p&gt;Hacker News is always speckled with good articles about functional programming. I’ve been itching to start learning one, but it’s next to impossible to choose which one I want to start with. As soon as someone writes a blog post about how much better Haskell is than Erlang, there’s always a great rebuttal as to why the opposite is true, and plenty of good comment discussion to sort through too.&lt;/p&gt;
+
+&lt;p&gt;At the end of the day, I’m sure it doesn’t matter which one I learn (first). My bigger problem is probably finding a suitable project to implement (and do I have time for another project?).&lt;/p&gt;
+
+&lt;h2 id=&quot;new-job&quot;&gt;New Job&lt;/h2&gt;
+
+&lt;p&gt;I moved into a new role at my day job. I support our (mostly) mechanical engineering team. Once I settle into the role more, I’m hoping that I’ll get more time to write some specialized business apps and get back into active development of the iOS app.&lt;/p&gt;
+</description>
+        <pubDate>Sat, 05 May 2012 09:01:00 -0500</pubDate>
+        <link>https://twocentstudios.com/2012/05/05/spring-2012-project-wrap-up/</link>
+        <guid isPermaLink="true">https://twocentstudios.com/2012/05/05/spring-2012-project-wrap-up/</guid>
+        
+        <category>retro</category>
+        
+        
+      </item>
+    
+      <item>
+        <title>Winter 2012 Project Wrap Up</title>
+        <description>&lt;p&gt;I’ve had a few interesting projects this Winter.&lt;/p&gt;
+
+&lt;h2 id=&quot;brightbus-champaign-urbana-v20&quot;&gt;BrightBus: Champaign-Urbana V2.0&lt;/h2&gt;
+
+&lt;p&gt;I found out somewhat by accident that the Champaign Urbana Mass Transit District (MTD) was having a contest for apps using their API. I talked it over with CJ, and even though there was only 3 weeks left until the deadline, we decided it would be a good idea to give it a shot.&lt;/p&gt;
+
+&lt;p&gt;I was a little rusty on my iOS stuff. My last project was BrightBus: OSU that launched in late May 2011. I also decided that dropping core Three20 reliance was in my best interest. (I ended up using it for some of the TTStyle and TTViews).&lt;/p&gt;
+
+&lt;p&gt;I wrote a daily blog detailing my efforts on this project, mostly to help work out my thoughts and reason through the many quick decisions I had to make. Since there are so many posts, I thought it’d be best to make a separate tumblr with all the posts. I’m not sure if I’ll ever make that public because it’s very rambling and doesn’t really have much value as far as programming techniques or tips.&lt;/p&gt;
+
+&lt;p&gt;It ended up being the most intense programming sprint I’ve done to date. Doing a full eight hours at work, a couple hours of commute, then another eight to ten hours writing code the rest of the night was very intense. We got it out and live on the AppStore with a couple hours to spare.&lt;/p&gt;
+
+&lt;p&gt;Unfortunately, we didn’t end up winning the contest. I’m proud of the work we did, and the direction we took on the feature set and implementation. We were the only submission that was truly “designed”, both in visuals and interaction. I think if we would have started a few more weeks before, we may have stood a better chance.&lt;/p&gt;
+
+&lt;p&gt;In any case, we still have several hundred active users, and more every day that are willing to pay a couple bucks for something they probably use several times a week over the course of several years.&lt;/p&gt;
+
+&lt;p&gt;And although I’ve still got plenty of projects and commitments, I have plenty of features lined up for V2.1 and beyond.&lt;/p&gt;
+
+&lt;h2 id=&quot;new-rails-project&quot;&gt;New Rails Project&lt;/h2&gt;
+
+&lt;p&gt;I came up with an idea for a webapp that focuses on music. The backend of it is pretty simple, and the idea is more centered around building a community than doing anything particularly complicated with algorithms. I’ve run the idea by a few of my friends, and so far the response has been much more positive than I expected. Enough that I’ve done a little work on a prototype of the Rails backend.&lt;/p&gt;
+
+&lt;p&gt;I have a feeling it’s going to take a while for this project to get off the ground. But there’s nothing too urgent about the idea, and I’d rather take some time to make sure we do it right and have the resources to focus on it 100% when it comes time to do so.&lt;/p&gt;
+</description>
+        <pubDate>Sun, 11 Mar 2012 16:19:00 -0500</pubDate>
+        <link>https://twocentstudios.com/2012/03/11/winter-2012-project-wrap-up/</link>
+        <guid isPermaLink="true">https://twocentstudios.com/2012/03/11/winter-2012-project-wrap-up/</guid>
+        
+        <category>retro</category>
+        
+        
+      </item>
+    
+  </channel>
+</rss>

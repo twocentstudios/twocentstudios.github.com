@@ -1,0 +1,717 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>twocentstudios</title>
+    <description>A coding blog covering iOS, Swift, and other programming topics.</description>
+    <link>https://twocentstudios.com/blog/tags/three20/index.html</link>
+    <atom:link href="https://twocentstudios.com/blog/tags/three20/feed.xml" rel="self" type="application/rss+xml"/>
+    <pubDate>Fri, 02 Aug 2024 06:02:52 -0500</pubDate>
+    <lastBuildDate>Fri, 02 Aug 2024 06:02:52 -0500</lastBuildDate>
+    <generator>Jekyll v3.9.3</generator>
+    
+      <item>
+        <title>State of the Three20 Union</title>
+        <description>&lt;p&gt;I’ve been sitting on this topic for a little while now, and feel like I should finally weigh in on where the Three20 framework is at this point.&lt;/p&gt;
+&lt;h2&gt;Where I Started&lt;/h2&gt;
+&lt;p&gt;I started working with Three20 a little over a year ago. In that time, a lot of really talented people have improved the library to the point where it is today. They have done great work that all of us have benefitted from greatly. Recently, I got comfortable enough with the library to start filling in holes in the documentation using this blog.&lt;/p&gt;
+
+&lt;p&gt;But I think everyone in the community has started to feel the weight of Three20. I think the three main reasons for this are documentation, architecture, and community. All of which seem to be making each other worse as time goes on.&lt;/p&gt;
+&lt;h2&gt;Documentation&lt;/h2&gt;
+&lt;p&gt;Three20 has gotten continuous flak on Twitter, blogs, and anywhere else iOS devs talk for the lack of documentation. There’s really no argument against that. Everyone acknowledges it.&lt;/p&gt;
+
+&lt;p&gt;A lot of people have gone out of their way to help with tutorials and blog posts that usually get a sliver of functionality across. But a lot of them are intermediate or advanced and assume you know about dependencies and other Three20 magic. And there’s no nice neat repository for all of them. And a lot of them are out of date.&lt;/p&gt;
+
+&lt;p&gt;The startup docs written by Jeff are great for just that: getting started. This gives beginners a taste of what Three20 can do for them and completely leaves them out to dry once they try their first customization. So they look at the documentation and find nothing. Then they look at the source and find nothing. Then they search blogs and find a bunch of old stuff. Then they get pissed off after a number of hours or days and give up and post angry comments to Twitter.&lt;/p&gt;
+
+&lt;p&gt;With the mass of source that Three20 has, I can’t blame them. It’s tough to know where to start, especially if you want to use a large portion of the library. And this is definitely not something that can be explained in a short bit of source documentation. It’s much better suited to an Apple “programming guide” type document. This just doesn’t exist because I truly believe there aren’t that many people that know the library inside and out. And those that do exist are busy fixing the plethora of issues and pull requests.&lt;/p&gt;
+&lt;h2&gt;Architecture&lt;/h2&gt;
+&lt;p&gt;The modularity that Jeff introduced sometime last year was heavily called for and a step in the right direction in theory. But I think the problem is that Three20 was originally written as a cohesive app, and you basically had to add all seven or so components anyway in order to get the thing to build (I always included the full library because I usually use all of it, so don’t quote me on that).&lt;/p&gt;
+
+&lt;p&gt;There used to be a chart that had “The Three20 Ecosystem” showing how all the table stuff worked together. I still believe the concept behind the Three20 table structures has plenty of merit over Apple’s. But you can definitely tell that the architecture is such that it works for the Facebook app, but not much else without a lot of rewriting, which almost defeats the purpose of having reusable library components.&lt;/p&gt;
+
+&lt;p&gt;Three20 has a lot of independent goodies and additions that don’t have much to do with the architecture. But most of the components require you to do things The Three20 Way. And if you’re going to use Three20 the way it was intended, you should probably be writing an app that has similar layout.&lt;/p&gt;
+
+&lt;p&gt;Three20 is best for making apps for web services that have assets in databases. I’m not sure how else to describe this, but maybe API-centered app is the best description. Think of Facebook then set your bounds somewhere outside of that. Most all your data used in the app should come from the cloud. The webservice should have a well-documented API. It should be heavily URL based.&lt;/p&gt;
+
+&lt;p&gt;This is because Three20’s URL system does not do well with passing around data. Sure, it can do it. But it’s not designed for it. You’ll be fighting the whole way, especially with tablecells. Each view controller should have a corresponding URL on your webservice for best compatibility.&lt;/p&gt;
+
+&lt;p&gt;This post isn’t about when you should use Three20 so I’ll cut that example short. Needless to say, those new to Three20 don’t know if they should or shouldn’t be using it because there’s no documentation because there are so few people that understand the library and we’re back to the chicken and egg problem.&lt;/p&gt;
+&lt;h2&gt;Community&lt;/h2&gt;
+&lt;p&gt;I have to be frank with this one. There are plenty of great people in the Three20 community so I don’t want to give the wrong impression that I know all the players and I can pass judgement freely. But from what I see, there’s an increasing number of weight that is being added to the community due to many of the problems mentioned above.&lt;/p&gt;
+
+&lt;p&gt;Let me start with a fictional iOS developer. He’s been developing using standard libraries for a year or so and has the basics of Objective-C, Foundation, and UIKit down. He hears something about a library from the Facebook developers, checks out the github page, sees some examples, and says, “Wow, this is awesome. This will save me a ton of time writing my own networking classes and photo rendering classes and all that other stuff that I need right now but don’t have time to dig into the Apple frameworks to perfect.” In one word, they get greedy.&lt;/p&gt;
+
+&lt;p&gt;This is perfectly normal. Perfectly acceptable too. This is exactly what I thought when I first saw the framework. After all, the whole point of a framework is having a black box to use where you need it without having to have thousands of developers write the same code. Spending more time on your app-specific business logic and app aesthetic is the siren song of most developers.&lt;/p&gt;
+
+&lt;p&gt;But whereas some developers give up and curse Three20 after not finding any documentation, there are also two other groups.&lt;/p&gt;
+
+&lt;p&gt;Group 1 digs even harder for documentation. They find and read every blog post, step through the source of every provided example, and even &lt;em&gt;read the source until they understand it&lt;/em&gt;. Obviously this takes a long time, and thus the group is small.&lt;/p&gt;
+
+&lt;p&gt;Group 2 immediately pounds Stack Overflow and the Three20 forum with questions. They don’t hesitate to file issues on github for anything and everything they don’t understand and assume is a bug. A lot of the time, they really didn’t understand the standard UIKit way in the first place, and are more or less spinning their tires and flinging mud in everyone else’s faces.&lt;/p&gt;
+
+&lt;p&gt;Group 2 exists in every community, but they usually are indistinguishable because plenty of books and guides exist for all three groups to use. The main contributors are there to answer the really tough questions, but they mainly get to work on fixing mission-critical bugs and writing new features/components. So again, we come back to a lack of documentation making a different problem worse.&lt;/p&gt;
+&lt;h2&gt;Where To Go From Here&lt;/h2&gt;
+&lt;p&gt;Again, I am not trying to demean any of the hard work all the Three20 contributors have done, especially Joe’s original idea and Jeff’s great curation. My main question is this… &lt;strong&gt;is the Three20 framework salvageable?&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;From where I sit right now, I don’t believe it is.&lt;/p&gt;
+
+&lt;p&gt;I think those moderately familiar with the library understand that there are a lot of inherent flaws baked into the framework. Hindsight has made those flaws easily visible, but still not extractable from the framework. It’s a cliche to say that programmers love to rewrite their projects, but in this case I’d like to think we’re rewriting this time from higher ground.&lt;/p&gt;
+
+&lt;p&gt;I know I’m not the only one that feels this way. Jeff’s new &lt;a href=&quot;https://github.com/jverkoey/nimbus&quot; target=&quot;_blank&quot;&gt;Nimbus&lt;/a&gt; project seems to be the answer to many the above complaints. Documentation is the number one priority of the project, and so far Jeff is doing great out of the gate. Many of the best parts of Three20 will be ported over, but foreseeably with all the changes that have come from Jeff’s hindsight of the project.&lt;/p&gt;
+
+&lt;p&gt;What do I mean by not salvageable? I think that more time should be spent rewriting Three20 as Nimbus than should be spent fixing the multitude of Three20 bugs that exist. That being said, I should probably put my money where my mouth is and help with some of that workload.&lt;/p&gt;
+
+&lt;p&gt;I hate to see Three20 collapse under its own weight seeing as how much great work has been put into it. The rapid iteration of the iOS frameworks requires even more rapid iteration of community-driven frameworks to keep up. I think the best way for Three20 to keep up is to gradually migrate to its new form. This will also give us a chance to reevaluate the need for some of the Three20 functionality that was written to cover up holes in previous iOS versions that have since been filled by Apple. It will also give a chance to incorporate other open source projects that have become well known and stable since Three20 was originally started.&lt;/p&gt;
+
+&lt;p&gt;This post was not meant to be an attack on the community, and I’m definitely not trying to be a Negative Nancy. I’d simply like to document my opinion on the source and exacerbation of Three20’s problems so that hopefully the same mistakes can be avoided in the future.&lt;/p&gt;
+</description>
+        <pubDate>Sun, 10 Jul 2011 00:00:00 -0500</pubDate>
+        <link>https://twocentstudios.com/2011/07/10/state-of-the-three20-union.html/</link>
+        <guid isPermaLink="true">https://twocentstudios.com/2011/07/10/state-of-the-three20-union.html/</guid>
+        
+        <category>commentary</category>
+        
+        <category>apple</category>
+        
+        <category>ios</category>
+        
+        <category>three20</category>
+        
+        
+      </item>
+    
+      <item>
+        <title>TTTableViewController &amp; didReceiveMemoryWarning</title>
+        <description>&lt;p&gt;&lt;i&gt;Note: this is adapted from my post on the Three20 forums &lt;a href=&quot;http://forums.three20.info/discussion/98/tttableviewcontroller-didreceivememorywarning&quot;&gt;here&lt;/a&gt; and was relevant for at least v1.0.5.&lt;/i&gt;&lt;/p&gt;
+
+&lt;p&gt;I was having trouble with a rare situation in which my app with two tabs would randomly mutate its table cells. It was more difficult to track down that this was occurring after a memory warning than it was to fix the actual problem. I was doing a lot of my view loading in init, something I hadn’t fixed from when I had originally started writing this particular app over a year ago.&lt;/p&gt;
+
+&lt;p&gt;After moving moving the relevant assignments to loadView and viewDidLoad, I was still running into the problem where a memory warning would clear the loadingView, errorView, or emptyView on the tab that wasn’t currently visible.&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/memory-warning_before-after.png&quot; alt=&quot;&quot; title=&quot;memory-warning_before-after&quot; width=&quot;550&quot; height=&quot;412&quot; class=&quot;size-large wp-image-73&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;After some backtracing through TTModelViewController and TTTableViewController, I narrowed down the problem to updateViewStates in TTModelViewController. At this line:&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;if (!_flags.isShowingLoading &amp;amp;amp;&amp;amp;amp; !_flags.isShowingModel &amp;amp;amp;&amp;amp;amp; !_flags.isShowingError) {
+  showEmpty = !_flags.isShowingEmpty;
+  _flags.isShowingEmpty = YES;
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;The if statement evaluates to true as expected because the controller is not showing an error, the model, or loading. The problem is in the next line. _flags.isShowingEmpty has not been reset even though it isn’t showing empty anymore due to the clear by didReceiveMemory warning. Therefore, the local variable showEmpty is set to NO, and _flags.isShowingEmpty is set unconditionally to YES even though it isn’t really showing the empty view.&lt;/p&gt;
+
+&lt;p&gt;The way to fix this locally is to override didReceiveMemoryWarning in your TTTableViewController subclass.&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;- (void)didReceiveMemoryWarning {
+  [super didReceiveMemoryWarning];
+  [self invalidateModel];
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;invalidateModel calls resetViewStates in the model. This will set all the view _flags to NO and the next pass through updateViewStates will trigger the correct action.&lt;/p&gt;
+
+&lt;p&gt;The permanent fix in Three20’s TTModelViewController would be:&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;- (void)didReceiveMemoryWarning {
+  if (_hasViewAppeared &amp;amp;amp;&amp;amp;amp; !_isViewAppearing) {
+    [super didReceiveMemoryWarning];
+    [self resetViewStates];  // add this line
+    [self refresh];
+  } else {
+    [super didReceiveMemoryWarning];
+  }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+</description>
+        <pubDate>Sun, 01 May 2011 00:00:00 -0500</pubDate>
+        <link>https://twocentstudios.com/2011/05/01/tttableviewcontroller-didreceivememorywarning.html/</link>
+        <guid isPermaLink="true">https://twocentstudios.com/2011/05/01/tttableviewcontroller-didreceivememorywarning.html/</guid>
+        
+        <category>apple</category>
+        
+        <category>ios</category>
+        
+        <category>three20</category>
+        
+        
+      </item>
+    
+      <item>
+        <title>TTXMLParser With a Variable Number of Elements</title>
+        <description>&lt;p&gt;I’ve probably re-solved this problem at least three times, so time to document it.&lt;/p&gt;
+
+&lt;p&gt;Let’s say you’re dealing with an XML feed response from a webservice. You’re using the TTXMLParser extension. Here’s an example of what we might get back from a webservice that shows a user’s recently read books:&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&amp;lt;response&amp;gt;
+  &amp;lt;book&amp;gt;
+    &amp;lt;title&amp;gt;The Stranger&amp;lt;/title&amp;gt;
+    &amp;lt;author&amp;gt;Albert Camus&amp;lt;/author&amp;gt;
+    &amp;lt;completed&amp;gt;Apr 11&amp;lt;/completed&amp;gt;
+  &amp;lt;/book&amp;gt;
+  &amp;lt;book&amp;gt;
+    &amp;lt;title&amp;gt;Pinball 1973&amp;lt;/title&amp;gt;
+    &amp;lt;author&amp;gt;Haruki Murakami&amp;lt;/author&amp;gt;
+    &amp;lt;completed&amp;gt;Apr 5&amp;lt;/completed&amp;gt;
+  &amp;lt;/book&amp;gt;
+&amp;lt;/response&amp;gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;The number of books is completely variable. This is the problem we’re going to solve below. It could return zero, one, or more book elements.&lt;/p&gt;
+
+&lt;p&gt;First off, you have to tell your TTURLXMLResponse that it’s an RSS feed. It doesn’t actually have to be RSS, they just mean “is it going to have multiple elements with the same element name?” like we have with book elements. So we’ll check that off.&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;TTURLXMLResponse* response = [[TTURLXMLResponse alloc] init];
+response.isRssFeed = YES
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Now we’ve got to deal with the response in requestDidFinishLoad.&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;- (void)requestDidFinishLoad:(TTURLRequest*)request {
+	TTURLXMLResponse* response = request.response;
+
+	// The root object should definitely be a dictionary
+	TTDASSERT([response.rootObject isKindOfClass:[NSDictionary class]]);
+	NSDictionary* feed = response.rootObject;
+	
+	// Use &amp;amp;quot;arrayForKey&amp;amp;quot; not &amp;amp;quot;objectForKey&amp;amp;quot; as explained below
+	if ([feed objectForKey:@&amp;amp;quot;book&amp;amp;quot;] != nil])
+		NSArray* entries = [feed arrayForKey:@&amp;amp;quot;book&amp;amp;quot;];
+
+	// { Parse the feed and do whatever else you need to do}
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;The important part of the code is using arrayForKey instead of objectForKey. If we dig into the Three20 code:&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;@interface NSDictionary (TTXMLAdditions)
+//...
+/**
+ * @return Performs an &amp;amp;quot;objectForKey&amp;amp;quot;, then puts the object into an array. If the
+ * object is already an array, that array is returned.
+ */
+- (NSArray*)arrayForKey:(id)key;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;If the service returns only a single book, the object we get back for the “book” element will still be an array, but it will be an array of &lt;i&gt;strings&lt;/i&gt; and not an array of &lt;i&gt;dictionaries&lt;/i&gt; like we expect. ArrayForKey solves this by giving us back an array of dictionaries even if there is only one entry.&lt;/p&gt;
+
+&lt;p&gt;Note that I had to check that an object existed for books before calling arrayForKey. In my experience, this method &lt;i&gt;will&lt;/i&gt; crash if an object doesn’t exist for the key, so be careful!&lt;/p&gt;
+</description>
+        <pubDate>Sun, 17 Apr 2011 00:00:00 -0500</pubDate>
+        <link>https://twocentstudios.com/2011/04/17/ttxmlparser-with-a-variable-number-of-elements.html/</link>
+        <guid isPermaLink="true">https://twocentstudios.com/2011/04/17/ttxmlparser-with-a-variable-number-of-elements.html/</guid>
+        
+        <category>apple</category>
+        
+        <category>ios</category>
+        
+        <category>three20</category>
+        
+        
+      </item>
+    
+      <item>
+        <title>TTTabStrip Controlled Multi-table Lazy-loading TTTableViewController</title>
+        <description>&lt;p&gt;Using a single TTTableViewController and a TTTabStrip can sometimes be an appropriate way to avoid drilling down through two tableviews. I’m going to walk through how to do this with a YouTube viewer as an example.&lt;/p&gt;
+
+&lt;p&gt;&lt;img class=&quot;aligncenter size-medium wp-image-38&quot; title=&quot;TTTabStrip Example&quot; src=&quot;/images/TTTabStrip-Example.png&quot; alt=&quot;&quot; width=&quot;200&quot; height=&quot;300&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Above is an example of the effect we’re going for. I’ve used the Associated Press YouTube playlist feed for this example, and obviously the interface isn’t finished yet. This tutorial will focus solely on how to pull and show multiple models and datasources in a single TTTableViewController. There won’t be a full example project, and there also won’t be any layout code. If you’re still interested, read on!&lt;/p&gt;
+
+&lt;h2&gt;Structure Overview&lt;/h2&gt;
+
+&lt;p&gt;Our TTTableViewController has one TTTabStrip and one TTTableView. The TTTabStrip will load all playlists of a user and display each playlist title as a button. When the user taps a button, the TTTableView will load all the videos in the selected playlist as tableitems. This will be done lazily, meaning that when the controller loads up, it will first load the playlists from the server into the TTTabStrip. It will then select the first tab and load its videos list from the server. It will only load each playlist when it has been selected by the user after that, and retain the contents if they are selected again.&lt;/p&gt;
+
+&lt;p&gt;TTTableViewController expects to have only one model and one datasource. Keeping this in mind, there are several ways to accomplish the lazy loading and switching. My first impulse was to do everything with a single datasource which loaded different models and changed its items on the fly, which turned out to be too complicated for its own good. I also tried loading everything from a master model, but that killed the ability to do lazy loading, and was also difficult communicating back and forth with the controller. I settled on doing all the heavy lifting in the TTTableViewController, and that’s what I’ll be showing.&lt;/p&gt;
+
+&lt;h2&gt;Setting Up the Datasources&lt;/h2&gt;
+
+&lt;p&gt;Since we’ve decided to use our TTTableViewController as the director, we’ll need to set up a few pointers in the header.&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;// TCYouTubeController.h
+@interface TCYouTubeViewController : TTTableViewController &amp;amp;lt;TTTabDelegate&amp;amp;gt;{
+    // The TabStrip sitting above the table
+	TTTabStrip* _playlistsBar;
+
+    // The model that generates a list of playlists for the TabStrip
+	TCYouTubePlaylistsModel *_playlistsModel;
+
+    // An array of TCYouTubeDataSource objects, one for each playlist
+	NSMutableArray *_playlistDataSources;
+
+    // A ppinter to the playlist datasource currently being viewed
+	TCYouTubePlaylistDataSource *_activePlaylistDataSource;
+}
+
+@property (nonatomic, retain) TCYouTubePlaylistsModel* playlistsModel;
+@property (nonatomic, retain) NSMutableArray* playlistDataSources;
+@property (nonatomic, retain) TCYouTubePlaylistDataSource* activePlaylistDataSource;
+
+// Convenience method for setting the active playlist from an index
+// (usually from a button in an array whose entries correspond
+// to those of the playlistModels)
+- (void)setActivePlaylistAtIndex:(NSInteger)xActiveIndex;
+
+@end
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;We’ll dig into what each of these pointers is going to do for us in a second. Moving onto the implementation:&lt;/p&gt;
+
+&lt;p&gt;In loadView:, set create a containerView to add your TTTabStrip and TTTableView to.&lt;/p&gt;
+
+&lt;p&gt;Next, we need to start the ball rolling in our createModel (defined in the TTTableController source). First check to make sure we haven’t already loaded the playlists. If we haven’t, create the model, add the controller as a delegate, and then start the load.&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;- (void)createModel {
+	if (!_playlistsModel &amp;amp;amp;&amp;amp;amp; !_playlistsModel.isLoaded){
+		TT_RELEASE_SAFELY(_playlistsModel);
+		_playlistsModel = [[TCYouTubePlaylistsModel alloc] initWithUsername:kYouTubeUserName];
+		[_playlistsModel.delegates addObject:self];
+		[_playlistsModel load:TTURLRequestCachePolicyDefault more:NO];
+	}
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;I’ll dig into what the model code should be doing in a second. We’ll stay in the controller for now.&lt;/p&gt;
+
+&lt;p&gt;Since we registered as a delegate, our controller will receive a modelDidFinishLoad message after hitting the network. Here we want to check a couple things.&lt;/p&gt;
+
+&lt;p&gt;First, since we’ll be receiving this message for each type of model (both playlist and videos) we have to check whether it’s the playlists model we’re expecting. If it is, clear out the dataSources array, then prepare an empty array of tabitems to add to the TTTabStrip.&lt;/p&gt;
+
+&lt;p&gt;Next, loop through each playlist in the playlists model. Create a new videos (single playlist) dataSource for each playlist and add it to the array we set up in the header for this purpose. Finally, make a corresponding tab containing the playlist title and add it to the TTTabStrip.&lt;/p&gt;
+
+&lt;p&gt;Since this is the first load, we want to load up the first playlist if it exists. We do this by momentarily setting the tabstrip index to max, then back to 0. This will trigger the setActivePlaylistAtIndex and load as if the user had tapped the button.&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;- (void)modelDidFinishLoad:(id&amp;amp;lt;TTModel&amp;amp;gt;)model {
+	[super modelDidFinishLoad:model];
+
+	// For only the playlist model...
+	if ([model isEqual:self.playlistsModel]){
+		// Clear out datasources
+		self.playlistDataSources = nil;
+		NSMutableArray *TabItems = [NSMutableArray arrayWithCapacity:0];
+
+		// Iterate through playlist objects in the model
+		for (TCYouTubeObjectPlaylist* Playlist in self.playlistsModel.playlists){
+			TCYouTubePlaylistDataSource* NewDataSource = [[TCYouTubePlaylistDataSource alloc] initWithPlaylist:Playlist];
+			[self.playlistDataSources addObject:NewDataSource];
+			TT_RELEASE_SAFELY(NewDataSource);
+
+			// Add buttons for all the playlists
+			[TabItems addObject:[[[TTTabItem alloc] initWithTitle:Playlist.title] autorelease]];
+		}
+
+		if ([TabItems count]){
+			_playlistsBar.tabItems = [NSArray arrayWithArray:TabItems];
+		}
+
+		// Initiate loading the first playlist
+		[_playlistsBar setSelectedTabIndex:NSIntegerMax];
+		[_playlistsBar setSelectedTabIndex:0];
+	}
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;To fulfill our responsibility as a TTTabDelegate, add the following function to the dot m:&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;#pragma mark TTTabDelegate
+- (void)tabBar:(TTTabBar*)tabBar tabSelected:(NSInteger)selectedIndex{
+	[self setActivePlaylistAtIndex:selectedIndex];
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Here we’re just passing along the message to our setActive helper function that the user changed the playlist tab.&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;- (void)setActivePlaylistAtIndex:(NSInteger)xActiveIndex{
+	if (self.playlistDataSources.count &amp;amp;gt; xActiveIndex){
+		self.activePlaylistDataSource = [self.playlistDataSources objectAtIndex:xActiveIndex];
+		self.dataSource = self.activePlaylistDataSource;
+	}
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Setting self.dataSource will trigger a load from the network.&lt;/p&gt;
+
+&lt;p&gt;That’s about all for controller. But before we move on, remember to dealloc, create initializers for all your variables, handle errors from modelDidFailLoadWithError, and also implement a load:more: mechanism if you need it (YouTube pages at 25 items).&lt;/p&gt;
+
+&lt;h2&gt;The Playlists Model&lt;/h2&gt;
+
+&lt;p&gt;Now that all the front end is patched in, we’ll need to get the backend in place. The playlists model does not have a corresponding table datasource because we’re loading the entries directly into the TTTabStrip (although you could probably make one if you wanted to).&lt;/p&gt;
+
+&lt;p&gt;Starting with the PlaylistsModel header, we have two pieces of data to store.&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;@interface TCYouTubePlaylistsModel : TTURLRequestModel  {
+	NSString* _username;	//username to search for
+	NSArray* _playlists;		//array of TCYouTubeObjectPlaylist
+} 
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;We pass in a username from the controller, and the playlists will be available to the controller after the load.&lt;/p&gt;
+
+&lt;p&gt;The implementation is a textbook TTURLRequestModel.&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;- (void)load:(TTURLRequestCachePolicy)cachePolicy more:(BOOL)more{
+// assemble the URL based on the username
+
+// create a TTURLRequest
+
+// create a TTURLXMLResponse to do the parsing
+}
+
+- (void)requestDidFinishLoad:(TTURLRequest*)request {
+// make sure the root object looks like it should
+
+// loop through assembling objects and adding them to the array
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;h2&gt;The Videos DataSource &amp;amp; Model&lt;/h2&gt;
+
+&lt;p&gt;The last piece is the DataSource and Model for each playlist. I preface these with Videos because they could probably load from other sources besides a playlist. These are what will be loaded into the tableview as cells.&lt;/p&gt;
+
+&lt;p&gt;In the model, we need to keep the following information:&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;@interface TCYouTubeVideosModel : TTURLRequestModel {
+	NSString* _sourceURL;	//URL that returns video entries (username, playlist, etc.)
+	NSArray* _videos;       //array of TCYouTubeObjectVideo
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;As I mentioned, the model needs a full source URL. This is for the purposes of reusability, and because that’s what we get when we parse the playlists model.&lt;/p&gt;
+
+&lt;p&gt;The implementation will have the same format as the playlists model above. Except you’ll probably be loading a lot more information into your object. The YouTube API is quite verbose (which is good!).&lt;/p&gt;
+
+&lt;p&gt;And because we’ll be loading these objects into the table, we’ll need a dataSource, TTTableItem, and TTTableCell. The dataSource should store its corresponding playlist object (containing the URL, title, etc.), and its model (used to get data about the videos in the data).&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;@interface TCYouTubePlaylistDataSource : TTListDataSource {
+	TCYouTubeObjectPlaylist* _playlist;
+	TCYouTubeVideosModel* _videosModel;
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Since we need the playlist, make an initializer to accept it. Then make the model right away.&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;- (id)initWithPlaylist:(TCYouTubeObjectPlaylist*)xPlaylist{
+	if (self = [super init]) {
+		_playlist = [xPlaylist retain];
+		_videosModel = [[TCYouTubeVideosModel alloc] initWithSourceURL:[xPlaylist playlistURL]];
+	}
+	return self;
+}
+
+- (id&amp;amp;lt;TTModel&amp;amp;gt;)model {
+	return _videosModel;
+}
+
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Don’t forget to create your TTTableItems in didLoadModel. In this case, my TCYouTubeObjectVideo is a subclass of a TTTableItem, so I skipped most of this step.&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;- (void)tableViewDidLoadModel:(UITableView*)tableView {
+	self.items = [NSMutableArray arrayWithArray:[_videosModel videos]];
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Connect up your TTTableItems and TTTableCells as I mentioned in my previous post &lt;a href=&quot;/blog/2011/02/06/all-about-tttableitems-cells.html/&quot;&gt;All About TTTableItems &amp;amp; Cells&lt;/a&gt;.&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;- (Class)tableView:(UITableView *)tableView cellClassForObject:(id)object {
+    if([object isKindOfClass:[TCYouTubeObjectVideo class]])
+        return [TCYouTubeVideoMultipleCell class];
+    else
+        return [super tableView:tableView cellClassForObject:object];
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+&lt;h2&gt;Conclusion&lt;/h2&gt;
+&lt;p&gt;Hopefully this has given you some insight on one way to load multiple table layouts with a single controller.&lt;/p&gt;
+
+&lt;p&gt;If you’re looking for more information about how to do layout or work with YouTube, check out this walkthrough: &lt;a href=&quot;http://www.karlmonaghan.com/2010/10/06/three20-youtube-table-cells/&quot;&gt;Three20 YouTube table cells&lt;/a&gt;. Although I haven’t been able to get the webviews to load up for every video.&lt;/p&gt;
+
+&lt;h2&gt;Update&lt;/h2&gt;
+&lt;p&gt;It’s important to clarify my getters and setters for playlistDataSource. I’m synthesizing it as:&lt;/p&gt;
+
+&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;@property (nonatomic, retain) NSMutableArray* playlistDataSources;&lt;/code&gt;&lt;/p&gt;
+
+&lt;p&gt;And I’m overriding the getter like so:&lt;/p&gt;
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;- (NSMutableArray*)playlistDataSources{
+	if (_playlistDataSources == nil){
+		_playlistDataSources = [[NSMutableArray alloc] init];	
+	}
+	return _playlistDataSources;
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+</description>
+        <pubDate>Sun, 13 Mar 2011 00:00:00 -0600</pubDate>
+        <link>https://twocentstudios.com/2011/03/13/tttabstrip-controlled-multi-table-lazy-loading-tttableviewcontroller.html/</link>
+        <guid isPermaLink="true">https://twocentstudios.com/2011/03/13/tttabstrip-controlled-multi-table-lazy-loading-tttableviewcontroller.html/</guid>
+        
+        <category>apple</category>
+        
+        <category>ios</category>
+        
+        <category>three20</category>
+        
+        
+      </item>
+    
+      <item>
+        <title>All About TTTableItems &amp; Cells</title>
+        <description>&lt;p&gt;Another tough thing about &lt;a href=&quot;http://three20.info&quot;&gt;Three20&lt;/a&gt; was wrapping my head around the table system. I disliked it at first, but in retrospect, it’s much more organized than using the standard SDK system. I found with even mildly complicated systems, my UITableViewController was turning into a mess of all kinds of delegate code, tablecell code, and etc.&lt;/p&gt;
+
+&lt;p&gt;TTTableViewController deserves a post in itself, so I won’t get it into it at the moment. I’ll only focus on the TableItem/Cell relationship and how to get the most of out of them.&lt;/p&gt;
+
+&lt;h2&gt;What is a TTTableItem?&lt;/h2&gt;
+&lt;p&gt;The standard SDK doesn’t really have the concept of tableitems. A tableitem is simply a data structure that holds the information used in a single tablecell. It’s the M in &lt;a href=&quot;http://en.wikipedia.org/wiki/Model%E2%80%93View%E2%80%93Controller&quot;&gt;MVC&lt;/a&gt;. The cell is therefore the V. And the C is… well some combination of TTTableDataSource and TTTableViewController.&lt;/p&gt;
+
+&lt;p&gt;The second reason tableitems exist is so that we can have variable height rows. We’ll discuss more about this later.&lt;/p&gt;
+
+&lt;h2&gt;Customizing&lt;/h2&gt;
+&lt;p&gt;When first starting out with Three20, it might be tempting just to use all the built-in Three20 items and cells. For quick prototyping and testing your backend, they are invaluable (I recommend perusing the TTCatalog section of TableItems to get a feel for what’s already built-in). When you get to production, however, you’ll want to have your own custom classes for each cell type, even if they are direct subclasses.&lt;/p&gt;
+
+&lt;p&gt;It may be a little extra work getting all the custom classes made, but in the end you’ll be modular, organized, and you won’t have to sweat the details.&lt;/p&gt;
+
+&lt;p&gt;There are so many subclasses of TTTableItems, you may be wondering which you should subclass.&lt;/p&gt;
+&lt;ul&gt;
+	&lt;li&gt;If your cell will be selected in any way, you&apos;ll want to subclass TTTableLinkedItem. This will provide you with a URL field that moves to the next view controller in the TTNavigator system. It will also provide you with an accessory URL field. There&apos;s built in functionality for displaying a detail disclosure button and other accessories depending on which URL fields are filled in.&lt;/li&gt;
+	&lt;li&gt;If you&apos;re just displaying data, you can go to the base class of TTTableItem.&lt;/li&gt;
+	&lt;li&gt;It&apos;s not the worst idea to use the higher level classes, but in the end it&apos;s probably easier just to add only the fields you need to the class so you don&apos;t get confused later wondering what the &quot;text&quot; NSString corresponds to.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2&gt;Initializers&lt;/h2&gt;
+&lt;p&gt;Most of the higher level items come with class convenience initializers. An example from TTTableSubtitleItem for context:
+&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;+ (id)itemWithText:(NSString*)text subtitle:(NSString*)subtitle URL:(NSString*)URL;&lt;/code&gt;
+If your cell is only displaying a few chunks of data, I would initialize this way.&lt;/p&gt;
+
+&lt;p&gt;When you’re working with lots of fields, it’s much easier to pass in your model object or NSDictionary. My initializer from a TTTableLinkedItem subclass:
+&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;+ (id)itemWithObject:(TCExampleObject*)xObject;&lt;/code&gt;
+When you’re doing it this way, you’ll have to decide whether you want to manually move strings and data from your model object to table item class variables, or you can store a copy of your model object inside the item. It’s a judgement call of whether you want to be tidy or quick and dirty. Just remember which way you did it when you’re loading data into your cell.&lt;/p&gt;
+
+&lt;h2&gt;Using Cells&lt;/h2&gt;
+&lt;p&gt;(Don’t worry about connecting items to cells yet. We’ll cover that later.)&lt;/p&gt;
+
+&lt;p&gt;Cells are a little different than Items in the Three20 world. TTTableViewCells subclass from UITableViewCell, so they carry the remnants of the UI class. The UI class comes with two UILabels (textLabel and detailTextLabel) and a UIImageView.&lt;/p&gt;
+
+&lt;p&gt;In the Three20 built-in cells, the textLabels are usually used, but not the imageView. I recommend doing the same.&lt;/p&gt;
+
+&lt;p&gt;Start by making instance variables for each view element you need. Labels and imageViews are the most common, but any view will do. Next, override the initWithStyle initializer.&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt; // TCExampleCell
+- (id)initWithStyle:(UITableViewCellStyle)style reuseIdentifier:(NSString*)identifier {
+	if (self = [super initWithStyle:UITableViewCellStyleValue2 reuseIdentifier:identifier]) {
+		// If you&apos;re using custom backgrounds, initialize them here
+		TTView *BackView = [[TTView alloc] initWithFrame:[self frame]];
+		self.backgroundView = BackView;
+		TT_RELEASE_SAFELY(BackView);
+		
+		TTView *BackViewSelected = [[TTView alloc] initWithFrame:[self frame]];
+		self.selectedBackgroundView = BackViewSelected;
+		TT_RELEASE_SAFELY(BackViewSelected);
+
+		// Set the built-in text label properties here
+		self.textLabel.backgroundColor = [UIColor clearColor];
+		// ... + more
+	}
+	return self;
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Quick aside: be wary of setting built-in textLabel properties in the initWithStyle method if you’re subclassing high-level cells such as TTTableImageItemCell, as these properties are changed in setObject. I spent several hours trying to track this down…&lt;/p&gt;
+
+&lt;p&gt;setObject is the method where you’ll load your cell with data from the item.&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;- (void)setObject:(id)object {
+  if (_item != object) {
+    [super setObject:object];
+
+    TCExampleItem* item = object;
+    self.textLabel.text = item.firstName;
+    self.detailTextLabel.text = item.lastName;
+    self.suffixLabel.text = item.suffix;
+    self.personPhotoImageView.image = TTImage(item.imageURL);
+  }
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Before we get knee-deep in layout, go ahead and create initializers for your other views.&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;- (UILabel*)suffixLabel {
+  if (!_suffixLabel) {
+    _suffixLabel = [[UILabel alloc] init];
+    _suffixLabel.textColor = [UIColor blackColor];
+    _suffixLabel.highlightedTextColor = [UIColor whiteColor];
+    _suffixLabel.font = TTSTYLEVAR(suffixFont);
+    [self.contentView addSubview:_suffixLabel];
+  }
+  return _suffixLabel;
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Now for the hard part. Maybe. If you’re using fixed height cells, it will be as easy as setting the frames of your views and going from there. In this case, your TTTableViewController will have the following in the initializer method:&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;self.tableView.rowHeight = TTSTYLEVAR(tExampleCellRowHeight);     // CGFloat
+self.variableHeightRows = NO;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;If you are using variable height rows, you’ve got your work cut out for you. The main reason you’ll be using variable height rows is if you have dynamic text or other content that you don’t know the size of. Start by setting variableHeightRows to YES in your TTTableViewController initializer (opposite of the code above). Next, add the following class method:
+&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;+ (CGFloat)tableView:(UITableView*)tableView rowHeightForObject:(id)object {&lt;/code&gt;
+In essence you will be doing layout twice. The reason you have to do this is because the table needs to know how big each cell will be before it can create and lay out the cell. You can find more discussion on the Three20 Google Group, the main area for Three20 discussion thus far.&lt;/p&gt;
+
+&lt;p&gt;It’s also difficult because this is a class method. The only information we get to work with is the cell’s item and the tableView. In the instance method layoutSubviews, we’ll get to work with the cell’s instance variables.&lt;/p&gt;
+
+&lt;p&gt;In the future, I’ll try to do a full example cell layout. Before you start this section, Lay out your cell in Photoshop or have a very good paper sketch of what you’re going for. Otherwise, you’ll be doing a lot of rework later on.&lt;/p&gt;
+
+&lt;p&gt;Use a static const to store your margins, or just use Three20’s built in constants (variations of kTableCellVPadding, etc.). Work your way down vertically and add heights to a CGFloat.&lt;/p&gt;
+
+&lt;p&gt;First, you’ll need to calculate the maximum width of your text labels. Normally you’ll only have one column to do this for. For example, this is from TTTableImageItemCell:
+`  CGFloat maxWidth = tableView.width - (imageWidth + kTableCellHPadding&lt;em&gt;2 + kTableCellMargin&lt;/em&gt;2);`&lt;/p&gt;
+
+&lt;p&gt;Add your vertical margins, then calculate what the label sizes will be using the NSString method sizeWithFont:&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;CGSize firstNameSize = [item.firstName sizeWithFont:TTSTYLEVAR(firstNameFont)
+                               constrainedToSize:CGSizeMake(maxWidth, CGFLOAT_MAX)
+                                   lineBreakMode:UILineBreakModeWordWrap];
+totalHeight += firstNameSize.height
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Once you’ve calculated the total height, return it and get ready to do it again.&lt;/p&gt;
+
+&lt;p&gt;In layout subviews, you’ll do the same thing, only this time set the frames of all your views. Calculate the maxWidth again. Use maxWidth in sizeWithFont for each your views. Consult the TTTableImageItemCell source for a good (yet complicated) example of how to do this. This is also the place to set the styles of our cell backgrounds.&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;	[(TTView*)self.backgroundView setStyle:TTSTYLEVAR(tCellBackStyle)];
+	[(TTView*)self.selectedBackgroundView setStyle:TTSTYLEVAR(tCellBackStyleSelected)];
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Don’t forget to implement prepareForReuse. Here you’ll want to remove the content you added in setObject, but don’t release the objects.&lt;/p&gt;
+
+&lt;h2&gt;Connecting the Item and Cell&lt;/h2&gt;
+
+&lt;p&gt;The last thing we need to do is connect the cell and the item. This is actually pretty easy. In your datasource, override the cellClassForObject method:&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;- (Class)tableView:(UITableView *)tableView cellClassForObject:(id)object {
+    if([object isKindOfClass:[TCExampleItem class]])
+        return [TCExampleCell class];
+    else
+        return [super tableView:tableView cellClassForObject:object];
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;If you have multiple cell types, add them in else ifs. This is where it comes in handy to have your own subclasses that match items to cells.&lt;/p&gt;
+
+&lt;h2&gt;Conclusion&lt;/h2&gt;
+
+&lt;p&gt;So that was a lot of information, and I know I glossed over quite a few things, but hopefully this gives you more of an idea of the benefits of using items and cells.&lt;/p&gt;
+
+&lt;p&gt;If anyone has any ideas for an example cell, let me know in the comments.&lt;/p&gt;
+</description>
+        <pubDate>Sun, 06 Feb 2011 00:00:00 -0600</pubDate>
+        <link>https://twocentstudios.com/2011/02/06/all-about-tttableitems-cells.html/</link>
+        <guid isPermaLink="true">https://twocentstudios.com/2011/02/06/all-about-tttableitems-cells.html/</guid>
+        
+        <category>apple</category>
+        
+        <category>ios</category>
+        
+        <category>three20</category>
+        
+        
+      </item>
+    
+      <item>
+        <title>Inset Square with Three20 &amp; TTStyle</title>
+        <description>&lt;p&gt;&lt;a href=&quot;http://three20.info&quot;&gt;Three20&lt;/a&gt; is a pretty fantastic iOS library. One of the features that took me awhile to get a handle on was using TTView and TTStyles. Here, I’ll show how to make a fancy square button that looks like this:&lt;/p&gt;
+
+&lt;p&gt;&lt;img class=&quot;size-full wp-image-10&quot; title=&quot;red-inset-square&quot; src=&quot;/images/red-inset-square.png&quot; alt=&quot;&quot; width=&quot;102&quot; height=&quot;94&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;I’m not going to go into getting started with Three20, how to create a default style sheet, or any other intro material. Just the meat and bones here.&lt;/p&gt;
+
+&lt;h2&gt;The Style&lt;/h2&gt;
+
+&lt;p&gt;Let’s start with the good stuff. Here is the TTStyle we need to generate the box.&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt; // In our default style sheet
+- (TTStyle*)insetSquare{
+  return [TTShapeStyle styleWithShape:[TTRoundedRectangleShape shapeWithRadius:8] next:
+  [TTLinearGradientFillStyle styleWithColor1:RGBCOLOR(218, 0, 0) color2:RGBCOLOR(140, 0, 0) next:
+  [TTInnerShadowStyle styleWithColor:RGBCOLOR(104, 2, 2) blur:3 offset:CGSizeMake(0, 1) next:nil]]];
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;We start out by making our shape. In this case, we’re using a rounded rectangle with a radius of 8px. “But I thought it was a square!” you may ask. Relax, we’ll be specifying dimensions when we create our view in the next section.&lt;/p&gt;
+
+&lt;p&gt;If you’re unfamiliar with creating TTStyles, each style has a &lt;span style=&quot;font-family: Consolas, Monaco, &apos;Courier New&apos;, Courier, monospace; font-size: 12px; line-height: 18px; white-space: pre;&quot;&gt;next:&lt;/span&gt; input used to string together multiple drawing commands.&lt;/p&gt;
+
+&lt;p&gt;Our next command is a linear gradient going from a light to medium red. &lt;span style=&quot;font-family: Consolas, Monaco, &apos;Courier New&apos;, Courier, monospace; font-size: 12px; line-height: 18px; white-space: pre;&quot;&gt;RGBCOLOR&lt;/span&gt; is a nice TT macro for creating colors you dream up in Photoshop. We’ll use those as our color1 and color2 inputs.&lt;/p&gt;
+
+&lt;p&gt;Lastly, we’re going to add an inner shadow to make our square look inset. We’ll use an even darker red for this. Experiment with the blur and offset to achieve the desired effect. Blur will expand the size of the shadow while spreading out the effect. Beware, it doesn’t work exactly the same as the inner shadow blending property in Photoshop (namely, it doesn’t really extend past 10-20px or so).&lt;/p&gt;
+
+&lt;p&gt;The offset is a CGSize. We’re using a 1px offset down. You’ll usually be using y-axis offsets as the default light source is from above the screen. Don’t forget about &lt;code&gt;RGBACOLOR&lt;/code&gt; as well to experiment with different transparencies for your shadows.&lt;/p&gt;
+
+&lt;p&gt;That was pretty easy, right? I recommend checking out the TTCatalog example project custom views section for more great looking style examples.&lt;/p&gt;
+
+&lt;h2&gt;Setting Up the View&lt;/h2&gt;
+
+&lt;p&gt;Now we need a view to draw our beautiful new style. In your view controller, add the following:&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;  // In our view controller
+- (void)viewDidLoad {
+	// Create a new TTView
+	TTView *insetSquareView = [[TTView alloc] initWithFrame:CGRectMake(40, 20, 240, 240)];
+
+	// Set the style to our insetSquare style via the TTSTYLEVAR convenience macro
+	insetSquareView.style = TTSTYLEVAR(insetSquare);
+
+	// Sometimes you&apos;ll need to set the background color to clear so that the edges
+	// of the rounded rectangle aren&apos;t opaque
+	insetSquareView.backgroundColor = [UIColor clearColor];
+
+	// Add it to the view and release it.
+	[self.view addSubview:insetSquareView];
+	TT_RELEASE_SAFELY(insetSquareView);
+}
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;The comments should be self explanatory. Setting the style will tell our view how to draw itself.&lt;/p&gt;
+
+&lt;p&gt;And the best part about our new inset square? It automatically scales to retina and standard res, and we don’t have to worry about loading in tons of image files and bloating up our binary unnecessarily.&lt;/p&gt;
+</description>
+        <pubDate>Sat, 05 Feb 2011 00:00:00 -0600</pubDate>
+        <link>https://twocentstudios.com/2011/02/05/inset-square-with-three20-ttstyle.html/</link>
+        <guid isPermaLink="true">https://twocentstudios.com/2011/02/05/inset-square-with-three20-ttstyle.html/</guid>
+        
+        <category>apple</category>
+        
+        <category>ios</category>
+        
+        <category>three20</category>
+        
+        
+      </item>
+    
+  </channel>
+</rss>

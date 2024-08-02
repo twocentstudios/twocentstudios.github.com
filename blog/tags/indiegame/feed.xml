@@ -1,0 +1,1288 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>twocentstudios</title>
+    <description>A coding blog covering iOS, Swift, and other programming topics.</description>
+    <link>https://twocentstudios.com/blog/tags/indiegame/index.html</link>
+    <atom:link href="https://twocentstudios.com/blog/tags/indiegame/feed.xml" rel="self" type="application/rss+xml"/>
+    <pubDate>Fri, 02 Aug 2024 06:02:52 -0500</pubDate>
+    <lastBuildDate>Fri, 02 Aug 2024 06:02:52 -0500</lastBuildDate>
+    <generator>Jekyll v3.9.3</generator>
+    
+      <item>
+        <title>Indie Game Devlog 05 - Materials and Shaders</title>
+        <description>&lt;p&gt;Last time, I was deriving a pipeline for face animations. In the process I was making an implicit decision about how much time I’ll be committing to this part of the game versus what sort of impact and clarity into the characters it will provide for my audience.&lt;/p&gt;
+
+&lt;p&gt;Materials are similar.&lt;/p&gt;
+
+&lt;p&gt;I know I have neither the talent nor the time to commit to hand painting textures for my environments, hundreds of assets, and perhaps dozens of characters. But I also know flat colors on low poly models isn’t going to be visually interesting enough. What’s in the middle of these two extremes?&lt;/p&gt;
+
+&lt;h2 id=&quot;the-possibilities-space-is-too-large&quot;&gt;The possibilities space is too large&lt;/h2&gt;
+
+&lt;p&gt;The constraints of “looks good” but “doesn’t take forever to make” still don’t give me a lot of direction. I guess that’s where my personal taste comes into play.&lt;/p&gt;
+
+&lt;p&gt;I’ve been enjoying all sorts of “hand-crafted” looks lately. Imitating certain real-world crafty materials in 3D feels like it doesn’t have the same sort of uncanny valley that hyper-realism does. Modeling clay, paper, felt, wool; these have all been used in stop-motion filmmaking since its early days. By picking one material it’ll theoretically be easier for me to keep to a theme, optimize performance, and optimize development time.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog05-01.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;I love the commitment to craft materials and diorama lighting in Yoshi&apos;s Crafted World.&quot; title=&quot;I love the commitment to craft materials and diorama lighting in Yoshi&apos;s Crafted World.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;I love the commitment to craft materials and diorama lighting in Yoshi&apos;s Crafted World.&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;I felt one material and a constrained color palette was a good north star.&lt;/p&gt;
+
+&lt;h2 id=&quot;the-goal-clay&quot;&gt;The goal: clay&lt;/h2&gt;
+
+&lt;p&gt;I can’t really articulate why, but I think my game’s world realized in clay would be fun to see. It obviously works well with the stop-motion animation style I was experimenting with last post.&lt;/p&gt;
+
+&lt;p&gt;For learning and prototyping purposes, I decided to go with clay. But of course, this is all still prototyping.&lt;/p&gt;
+
+&lt;p&gt;Other potential materials might be paper or wool knit. The goal at this point is to understand whether any of these choices imposes additional technical constraints or pitfalls.&lt;/p&gt;
+
+&lt;h2 id=&quot;untangling-the-complexities-of-materials&quot;&gt;Untangling the complexities of materials&lt;/h2&gt;
+
+&lt;p&gt;This is where my self-taught background starts to leak through again.&lt;/p&gt;
+
+&lt;p&gt;I’ve been mostly working inside the world of Blender and its shader editor during my 3D journey. Thus, it wasn’t clear to me whether I was learning fundamental properties of shaders or specific Blender quirks. I first confronted this while porting my Biki character from Blender to SceneKit, but due to the nature (limited timescale) of that project, I just did my best to get to the finish line without really tackling the problems I was facing head on.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog05-02.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Biki as rendered in Blender (left) and SceneKit (right).&quot; title=&quot;Biki as rendered in Blender (left) and SceneKit (right).&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Biki as rendered in Blender (left) and SceneKit (right).&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;This week I’ve needed to rectify all those knowledge gaps.&lt;/p&gt;
+
+&lt;p&gt;Let’s start in Blender and try to work through all the complexities of materials.&lt;/p&gt;
+
+&lt;h3 id=&quot;shaders&quot;&gt;Shaders&lt;/h3&gt;
+
+&lt;p&gt;Shaders in Blender can be written in code, but more commonly they are described as nodes in a graph with the primary output “describing lighting interaction at the surface…, rather than the color of the surface,” quoting the &lt;a href=&quot;https://docs.blender.org/manual/en/latest/render/shader_nodes/introduction.html#shaders&quot;&gt;Blender docs&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;Shaders really only have meaning when applied by a rendering engine to a mesh. It’s common to see a preview of shaders on a spherical mesh under neutral lighting from an HDRI.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog05-03.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;A common preview of a shader in Blender. Other mesh options are selectable on the right.&quot; title=&quot;A common preview of a shader in Blender. Other mesh options are selectable on the right.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;A common preview of a shader in Blender. Other mesh options are selectable on the right.&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Blender has two built-in rendering engines: EEVEE (simple) and Cycles (complex). Each has its own supported feature set, which means shaders can produce similar results but are by no means “universal”. We’ll discuss this further when considering how our shaders import into Godot, which has its own rendering engines.&lt;/p&gt;
+
+&lt;p&gt;When you create a new material in Blender, by default it creates a principled BSDF node in the shader graph. For a beginner, the principled BSDF node has an overwhelming number of parameters, but the most commonly used are base color (diffuse), metallic, roughness, and normal.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog05-04.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;The principled BSDF shader node in Blender. Look at all those inputs and options.&quot; title=&quot;The principled BSDF shader node in Blender. Look at all those inputs and options.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The principled BSDF shader node in Blender. Look at all those inputs and options.&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;In theory, the principled BSDF base shader can describe the light bounce behavior of any photorealistic material.&lt;/p&gt;
+
+&lt;p&gt;Setting a few of these parameters to constants can get you in the ballpark of some interesting looks.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog05-05.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Preview of an especially shiny material created with only a principled BSDF shader.&quot; title=&quot;Preview of an especially shiny material created with only a principled BSDF shader.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Preview of an especially shiny material created with only a principled BSDF shader.&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;But most materials in real life do not have the exact same property values across their entire surface. For example, an orange has lots of tiny bumps all over it, and some parts are shinier than others. We need some way to vary the properties of the material.&lt;/p&gt;
+
+&lt;h3 id=&quot;varying-shader-inputs&quot;&gt;Varying shader inputs&lt;/h3&gt;
+
+&lt;p&gt;The shader program is run in parallel on the GPU for every point of the mesh it’s applied to. There are two options for controlling the mapping between each point and the value reported to the shader input.&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Texture and UV map - provide a 2D bitmap and specify how the flattened mesh maps onto it&lt;/li&gt;
+  &lt;li&gt;Procedural - provide a mathematical function that takes an input value and produces an output value&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;These two options are not mutually exclusive, and are very commonly mixed and matched across the shader graph.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog05-07.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;The various 2D bitmaps included in a texture pack.&quot; title=&quot;The various 2D bitmaps included in a texture pack.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The various 2D bitmaps included in a texture pack.&lt;/div&gt;&lt;/div&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog05-06.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;The node setup for the above image texture pack. The stacked brown nodes on the left are the inputs for each image.&quot; title=&quot;The node setup for the above image texture pack. The stacked brown nodes on the left are the inputs for each image.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The node setup for the above image texture pack. The stacked brown nodes on the left are the inputs for each image.&lt;/div&gt;&lt;/div&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog05-08.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;The node setup for an unremarkable but fully procedural shader. The interest is created by a noise generator function using generated texture coordinates (discussed later) as an input.&quot; title=&quot;The node setup for an unremarkable but fully procedural shader. The interest is created by a noise generator function using generated texture coordinates (discussed later) as an input.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The node setup for an unremarkable but fully procedural shader. The interest is created by a noise generator function using generated texture coordinates (discussed later) as an input.&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Texture is the most &lt;em&gt;compatible&lt;/em&gt; while procedural is the most &lt;em&gt;flexible&lt;/em&gt;. Textures trade off less computation for more memory, since the data for each pixel will be stored instead of calculated on the fly.&lt;/p&gt;
+
+&lt;p&gt;The &lt;em&gt;compatibility&lt;/em&gt; of textures is reflected in websites hosting thousands of both free and paid textures in the form of groups of image files (for example, the above clay texture is from &lt;a href=&quot;https://cgaxis.com/product/red-sculpting-clay-pbr-texture-3/&quot;&gt;CGAxis&lt;/a&gt;). These files can mostly be plugged directly into any rendering engine that supports PBR shaders (like Blender’s principled BSDF) with similar rendered results.&lt;/p&gt;
+
+&lt;h3 id=&quot;shaders-in-godot&quot;&gt;Shaders in Godot&lt;/h3&gt;
+
+&lt;p&gt;Godot has its own rendering engine and shader support. There are 4 ways to make shaders in Godot:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Write shaders in Godot’s &lt;a href=&quot;https://docs.godotengine.org/en/stable/tutorials/shaders/shader_reference/shading_language.html&quot;&gt;shader language&lt;/a&gt;, with many examples available on &lt;a href=&quot;https://godotshaders.com/&quot;&gt;godotshaders.com&lt;/a&gt;, or &lt;a href=&quot;https://docs.godotengine.org/en/stable/tutorials/shaders/converting_glsl_to_godot_shaders.html&quot;&gt;converted&lt;/a&gt; from the more common GLSL shader language.&lt;/li&gt;
+  &lt;li&gt;Use a &lt;a href=&quot;https://docs.godotengine.org/en/stable/tutorials/shaders/shader_materials.html&quot;&gt;StandardMaterial3D&lt;/a&gt;, a PBR shader similar to Godot’s principled BSDF shader.&lt;/li&gt;
+  &lt;li&gt;Use visual shader language to create a custom shader, most similar to Blender’s shader nodes.&lt;/li&gt;
+  &lt;li&gt;Import the shaders from Blender, and they will be best-effort mapped into a StandardMaterial3D automatically.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog05-09.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;A few options in Godot&apos;s PBR shader StandardMaterial3D, in this case imported from the Blender material.&quot; title=&quot;A few options in Godot&apos;s PBR shader StandardMaterial3D, in this case imported from the Blender material.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;A few options in Godot&apos;s PBR shader StandardMaterial3D, in this case imported from the Blender material.&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;All shaders are eventually converted to the platform’s shader language. The other non-text options can often be automatically or manually mapped between one another, for example from &lt;a href=&quot;https://docs.godotengine.org/en/stable/tutorials/shaders/shader_materials.html#converting-to-shadermaterial&quot;&gt;StandardMaterial3D to a text shader&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;Note that there actually several types of shaders: spatial (3D), canvas item (2D), particle, sky, and fog. In this post we’re primarily discussing spatial (3D).&lt;/p&gt;
+
+&lt;h2 id=&quot;implementing-a-clay-texture&quot;&gt;Implementing a clay texture&lt;/h2&gt;
+
+&lt;p&gt;With that background, let’s jump into the process of actually getting a clay material onto our character in Godot.&lt;/p&gt;
+
+&lt;h3 id=&quot;goals-slash-success-criteria&quot;&gt;Goals slash success criteria&lt;/h3&gt;
+
+&lt;p&gt;First off, there are myriad ways of implementing a clay-looking material so I’ll enumerate my goals.&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;strong&gt;Prefer creating and configuring shaders in Blender over Godot&lt;/strong&gt; - Blender not only has the most mature tools, but I’m most comfortable with them. There is less chance of upstream changes breaking the downstream source data.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Make the shader look good, but not perfect&lt;/strong&gt; - I’m still at the point where all parts of the project are in flux, so perfecting one vertical doesn’t make sense.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Minimize manual conversion steps in the pipeline&lt;/strong&gt; - I want to avoid needing to click a hundred buttons in a certain order after each small change to the source data. If I can reuse the existing automation, that’s best. If it’s possible to eventually write my own automation scripts, that’s second best.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Ensure content creation is as easy as possible&lt;/strong&gt; - Making content (e.g. characters, props, environments) is a manual process, so ensuring the artistic parts of modeling and coloring are straightforward is ideal.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Keep performance and optimization in mind&lt;/strong&gt; - I know very little about how to keep performance in the ballpark, but I want to be careful that intense rework at the end of the development process due to poor performance will not be required.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;options-for-the-source-material&quot;&gt;Options for the source material&lt;/h3&gt;
+
+&lt;p&gt;There are a few options for getting the bulk of the clay shader in place.&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;&lt;strong&gt;Buy a procedural shader&lt;/strong&gt; - &lt;a href=&quot;https://blendermarket.com/products/claydoh&quot;&gt;Clay Doh&lt;/a&gt; is a paid Blender shader graph that seems to be the industry standard for very customizable procedural clay material.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Set up a custom procedural shader&lt;/strong&gt; - There are &lt;a href=&quot;https://www.youtube.com/watch?v=nqy-dxAadIY&quot;&gt;number&lt;/a&gt; of &lt;a href=&quot;https://www.youtube.com/watch?v=rOcj7HMFbpE&quot;&gt;tutorials&lt;/a&gt; on &lt;a href=&quot;https://www.youtube.com/watch?v=wTu3Xssw67Q&quot;&gt;YouTube&lt;/a&gt; that walk through how to make a custom procedural shader, each of varying quality.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Start from a texture&lt;/strong&gt; - There are &lt;a href=&quot;https://cgaxis.com/product/red-sculpting-clay-pbr-texture-3/&quot;&gt;several&lt;/a&gt; clay shaders image texture packs that include diffuse, normal, roughness, etc. images that can be plugged directly into the principled BSDF node after the mesh is UV mapped.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;h3 id=&quot;using-raw-textures-option-3&quot;&gt;Using raw textures (option 3)&lt;/h3&gt;
+
+&lt;p&gt;I downloaded an overstylized clay texture and dragged in the material to my project. The node setup was relatively simple: UVs mapped to each type of image texture plugged into the corresponding inputs of the principled BSDF shader. As shown earlier, it seemed like there was some extra channel flipping for the normal map.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog05-06.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;The default node setup for the clay image texture pack. There are some procedural bits happening in the middle to presumably alter the coordinate system of the normal map to match Blender&apos;s.&quot; title=&quot;The default node setup for the clay image texture pack. There are some procedural bits happening in the middle to presumably alter the coordinate system of the normal map to match Blender&apos;s.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The default node setup for the clay image texture pack. There are some procedural bits happening in the middle to presumably alter the coordinate system of the normal map to match Blender&apos;s.&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;This looked somewhat okay at first pass in Godot.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog05-10.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;The clay texture setup imported onto our character in Godot. It looks a little flat.&quot; title=&quot;The clay texture setup imported onto our character in Godot. It looks a little flat.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The clay texture setup imported onto our character in Godot. It looks a little flat.&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Spot checking the imported StandardMaterial3D, most of it was imported correctly. One big missing piece was the displacement map though.&lt;/p&gt;
+
+&lt;h3 id=&quot;displacement&quot;&gt;Displacement&lt;/h3&gt;
+
+&lt;p&gt;In shading, there are 2 ways to make meshes look deformed (not perfectly smooth): normal maps and displacement maps. They’re not mutually exclusive.&lt;/p&gt;
+
+&lt;p&gt;Normal maps tell the rendering engine which direction every point on the mesh is facing. The rendering engine then can “fake” depth that doesn’t exist on the mesh. In many cases, this sort of depth is convincing. Normal maps are always the first choice over displacement maps because they’re cheap to for the renderer to calculate and widely supported across renderers.&lt;/p&gt;
+
+&lt;p&gt;Displacement maps in contrast actually alter the positions of vertices on the mesh before the renderer performs shading. This results in more realistic shading, especially noticeable on the silhouette of the mesh (which the normal map has no control over). The displacement process can be costly though, and is not as well supported across renderers.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog05-11.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Normal map bump (left) vs. displacement map (right). Notice the silhouette on the normal map (left) is smooth.&quot; title=&quot;Normal map bump (left) vs. displacement map (right). Notice the silhouette on the normal map (left) is smooth.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Normal map bump (left) vs. displacement map (right). Notice the silhouette on the normal map (left) is smooth.&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;In order to displace vertices the vertices must exist on the mesh. That means low poly meshes with simple geometry must be subdivided to create enough vertices for the displacement map to be applied and have the intended effect. Normal maps don’t have this limitation: they can fake depth on a low poly mesh at the level of detail of the input texture or input function.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog05-12.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;The displacement shader on a cube with only 8 vertices (left) vs. millions of vertices (right).&quot; title=&quot;The displacement shader on a cube with only 8 vertices (left) vs. millions of vertices (right).&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The displacement shader on a cube with only 8 vertices (left) vs. millions of vertices (right).&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Godot’s build in shaders have no direct support for displacement maps at the shader level. A (&lt;a href=&quot;https://godotshaders.com/shader/noise-vertex-displacement/&quot;&gt;relatively simple&lt;/a&gt;) custom spatial shader must be used. Blender’s EEVEE rendering engine also has no support for displacement maps at the shader level. Blender’s Cycles rendering engine however does have direct support for displacement at the shader level.&lt;/p&gt;
+
+&lt;p&gt;The workaround for implementing displacement before the shader is to use Blender’s displacement object modifier. The displacement modifier simply applies the displacement map to the mesh before handing the mesh off to the shader.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog05-13.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;The displacement modifier on a subdivided cube driven by a musgrave texture and rendered by EEVEE.&quot; title=&quot;The displacement modifier on a subdivided cube driven by a musgrave texture and rendered by EEVEE.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The displacement modifier on a subdivided cube driven by a musgrave texture and rendered by EEVEE.&lt;/div&gt;&lt;/div&gt;
+
+&lt;h3 id=&quot;the-result-of-raw-textures&quot;&gt;The result of raw textures&lt;/h3&gt;
+
+&lt;p&gt;I applied a subdivision surface modifier (to create more vertices) and the displacement modifier to my character in Blender. I didn’t use the displacement texture supplied in the clay texture pack, instead using a generated noise texture to get a more modeling clay look.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog05-14.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;The test character model with the red clay shader texture pack applied (and maybe a little too much displacement).&quot; title=&quot;The test character model with the red clay shader texture pack applied (and maybe a little too much displacement).&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The test character model with the red clay shader texture pack applied (and maybe a little too much displacement).&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;The subdivision surface modifier splitting the joints was an unintended side-effect, but it’s an interesting stylistic choice that’s also inconsequential implementation-wise, so I let it go.&lt;/p&gt;
+
+&lt;p&gt;This was looking alright! I was already itching to swap out the clay texture for a different one or otherwise tweak settings, but I prioritized solving the next big problem: diffuse color.&lt;/p&gt;
+
+&lt;h3 id=&quot;investigating-a-flat-color-workflow&quot;&gt;Investigating a flat color workflow&lt;/h3&gt;
+
+&lt;p&gt;The clay shader came with its own diffuse texture. The detail of the texture matches that of the roughness, specular, etc. textures. The difference with those is that the diffuse texture’s primary color is a bold red.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog05-15.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Diffuse, roughness, and normal textures, respectively. By nature, all but the diffuse texture are non-color.&quot; title=&quot;Diffuse, roughness, and normal textures, respectively. By nature, all but the diffuse texture are non-color.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Diffuse, roughness, and normal textures, respectively. By nature, all but the diffuse texture are non-color.&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;I certainly don’t want all my characters and environments to be the same color red, so I needed a way to give myself the flexibility to reuse this material across meshes and faces.&lt;/p&gt;
+
+&lt;p&gt;I started by adding a simple hue shift node between the diffuse texture and the base color input of the PBR texture to remap the color. For example, red to blue.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog05-16.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Adding a hue/saturation/value node to alter the diffuse texture&apos;s red color in Blender.&quot; title=&quot;Adding a hue/saturation/value node to alter the diffuse texture&apos;s red color in Blender.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Adding a hue/saturation/value node to alter the diffuse texture&apos;s red color in Blender.&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Although this works in Blender, in Godot the color ramp was ignored. This was another reminder that even the simplest of procedural operations would not work out of the box in Godot.&lt;/p&gt;
+
+&lt;p&gt;Then I tried disconnecting the diffuse texture and using a solid color. In my opinion, this looked good enough that I felt comfortable pursuing a diffuse color mapping solution that ignored the base material’s diffuse texture entirely. The normal map and other PBR components provided enough detail.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog05-17.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;There&apos;s a little detail missing, but using a flat diffuse looks good enough to ignore the more intricate diffuse texture, at least for now.&quot; title=&quot;There&apos;s a little detail missing, but using a flat diffuse looks good enough to ignore the more intricate diffuse texture, at least for now.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;There&apos;s a little detail missing, but using a flat diffuse looks good enough to ignore the more intricate diffuse texture, at least for now.&lt;/div&gt;&lt;/div&gt;
+
+&lt;h3 id=&quot;assigning-flat-colors-to-vertices-with-uv-maps-and-a-palette-texture&quot;&gt;Assigning flat colors to vertices with UV maps and a palette texture&lt;/h3&gt;
+
+&lt;p&gt;I now needed to tackle the second part of the problem: mapping individual vertices to separate base colors, perhaps on a fixed palette.&lt;/p&gt;
+
+&lt;p&gt;One of the more popular ways to map vertex colors to a flat color palette is to use UV maps.&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Associate a palette to a material as 2D bitmap texture.&lt;/li&gt;
+  &lt;li&gt;Create a UV map for each mesh.&lt;/li&gt;
+  &lt;li&gt;Scale and move vertices of the mesh around the UV map over top of the pallete.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog05-18.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;I&apos;ve manually mapped vertices from the mesh on the right to the color palette on left.&quot; title=&quot;I&apos;ve manually mapped vertices from the mesh on the right to the color palette on left.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;I&apos;ve manually mapped vertices from the mesh on the right to the color palette on left.&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;This workflow is relatively ergonomic to author. It allows flexibility within meshes when necessary but is also easy to use with meshes that are a single-color. There’s consistency by using a single palette. It’s performant since we can reuse the same material and texture across any number of meshes.&lt;/p&gt;
+
+&lt;p&gt;And it exports to Godot without any problems… well, as long as you only need one UV map.&lt;/p&gt;
+
+&lt;h3 id=&quot;multiple-uv-maps&quot;&gt;Multiple UV maps&lt;/h3&gt;
+
+&lt;p&gt;Why would I need multiple UV maps? The roughness, specular, normal map, etc. textures all require a more standard UV map; one that utilizes the full area of the texture.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog05-19.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;A (crude) UV map on the normal texture that uses the whole area of the texture.&quot; title=&quot;A (crude) UV map on the normal texture that uses the whole area of the texture.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;A (crude) UV map on the normal texture that uses the whole area of the texture.&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;That meant I needed two UV maps: one for diffuse (base color) and one for the other non-diffuse PBR components.&lt;/p&gt;
+
+&lt;p&gt;Luckily, Blender can do multiple UV maps!&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog05-20.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;On the left, using the UV map node to specify the secondary UV map be used to select the colors from the color palette texture. On the right, the object data panel showing 2 UV maps: one for the diffuse and one for the non-color textures.&quot; title=&quot;On the left, using the UV map node to specify the secondary UV map be used to select the colors from the color palette texture. On the right, the object data panel showing 2 UV maps: one for the diffuse and one for the non-color textures.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;On the left, using the UV map node to specify the secondary UV map be used to select the colors from the color palette texture. On the right, the object data panel showing 2 UV maps: one for the diffuse and one for the non-color textures.&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;However, when I checked the result in Godot I found that my second UV map was ignored. Godot has support for a second UV map, but it seems like its purpose is for some sort of light map. I investigated for a while, but eventually gave up.&lt;/p&gt;
+
+&lt;p&gt;In parallel to this thread of investigation, I was also jumping back to explore the options for procedural shaders.&lt;/p&gt;
+
+&lt;h3 id=&quot;the-problem-with-procedural-shaders&quot;&gt;The problem with procedural shaders&lt;/h3&gt;
+
+&lt;p&gt;With the earlier tests, including altering the base color texture with a hue/saturation/value node, I figured out that the automatic Blender-to-Godot import/export feature (via the GLFT format) does not handle procedural shaders well. It makes sense, after all the shader languages and visual node features are quite different.&lt;/p&gt;
+
+&lt;p&gt;There’s not much I can do to get around this limitation directly (e.g. somehow implement better support directly in the import/export pipeline).&lt;/p&gt;
+
+&lt;p&gt;I was nearly stumped at this part, but stumbled into a potential solution along the same lines as my previous solution to the &lt;a href=&quot;/2024/03/28/indie-game-devlog-03#implementing-reduced-framerate-for-godot&quot;&gt;animation modifier problem&lt;/a&gt; from last time: baking.&lt;/p&gt;
+
+&lt;h3 id=&quot;texture-baking&quot;&gt;Texture baking&lt;/h3&gt;
+
+&lt;p&gt;The solution to using procedural nodes in my shaders seemed obvious in retrospect once I started to internalize the relationship between the PBR base shader (aka principled BSDF shader in Blender) and its inputs.&lt;/p&gt;
+
+&lt;p&gt;The inputs to the PBR texture could always be converted to separate 2D bitmap textures as long as there was a UV map for each mesh to provide a frame of reference for the mapping.&lt;/p&gt;
+
+&lt;p&gt;That means I could perform a process called texture baking for each PBR texture input. Texture baking takes each input to the PBR texture and converts it to a flat 2D bitmap texture. Blender supports texture baking with its Cycles rendering engine. The process is &lt;a href=&quot;https://www.youtube.com/watch?v=Se8GdHptD4A&quot;&gt;somewhat manual&lt;/a&gt; and error prone, requiring the creation of 2D bitmaps, plugging and unplugging nodes, waiting for the render to complete, and more. But the process can be at least partially automated with a choice of Blender plugins.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog05-21.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;The various texture bake options built into Blender, found in the render panel when Cycles is selected.&quot; title=&quot;The various texture bake options built into Blender, found in the render panel when Cycles is selected.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The various texture bake options built into Blender, found in the render panel when Cycles is selected.&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;With texture baking, I had essentially found an escape hatch to ensure anything I dreamt up in Blender could be realized in Godot. Of course with some caveats I’ll discuss later.&lt;/p&gt;
+
+&lt;h3 id=&quot;texture-baking-a-base-color-texture-map&quot;&gt;Texture baking a base color texture map&lt;/h3&gt;
+
+&lt;p&gt;Jumping back to my multiple UV maps problem, I realized I could solve this problem with texture baking.&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;For each mesh:
+    &lt;ol&gt;
+      &lt;li&gt;Create a second UV map targeting the color palette texture and set these in shader node graph.&lt;/li&gt;
+      &lt;li&gt;Run the texture baking process for just the base color/diffuse PBR input.&lt;/li&gt;
+      &lt;li&gt;Unplug the color pallete texture node graph from the PBR shader.&lt;/li&gt;
+      &lt;li&gt;Plug in the baked texture’s node into the PBR shader.&lt;/li&gt;
+    &lt;/ol&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;The baked texture matching the primary UV map looks like this:&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog05-22.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;The baked diffuse texture (top left), and the simple node setup (bottom).&quot; title=&quot;The baked diffuse texture (top left), and the simple node setup (bottom).&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The baked diffuse texture (top left), and the simple node setup (bottom).&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;(Seems like I messed up the UV map for the lower arms.)&lt;/p&gt;
+
+&lt;p&gt;And importing it into Godot looks like this:&lt;/p&gt;
+
+&lt;video src=&quot;/images/devlog05-23.mp4&quot; loop=&quot;&quot; controls=&quot;&quot; preload=&quot;&quot; width=&quot;100%&quot;&gt;&lt;/video&gt;
+
+&lt;p&gt;So baked textures work in Godot!&lt;/p&gt;
+
+&lt;p&gt;However, the downsides are that:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;The texture baking process is at least somewhat manual and tedious.&lt;/li&gt;
+  &lt;li&gt;The texture baking process must be re-run if the mesh or shader graph changes.&lt;/li&gt;
+  &lt;li&gt;One diffuse texture per mesh is required, at (presumably?) the same resolution as the other textures.&lt;/li&gt;
+  &lt;li&gt;The diffuse texture will end up with a lot of duplicate/wasted space.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;It was great to have discovered the texture baking option. Not only because it allowed flexibility in color mapping, but also because it opened the door for using fully procedural shaders in Blender.&lt;/p&gt;
+
+&lt;h3 id=&quot;generated-texture-space&quot;&gt;Generated texture space&lt;/h3&gt;
+
+&lt;p&gt;UV maps aren’t the only way we can associate a texture to points on a mesh. If we look at Blender’s texture coordinate node, we can see that there are several options:&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog05-24.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;The texture coordinate node in Blender. Notice its many outputs, rarely discussed in detail in tutorials.&quot; title=&quot;The texture coordinate node in Blender. Notice its many outputs, rarely discussed in detail in tutorials.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The texture coordinate node in Blender. Notice its many outputs, rarely discussed in detail in tutorials.&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;The Generated texture coordinate is something we can explore. Generated is controlled by another panel in the object data properties called Texture Space.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog05-25.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Texture space section in the object data panel.&quot; title=&quot;Texture space section in the object data panel.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Texture space section in the object data panel.&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;By default, the generated texture coordinate is created automatically by calculating a fitted rectangular bounding box around the object. We can view the bounding box by going to the object properties panel and checking Texture Space under Viewport Display.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog05-26.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;The texture space viewport display option (right), and how it displays in the viewport (orange, left).&quot; title=&quot;The texture space viewport display option (right), and how it displays in the viewport (orange, left).&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The texture space viewport display option (right), and how it displays in the viewport (orange, left).&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;I’d never understood why sometimes my procedural textures looked weirdly stretched on one axis if applied to an obviously non-square mesh.&lt;/p&gt;
+
+&lt;p&gt;The way to fix this (besides manually creating a UV map), is to disable Auto Texture Space and change the size XYZ values to be equal.&lt;/p&gt;
+
+&lt;p&gt;In theory, using the generated texture coordinates for the non-diffuse parts of the clay material would free up the UV map to be used for the palette texture technique discussed earlier.&lt;/p&gt;
+
+&lt;p&gt;I tried setting this up in Blender and checking the results in Godot. Unfortunately, it seems like Godot will always use the UV map.&lt;/p&gt;
+
+&lt;p&gt;Another swing and a miss; generated texture coordinates couldn’t be a solution to my multiple UV map problem.&lt;/p&gt;
+
+&lt;h3 id=&quot;texture-painting&quot;&gt;Texture painting&lt;/h3&gt;
+
+&lt;p&gt;I’ll give an honorable mention to texture painting as an option for assigning colors to the diffuse input, even if I’m not planning on using it (I simply don’t need the level of detail it provides).&lt;/p&gt;
+
+&lt;p&gt;The most flexible option for assigning base colors is to create a blank texture and paint colors on it. The downside of course is that, like the texture baking option above, you’ll end up with one texture per mesh.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog05-27.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;The model in texture paint mode, using the previously baked texture as a base. It&apos;s possible to draw directly on the model in the viewport (right) or the 2D bitmap texture (left).&quot; title=&quot;The model in texture paint mode, using the previously baked texture as a base. It&apos;s possible to draw directly on the model in the viewport (right) or the 2D bitmap texture (left).&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The model in texture paint mode, using the previously baked texture as a base. It&apos;s possible to draw directly on the model in the viewport (right) or the 2D bitmap texture (left).&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;The upside is that this is a well-beaten workflow path that has lots of tooling support.&lt;/p&gt;
+
+&lt;h3 id=&quot;using-one-material-per-base-color&quot;&gt;Using one material per base color&lt;/h3&gt;
+
+&lt;p&gt;Another option for a flexible base color worflow I want to add to the list is using one material per base color.&lt;/p&gt;
+
+&lt;p&gt;An overview of this workflow:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Create the material that will be used as a template.&lt;/li&gt;
+  &lt;li&gt;Separate out the material so it has a single color RGB input node.&lt;/li&gt;
+  &lt;li&gt;Optionally group all other nodes except the RGB input node into a node group.&lt;/li&gt;
+  &lt;li&gt;Duplicate the material for each required color.&lt;/li&gt;
+  &lt;li&gt;In Edit mode, select each face and assign the proper material to it until all faces are assigned.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog05-28.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Assigning multiple materials to mesh faces. In the example there are 2 materials (Body, Clothes), and I select faces on the mesh in edit mode and click the Assign button.&quot; title=&quot;Assigning multiple materials to mesh faces. In the example there are 2 materials (Body, Clothes), and I select faces on the mesh in edit mode and click the Assign button.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Assigning multiple materials to mesh faces. In the example there are 2 materials (Body, Clothes), and I select faces on the mesh in edit mode and click the Assign button.&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;I’ve used this workflow regularly in the past. It’s relatively ergonomic for meshes whose base colors are limited and map closely to their faces. Or if you have the flexibility to modify the mesh to add vertices where you need color separation.&lt;/p&gt;
+
+&lt;p&gt;I’ll definitely have to use this workflow in the case that the characters or environment have a non-clay material. Perhaps something transparent or emissive (like a neon light). But in the general case, the one-material-per-color can become cumbersome to maintain when there are lots of colors in use across meshes and files.&lt;/p&gt;
+
+&lt;p&gt;The Godot importer handles this workflow without a problem.&lt;/p&gt;
+
+&lt;h3 id=&quot;assigning-base-colors-using-color-attributes-and-vertex-paint-mode&quot;&gt;Assigning base colors using color attributes and vertex paint mode&lt;/h3&gt;
+
+&lt;p&gt;The last option I found for base colors is assigning colors via the Color Attributes and vertex paint mode in Blender.&lt;/p&gt;
+
+&lt;p&gt;Under the object data panel, there’s a section called Color Attributes. Creating a new entry here allows color data to be associated with individual vertices on the mesh.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog05-29.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Yet another useful section in the object data properties panel, Color Attributes. It stores color values assigned to vertices.&quot; title=&quot;Yet another useful section in the object data properties panel, Color Attributes. It stores color values assigned to vertices.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Yet another useful section in the object data properties panel, Color Attributes. It stores color values assigned to vertices.&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Switching to Vertex Paint mode in the viewport allows us to paint colors on directly on the vertices of the mesh using a few basic painting tools.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog05-30.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Assigning colors to vertices in the viewport&apos;s vertex paint mode. A little less ergonomic than texture paint mode.&quot; title=&quot;Assigning colors to vertices in the viewport&apos;s vertex paint mode. A little less ergonomic than texture paint mode.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Assigning colors to vertices in the viewport&apos;s vertex paint mode. A little less ergonomic than texture paint mode.&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Then in the shader, we add a Color Attributes node and plug it directly into the base color input of the principled BSDF node.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog05-31.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;The simple node setup for the color attribute node.&quot; title=&quot;The simple node setup for the color attribute node.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The simple node setup for the color attribute node.&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;I was very much not expecting this to import into Godot. But I gave it a shot anyway and… wow, it worked!&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog05-32.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;The color attributes/vertex paint workflow imports properly into Godot.&quot; title=&quot;The color attributes/vertex paint workflow imports properly into Godot.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The color attributes/vertex paint workflow imports properly into Godot.&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;I found the actual process of using vertex paint mode a bit clunky. Generally, I feel like I want to paint faces rather than vertices, but that workflow is much less streamlined than rotating around the model and painting the individual vertices.&lt;/p&gt;
+
+&lt;h2 id=&quot;summarizing-the-options&quot;&gt;Summarizing the options&lt;/h2&gt;
+
+&lt;p&gt;OK, so that’s a lot of options to consider. It’s still tough to weigh the pros and cons of each without doing a dry run of modeling, texturing, and exporting a handful of character and environment models.&lt;/p&gt;
+
+&lt;p&gt;I may be able to get away with finding a decent clay texture pack, using that directly for the non-diffuse PBR inputs, then committing to a vertex painting workflow for the diffuse input.&lt;/p&gt;
+
+&lt;p&gt;However, I’m still considering buying the Clay Doh procedural shader because it looks really nice. Going the full procedural route would require experimenting with a texture baking workflow and then UV mapping all my objects in reference to the baked textures.&lt;/p&gt;
+
+&lt;p&gt;For now, I feel good about having explored the problem and solution space well enough to be able to implement a pipeline that makes realistic aesthetic compromises a bit further down the line.&lt;/p&gt;
+
+&lt;p&gt;And I’m sure there’s at least &lt;em&gt;something&lt;/em&gt; I’ve missed in the Blender/Godot importer that could make any of the above options more streamlined.&lt;/p&gt;
+
+&lt;h2 id=&quot;whats-next&quot;&gt;What’s next?&lt;/h2&gt;
+
+&lt;p&gt;I think diving deep into character design is the next important step. Character design is probably something I should have spent the last few years studying and practicing before getting to this point but… we’ll see what I can pull off!&lt;/p&gt;
+
+&lt;p&gt;Until next time.&lt;/p&gt;
+</description>
+        <pubDate>Tue, 09 Apr 2024 12:05:00 -0500</pubDate>
+        <link>https://twocentstudios.com/2024/04/09/indie-game-devlog-05/</link>
+        <guid isPermaLink="true">https://twocentstudios.com/2024/04/09/indie-game-devlog-05/</guid>
+        
+        <category>indiegame</category>
+        
+        
+      </item>
+    
+      <item>
+        <title>Indie Game Devlog 04 - Animating Faces</title>
+        <description>&lt;p&gt;Last time, I’d prototyped a 3D character with an idle and walk animation.&lt;/p&gt;
+
+&lt;p&gt;Next, I wanted to prototype face animations.&lt;/p&gt;
+
+&lt;h2 id=&quot;finding-the-balance-in-character-expression&quot;&gt;Finding the balance in character expression&lt;/h2&gt;
+
+&lt;p&gt;My game is going to be heavily narrative focused. Meaning I need to tell a good story where the player can quickly connect and empathize with the characters.&lt;/p&gt;
+
+&lt;p&gt;Of course you can tell a good story through words alone (a novel) or actions alone (a silent movie). But many media use a balance of the two.&lt;/p&gt;
+
+&lt;p&gt;I need to find a balance that supports my story, but is also feasible for a solo developer with my level of experience making a game at this scale.&lt;/p&gt;
+
+&lt;p&gt;What does balance mean? What are my options?&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;At the low end of fidelity, we have games that have either no faces or a face with a static expression.&lt;/li&gt;
+  &lt;li&gt;In the middle, we have games with no lip-syncing (or even voice acting), but still a library of facial expressions that match the tone of the current dialogue. Example: The Legend of Zelda - Ocarina of Time.&lt;/li&gt;
+  &lt;li&gt;At the high end of fidelity, we have AAA games with fully rigged character faces that have fully motion captured or hand-animated lip-syncing for both cut-scenes and gameplay. Example: The Last of Us.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog04-01.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Saria from Ocarina of Time changes her facial expression to match her written dialogue. There&apos;s limited animation between expressions, with blinking being an exception.&quot; title=&quot;Saria from Ocarina of Time changes her facial expression to match her written dialogue. There&apos;s limited animation between expressions, with blinking being an exception.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Saria from Ocarina of Time changes her facial expression to match her written dialogue. There&apos;s limited animation between expressions, with blinking being an exception.&lt;/div&gt;&lt;/div&gt;
+
+&lt;h2 id=&quot;my-goal-scripted-expressions&quot;&gt;My goal: scripted expressions&lt;/h2&gt;
+
+&lt;p&gt;I’d like to shoot for something similar to the medium fidelity, like Ocarina of Time.&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Make a library of a dozen or so facial expressions per character.&lt;/li&gt;
+  &lt;li&gt;Don’t bother with animating between expressions.&lt;/li&gt;
+  &lt;li&gt;Support a limited set of looping animations like blinking.&lt;/li&gt;
+  &lt;li&gt;Allow specific animations to be triggered from the script that contains the dialogue.&lt;/li&gt;
+  &lt;li&gt;Don’t bother with full voice acting.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;As great as it’d be to have full voice acting and lip sync, I’m confident it would be way too ambitious.&lt;/p&gt;
+
+&lt;p&gt;Even having a dozen facial expressions may be overly ambitious for the number of characters I’m already planning. That’s part of what I wanted to find out at this stage of prototyping.&lt;/p&gt;
+
+&lt;h2 id=&quot;options-for-faces&quot;&gt;Options for faces&lt;/h2&gt;
+
+&lt;p&gt;Since I’ve yet to decide on an aesthetic for my character/environment art, it’s still possible for me to adapt the character style to the difficulty of implementation. In a world with infinite resources the art could 100% drive the implementation, but that’s not the world I currently inhabit.&lt;/p&gt;
+
+&lt;p&gt;I need full access to change any character’s facial expression from the game engine at any time. Identifying all the levers in Godot that allow me to do so is also part of this exploration.&lt;/p&gt;
+
+&lt;p&gt;There are 3 art/implementation pairs that fulfill the target requirements I listed above:&lt;/p&gt;
+
+&lt;h3 id=&quot;1-independent-2d-textures-projected-on-static-3d-face-geometry&quot;&gt;1. Independent 2D textures projected on static 3D face geometry&lt;/h3&gt;
+
+&lt;p&gt;This option shrinkwraps a bitmap 2D texture onto the 3D model. All faces can be on one texture like a sprite sheet, or as separate textures that are swapped in and out.&lt;/p&gt;
+
+&lt;p&gt;Most characters from Ocarina of Time have faces like this, although noses and ears are usually part of the base model.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog04-02.jpg&quot; width=&quot;400&quot; height=&quot;&quot; alt=&quot;Saria from Ocarina of Time has a bitmap 2D face texture&quot; title=&quot;Saria from Ocarina of Time has a bitmap 2D face texture&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Saria from Ocarina of Time has a bitmap 2D face texture&lt;/div&gt;&lt;/div&gt;
+
+&lt;h3 id=&quot;2-independent-3d-geometry-for-each-facial-expression&quot;&gt;2. Independent 3D geometry for each facial expression&lt;/h3&gt;
+
+&lt;p&gt;This option adds a separate object for each expression on top of the main face/body geometry. Only one object is displayed at a time. The style is similar to (1), but the implementation is different and the 3D geometry allows the face to participate in lighting.&lt;/p&gt;
+
+&lt;p&gt;This is the way I modeled Dory.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog04-10.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Dory has 3D face geometry for its eyes and mouth, but the vertices do not morph and they are not integrated into the main body. They even cast shadows onto the main body.&quot; title=&quot;Dory has 3D face geometry for its eyes and mouth, but the vertices do not morph and they are not integrated into the main body. They even cast shadows onto the main body.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Dory has 3D face geometry for its eyes and mouth, but the vertices do not morph and they are not integrated into the main body. They even cast shadows onto the main body.&lt;/div&gt;&lt;/div&gt;
+
+&lt;h3 id=&quot;3-single-3d-geometry-that-morphs-for-each-facial-expression&quot;&gt;3. Single 3D geometry that morphs for each facial expression&lt;/h3&gt;
+
+&lt;p&gt;This option produces the most “realistic” results. The face will deform the way a human face does.&lt;/p&gt;
+
+&lt;p&gt;The downsides are that a humble face rig can take lots of time and expertise to set up, having more control points requires more time spent animating, and it’s easy to fall into the uncanny valley where the character looks creepy and unsettling.&lt;/p&gt;
+
+&lt;p&gt;The upside is that the current tools for executing this style are well tailored to the job. This even includes live video motion capture from a smartphone that can drive an animated rig.&lt;/p&gt;
+
+&lt;p&gt;I found a solo indie dev working on a game called Farewell North who talks about implementing this kind of facial animation &lt;a href=&quot;https://www.youtube.com/watch?v=fkB3tK6zZSo&quot;&gt;in this devlog&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;An easy example is The Last of Us. &lt;a href=&quot;https://www.youtube.com/watch?v=myZcUvU8YWc&quot;&gt;A demo from 2013&lt;/a&gt; shows some behind the scenes materials on the rigging process.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog04-03.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;The Last of Us like most AAA games targets realism with a full face rig&quot; title=&quot;The Last of Us like most AAA games targets realism with a full face rig&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The Last of Us like most AAA games targets realism with a full face rig&lt;/div&gt;&lt;/div&gt;
+
+&lt;h2 id=&quot;independent-expressions&quot;&gt;Independent expressions&lt;/h2&gt;
+
+&lt;p&gt;At the moment, I’m leaning towards (1) or (2). I’m not confident enough in my character modeling skills or my art direction or time/effort estimation skills to gamble with the downsides of (3).&lt;/p&gt;
+
+&lt;p&gt;Designing independent expressions lends itself to stylization, and therefore it may be easier for me to avoid the uncanny valley when eventually finalizing my character designs.&lt;/p&gt;
+
+&lt;p&gt;The next decision is whether to use 2D or 3D.&lt;/p&gt;
+
+&lt;p&gt;I’m drawn towards the look of 3D, so I decided to explore that implementation first.&lt;/p&gt;
+
+&lt;h2 id=&quot;implementing-3d-independent-expressions&quot;&gt;Implementing 3D independent expressions&lt;/h2&gt;
+
+&lt;p&gt;I started by modeling opened eyes and closed eyes in two separate objects.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog04-04.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Open and closed eyes, with simple geometry and modifiers added&quot; title=&quot;Open and closed eyes, with simple geometry and modifiers added&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Open and closed eyes, with simple geometry and modifiers added&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;For a simple case like this, using the same object/mesh and using a shape key to tween between open and closed would definitely be possible. However, for the more complicated expressions I’m planning for, deforming a single mesh isn’t going to cut it.&lt;/p&gt;
+
+&lt;p&gt;I realized quickly that these eye objects needed to be parented and weighted to the existing armature in order to follow the head with its existing idle animation.&lt;/p&gt;
+
+&lt;p&gt;As separate meshes, the opened and closed eyes appear in Godot’s scene tree automatically.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog04-05.jpg&quot; width=&quot;&quot; height=&quot;200&quot; alt=&quot;Access to objects in the imported Godot scene&quot; title=&quot;Access to objects in the imported Godot scene&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Access to objects in the imported Godot scene&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;That means I can reference them in code and turn them on and off with a code snippet.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&quot;language-gdscript&quot;&gt;func toggleEyeBlink():
+    $Armature/Skeleton3D/eye_blink.visible = !$Armature/Skeleton3D/eye_blink.visible
+    $Armature/Skeleton3D/eye_neutral.visible = !$Armature/Skeleton3D/eye_neutral.visible
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;For testing purposes, I rotated the player model towards the camera and triggered toggling the eye open and close with the existing action button (spacebar).&lt;/p&gt;
+
+&lt;video src=&quot;/images/devlog04-06.mp4&quot; controls=&quot;&quot; loop=&quot;&quot; width=&quot;100%&quot;&gt;&lt;/video&gt;
+
+&lt;p&gt;Awesome. I’ve got full manual control over eye meshes. From here it’s reasonable to see how expanding this could work:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;I add a bunch more eye shapes as separate objects.&lt;/li&gt;
+  &lt;li&gt;I add a bunch of mouth shapes as separate objects.&lt;/li&gt;
+  &lt;li&gt;I create some helpers in code to associate a facial expression with all but one eye object and all but one mouth object visible.&lt;/li&gt;
+  &lt;li&gt;I trigger a named facial expression from the dialogue script.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&quot;blendergodot-integration-woes&quot;&gt;Blender/Godot integration woes&lt;/h2&gt;
+
+&lt;p&gt;There’s a missing piece in the above plan though, and it has to do with Blender integration.&lt;/p&gt;
+
+&lt;p&gt;The idle and walk animations are defined on the Blender side and imported into Godot in an AnimationPlayer node.&lt;/p&gt;
+
+&lt;p&gt;It’s easy to imagine wanting a looping “blink” animation that alternates between opened and closed eyes. So I tried to imagine how I’d implement that animation in Blender. It’s surprisingly convoluted! And it’s exposing my lack of fundamental understanding of both Blender and Godot.&lt;/p&gt;
+
+&lt;p&gt;The first problem is animating visibility. The eye_open object needs to disappear when the eye_closed object appears and vice-versa. If I want to keep all my animations source-of-truth in Blender, I’ve identified these options:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;&lt;strong&gt;Scale the object to a near-zero value.&lt;/strong&gt; This is not a robust solution for several reasons: Some modifiers will break the geometry, it’s not as ergonomic as just having a single boolean, and the rendering engine still needs to account for the scaled-down geometry.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Use the object visibility setting.&lt;/strong&gt; This would my preferred option, but it’s not possible. In Blender there’s a toggle for viewport visibility and render visibility. And it’s animatable. It requires changing an import setting in Godot for the blend file under “Blender &amp;gt; Nodes &amp;gt; Visible” to “Renderable”. However, this only applies during the import process, so the object in question is either imported or ignored. The setting is not read after import, including during animation.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Move the “hidden” mesh inside the head.&lt;/strong&gt; Reasonable, but requires setting up shape keys for every object, and potentially taking a performance hit.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Move the “hidden” mesh far off screen.&lt;/strong&gt; This has the benefit of presumably being able to participate in the Godot renderer’s automatic distance culling &lt;a href=&quot;https://docs.godotengine.org/en/stable/tutorials/3d/mesh_lod.html&quot;&gt;mesh level of detail&lt;/a&gt; (LOD) system, and therefore avoid the performance hit. But still makes the animation process unergonomic.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Set the material to transparent.&lt;/strong&gt; Might not play nice with whatever material or shader I choose. Presumably takes a performance hit.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Enforce all eyes use the same number of vertices.&lt;/strong&gt; This would allow me to use Blender’s shape keys as designed. However, it imposes serious limitations on the art style, including using different colors. Modeling all potential eye shapes would end up being a puzzle beyond my current skillset.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;Not only does the problem of visibility have no clear solution, but the animation process itself within Blender is not as straightforward as the existing armature animation:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;The separate eye_open and eye_closed objects will have separate animation Actions in Blender. This means I need to create two separate but mirroring animation timelines that toggle the visibility. But I can’t even see them on the same dope sheet.&lt;/li&gt;
+  &lt;li&gt;The bigger problem is that animation actions are only imported from one object. In my case it’s the armature. Actions attached to other objects are ignored by Godot. This would require more research to understand its limitations.&lt;/li&gt;
+  &lt;li&gt;From some investigation, it seems as if the right way to handle this kind of animation is to make a driver system or another armature that combines the eye_open and eye_closed visibility behavior into one parameter. It may require putting all the eye meshes into the single body object. This is all beyond my current understanding of Blender.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog04-09.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Trying to set up a blinking animation in Blender via the render visibility property. Shown is only one half of the animation. It&apos;s not very ergonomic.&quot; title=&quot;Trying to set up a blinking animation in Blender via the render visibility property. Shown is only one half of the animation. It&apos;s not very ergonomic.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Trying to set up a blinking animation in Blender via the render visibility property. Shown is only one half of the animation. It&apos;s not very ergonomic.&lt;/div&gt;&lt;/div&gt;
+
+&lt;h2 id=&quot;solution-all-face-animations-in-godot&quot;&gt;Solution: all face animations in Godot&lt;/h2&gt;
+
+&lt;p&gt;To reduce complexity, I’d prefer to keep all animations Blender. That way, I could continue to use Blender’s superior tooling and I wouldn’t have to keep track of which program contains which animation.&lt;/p&gt;
+
+&lt;p&gt;But in this case, it seems like I’ve eliminated all the convenient and sustainable options of using Blender for face animations.&lt;/p&gt;
+
+&lt;p&gt;My primary use case is going to be triggering facial expression changes from the dialogue. It’s the more rare secondary use case of looping animations like blinking that I’m currently investigating. So maybe keeping all face animations within Godot is the least complex strategy after all.&lt;/p&gt;
+
+&lt;p&gt;I’m already confident I know how I’d implement facial expression changes from the dialogue in Godot. But I’m not clear on how I’d author animations in Godot on the imported Blender object and have them play nicely with the existing animation from Blender. For example, how do I keep a walk cycle loop going while also having a blink cycle loop with a different frame length?&lt;/p&gt;
+
+&lt;p&gt;AnimationTree, Godot’s node for combining various animations from an AnimationPlayer, is tied to one AnimationPlayer. The AnimationPlayer it’s currently tied to is imported from Blender as read-only. The whole point of AnimationTree is to assist in blending and transitioning between multiple animations, so having more than one is an anti-pattern. However, in this case, since my face animations are completely separate from the body animations, I think it should be okay.&lt;/p&gt;
+
+&lt;p&gt;And although I originally thought a second AnimationTree would be required specifically for face animations, I now realize that a second AnimationPlayer alone may be fine in my case. After all, in theory most things that AnimationPlayer and AnimationTree do can be accomplished with raw code (if not very verbosely). The way I see it, I can switch between static face objects (like a frown) and cyclical animations (like a blink cycle) in single function driven by the dialogue script. This would only require a single AnimationPlayer with all the animations configured ahead of time. It wouldn’t require an AnimationTree at all.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog04-07.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Configuration of the blink animation directly in Godot using the separate eye objects from Blender&quot; title=&quot;Configuration of the blink animation directly in Godot using the separate eye objects from Blender&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Configuration of the blink animation directly in Godot using the separate eye objects from Blender&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;The blinks are automatic on a loop in the demo below.&lt;/p&gt;
+
+&lt;video src=&quot;/images/devlog04-08.mp4&quot; controls=&quot;&quot; loop=&quot;&quot; preload=&quot;none&quot; width=&quot;100%&quot;&gt;&lt;/video&gt;
+
+&lt;p&gt;OK, so this strategy seems pretty reasonable taking into account my current constraints. It’s a shame I can’t use Blender, but in the end, I have to use all the flexibility available to me to my advantage and not be afraid to commit to making my own systems and tools.&lt;/p&gt;
+
+&lt;p&gt;A lingering question is whether I can easily reuse an AnimationPlayer node for the player and all NPCs if all meshes have face objects with the same names. Similarly, how can I reuse code to accept a facial expression name and update the face of the relevant character.&lt;/p&gt;
+
+&lt;h2 id=&quot;next-steps&quot;&gt;Next steps&lt;/h2&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;NPCs represent a crucial concept that’s both the same (interactions, face shapes) and different (names, appearances) from existing code/assets. Although I don’t want to spend time designing and modeling details of every character yet, I do want to make sure that I understand how to set up NPCs so that I can share the similar bits while allowing enough configuration to support the differing bits. That includes their similarities to both the player character and one another.&lt;/li&gt;
+  &lt;li&gt;I’d like to explore materials and shaders again. I’ve been doing a little more aesthetics research and have a few styles I’d like to try.&lt;/li&gt;
+  &lt;li&gt;Designing the conversation experience – basically the view and interaction patterns while two characters are speaking – is important enough to the overall experience that it deserves its own prototypes.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Sidenote: this is the first post of the devlog series where I was writing while actively experimenting, so please excuse the past/present tense changes.&lt;/p&gt;
+
+&lt;p&gt;Until next time.&lt;/p&gt;
+</description>
+        <pubDate>Mon, 01 Apr 2024 18:00:00 -0500</pubDate>
+        <link>https://twocentstudios.com/2024/04/01/indie-game-devlog-04/</link>
+        <guid isPermaLink="true">https://twocentstudios.com/2024/04/01/indie-game-devlog-04/</guid>
+        
+        <category>indiegame</category>
+        
+        
+      </item>
+    
+      <item>
+        <title>Indie Game Devlog 03 - Experimental Character Design and Animation</title>
+        <description>&lt;p&gt;In the last post, I had finished the blockout for our main level in 3D and did a very basic lighting pass. I also tested the limitations of material transfer between Blender and Godot.&lt;/p&gt;
+
+&lt;p&gt;My player character being a big floating capsule wasn’t making it easy to ensure the proportions of the level are passible. Plus, I still didn’t know much about the very complex art of character modeling, rigging, and animation.&lt;/p&gt;
+
+&lt;h2 id=&quot;my-background-in-character-design&quot;&gt;My background in character design&lt;/h2&gt;
+
+&lt;p&gt;I have very limited history of designing characters as an adult.&lt;/p&gt;
+
+&lt;p&gt;My first foray into reinterpreting an existing character in 3D was modeling Dory from my previous team Tabedori.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog03-01.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;My previous team&apos;s mascot Dory, from a coworker&apos;s original design&quot; title=&quot;My previous team&apos;s mascot Dory, from a coworker&apos;s original design&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;My previous team&apos;s mascot Dory, from a coworker&apos;s original design&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;The unusual bamboo shoot body shape was an ambitious task for a beginner 3D modeler.&lt;/p&gt;
+
+&lt;p&gt;I tried rigging Dory so that I could do some basic poses or even try an animation. But my first attempt failed and I shelved that stretch goal.&lt;/p&gt;
+
+&lt;p&gt;Rigging is tough, and not particularly rewarding in my opinion. There are many ways to accomplish the same thing depending on how you’d like to use the rig, so it took me some time to find the &lt;em&gt;right&lt;/em&gt; YouTube tutorial to match my goals and skill level.&lt;/p&gt;
+
+&lt;p&gt;Last year, I did a few other character projects. One was a full modeling, rigging, and animation project from a tutorial.&lt;/p&gt;
+
+&lt;video src=&quot;/images/devlog03-02.mp4&quot; controls=&quot;&quot; width=&quot;100%&quot;&gt;&lt;/video&gt;
+
+&lt;p&gt;The next was a self portrait, again based on the original 2D design by a friend.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog03-03.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Self portrait&quot; title=&quot;Self portrait&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Self portrait&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;This all led up to my first original character design was a vampire rabbit named Biki for my iOS app &lt;a href=&quot;https://apps.apple.com/us/app/count-biki/id6463796779&quot;&gt;Count Biki&lt;/a&gt;.&lt;/p&gt;
+
+&lt;video src=&quot;/images/count-biki-blender-animation-correct.mov&quot; controls=&quot;&quot; preload=&quot;none&quot; poster=&quot;/images/count-biki-blender-animation-correct-poster.png&quot; width=&quot;100%&quot;&gt;&lt;/video&gt;
+
+&lt;p&gt;Biki was an ambitious project in that it not only was my first original character design, but it also required exporting the rigged and animated model from Blender into SceneKit on iOS.&lt;/p&gt;
+
+&lt;p&gt;It took at least one major revision on the design to get something that looked like a rabbit instead of a hamster. I also cut scope by keeping Biki in a sitting position and only rigging his body, arms, head, and ears. Creating the animations was actually my favorite part. Overall, I’m pretty happy with the result. For more on this process, see &lt;a href=&quot;/2023/10/30/count-biki-app-and-character-design/&quot;&gt;Count Biki - App and Character Design&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;All this is to say that I’m intentionally starting the character design, modeling, rigging, animation, and import/export process slowly, not aiming for full fidelity or even going beyond answering “what am I and what is Godot capable of?”.&lt;/p&gt;
+
+&lt;h2 id=&quot;the-next-iteration-of-the-player-character&quot;&gt;The next iteration of the player character&lt;/h2&gt;
+
+&lt;p&gt;I found a solid and succinct YouTube tutorial addressing Blender and Godot specifically: &lt;a href=&quot;https://www.youtube.com/watch?v=VasHZZyPpYU&quot;&gt;Godot 4 / Blender - Third Person Character From Scratch&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;I especially liked this tutorial because the rigging section was barebones enough for my to wrap my head around the fundamentals and plumbing of rigging within Blender for the first time. This is the first tutorial I’d seen that showed how to manually assign mesh vertices to bones instead of using automatic weights or weight painting. I finally understood the relationship between the armature and vertex groups, which makes it a lot easier to debug inevitable problems in the future.&lt;/p&gt;
+
+&lt;h3 id=&quot;modeling&quot;&gt;Modeling&lt;/h3&gt;
+
+&lt;p&gt;I wasn’t ready to commit to a character design until I’d finished a test run with this potential character pipeline. Therefore, I just wanted to find an existing design that was in the ballpark, and could throw away down the line.&lt;/p&gt;
+
+&lt;p&gt;I randomly found a character turnaround of Trent from the late 90’s MTV show Daria and used that as my base for the low-poly model. This modeling part went pretty well. My thoughts at this point were:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Should I keep limb components (e.g. upper arm, forearm) as separate meshes in my final design?&lt;/li&gt;
+  &lt;li&gt;I need to find a lot of head references. My intuition for head shapes (even though I possess one) is way off.&lt;/li&gt;
+  &lt;li&gt;How many bones should I use? Especially for hands, neck, and face.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog03-04.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Modeling low-poly from a character turnaround sheet&quot; title=&quot;Modeling low-poly from a character turnaround sheet&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Modeling low-poly from a character turnaround sheet&lt;/div&gt;&lt;/div&gt;
+
+&lt;h3 id=&quot;rigging&quot;&gt;Rigging&lt;/h3&gt;
+
+&lt;p&gt;Next part was the dreaded rigging, although as mentioned above, it clicked more this time than it had in the past. I still don’t think I’ve internalized the process well enough to do it on my own without reference (especially doing IK), but I’m not planning on becoming a professional rigging artist so no problems there.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog03-05.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;No bones about it, this rig is ready to go&quot; title=&quot;No bones about it, this rig is ready to go&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;No bones about it, this rig is ready to go&lt;/div&gt;&lt;/div&gt;
+
+&lt;h3 id=&quot;animation&quot;&gt;Animation&lt;/h3&gt;
+
+&lt;p&gt;Animation was next. I still find Blender’s &lt;em&gt;Action&lt;/em&gt;, &lt;em&gt;NLA Editor&lt;/em&gt;, &lt;em&gt;Dope Sheet&lt;/em&gt;, &lt;em&gt;F-Curve Editor&lt;/em&gt;, and other animation widgets intimidating, but following the tutorial helped avoid some complexity from the jump.&lt;/p&gt;
+
+&lt;p&gt;I started on the walk cycle animation by following a classic walk cycle breakdown chart, but this walk was way too fast and intense for my character.&lt;/p&gt;
+
+&lt;video src=&quot;/images/devlog03-06.mp4&quot; controls=&quot;&quot; width=&quot;100%&quot;&gt;&lt;/video&gt;
+
+&lt;p&gt;Regardless, I wanted to press on to see the animation in context before polishing.&lt;/p&gt;
+
+&lt;p&gt;Importing into Godot the first time was relatively pain free. I created an AnimationTree node and wired up a BlendSpace1D between the idle and walk animation.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog03-07.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Setting up the blend between idle and walk animations based on the player&apos;s velocity&quot; title=&quot;Setting up the blend between idle and walk animations based on the player&apos;s velocity&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Setting up the blend between idle and walk animations based on the player&apos;s velocity&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;It technically worked, but the synchronization between the walk speed and animation speed left a lot to be desired.&lt;/p&gt;
+
+&lt;p&gt;I obviously wasn’t satisfied with this walk, so I started over once, twice, three times, four times. Sometimes the joints would lock in weird ways. In general, all the steps felt &lt;em&gt;heavy&lt;/em&gt; in a way I couldn’t debug. I spent some time pacing around my apartment looking at my legs and trying to &lt;em&gt;walk normal&lt;/em&gt;.&lt;/p&gt;
+
+&lt;p&gt;I hit the point of diminishing returns and threw in the towel. Making all the movements less pronounced produced a slower and more casual walk, but it still wasn’t perfect. I learned that before I start &lt;em&gt;the real&lt;/em&gt; animation, I need to find some more animation reference books and budget time to practice.&lt;/p&gt;
+
+&lt;p&gt;I saved my latest walk and moved back into Godot. This was where I hit a big roadblock. I had needed to make a new scene for my character in order to use AnimationTree because:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;AnimationTree requires an AnimationPlayer in the same scene.&lt;/li&gt;
+  &lt;li&gt;AnimationPlayer is created as read-only from the Blender scene.&lt;/li&gt;
+  &lt;li&gt;The scene root must be a CharacterBody3D.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Trying to untangle the web of dependencies in my head while Googling, I finally came up with a solution. If you’re interested in the details, it’s in a separate &lt;a href=&quot;/2024/03/18/characterbody3d-blender-godot-import/&quot;&gt;blog post&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;The new node configuration for my player scene allowed quick iteration on the walk cycle animation while tweaking the character.&lt;/p&gt;
+
+&lt;video src=&quot;/images/devlog03-08.mp4&quot; controls=&quot;&quot; width=&quot;100%&quot;&gt;&lt;/video&gt;
+
+&lt;p&gt;Still quite robotic, especially considering the low-poly look.&lt;/p&gt;
+
+&lt;h3 id=&quot;reconsidering-the-player-controls&quot;&gt;Reconsidering the player controls&lt;/h3&gt;
+
+&lt;p&gt;In context, having this animation in place also made me start reconsidering my player control scheme. With only a forward walk-cycle created, my side-strafing controls look weird: the legs are moving forward and backward while the character slides sideways.&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Do I keep side-strafing as a control option (and therefore require more unique animations)?&lt;/li&gt;
+  &lt;li&gt;Do I remove side-strafing controls completely, forcing the player to move their mouse to rotate the character in place before moving forward?&lt;/li&gt;
+  &lt;li&gt;Do revise the control scheme so that pressing left both turns and moves the character that direction without affecting the camera?&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;I’m not ready to commit to a decision yet, so for now I’m going to keep the weird side-strafing animation.&lt;/p&gt;
+
+&lt;video src=&quot;/images/devlog03-09.mp4&quot; controls=&quot;&quot; width=&quot;100%&quot;&gt;&lt;/video&gt;
+
+&lt;h3 id=&quot;stop-motion-style-animation&quot;&gt;Stop-motion style animation&lt;/h3&gt;
+
+&lt;p&gt;I started thinking about aesthetics again too. While watching YouTube tutorials for research into my next big task (face rigs), I rediscovered YouTuber SouthernShotty who does really great stylized characters and animation.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog03-10.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;An example of SouthernShotty&apos;s craft material style&quot; title=&quot;An example of SouthernShotty&apos;s craft material style&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;An example of SouthernShotty&apos;s craft material style&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;He wrote a &lt;a href=&quot;https://www.youtube.com/watch?v=u9ZPrrLDxsY&quot;&gt;Blender add-on&lt;/a&gt; that automates some steps in converting regular animation timing to stop-motion style animation. I wanted to give it a shot to see how it looked in context of my (very underbaked) game world.&lt;/p&gt;
+
+&lt;p&gt;What is stop-motion style animation?&lt;/p&gt;
+
+&lt;p&gt;By default, when you make an animation in Blender, you create keyframes along a timeline at critical poses. Each row represents a different &lt;em&gt;value&lt;/em&gt; of each of the character’s bones (e.g. x position, y rotation). In professional rigs there can be hundreds if not thousands of possible control points! In the dope sheet, it looks something like this:&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog03-11.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Keyframes in the dope sheet&quot; title=&quot;Keyframes in the dope sheet&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Keyframes in the dope sheet&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Blender then uses the default smooth F-curves to interpolate the unspecified keyframe values in between the values the animator explicitly set. This both saves the animator a lot of work while also allowing a smooth result by default. F-curves are nearly infinitely tweakable, and real animators will spend a significant amount of time going through control-point by control-point to get the timings &lt;em&gt;just&lt;/em&gt; right.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog03-12.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;F-curves show how Blender interpolates values between artist-defined keyframes&quot; title=&quot;F-curves show how Blender interpolates values between artist-defined keyframes&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;F-curves show how Blender interpolates values between artist-defined keyframes&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;The F-curves are usually Bezier curves, but there’s no reason they can’t be linear or constant. Linear animation curves tend to look very &lt;em&gt;unnatural&lt;/em&gt; because very few things in the real world move with a constant velocity and then stop abruptly. Constant curves look &lt;em&gt;choppy&lt;/em&gt; because the poses jump at intervals slower than our eyes are capable of detecting.&lt;/p&gt;
+
+&lt;p&gt;In classic stop-motion animation (or relatedly, hand-drawn animation), there’s no such thing as automatic easing. The animator must take a picture for each pose &lt;em&gt;and&lt;/em&gt; inbetween position between the poses. However, it’s generally considered prohibitively expensive to take a picture at rates that are “smooth” to the human vision system like 60 frames per second. Usually this type of animation alternates between 24 frames per second (reasonably smooth) and 12 frames per second (noticeably choppy).&lt;/p&gt;
+
+&lt;p&gt;Although animating stop-motion at a nominal 12 frames per second can be a budgetary constraint, it’s often just as much an artistic choice. It produces an aesthetically pleasing and unique style of animation that, especially when the frame rate is varied with a professional eye, results in even more emotional impact for the viewer.&lt;/p&gt;
+
+&lt;p&gt;It’s not only frame rate that produces the stop-motion style (as mentioned above, hand-drawn animation has the same fundamental limitation). Handing physical objects changes them in subtle ways between frames. With clay, it might be a thumbprint added between frames. With puppets, it might be a strands of hair moving unpredictably. All the randomness adds to the stop-motion vibe.&lt;/p&gt;
+
+&lt;p&gt;SouthernShotty’s plugin tries to automate both the frame rate and random material adjustments. Since I haven’t decided on materials yet, I’m more focused on the frame rate adjustments.&lt;/p&gt;
+
+&lt;h3 id=&quot;implementing-reduced-framerate-in-blender&quot;&gt;Implementing reduced framerate in Blender&lt;/h3&gt;
+
+&lt;p&gt;The plugin works by simply adding a Stepped Interpolation modifier to the F-curve in Blender. This modifier locks in whatever position the original smoothly interpolated curve was at a specified frame interval.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog03-13.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;The Stepped Interpolation modifier and its result (in green)&quot; title=&quot;The Stepped Interpolation modifier and its result (in green)&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The Stepped Interpolation modifier and its result (in green)&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;I could just as well manually create poses and keyframes every 2 frames of animation like a stop-motion animator would. But using the &lt;a href=&quot;https://docs.blender.org/manual/en/4.1/editors/graph_editor/fcurves/modifiers.html#stepped-interpolation-modifier&quot;&gt;Stepped Interpolation&lt;/a&gt; modifier gets most of the effect without most of the work. For a solo animator, if this can meet my self-imposed quality standards, it’s a big win. It also allows me to experiment with different frame rates just by changing a number from 2 to 3 instead of having to spend hours recreating the animation from scratch.&lt;/p&gt;
+
+&lt;p&gt;With all that motivation outlined, I began applying the F-curve modifier to all channels and checking the result in the viewport. It looked interesting for sure.&lt;/p&gt;
+
+&lt;h3 id=&quot;implementing-reduced-framerate-for-godot&quot;&gt;Implementing reduced framerate for Godot&lt;/h3&gt;
+
+&lt;p&gt;However, when exported to Blender, it was clear the modifier wasn’t being applied. It wasn’t that surprising that modifiers in this corner of the Blender interface wouldn’t automatically be applied on export/import as opposed to object modifiers which are critical to most workflows.&lt;/p&gt;
+
+&lt;p&gt;I needed to find a way to apply the modifier to the raw data so that Godot would read the results of the operation. And ideally there’d be a way to do so non-destructively, so I could continue to iterate on the less dense keyframe data.&lt;/p&gt;
+
+&lt;p&gt;At the time was first investigating this, I was using Blender 4.0.2. At that time, the best I could do to bake the keyframes was:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Apply the Stepped Interpolation modifier to all channels.&lt;/li&gt;
+  &lt;li&gt;Use the Keys to Samples operator. This effectively removes the keyframes and replaces them with samples (honestly not really sure what this means under the hood).&lt;/li&gt;
+  &lt;li&gt;Remove the modifier from all channels.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog03-14.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;The result of applying Keys to Samples (notice the keyframe points are gone)&quot; title=&quot;The result of applying Keys to Samples (notice the keyframe points are gone)&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The result of applying Keys to Samples (notice the keyframe points are gone)&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Saving the animation will make the original keyframes unrecoverable, so it’s best to do this on a duplicate of the Action.&lt;/p&gt;
+
+&lt;p&gt;Switching back over Godot and selecting the new animation, it’s working!&lt;/p&gt;
+
+&lt;video src=&quot;/images/devlog03-15.mp4&quot; controls=&quot;&quot; width=&quot;100%&quot;&gt;&lt;/video&gt;
+
+&lt;p&gt;By some stroke of luck, Blender 4.1 (just released the day I’m writing this) includes a new &lt;a href=&quot;https://docs.blender.org/manual/en/4.1/editors/graph_editor/channels/editing.html#bake-channels&quot;&gt;Bake Channels&lt;/a&gt; operator. This streamlines my use case slightly:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;The Stepped Interpolation modifier is no longer necessary.&lt;/li&gt;
+  &lt;li&gt;Select all channels then select the Bake Channels operator.&lt;/li&gt;
+  &lt;li&gt;From the options, choose the range of the animation, the desired step, and an interpolation type of constant.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Unfortunately, this is still a destructive operation, so duplicating the Action is still required.&lt;/p&gt;
+
+&lt;p&gt;If I decide to use this workflow for most/all animations in my game, I’ll spend the time making a custom Blender plugin to automate this process. For now I’m happy enough with the manual process.&lt;/p&gt;
+
+&lt;p&gt;I like this effect. It’s opinionated, and I think it will put a stake in the ground and help guide the aesthetics of the rest of the game. I’m already thinking about paper or wood textures to lean into the “real life” stop-motion vibe.&lt;/p&gt;
+
+&lt;p&gt;In this example, I have the step set to 6 which is quite extreme! I’m not sure how far I’m going to push this yet. Starting on the extreme side and dialing back isn’t such a bad way to get things rolling.&lt;/p&gt;
+
+&lt;h2 id=&quot;next-steps&quot;&gt;Next steps&lt;/h2&gt;
+
+&lt;p&gt;We’re definitely getting into more unfamiliar territory. It’s fun seeing these small steps of progress, but each step just reminds me how much more there is to discover before I even get the point where I need to go heads down churning out assets and content.&lt;/p&gt;
+
+&lt;p&gt;Even though it could be considered a flourish, the next thing I’d like to explore is configurable/animatable face shapes for the characters. It turns out there are a lot of problems to solve in this workflow too!&lt;/p&gt;
+
+&lt;p&gt;Until next time.&lt;/p&gt;
+</description>
+        <pubDate>Thu, 28 Mar 2024 17:00:00 -0500</pubDate>
+        <link>https://twocentstudios.com/2024/03/28/indie-game-devlog-03/</link>
+        <guid isPermaLink="true">https://twocentstudios.com/2024/03/28/indie-game-devlog-03/</guid>
+        
+        <category>indiegame</category>
+        
+        
+      </item>
+    
+      <item>
+        <title>Indie Game Devlog 02 - 3D Level Blockout</title>
+        <description>&lt;p&gt;It was tough, but I knew I had to break away from my 2D project sooner than later if my ultimate goal was to make a 3D or 2.5D game.&lt;/p&gt;
+
+&lt;p&gt;I started a new Godot project and clicked into the 3D tab.&lt;/p&gt;
+
+&lt;h2 id=&quot;back-to-prototyping&quot;&gt;Back to prototyping&lt;/h2&gt;
+
+&lt;p&gt;I wanted to start small again, getting the entire intro act working in an “art-light” style before trying to integrate any sort of custom 3D models, materials, or animations.&lt;/p&gt;
+
+&lt;p&gt;I started remaking the world by creating a default environment with a sun to light everything. The best way to prototype objects was to use Godot’s very basic support for 3D shapes. I created a MeshInstance3D for the floor and a capsule to represent the player, and collisions to prevent the player from falling through the floor.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog02-01.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Entering the 3rd dimension&quot; title=&quot;Entering the 3rd dimension&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Entering the 3rd dimension&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Next was the most basic player and camera controller code. Player code is provided in an optional template by Godot so I started with that.&lt;/p&gt;
+
+&lt;video src=&quot;/images/devlog02-02.mp4&quot; controls=&quot;&quot; width=&quot;100%&quot;&gt;&lt;/video&gt;
+
+&lt;p&gt;I immediately needed to pause to make a decision of exactly what kind of camera and navigation style I wanted to support. Camera and navigation are two of the fundamental components that give a game its identity. Imagine your favorite FPS with a third person camera instead of first person. It’s arguably a completely different game. This decision has knock-on effects that can decimate or compound the future work required. For example, a first-person-only camera may not require any sort of player character model at all. However, the camera and navigation decision is not set in stone, and the goal at this point is to do just enough work to feel confident making that decision before adding more detail across all assets.&lt;/p&gt;
+
+&lt;p&gt;At this point, I’ve decided on a third-person camera with classic PC 3D platformer controls of WASD keys for moving and strafing, and the mouse to pan the viewport up and down within fixed bounds.&lt;/p&gt;
+
+&lt;p&gt;I did a little copying and pasting for the NPCs, then gave it a test run.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog02-04.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Entering the 3rd dimension&quot; title=&quot;Entering the 3rd dimension&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Entering the 3rd dimension&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;The simplicity of the main game code from the 2D version of the game allowed me to port it almost trivially to a 3D context. The primary difficulties were actually in modifying the hardcoded position and rotation animations (via tweens) for a 3D context. There’s an &lt;a href=&quot;https://docs.godotengine.org/en/stable/tutorials/3d/using_transforms.html&quot;&gt;introductory walkthrough&lt;/a&gt; in Godot docs that helped me begin to understand the complexities of transforms in 3D. I wanted to spend a little time digging into it even if I’d be throwing this code out simply to prime my brain for the next time I encounter this problem.&lt;/p&gt;
+
+&lt;p&gt;After porting, the demo looked like this:&lt;/p&gt;
+
+&lt;video src=&quot;/images/devlog02-03.mp4&quot; controls=&quot;&quot; width=&quot;100%&quot;&gt;&lt;/video&gt;
+
+&lt;p&gt;The demo above isn’t 1-to-1 feature complete compared to the 2D version. It doesn’t include the intro cutscene, nor the custom overhead dialogue bubbles, nor the splash scene or end game scenes. But those aren’t really important yet because I won’t be doing any playtesting for this version without 3D assets at the next level of fidelity.&lt;/p&gt;
+
+&lt;h2 id=&quot;blender-as-a-3d-tool&quot;&gt;Blender as a 3D tool&lt;/h2&gt;
+
+&lt;p&gt;Although Godot is a 2D and 3D game engine with a full IDE and GUI, it intentionally leans on external tools for complex 3D modeling and animation. One of the reasons I chose Godot as the game engine is its first class support for multifunction 3D design tool Blender.&lt;/p&gt;
+
+&lt;p&gt;I’m already familiar with Blender, taking my first baby steps with the free, OSS application 3 or 4 years ago. Over that time, my dabbling has become more regular and started to cover more of the tools available in Blender. Separately, this includes basic 3D modeling, environment modeling, character modeling, material creation, rigging, lighting, 2D animation, and 3D animation.&lt;/p&gt;
+
+&lt;p&gt;This past experience making 3D assets, although at varying degrees of beginner level, is what gave me enough confidence to commit to a 3D game. I’m very much clear on that fact it’s going to be an uphill battle, but I legitimately enjoy working in 3D enough to push through most of the challenges I’ll face. Additionally, working in 3D makes up for my non-mastery (to say the least) of art fundamentals like perspective, lighting and shadows, and anatomy.&lt;/p&gt;
+
+&lt;p&gt;For the level of quality I’m targeting, I need to create the environments, characters, and most animations in Blender and import them into Godot. In game development, the flow of assets between different applications is called an asset pipeline.&lt;/p&gt;
+
+&lt;p&gt;There will always be impedance mismatches between tools; most tools’ export formats will not be 100% readable by the importing application. My next goal was to quickly and efficiently understand the current (but changing) limitations of the interface between Blender and Godot.&lt;/p&gt;
+
+&lt;p&gt;I started where I usually start by skimming the official Godot documentation, then watching a few tutorials. These two sources were enough to get the broad strokes:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;When imported into the Godot project’s file system, Blender files can be used as-is and even dragged into an existing Godot scene (this is &lt;em&gt;huge&lt;/em&gt;). &lt;a href=&quot;https://docs.godotengine.org/en/stable/tutorials/assets_pipeline/importing_3d_scenes/available_formats.html#importing-blend-files-directly-within-godot&quot;&gt;Under the hood&lt;/a&gt;, Godot is transparently monitoring changes in the file, then running Blender’s glTF exporter automatically.&lt;/li&gt;
+  &lt;li&gt;Appending a special suffix to your objects in Blender will automatically add functionality on the Godot side, such as making a sidecar collision Node3D or ignoring import on that object.&lt;/li&gt;
+  &lt;li&gt;There is very basic support in Godot for the default physically-based rendering shaders in Blender and their user-defined relationship to the mesh via the UV map.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;The only way to find the exact limits was to get modeling.&lt;/p&gt;
+
+&lt;h2 id=&quot;3d-modeling&quot;&gt;3D Modeling&lt;/h2&gt;
+
+&lt;p&gt;I started with the environment model &lt;a href=&quot;https://book.leveldesignbook.com/process/blockout&quot;&gt;blockout&lt;/a&gt;. In the case of my game, the environment model is an indoor bar and venue stage area. It’s essentially 3 linked rooms.&lt;/p&gt;
+
+&lt;p&gt;One of the toughest parts of modeling environments for me is getting the proportions right. In my first attempt, I tried to work in all 3 dimensions at the same time, which resulted in me getting the initial measurements incorrect to the point where it was easier just to start over.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog02-05.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;I messed up the proportions really bad on this one and had to start over.&quot; title=&quot;I messed up the proportions really bad on this one and had to start over.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;I messed up the proportions really bad on this one and had to start over.&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;However, even with a very incorrectly proportioned room, I still found that the asset pipeline was functioning properly so far and I could even explore a room with walls in 3D for the first time.&lt;/p&gt;
+
+&lt;video src=&quot;/images/devlog02-06.mp4&quot; controls=&quot;&quot; width=&quot;100%&quot;&gt;&lt;/video&gt;
+
+&lt;p&gt;In my second attempt, I went with a tried-and-true approach of starting with a top-down floor plan first. Additionally, I found a properly proportioned humanoid 3D model that I could duplicate liberally around the scene to keep my room proportions in check.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog02-07.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;A 2D top-down floor plan seems like the best place to start for me.&quot; title=&quot;A 2D top-down floor plan seems like the best place to start for me.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;A 2D top-down floor plan seems like the best place to start for me.&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;I felt okay about the 2D proportions enough to begin extruding the planes into boxes. This step was also hard!&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;I wasn’t sure which meshes I should keep in one object.&lt;/li&gt;
+  &lt;li&gt;I wasn’t sure how to share walls between adjacent rooms.&lt;/li&gt;
+  &lt;li&gt;I wasn’t sure how to properly extrude walls to a proper thickness, or whether I should at all.&lt;/li&gt;
+  &lt;li&gt;I wasn’t sure whether it was right to use a template model for each door frame.&lt;/li&gt;
+  &lt;li&gt;I wasn’t sure how to handle the face normal direction on planar walls.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;I spent a lot of time Googling Chicago bar floor plan templates, dimensions of toilets, bar and chair heights, etc. The aesthetic I’m going for certainly isn’t going to by hyper-realistic, but I don’t trust myself as an artist enough yet to wing it. Leaning on reality harder at first is probably the best way to keep myself in the ballpark.&lt;/p&gt;
+
+&lt;p&gt;I did the best I could and finished a 3D blockout, keeping furniture shapes very simple and spending no time on detail.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog02-08.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Deeper into the 3D blockout.&quot; title=&quot;Deeper into the 3D blockout.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Deeper into the 3D blockout.&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;I mostly used separate objects for logically different meshes, if only to better match the Blender/Godot import conventions. I did add some stairs and inclines because I felt their relationship with the player movement code was important to de-risk early.&lt;/p&gt;
+
+&lt;p&gt;I did a couple quick rounds of iteration importing the room into Godot, positioning the NPCs, and fixing layout issues.&lt;/p&gt;
+
+&lt;video src=&quot;/images/devlog02-09.mp4&quot; controls=&quot;&quot; preload=&quot;none&quot; width=&quot;100%&quot;&gt;&lt;/video&gt;
+
+&lt;h2 id=&quot;lighting&quot;&gt;Lighting&lt;/h2&gt;
+
+&lt;p&gt;The next task was lighting. In theory, it’d be nice to be able to import as much from Blender as possible, including all lighting, materials, and shader definitions.&lt;/p&gt;
+
+&lt;p&gt;Although Godot has limited support for importing light objects from Blender, the Godot docs recommend creating and placing lights in Godot instead. The light object types don’t match one-to-one in Blender/Godot, nor do their parameters.&lt;/p&gt;
+
+&lt;p&gt;I gave it a shot though, adding some light types into Blender and seeing how they were handled in Godot. The result wasn’t great nor useful. Adding lights in Godot directly definitely seemed like the right direction.&lt;/p&gt;
+
+&lt;p&gt;I pulled each of the different native light types into the Godot level scene and jockeyed the parameters. Godot’s live preview pane is super helpful in expediting the feedback cycle.&lt;/p&gt;
+
+&lt;p&gt;The Godot WorldEnvironment node has lots of inscrutably-named rendering settings like SSR, SSAO, SSIL, and SDFGI. Some are new and experimental. I watched a few YouTube tutorials again to get the lay of the land, but otherwise I tried to keep my changes from the baseline to a minimum in this experimental stage.&lt;/p&gt;
+
+&lt;p&gt;I decided to settle on subdued and moody lighting that produces plenty of shadows. I only lit half the venue area though.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog02-10.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;More interesting lighting than a sun.&quot; title=&quot;More interesting lighting than a sun.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;More interesting lighting than a sun.&lt;/div&gt;&lt;/div&gt;
+
+&lt;h2 id=&quot;materials-and-shaders&quot;&gt;Materials and shaders&lt;/h2&gt;
+
+&lt;p&gt;With lighting, I could now properly see the effect of materials. Up to now, I was using the base white-ish shader.&lt;/p&gt;
+
+&lt;p&gt;From what I’d read, shaders, like lighting, are another part of the Blender/Godot interface that is intentionally underbaked. Each app has its own rendering engine and shaders are necessarily tailored to it. Regardless, it’s still nice to be able to understand the limitations.&lt;/p&gt;
+
+&lt;p&gt;I know eventually I’ll have to write/design my own shaders in Godot, either as the base layer or on top of the base materials configured in Blender. &lt;a href=&quot;https://godotshaders.com/&quot;&gt;Godot shaders&lt;/a&gt; has a bunch of recipes I’ll be looking at once I’m at the stage where I’m digging deep into polishing the aesthetic.&lt;/p&gt;
+
+&lt;p&gt;If my skills as an artist were stronger, I’d probably start with polished concept art then do the hard work of finding out how to execute that concept art by writing shaders and tweaking lighting. However, my approach is to experiment with the tools at my disposal in a sandbox until I find an aesthetic both I’m satisfied with and know I can execute (by nature of already having executed it).&lt;/p&gt;
+
+&lt;p&gt;Back to the practical:&lt;/p&gt;
+
+&lt;p&gt;My first experiment in probing the Blender/Godot interface was adding a material in Blender with a single Principled BSDF node with a flat color. Applying this to a one face of a wall worked as expected. So far so good.&lt;/p&gt;
+
+&lt;p&gt;Next was doing some kind of interesting variation of the base color with a color ramp or voronoi texture generator. The color input was completely ignored in Godot. Strike out there.&lt;/p&gt;
+
+&lt;p&gt;Next was applying an image texture node to base color. I downloaded a few realistic textures from PolyHaven including roughness and normal maps.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog02-11.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Simple material setup.&quot; title=&quot;Simple material setup.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Simple material setup.&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;I wired these up and they worked! However, it’s hard to tell whether any of the normal or displacement is appearing correctly.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog02-12.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Slapping a few textures on.&quot; title=&quot;Slapping a few textures on.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Slapping a few textures on.&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;This is certainly not the aesthetic I’m going for, but it’s good to know that a image texture plus PBR node system in Blender is possible.&lt;/p&gt;
+
+&lt;p&gt;There’s still plenty to explore regarding materials in Godot. While I ponder my target aesthetic more, my next move is to continue onto base character modeling, rigging, and animation.&lt;/p&gt;
+
+&lt;p&gt;Until next time.&lt;/p&gt;
+</description>
+        <pubDate>Tue, 26 Mar 2024 18:31:00 -0500</pubDate>
+        <link>https://twocentstudios.com/2024/03/26/indie-game-devlog-02/</link>
+        <guid isPermaLink="true">https://twocentstudios.com/2024/03/26/indie-game-devlog-02/</guid>
+        
+        <category>indiegame</category>
+        
+        
+      </item>
+    
+      <item>
+        <title>Indie Game Devlog 01 - Intro Act in 2D</title>
+        <description>&lt;p&gt;I’m making an indie game about a high school rock band playing a show and trying to decide their future.&lt;/p&gt;
+
+&lt;p&gt;(Yes, I’m practicing my pitch already, and yes, I realize it still has a ways to go, haha.)&lt;/p&gt;
+
+&lt;p&gt;As briefly mentioned in the last devlog, this idea started as the kernel of something similar a few years ago. The bones of the story are autobiographical, but the night the game takes place will be completely fictional.&lt;/p&gt;
+
+&lt;h2 id=&quot;planning&quot;&gt;Planning&lt;/h2&gt;
+
+&lt;p&gt;Over the course of a few weeks, I started filling up a document with various ideas about the game while I was working on other projects.&lt;/p&gt;
+
+&lt;p&gt;The first three decisions were:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;what genre of game I wanted to make&lt;/li&gt;
+  &lt;li&gt;what scope could I reasonably target as a self-funded, first-time solo game developer&lt;/li&gt;
+  &lt;li&gt;what unique things can I bring to the table&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;These three decisions are inexorably linked. After all, 60-hour playtime FPSes are out of reach. I don’t have any unique takes on the tower defense genre, nor would I sign myself up to playtest my own version for hundreds of hours.&lt;/p&gt;
+
+&lt;p&gt;Beautifully-rendered narrative games with a few puzzles and a few fetch quests seem to be the most fitting of my requirements.&lt;/p&gt;
+
+&lt;p&gt;My background is in making music and playing in bands, specifically rock bands below the mainstream. This hobby has a humble but steady following over the last two or three decades, especially in the US. And although stories about the underground music scene pop up from time to time in the mainstream (see: Scott Pilgrim, High Fidelity, School of Rock, Nick &amp;amp; Nora’s Infinite Playlist), in the video game world they’re mostly non-existent. Plenty of games have great soundtracks, but music-focused games are overrepresented as rhythm games.&lt;/p&gt;
+
+&lt;p&gt;I realized I’d love to write a story about what it was like to be in the local music scene of my Chicago suburb. There was plenty of inter-band and inter-personal drama, plenty of growing-up happening, and plenty of ambitions to share our music more broadly. Telling this story over one night would keep the scope naturally small. There’d be plenty of major and minor characters at a show to guide the narrative. The entire game could take place in a small music venue; an interesting environment that doesn’t require building out and populating acres of wilderness or dungeons or entire cities.&lt;/p&gt;
+
+&lt;p&gt;There is plenty of prior art for narrative games. And at first I was ready to commit to something with literally zero unique game mechanics besides walking around and talking to NPCs in some order. However, as I get further along, I’m starting to think I may need at least a few unique mechanics or minigames to ensure the pacing feels right.&lt;/p&gt;
+
+&lt;p&gt;And speaking of pacing, once the story beats were roughed out, I realized I could divide the story up in a way where I could make the first vertical slice in a somewhat economical way. Sure, the intro act will require me to model the whole venue, but not all the characters, nor write all the dialog.&lt;/p&gt;
+
+&lt;p&gt;So my decisions were mostly made:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;I’ll make a narrative game with some light mechanics and mini games and free exploration within a limited environment&lt;/li&gt;
+  &lt;li&gt;The game will be scoped to mostly one building, with a few acts, and with gradually expanding scope&lt;/li&gt;
+  &lt;li&gt;The story and art will be the unique parts&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;h2 id=&quot;story&quot;&gt;Story&lt;/h2&gt;
+
+&lt;p&gt;I’ve modeled my story arc as several conflicts. There’s a main overarching conflict that’s somewhat abstract but intended to be the most gratifying when it’s resolved. Then there are several smaller conflicts that drive the plot and player motivation from the beginning of the game to the end.&lt;/p&gt;
+
+&lt;p&gt;My goal in writing the intro scene was to introduce each of these conflicts amongst the characters that are involved. This will hopefully give the player motivation to keep playing to see how each conflict is resolved.&lt;/p&gt;
+
+&lt;p&gt;The player will have a fair amount of agency in exploring the story and getting to the end, although my ambitions are not to have serious narrative branching or multiple endings as a key differentiator. The player freedom makes it easier and harder to craft a cohesive narrative than a book or movie. Movies require very tight writing and plot progression, a skill I do not possess yet. Games with loose writing are more forgivable because the narrative is broken up between (interesting) gameplay.&lt;/p&gt;
+
+&lt;p&gt;I have a list of key characters. And a list of optional characters I may need to introduce in order to provide some insight to the main character regarding the overarching conflict.&lt;/p&gt;
+
+&lt;p&gt;There are several off-the-shelf tools for making narrative games or just branching dialogue. The first step was to pick any sort of dialogue system that could spit out an HTML game-like experience and start writing. After all, it wouldn’t make any sense to do any art or game engine research if I didn’t know what story I’d be supporting.&lt;/p&gt;
+
+&lt;p&gt;I chose Yarnspinner at first (although I eventually ported away from it). Writing the first few scenes was super helpful in falling into a bunch of ambiguous decisions without having to think about them much. I started to naturally write characters a certain way. The story beats started to naturally flow in and out of the dialogue. It was obvious what order the scenes needed to progress. And the end of the intro act also fell into place.&lt;/p&gt;
+
+&lt;p&gt;I’ve never really written screenplay-type dialogue before so writing a half-dozen scenes took a few days. I also decided not spend any time up front nailing down character names, instead using the names these characters were based on. This has been helpful in keeping track of the characters in my head.&lt;/p&gt;
+
+&lt;p&gt;Using the Yarnspinner plugins, I could step through the dialogue like I was playing a game and see how it felt. In this framework, I modeled the player walking around and choosing a character to speak to as a simple dialogue menu of choices with the built-in functionality.&lt;/p&gt;
+
+&lt;h2 id=&quot;game-engine&quot;&gt;Game engine&lt;/h2&gt;
+
+&lt;p&gt;I chose Godot as the game engine for this project for a few reasons. If I’d have started this project a year ago, Unity would be the easy choice. I even have a little experience working in Unity for an augmented reality project. However, after the big Unity pricing and licensing debacle of 2023, it seemed like not a stable way to move forward.&lt;/p&gt;
+
+&lt;p&gt;I also could have chosen the Apple platforms-only SceneKit. However, the deal-breakers are inability to port to other systems without a complete rewrite, lack of tutorial content on places like YouTube and Stack Overflow, and its relative abandonware status in Apple (even considering the recent launch of VisionOS).&lt;/p&gt;
+
+&lt;p&gt;I’d seen a lot of support for Godot on social media over that time period, and the kind of games that seemed possible to make fell well within my ambitions. Plus, I knew if I had to put down the project for an extended period of time, I wouldn’t need to keep paying a subscription fee nor risk losing access to all my progress.&lt;/p&gt;
+
+&lt;p&gt;I spent some time watching basics tutorials on YouTube and reading the documentation. After seeing the basic flows, I felt even more comfortable Godot would be a fitting choice.&lt;/p&gt;
+
+&lt;p&gt;Although my target is for the game to be 3D or 2.5D, one of the best decisions I made was to create the entire intro act in very basic 2D components with no custom art before even thinking about 3D. The rest of this post will be discussing the 2D version.&lt;/p&gt;
+
+&lt;h2 id=&quot;development&quot;&gt;Development&lt;/h2&gt;
+
+&lt;p&gt;Staring at a blank canvas is tough. I probably spent a little bit too long in the tutorial-hell because adding that first node is daunting.&lt;/p&gt;
+
+&lt;p&gt;It was one step at a time though. I added a ColorRect2D for my character, added a few more to make 4 walls. I added collision rects. I added some arrow key movement code from a tutorial to my player script. And suddenly I had a character.&lt;/p&gt;
+
+&lt;video src=&quot;/images/devlog01-01.mp4&quot; controls=&quot;&quot; width=&quot;100%&quot;&gt;&lt;/video&gt;
+
+&lt;p&gt;It was exciting seeing even this working. I felt a new version of that joy I feel when the first version of an iOS app puts some list elements up on the screen.&lt;/p&gt;
+
+&lt;p&gt;Next was the dialogue system. All that time I spent planning to use Yarnspinner fell apart when I realized it required the C# version of the Godot binary. Although this isn’t the end of the world, I wanted to limit the amount of moving parts I was working with. I’d already decided on using GDScript as my main programming language to take advantage of that simplicity. Surely there were other solutions.&lt;/p&gt;
+
+&lt;p&gt;Godot’s plugin system is very convenient. It only took a few searches to find a well-supported &lt;a href=&quot;https://github.com/nathanhoad/godot_dialogue_manager&quot;&gt;DialogueManager&lt;/a&gt; plugin that had almost all the features of Yarnspinner, but with slightly different syntax and a simpler data model.&lt;/p&gt;
+
+&lt;p&gt;One big difference I teased out was that Yarnspinner does it own internal state management whereas DialogueManager is stateless and requires the dev to expose their own state. For example, Yarnspinner will automatically keep a “visited” count for each named section of dialogue that you can access in your normal game code, while DialogueManager will not. Each strategy has its pros and cons, but I realized at least initially having the state management be a bit less &lt;em&gt;magic&lt;/em&gt; would be a boon to my understanding while still getting my feet wet.&lt;/p&gt;
+
+&lt;p&gt;DialogueManager has great progressive onboarding: I could start by providing a dialogue file and using an example UI with a single line of code. When it came time for customization, I could duplicate the reference code and UI and make my changes.&lt;/p&gt;
+
+&lt;p&gt;After a quick bit of formatting work translating my script from Yarnspinner syntax to DialogueManager syntax, I was ready to add an NPC and a way to trigger a dialogue scene.&lt;/p&gt;
+
+&lt;p&gt;The DialogueManager dev also had a &lt;a href=&quot;https://www.youtube.com/watch?v=UhPFk8FSbd8&quot;&gt;simple tutorial&lt;/a&gt; for setting up a basic NPC action system, which I followed and later modified as needed.&lt;/p&gt;
+
+&lt;p&gt;I now had a player and an NPC who could talk:&lt;/p&gt;
+
+&lt;video src=&quot;/images/devlog01-02.mp4&quot; controls=&quot;&quot; width=&quot;100%&quot;&gt;&lt;/video&gt;
+
+&lt;p&gt;From here it was slowly chipping away at the TODOs I saw in front of me. Although I considered making more natural 2D art that I was comfortable throwing away later, I held off and did the best I could with in-engine colored rectangles.&lt;/p&gt;
+
+&lt;p&gt;The next few problems I solved were:&lt;/p&gt;
+
+&lt;h4 id=&quot;how-do-i-give-directionality-to-the-player-how-do-i-show-that&quot;&gt;How do I give directionality to the player? How do I show that?&lt;/h4&gt;
+
+&lt;p&gt;My initial movement code assumed the player could only strafe while facing up, not rotate. I updated the movement code to rotate the player. I added what looked like eyes to show which direction the player was facing.&lt;/p&gt;
+
+&lt;video src=&quot;/images/devlog01-03.mp4&quot; controls=&quot;&quot; width=&quot;100%&quot;&gt;&lt;/video&gt;
+
+&lt;h4 id=&quot;where-do-i-place-my-npcs-around-the-set&quot;&gt;Where do I place my NPCs around the set?&lt;/h4&gt;
+
+&lt;p&gt;Always trying to keep in mind that this was a prototype, I wanted to put the NPCs somewhere natural but also not spend a lot of time over-designing a rectangle-based environment. Doing the layout forced me to make clearer decisions than I’d needed to when writing the script.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog01-04.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Editor layout of the venue with collision rectangles visible&quot; title=&quot;Editor layout of the venue with collision rectangles visible&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Editor layout of the venue with collision rectangles visible&lt;/div&gt;&lt;/div&gt;
+
+&lt;h4 id=&quot;how-do-i-support-a-non-linear-story&quot;&gt;How do I support a non-linear story?&lt;/h4&gt;
+
+&lt;p&gt;The first script I wrote was non-linear for most of the character interactions. However, when laying out the characters on the stage and editing the script, I felt it’d be more straightforward to linearize the intro part of the story, where all the conflicts need to be set up precisely in order for the rest of the story to make sense and be playable non-linearly.&lt;/p&gt;
+
+&lt;h4 id=&quot;how-do-the-npcs-move-in-and-out-after-dialogue-scenes&quot;&gt;How do the NPCs move in and out after dialogue scenes?&lt;/h4&gt;
+
+&lt;p&gt;I had to modify the story beats a bit so NPCs could move to new places around the scene without getting blocked by the player. In many games, this is also accomplished by locking player input for a bit while the NPC leaves the player’s vicinity.&lt;/p&gt;
+
+&lt;h4 id=&quot;how-does-tweening-and-animation-work&quot;&gt;How does tweening and animation work?&lt;/h4&gt;
+
+&lt;p&gt;I set up markers, paths, and programmatic tweens to try out some of the basic functionality of Godot. A lot of this was not strictly necessary for the prototype, but a good opportunity to learn Godot and game programming fundamentals. After all, the whole point of starting in 2D was learning the basics so that the complexities of 3D wouldn’t be overwhelming.&lt;/p&gt;
+
+&lt;h4 id=&quot;how-do-i-keep-track-of-states&quot;&gt;How do I keep track of states?&lt;/h4&gt;
+
+&lt;p&gt;I noticed familiar concepts like state machines in many Godot tutorials. I saw heavyweight and lightweight solutions. In the end I went with a lightweight solution of enums and a few booleans to keep track of the player’s progression in talking to each NPCs. After the intro act, this strategy may become too difficult to maintain, but for now it’s fine.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog01-05.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Very simple state management&quot; title=&quot;Very simple state management&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Very simple state management&lt;/div&gt;&lt;/div&gt;
+
+&lt;h4 id=&quot;how-do-i-do-fetch-quests&quot;&gt;How do I do fetch quests?&lt;/h4&gt;
+
+&lt;p&gt;Fetch quests are a pretty common element in RPGs. A few fetch quests fell out of the script by accident while I was writing it. It seemed like a natural fit to have an NPC give the player “wristbands” to give to some other NPCs as a way to provide a small goal. This required a lightweight items overlay, so I had to learn about UI overlays in Godot.&lt;/p&gt;
+
+&lt;p&gt;I then added one more fetch quest: picking up a merch box from backstage and delivering it to another NPC. This required learning about modifying the node hierarchy at runtime and reusing nodes.&lt;/p&gt;
+
+&lt;video src=&quot;/images/devlog01-06.mp4&quot; controls=&quot;&quot; width=&quot;100%&quot;&gt;&lt;/video&gt;
+
+&lt;h4 id=&quot;how-should-i-make-a-cut-scene&quot;&gt;How should I make a cut scene?&lt;/h4&gt;
+
+&lt;p&gt;The first scene of my script was the band driving together to the venue. This wouldn’t have the same control scheme and would look more like a cut scene. I once again leaned into my ColorRect2D art style and drew up a van and my 3 main characters. I even went as far as animating them slightly so it looked like the car was moving.&lt;/p&gt;
+
+&lt;video src=&quot;/images/devlog01-07.mp4&quot; controls=&quot;&quot; width=&quot;100%&quot;&gt;&lt;/video&gt;
+
+&lt;h2 id=&quot;exporting-version-01&quot;&gt;Exporting version 0.1&lt;/h2&gt;
+
+&lt;p&gt;I finally had a playable version of my intro level finished.&lt;/p&gt;
+
+&lt;p&gt;The whole point of doing this prototype was to get some initial feedback about the story. So I needed a way to export it.&lt;/p&gt;
+
+&lt;p&gt;I already have an active iOS/macOS developer account and I’m working on a recent MacBook, so exporting a code signed and notarized app binary was doable even without the kind of detailed tutorials I was used to. Just the official Godot documentation was enough (although I had to fill in a few of the blanks myself).&lt;/p&gt;
+
+&lt;p&gt;Exporting for Windows from macOS was the wild west. I think I did it, but I haven’t sent it to any testers yet, so I can’t say for sure whether it worked. I’ll also need to revisit the procedure to modify the app icon and metadata.&lt;/p&gt;
+
+&lt;h2 id=&quot;playtesting&quot;&gt;Playtesting&lt;/h2&gt;
+
+&lt;p&gt;I sent the app to two friends and got some great feedback from them.&lt;/p&gt;
+
+&lt;p&gt;The rectangle art style was confusing in some parts, but they eventually figured out you were controlling a person from top-down and not driving a car.&lt;/p&gt;
+
+&lt;p&gt;I got positive feedback on some of the main conflict points I was trying to set up.&lt;/p&gt;
+
+&lt;p&gt;The main negative feedback was that the characters were hard to keep track of. This was mostly expected as I had kept the default dialogue UI anchored to the bottom of the screen. I also hadn’t linked the character name to its only visual identifier, the shirt color.&lt;/p&gt;
+
+&lt;p&gt;Another bit of negative feedback was that the dialogue was too long overall, or perhaps it felt tedious alongside the mechanic of hitting the action button to display each line.&lt;/p&gt;
+
+&lt;h2 id=&quot;changes-for-version-02&quot;&gt;Changes for version 0.2&lt;/h2&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;I added some more detail to the character designs to make it more clear of the top-down perspective.&lt;/li&gt;
+  &lt;li&gt;I did some light editing of the script. I think I’ll need to do a fair bit more, but I’m going to wait until more of the real mechanics are in place to make that decision.&lt;/li&gt;
+  &lt;li&gt;I implemented a custom dialogue UI that appears above the speaking character.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;video src=&quot;/images/devlog01-08.mp4&quot; controls=&quot;&quot; width=&quot;100%&quot;&gt;&lt;/video&gt;
+
+&lt;h2 id=&quot;minigame&quot;&gt;Minigame&lt;/h2&gt;
+
+&lt;p&gt;Another big piece I wanted to put in place alongside the 2D prototype was the main minigame that will appear between story acts.&lt;/p&gt;
+
+&lt;p&gt;The band will need to write a song before the end of the night (driven by one of the story conflicts). In the mini game, the player will help piece together a song from various part options. For example, they’ll choose what the guitar will play from several options. Then bass and drums and vocals. Between the intro and first act, they’ll write the verse. Then between act 1 and act 2 they’ll write the chorus. And etc.&lt;/p&gt;
+
+&lt;p&gt;I did a session in Logic writing a song with the various part options split up. I don’t love the song yet so I’ll probably try again a few more times. But I do think the overall concept of the mini game is looking promising.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/devlog01-09.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Some song demoing in Logic Pro&quot; title=&quot;Some song demoing in Logic Pro&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Some song demoing in Logic Pro&lt;/div&gt;&lt;/div&gt;
+
+&lt;h2 id=&quot;next-steps&quot;&gt;Next steps&lt;/h2&gt;
+
+&lt;p&gt;I feel good enough about the 2D prototype and my understanding of the fundamentals of Godot that I’m ready to move on to the 3D version.&lt;/p&gt;
+
+&lt;p&gt;The 3D version will have many many more unknowns I need to uncover as soon as I can.&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;On the game play and programming side, there’s camera movement and 3D navigation.&lt;/li&gt;
+  &lt;li&gt;On the art side, there’s basically everything: the aesthetics, the level design, the character design, the animations, the overall fidelity of each.&lt;/li&gt;
+  &lt;li&gt;On the integration side, there’s Blender and Godot and how to keep the iteration pipeline moving.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;I’ll have an update on these in the next devlog.&lt;/p&gt;
+</description>
+        <pubDate>Thu, 21 Mar 2024 11:32:00 -0500</pubDate>
+        <link>https://twocentstudios.com/2024/03/21/indie-game-devlog-01/</link>
+        <guid isPermaLink="true">https://twocentstudios.com/2024/03/21/indie-game-devlog-01/</guid>
+        
+        <category>indiegame</category>
+        
+        
+      </item>
+    
+      <item>
+        <title>Indie Game Devlog 00</title>
+        <description>&lt;p&gt;As of last month, I’ve started making a narrative indie game.&lt;/p&gt;
+
+&lt;h2 id=&quot;long-sidebar-about-starting-projects&quot;&gt;Long sidebar about starting projects&lt;/h2&gt;
+
+&lt;p&gt;Starting new projects at this stage of my life/career carries a duality.&lt;/p&gt;
+
+&lt;p&gt;On one hand, it’s easier than it’s ever been. I have 2 decades of compounding knowledge, both general and specific to starting and finishing projects. I can see the future better than I’ve ever been able to. I can divide up a project into checkpoints, checkpoints into sub-checkpoints, sub-checkpoints into tasks, tasks into sub-tasks. I know that I need to pace myself. I know I need to measure out my initial motivation, and find new sources of motivation along the journey to keep me going.&lt;/p&gt;
+
+&lt;p&gt;On the other hand, it’s harder than it’s ever been. My experience has given me scar tissue. I’m more risk averse due to past failures. Not wanting to repeat past mistakes nudges me away from paths that may have cleared since I encountered them blocked. I don’t have the energy of relative youth. Having an accurate prediction of the arduousness of the project intimidates me from starting. Being a self-supporting adult carries its own societal expectations of how I should be spending my working years.&lt;/p&gt;
+
+&lt;p&gt;All this is to say I’ve started a new project.&lt;/p&gt;
+
+&lt;p&gt;The me of long past would have announced my project long before I wrote the first word, typed the first line of code, drew the first line. The me now knows himself well enough to know that it’s equal odds that I lose interest and give up on the project before I have anything to show the world.&lt;/p&gt;
+
+&lt;p&gt;Luckily, I’ve made it to that first early checkpoint in this project! Far enough at least that I feel I can write this devlog in good conscience.&lt;/p&gt;
+
+&lt;h2 id=&quot;my-history-with-games&quot;&gt;My History with Games&lt;/h2&gt;
+
+&lt;p&gt;This section’s going to be self-indulgent. I think it’s useful for me to take a look back at what experiences have contributed to my desire to start this over-ambitious project.&lt;/p&gt;
+
+&lt;p&gt;Watching a lot of &lt;a href=&quot;https://www.youtube.com/@NoclipDocs&quot;&gt;Noclip&lt;/a&gt; game documentaries lately, it feels like the vast majority of game devs who have hit the level of success you need to get a documentary made about you are people who starting making games almost as early as they started playing them.&lt;/p&gt;
+
+&lt;p&gt;I can’t really say I fall into that former category. I have in my own way always loved video games, but usually as a distraction to other pursuits like music and art. I played some of the early NES games at my aunt and uncle’s house. My parents wouldn’t let me have a tv-bound console at home, but they did let my brother and I share a Game Boy for our bi-monthly car trips to see our grandparents.&lt;/p&gt;
+
+&lt;p&gt;I was in elementary school at the time and &lt;a href=&quot;https://en.wikipedia.org/wiki/The_Legend_of_Zelda:_Link%27s_Awakening&quot;&gt;Zelda: Link’s Awakening&lt;/a&gt; drove my first game design attempt. My neighborhood friend and I drew our own dungeon designs with pencil and paper. We distributed keys and locked doors. Placed enemies and boss rooms. Doodled inelegantly. Of course, we didn’t really know how to take things any further than crude drawings at this point.&lt;/p&gt;
+
+&lt;p&gt;Later in this era, I’d say the other games that left an impact on me were &lt;a href=&quot;https://en.wikipedia.org/wiki/The_Legend_of_Zelda:_Ocarina_of_Time&quot;&gt;Zelda: Ocarina of Time&lt;/a&gt;, &lt;a href=&quot;https://en.wikipedia.org/wiki/Super_Mario_64&quot;&gt;Super Mario 64&lt;/a&gt;, &lt;a href=&quot;https://en.wikipedia.org/wiki/GoldenEye_007_(1997_video_game)&quot;&gt;Golden Eye 007&lt;/a&gt;, and &lt;a href=&quot;https://en.wikipedia.org/wiki/Half-Life_(video_game)&quot;&gt;Half-Life&lt;/a&gt;. For most of my life, how 3D games worked was a complete mystery to me. Everything from 3D modeling to textures to cameras to networking.&lt;/p&gt;
+
+&lt;p&gt;I started programming for real with my &lt;a href=&quot;https://en.wikipedia.org/wiki/TI-83_series&quot;&gt;TI-83+ graphing calculator&lt;/a&gt; in middle school. I made some really simple games with the &lt;a href=&quot;https://en.wikipedia.org/wiki/TI-BASIC&quot;&gt;TI-BASIC&lt;/a&gt; language. There were some understandable limitations programming on a calculator for a 1-bit black &amp;amp; white screen. But this prepared me for using Visual Basic 6 and then C++ in freshman and sophomore year of high school. My final project in the C++ class was a mini-golf game that printed ASCII to the command line. I think the inspiration for that was a mini-golf game I would play on my mom’s flip phone.&lt;/p&gt;
+
+&lt;p&gt;In this era my game playing was more social and recreational: &lt;a href=&quot;https://en.wikipedia.org/wiki/Team_Fortress_Classic&quot;&gt;Team Fortress Classic (TFC)&lt;/a&gt; on PC and &lt;a href=&quot;https://en.wikipedia.org/wiki/Halo_2#Multiplayer&quot;&gt;Halo 2&lt;/a&gt; multiplayer on Xbox. Although I played Adobe/Macromedia Flash games in this era, I never went beyond the short movie making into ActionScript. I never got into the very popular modding scene for TFC/Half-Life. Choosing either of those hobbies instead of making music throughout high school probably could have pushed me into game programming or computer science in college instead of electrical/computer engineering.&lt;/p&gt;
+
+&lt;p&gt;After college I continued to dabble in games when I had access to them. I played a few subsequent Zelda-series games. Some first person shooters. &lt;a href=&quot;https://en.wikipedia.org/wiki/Resident_Evil_4&quot;&gt;Resident Evil 4&lt;/a&gt; definitely left a big impression on me.&lt;/p&gt;
+
+&lt;p&gt;I remember when the indie game golden age started. A friend of mine showed our group &lt;a href=&quot;https://en.wikipedia.org/wiki/Castle_Crashers&quot;&gt;Castle Crashers&lt;/a&gt; one night while we were hanging out. He even supported the fledging &lt;a href=&quot;https://en.wikipedia.org/wiki/Ouya&quot;&gt;Ouya&lt;/a&gt; console Kickstarter. We watched the very well produced &lt;a href=&quot;https://buy.indiegamethemovie.com/&quot;&gt;Indie Game The Movie&lt;/a&gt;. I love this movie for how well it illustrates the human condition of creating things. However, the lack of pulling-back-the-curtain segments regarding design or development combined with the scary numbers of 5+ (gasp) years it took to make those games probably scared me off from attempting a game.&lt;/p&gt;
+
+&lt;p&gt;I bought the Humble Indie Bundle V including &lt;a href=&quot;https://en.wikipedia.org/wiki/Braid_(video_game)&quot;&gt;Braid&lt;/a&gt;, &lt;a href=&quot;https://en.wikipedia.org/wiki/Super_Meat_Boy&quot;&gt;Super Meat Boy&lt;/a&gt;, and &lt;a href=&quot;https://en.wikipedia.org/wiki/Superbrothers:_Sword_%26_Sworcery_EP&quot;&gt;Sword &amp;amp; Sworcery&lt;/a&gt;. At that time I was pushing hard into my career change from electrical engineer to iOS engineer. Game dev, even at the indie level, was still a mystery to me.&lt;/p&gt;
+
+&lt;p&gt;2 other games I played in that era deeply affected my design sensibilities: &lt;a href=&quot;https://en.wikipedia.org/wiki/Gone_Home&quot;&gt;Gone Home&lt;/a&gt; and &lt;a href=&quot;https://en.wikipedia.org/wiki/BioShock_Infinite&quot;&gt;Bioshock Infinite&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;A friend of mine was raving on Twitter about how well done Gone Home was, so on a whim I bought it and played it through in one sitting. I remember expecting something completely different; after all, it had all the initial trappings of an FPS horror game. Upon finishing it, I remember liking the story, but being disappointed simply due to my expectations. At the time, a “game” had a certain definition to me. Gone Home broke that mold, and seemingly paved the way for hundreds of other innovative games since.&lt;/p&gt;
+
+&lt;p&gt;Bioshock Infinite had the initial trappings of classic AAA FPS gameplay, but the story felt deeper and more ambitious than anything I’d played up to then. &lt;a href=&quot;https://en.wikipedia.org/wiki/The_Last_of_Us&quot;&gt;The Last of Us&lt;/a&gt; series pushed that boundary even further.&lt;/p&gt;
+
+&lt;p&gt;My next era of gaming was getting a Switch and a one-generation-behind PS4. Of course, Nintendo continued to knock it out of the park with &lt;a href=&quot;https://en.wikipedia.org/wiki/Super_Mario_Odyssey&quot;&gt;Mario Odyssey&lt;/a&gt; and &lt;a href=&quot;https://en.wikipedia.org/wiki/The_Legend_of_Zelda:_Breath_of_the_Wild&quot;&gt;Zelda: Breath of the Wild&lt;/a&gt;. But the story of me finally having the courage to start my own indie game starts to get back on track during the pandemic.&lt;/p&gt;
+
+&lt;p&gt;I played &lt;a href=&quot;https://en.wikipedia.org/wiki/Firewatch&quot;&gt;Firewatch&lt;/a&gt; based on some glowing Twitter reviews and beautiful concept art. I played it through in maybe two sittings and enjoyed it enough to start digging into the making-of Game Developer Conference (GDC) talks. I continued pulling the thread on the GDC talks and learning more about all facets of game development from a interested spectator’s point of view.&lt;/p&gt;
+
+&lt;p&gt;I then played &lt;a href=&quot;https://en.wikipedia.org/wiki/A_Short_Hike&quot;&gt;A Short Hike&lt;/a&gt; – again, probably based on a swell of Twitter reviews. I absolutely adored the game. With this game, the “shortness” of the game finally hit me as a positive choice. It suddenly felt like a massive competitive advantage that you could make something so easily digestible yet impactful.&lt;/p&gt;
+
+&lt;p&gt;But it wasn’t until I found A Short Hike’s developer’s 30 minute &lt;a href=&quot;https://www.youtube.com/watch?v=ZW8gWgpptI8&quot;&gt;making-of GDC talk&lt;/a&gt; that pushed me to take the first false step into game dev. The talk succinctly mixed the backstory, trials, and crucially the technology and art behind the game in a way that finally felt accessible to me. And even though Adam obviously has years of very specific game dev experience, the fact that the initial release timeline of the game was 3 months made the idea of game dev feel attainable as long as the scope was limited.&lt;/p&gt;
+
+&lt;p&gt;After watching Adam’s talk, I sat down and wrote a one-pager concept for an indie game. The plot and mechanics were both very amorphous and very ambitious. I didn’t look at that document again until recently, but the idea itself stuck in my head well enough.&lt;/p&gt;
+
+&lt;p&gt;Fast forward a few years. I’ve played through many more reasonably apportioned indie games recently. &lt;a href=&quot;https://en.wikipedia.org/wiki/Old_Man%27s_Journey&quot;&gt;Old Man’s Journey&lt;/a&gt; was beautifully illustrated with a wholesome story. The &lt;a href=&quot;https://en.wikipedia.org/wiki/The_Haunted_Island,_a_Frog_Detective_Game&quot;&gt;Frog Detective&lt;/a&gt; saga was simple and written with so much personality. &lt;a href=&quot;https://en.wikipedia.org/wiki/Genesis_Noir&quot;&gt;Genesis Noir&lt;/a&gt; was unique and stunning and avant-garde. &lt;a href=&quot;https://en.wikipedia.org/wiki/Untitled_Goose_Game&quot;&gt;Untitled Goose Game&lt;/a&gt; perfected a highly playable concept. &lt;a href=&quot;https://en.wikipedia.org/wiki/Return_of_the_Obra_Dinn&quot;&gt;Return of the Obra Dinn&lt;/a&gt; was mind bending and unbelievably well crafted. &lt;a href=&quot;https://en.wikipedia.org/wiki/Tunic_(video_game)&quot;&gt;Tunic&lt;/a&gt;’s art, story, and mechanics left me in awe that a nearly solo team could create something so polished.&lt;/p&gt;
+
+&lt;p&gt;I’ve ever so slowly been soaking in game design, with each new game pushing my curiosity further. I finally feel like I understand the scope of an indie game well enough that it might be possible to make one.&lt;/p&gt;
+
+&lt;h2 id=&quot;the-story-i-want-to-tell&quot;&gt;The story I want to tell&lt;/h2&gt;
+
+&lt;p&gt;I went on a ski trip recently with an old friend. There’s plenty of time to chat on slopes, and we got far enough into game talk that I pitched that early version of the game I’d one-paged a few years ago. I think it was this mental exercise that finally made things click for me.&lt;/p&gt;
+
+&lt;p&gt;After sampling all these small, one-or-two-sitting indie games over the years with varying balances of story/mechanics/art, I finally understood how I actually wanted to combine all the pieces.&lt;/p&gt;
+
+&lt;p&gt;I like great-feeling mechanics as much as the next gamer, but I’ve never felt a particular affinity towards deriving the subtleties of a great platformer or endless runner. I never really got into fighting games. FPSes are so subtly different from one another that I can’t imagine I’d ever have a unique take on them. Turn-based RPGs bore me. I find crafting and management systems tedious. I’m rarely in the mood for the mental overhead of pure puzzle games. There’s whole classes of other games that simply can’t be made by small teams. (Sidebar: I think I’ve always loved Zelda games because they have a little bit of all the above game types, and they do it all very well).&lt;/p&gt;
+
+&lt;p&gt;What I do love is good stories, dimensional characters, and insightful dialog. I’m particularly drawn to TV drama-length stories (6-12 hour-long episodes) that have time to breathe and develop their characters. I’ve loved great narratives told through mechanics-light games. Where you can explore at your leisure, talk to characters non-linearly, and otherwise experience a story in ways arguably deeper than you can with traditional media.&lt;/p&gt;
+
+&lt;p&gt;I think what I’m 1. most currently interested in and 2. most currently capable of is a heavily narrative focused game. It should be short, but draw the player into the world enough to have them emotionally moved by the end. The story, characters, environments, and dialog must carry the entire enterprise. The second most important part has to be the art and animations. Finally, I won’t specifically focus on perfecting any classic game mechanics. But I do want something unique that fits deeply into the story.&lt;/p&gt;
+
+&lt;p&gt;The idea from my one-pager was an overly ambitious, sprawling narrative that covered my experience building a local rock band through my high school years. When I finally forced myself to sit down and consider making a game seriously as a solo dev, the constraints immediately gave this original idea four walls to sit within. Instead of four years of narrative, the story would take place over one night. All of the sudden, the theme and the conflicts of the story started to form. All the autobiographical details started falling into their fictional places.&lt;/p&gt;
+
+&lt;p&gt;I started adding to a new one-pager over the course of a few weeks while working on other projects. Each day I’d get out of the shower with a dozen new ideas to dump into the document. In my head I started to see the arcs, the set, the characters, parts of the game play. It’s since grown to 5000 words.&lt;/p&gt;
+
+&lt;h2 id=&quot;what-skills-do-i-need-to-tell-the-story&quot;&gt;What skills do I need to tell the story?&lt;/h2&gt;
+
+&lt;p&gt;Looking at all the game-related titles in the scrolling credits of a AAA game is daunting to say the least.&lt;/p&gt;
+
+&lt;p&gt;Part of my planning was making a list of all the roles and going through them one-by-one to evaluate whether I knew them, knew enough to be dangerous, could learn them, or could reasonably ask someone for help.&lt;/p&gt;
+
+&lt;h4 id=&quot;writing&quot;&gt;Writing&lt;/h4&gt;
+
+&lt;p&gt;I’m not particularly versed in writing fiction, but it’s always something I’ve wanted to do.&lt;/p&gt;
+
+&lt;h4 id=&quot;art&quot;&gt;Art&lt;/h4&gt;
+
+&lt;p&gt;I’ve never considered myself an artist, but about 4 years ago I started to seriously make the rounds of trying my hand at several art styles.&lt;/p&gt;
+
+&lt;p&gt;First it was rotoscope animation with various software, then digital painting, then 3D modeling, then 3D set design, then basics of shaders, then 3D character design, then 3D character modeling/rigging/animation.&lt;/p&gt;
+
+&lt;p&gt;I sort of accidentally learned a lot of the required disciplines and software required to make a 2D or 3D game.&lt;/p&gt;
+
+&lt;h4 id=&quot;programming&quot;&gt;Programming&lt;/h4&gt;
+
+&lt;p&gt;I’ve been programming professionally for over a decade, but almost exclusively outside the realm of games and game engines. My programming knowledge is completely adjacent to game programming, but I feel relatively confident I can pick up what I need both quickly and then gradually as required.&lt;/p&gt;
+
+&lt;p&gt;I don’t think my game will be doing anything particularly innovative that will require inventing new levels of physics simulation. I’m hoping base game engine functionality, off-the-shelf plugins, and tutorial code will get me 90% of the way there.&lt;/p&gt;
+
+&lt;h4 id=&quot;sound&quot;&gt;Sound&lt;/h4&gt;
+
+&lt;p&gt;I’ve been writing, recording, and performing music since middle school (it’s what the game is about after all). I have some confidence I can adapt these skills to a passible level for the game. However, I’m still a bit worried about sound effects and foley.&lt;/p&gt;
+
+&lt;h4 id=&quot;marketing&quot;&gt;Marketing&lt;/h4&gt;
+
+&lt;p&gt;Marketing is my biggest weakness for sure. I wish I could say I already have a solid plan for how I’m going to stand out amongst the dozens or hundreds or whatever games released every day. But honestly, the best I have right now is to start writing and posting stuff like this blog ASAP and start getting the artwork looking attractive ASAP. In the meantime, I’ve been watching a lot of GDC talks about marketing specifically and trying to internalize the good habits required to make what I make a success.&lt;/p&gt;
+
+&lt;h2 id=&quot;what-is-success-though&quot;&gt;What is success though?&lt;/h2&gt;
+
+&lt;p&gt;I thought a lot about this before I officially drew my line in the sand and said “now’s the time I make a game”.&lt;/p&gt;
+
+&lt;p&gt;The naive part of me wants superficial success: lots of downloads, a chunk of cash (to fund whatever’s next), a splash of notoriety (to kickstart interest in whatever’s next). But I think I have some more sustainable and genuine definitions of success that aren’t so binary. And they also leave so room to cut my losses logically and sunk my costs if that’s the right move.&lt;/p&gt;
+
+&lt;p&gt;My main measure of success is to make a piece of art that I’m proud of. Like all successful art, I want the game to express something about me that I can’t through other media.&lt;/p&gt;
+
+&lt;p&gt;The next measure of success will be to gain a new appreciation of the games I have and will play. Even in these early stages, I’ve already learned enough to appreciate the subtle differences between 3rd person controller mechanics, PS1-era texturing, and sprawling narrative trees in my favorite games. There’s nothing quite like making your own art to gain a deeper appreciation of how your favorite art is made.&lt;/p&gt;
+
+&lt;p&gt;Finally, the games community is almost by definition full of passionate artists who make things for the same reasons I do. I want to meet more of these people and hopefully work with some of them on whatever the next big project might be.&lt;/p&gt;
+
+&lt;h2 id=&quot;conclusion&quot;&gt;Conclusion&lt;/h2&gt;
+
+&lt;p&gt;So that’s the entire story so far. In the next devlog I’ll share my process of making version 0.1 of the game, and where I think it’ll go next.&lt;/p&gt;
+</description>
+        <pubDate>Sat, 09 Mar 2024 08:17:22 -0600</pubDate>
+        <link>https://twocentstudios.com/2024/03/09/indie-game-devlog-00/</link>
+        <guid isPermaLink="true">https://twocentstudios.com/2024/03/09/indie-game-devlog-00/</guid>
+        
+        <category>indiegame</category>
+        
+        
+      </item>
+    
+  </channel>
+</rss>

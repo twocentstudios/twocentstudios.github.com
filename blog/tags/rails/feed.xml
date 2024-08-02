@@ -1,0 +1,743 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>twocentstudios</title>
+    <description>A coding blog covering iOS, Swift, and other programming topics.</description>
+    <link>https://twocentstudios.com/blog/tags/rails/index.html</link>
+    <atom:link href="https://twocentstudios.com/blog/tags/rails/feed.xml" rel="self" type="application/rss+xml"/>
+    <pubDate>Fri, 02 Aug 2024 06:02:52 -0500</pubDate>
+    <lastBuildDate>Fri, 02 Aug 2024 06:02:52 -0500</lastBuildDate>
+    <generator>Jekyll v3.9.3</generator>
+    
+      <item>
+        <title>Simple AJAX Comments with Rails</title>
+        <description>&lt;blockquote&gt;
+  &lt;p&gt;Update 2014-06-08: This post is over two years old now. Although I’ve heard the below walkthrough works  mostly as expected, I’ve been away from Rails too long to know the ins and outs of the current version of Rails and all the gems used. So a word of warning: I can’t guarantee all of the below will work line-for-line anymore. Feel free to ping me on Twitter if you find any changes.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;I’ve been working on and off with Rails for a few years now, but when I started I had little HTML/CSS/JS knowledge from which to build. Most of my web experience I learned along the way in the context of Rails.&lt;/p&gt;
+
+&lt;p&gt;HTML and CSS were much easier to build familiarity with than JavaScript. I always found more time-tested best practices concerning HTML and CSS than I did with JS/AJAX. AJAX with Rails techniques seemed to have changed significantly between releases of Rails major (and even minor) versions.&lt;/p&gt;
+
+&lt;p&gt;I am by no means an expert, but my goal with this post is to walk beginners through a working technique for vanilla AJAX comments on resources based on Rails 3.2.x.&lt;/p&gt;
+
+&lt;h2 id=&quot;what-were-making&quot;&gt;What we’re making&lt;/h2&gt;
+
+&lt;p&gt;Our goal is to make a comment form that we can attach to any resource in our Rails app. It will look something like this:&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/rails-comments-ss-1.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Our goal&quot; title=&quot;Our goal&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Our goal&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;The layout is pretty standard. A create form sits on top of a list of comments (newest first).&lt;/p&gt;
+
+&lt;p&gt;Our example resource throughout this post is an “Event”. We’ll only discuss it in terms of being an example generic resource with comments that belong to it.&lt;/p&gt;
+
+&lt;h3 id=&quot;create&quot;&gt;Create&lt;/h3&gt;
+
+&lt;p&gt;When a logged in user enters a comment and clicks “Create Comment”, the browser sends a message back to the server with the comment body, the resource name, and resource id. Once the server processes the message, it will send the comment body rendered in HTML in the same partial as the other comments were rendered with.&lt;/p&gt;
+
+&lt;p&gt;In the meantime, on the client side, we’ll be doing some basic jQuery effects to let the user know their comment is being processed. We’ll disable the textarea and submit button so they don’t accidentally submit the same comment twice.&lt;/p&gt;
+
+&lt;p&gt;Once the server returns our new HTML, we’ll reenable the form controls, clear the text from the textarea, and then add the new HTML to the top of the comment list.&lt;/p&gt;
+
+&lt;p&gt;To keep it simple for now, we won’t be handling the error cases in significant detail.&lt;/p&gt;
+
+&lt;h4 id=&quot;processing-order&quot;&gt;Processing order&lt;/h4&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;route: GET /event/1&lt;/li&gt;
+  &lt;li&gt;controller: events#show&lt;/li&gt;
+  &lt;li&gt;view: events/show.html.haml&lt;/li&gt;
+  &lt;li&gt;partial: comments/_form.html.haml&lt;/li&gt;
+  &lt;li&gt;partial: comments/_comment.html.haml&lt;/li&gt;
+  &lt;li&gt;user: add comment body and click create&lt;/li&gt;
+  &lt;li&gt;js: comments.js.coffee -&amp;gt; ajax:beforeSend&lt;/li&gt;
+  &lt;li&gt;route: POST /comments&lt;/li&gt;
+  &lt;li&gt;controller: comments#create&lt;/li&gt;
+  &lt;li&gt;partial: comments/_comment.html.haml&lt;/li&gt;
+  &lt;li&gt;js: comments.js.coffee -&amp;gt; ajax:success&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;We’ll touch on each of these steps, but not necessarily in that order.&lt;/p&gt;
+
+&lt;h3 id=&quot;delete&quot;&gt;Delete&lt;/h3&gt;
+
+&lt;p&gt;We’ll also allow users to delete comments (eventually only comments they’ve created!). When they click the ‘x’ next to the comment, we’ll prompt them with a standard confirmation. If they answer yes, we’ll then send the comment id to the server.&lt;/p&gt;
+
+&lt;p&gt;On the browser side, we’ll immediately dim the comment to half opacity to let the user know we’re trying to delete the comment. Once we receive a response indicating the comment has been removed from the database, we’ll then hide the comment in their browser the rest of the way.&lt;/p&gt;
+
+&lt;p&gt;There are a few error conditions we should handle here as well, but we won’t look at those in this post.&lt;/p&gt;
+
+&lt;h4 id=&quot;processing-order-1&quot;&gt;Processing order&lt;/h4&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;route: GET /event/1&lt;/li&gt;
+  &lt;li&gt;controller: events#show&lt;/li&gt;
+  &lt;li&gt;view: events/show.html.haml&lt;/li&gt;
+  &lt;li&gt;partial: comments/_form.html.haml&lt;/li&gt;
+  &lt;li&gt;partial: comments/_comment.html.haml&lt;/li&gt;
+  &lt;li&gt;user: click “x” next to comment&lt;/li&gt;
+  &lt;li&gt;user: click “yes” to confirm&lt;/li&gt;
+  &lt;li&gt;js: comments.js.coffee -&amp;gt; ajax:beforeSend&lt;/li&gt;
+  &lt;li&gt;route: DELETE /comments/1&lt;/li&gt;
+  &lt;li&gt;controller: comments#destroy&lt;/li&gt;
+  &lt;li&gt;partial: comment.json&lt;/li&gt;
+  &lt;li&gt;js: comments.js.coffee -&amp;gt; ajax:success&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;The first half is the same as we’ll see for comment creation, so we’ll focus on the last half mostly in that order.&lt;/p&gt;
+
+&lt;h2 id=&quot;where-to-start&quot;&gt;Where to start?&lt;/h2&gt;
+
+&lt;p&gt;First place to start is getting our backend comment system in place. We’ll be using the &lt;a href=&quot;https://github.com/elight/acts_as_commentable_with_threading&quot;&gt;acts_as_commentable_with_threading&lt;/a&gt; gem (although we won’t be using the threading right away).&lt;/p&gt;
+
+&lt;p&gt;The instructions for setting this up are pretty simple. I’m just using ActiveRecord and SQLite right now.&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Put the gem in your bundle &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;gem acts_as_commentable_with_threading&lt;/code&gt;.&lt;/li&gt;
+  &lt;li&gt;Run &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;bundle install&lt;/code&gt;.&lt;/li&gt;
+  &lt;li&gt;Run the migrations &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;rails g acts_as_commentable_with_threading_migration&lt;/code&gt;.&lt;/li&gt;
+  &lt;li&gt;Run &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;rake db:migrate&lt;/code&gt;.&lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;Add &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;acts_as_commentable&lt;/code&gt; to the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Event&lt;/code&gt; model class (and any other model you want to have comments).&lt;/p&gt;
+
+    &lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;  # event.rb
+  class Event &amp;lt; ActiveRecord::Base
+		acts_as_commentable
+  end		
+&lt;/code&gt;&lt;/pre&gt;
+    &lt;/div&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;This post is supposed to be more about AJAX than Rails associations, but it’s worth mentioning that acts_as_commentable uses a &lt;a href=&quot;http://guides.rubyonrails.org/association_basics.html#polymorphic-associations&quot;&gt;polymorphic association&lt;/a&gt;. This means that any of your models can reference the same kind of comment model object, and we don’t have to have a separate table in our database for an &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;EventComment&lt;/code&gt; or a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;VideoComment&lt;/code&gt; for example. Each comment record keeps track of what type of object its parent is, which will be important later since we need to know information about the parent in order to create a comment.&lt;/p&gt;
+
+&lt;h2 id=&quot;routes&quot;&gt;Routes&lt;/h2&gt;
+
+&lt;p&gt;Next we’ll set up our routes just to get that out of the way. We’re going to let the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CommentsController&lt;/code&gt; handle creation and deletion of comments, so the routes should point there.&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;	# routes.rb
+	resources :comments, :only =&amp;gt; [:create, :destroy]
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;This will give us two methods from the following urls (from &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;rake routes&lt;/code&gt;).&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;	$ rake routes
+	comments 	POST 		/comments(.:format) 	comments#create
+	comment 	DELETE 	/comments/:id(.:format) 	comments#destroy
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;This is going to give us a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;commments_path&lt;/code&gt; helper and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;comment_path(:id)&lt;/code&gt; helper to complete our POST and DELETE requests,  respectively. It will forward requests to those URLs to the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CommentsController&lt;/code&gt;’s &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;create&lt;/code&gt; and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;destroy&lt;/code&gt; methods. The create method has no parameters in the URL string. The destroy method takes the comment’s &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;id&lt;/code&gt; as the single parameter of the URL string. Like we mentioned earlier, in order to create the comment, we’ll need a few more parameters. We’ll talk more about that when we get to the form.&lt;/p&gt;
+
+&lt;h3 id=&quot;alternate-implementation&quot;&gt;Alternate implementation&lt;/h3&gt;
+
+&lt;p&gt;Aside: An alternate implementation worth mentioning is to include comments as a &lt;a href=&quot;http://guides.rubyonrails.org/routing.html#nested-resources&quot;&gt;nested resource&lt;/a&gt; beneath each resource that has them. It would look something like this:&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;	# routes.rb - alternate
+	resources :events
+		resources :comments, :only =&amp;gt; [:create, :destroy]
+	end
+	
+	resources :videos
+		resources :comments, :only =&amp;gt; [:create, :destroy]
+	end
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;This works fine if your resources are all siblings. In my case, I have &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Video&lt;/code&gt; nested within &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Event&lt;/code&gt; already. It gets pretty hairy pretty quickly and gives you (unnecessarily) complicated routes and URLs. In this case, we’ll go with the other implementation that includes the necessary data about the comment’s parent in the HTTP POST data rather than the URL string.&lt;/p&gt;
+
+&lt;p&gt;Again, it works either way so always tailor your implementation based on your particular situation.&lt;/p&gt;
+
+&lt;h2 id=&quot;showhtmlhaml&quot;&gt;show.html.haml&lt;/h2&gt;
+
+&lt;p&gt;Now that we’ve got the bridge between the view and the controller built (the route), we’ll tackle the show view template.&lt;/p&gt;
+
+&lt;p&gt;Our goal is to be able put the comment “block” (the add new form and the list of previously created comments) anywhere. In this example, we’ll stick it in the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;show&lt;/code&gt; view of the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;EventsController&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;(Sidebar: I use &lt;a href=&quot;http://www.haml.info&quot;&gt;Haml&lt;/a&gt; and &lt;a href=&quot;https://github.com/plataformatec/simple_form&quot;&gt;simple form&lt;/a&gt;, sorry in advance to users of other templates. Hopefully you can still follow along.)&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;	/ show.html.haml
+	.event
+		%h1= @event.name
+	.comments
+		%h2 Comments
+		= render :partial =&amp;gt; &apos;comments/form&apos;, :locals =&amp;gt; { :comment =&amp;gt; @new_comment }
+		= render :partial =&amp;gt; &apos;comments/comment&apos;, :collection =&amp;gt; @comments, :as =&amp;gt; :comment
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;As you can see, our show template expects 3 different instance variables from the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;EventsController&lt;/code&gt;.&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;@event&lt;/code&gt;: the unique &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Event&lt;/code&gt; object we’re showing.&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;@new_comment&lt;/code&gt;: a new &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Comment&lt;/code&gt; object that acts as our framework for building out the comment form. It exists only in Rails for now and has not been created in the database yet.&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;@comments&lt;/code&gt;: an array of all or just a subset of the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Comment&lt;/code&gt; objects that exist as children of the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;@event&lt;/code&gt; object (in reverse chronological order of course).&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;In our &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;views/comments&lt;/code&gt; folder, we have the two partials &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;_form.html.haml&lt;/code&gt; and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;_comment.html.haml&lt;/code&gt;. &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;_form&lt;/code&gt; expects a local variable named &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;comment&lt;/code&gt; as an input to help build the new comment form. &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;comment.html.haml&lt;/code&gt; is our partial for displaying a single comment. It takes a collection of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;comment&lt;/code&gt;s and tells the renderer to treat each object in the collection as a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;comment&lt;/code&gt;.&lt;/p&gt;
+
+&lt;h2 id=&quot;eventsshow&quot;&gt;events#show&lt;/h2&gt;
+
+&lt;p&gt;Before we dig into writing each partial, let’s step backwards in the chain of events and go back to our &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;EventsController&lt;/code&gt; to set up those instances variables that the show template will be looking for.&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;	# events_controller.rb
+	class EventsController &amp;lt; ApplicationController
+	  def show
+	    @event = Event.find(params[:id])
+	    @comments = @event.comment_threads.order(&apos;created_at desc&apos;)
+	    @new_comment = Comment.build_from(@event, current_user.id, &quot;&quot;)
+	  end
+	end
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;The first line of the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;show&lt;/code&gt; method should be par for the course. We’re pulling the event in question from the database based on the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;id&lt;/code&gt; provided in the URL. Rails automatically inserts a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;render &apos;show&apos;&lt;/code&gt; for us at the end of the method.&lt;/p&gt;
+
+&lt;p&gt;The second line looks a little fishy. We’re using a helper method included in &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;acts_as_commentable_with_threading&lt;/code&gt; to get the comments associated with the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;@event&lt;/code&gt; and order them by date. You might also want to do pagination at this step too, but with our nested event-&amp;gt;comment architecture, it might also warrant an AJAX solution to load more (that’s a topic for another post).&lt;/p&gt;
+
+&lt;p&gt;The third line creates a placeholder comment object that acts as sort of a carrier for our parent object info. This new blank comment object will carry with it a reference to the parent &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;@event&lt;/code&gt; and therefore its object type and id, and the current user. The &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;build_from&lt;/code&gt; method is another helper created by &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;acts_as_commentable_with_threading&lt;/code&gt;.&lt;/p&gt;
+
+&lt;h2 id=&quot;comments_formhtmlhaml&quot;&gt;comments/_form.html.haml&lt;/h2&gt;
+
+&lt;p&gt;Now we can continue on to our new comment form partial.&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;	# _form.html.haml
+	.comment-form
+	  = simple_form_for comment, :remote =&amp;gt; true do |f|
+	    = f.input :body, :input_html =&amp;gt; { :rows =&amp;gt; &quot;2&quot; }, :label =&amp;gt; false
+	    = f.input :commentable_id, :as =&amp;gt; :hidden, :value =&amp;gt; comment.commentable_id
+	    = f.input :commentable_type, :as =&amp;gt; :hidden, :value =&amp;gt; comment.commentable_type
+	    = f.button :submit, :class =&amp;gt; &quot;btn btn-primary&quot;, :disable_with =&amp;gt; &quot;Submitting…&quot;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Let’s step through line by line.&lt;/p&gt;
+
+&lt;p&gt;First, we’ll wrap the form with the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;comment-form&lt;/code&gt; class.&lt;/p&gt;
+
+&lt;p&gt;Next, we’re going to use simple form to create a form block for our comment. Adding &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;:remote =&amp;gt; true&lt;/code&gt; will provide the Rails magic to turn our standard form into an AJAX one. The form_for helper is smart enough in this case to pick the correct URL and HTTP method. We could specify it directly as:&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;	= simple_form_for comment, :url =&amp;gt; comment_path, :method =&amp;gt; &apos;post&apos;, :remote =&amp;gt; true do |f|
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;The first input is the textarea for our comment body. Nothing special here, just limiting the rows to 2 and turning the label off.&lt;/p&gt;
+
+&lt;p&gt;The next two inputs are hidden from the user and will be included with the form submission to the server. We’re including the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;commentable_type&lt;/code&gt; or class name of the parent object and its id so that our &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CommentsController&lt;/code&gt; will know what object to link the new comment to.&lt;/p&gt;
+
+&lt;p&gt;Aside: I want to mention that since these hidden inputs are technically open to alteration, they must be properly sanitized by the server before being acted upon. By altering these values, the user could potentially create a new comment on a different object type and/or an object they aren’t allowed to see.&lt;/p&gt;
+
+&lt;p&gt;Our last form element is a submit button with Twitter Bootstrap classes for styling. Clicking this will trigger the AJAX action and submit our form data to the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CommentsController&lt;/code&gt; for handling. The &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;disable_with&lt;/code&gt; takes care of some of the JS we’d have to write by disabling the submit button.&lt;/p&gt;
+
+&lt;p&gt;I’m going to skip the JS for now and move onto the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CommentsController&lt;/code&gt; implementation. We’ll get back to the JS in a moment.&lt;/p&gt;
+
+&lt;h2 id=&quot;commentscontroller&quot;&gt;CommentsController&lt;/h2&gt;
+
+&lt;p&gt;If you recall earlier, we set up routes to our &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CommentsController&lt;/code&gt; for two methods: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;create&lt;/code&gt; and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;destroy&lt;/code&gt;. Let’s take a look at &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;create&lt;/code&gt;.&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;	# comments_controller.rb
+	class CommentsController &amp;lt; ApplicationController
+	  def create
+	    @comment_hash = params[:comment]
+	    @obj = @comment_hash[:commentable_type].constantize.find(@comment_hash[:commentable_id])
+	    # Not implemented: check to see whether the user has permission to create a comment on this object
+	    @comment = Comment.build_from(@obj, current_user.id, @comment_hash[:body])
+	    if @comment.save
+	      render :partial =&amp;gt; &quot;comments/comment&quot;, :locals =&amp;gt; { :comment =&amp;gt; @comment }, :layout =&amp;gt; false, :status =&amp;gt; :created
+	    else
+	      render :js =&amp;gt; &quot;alert(&apos;error saving comment&apos;);&quot;
+	    end
+	  end
+	end
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;The first thing we do is grab a reference to the form data. Our form data is in the params hash under the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;:comment&lt;/code&gt; symbol. We’ll store it as &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;@comment_hash&lt;/code&gt; for use below.&lt;/p&gt;
+
+&lt;p&gt;Next we need to derive the parent object where the comment was created. Luckily, we included the commentable_type and commentable_id in our form data. &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;@comment_hash[:commentable_type]&lt;/code&gt; will return the string &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;&quot;Event&quot;&lt;/code&gt;. We can’t call find on a string, so we have to turn it into a symbol that Ruby recognizes. We can use &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;constantize&lt;/code&gt; to do this conversion (it would be a good idea at this point to check to make sure the commentable_type is legitimate). With a fully qualified &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Event&lt;/code&gt; class we can call the class method &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;find&lt;/code&gt; and pass it the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;:commentable_id&lt;/code&gt;. Out pops our event object.&lt;/p&gt;
+
+&lt;p&gt;The next step is to determine whether the current_user has permission to create the comment on the object. This depends on your authentication system, but should definitely be included.&lt;/p&gt;
+
+&lt;p&gt;We now have references to all the objects we need in order to create the comment. We’ll use the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;build_from&lt;/code&gt; helper method again and give it the object, current_user, and the body of the comment.&lt;/p&gt;
+
+&lt;p&gt;We need to save the comment back to the database. If the save is successful, we’re going to do a few things.&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Render the single comment partial with our new comment as the local variable. This will give the comment all the markup it needs to be inserted directly into the existing page.&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;:layout =&amp;gt; false&lt;/code&gt; will tell the renderer not to include all the extra header and footer markup.&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;:status =&amp;gt; :created&lt;/code&gt; returns the HTTP status code 201 as is proper.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;If the save is not successful, we need to tell the user that there was a problem. I’m leaving this outside the scope of the post simply because there are several different ways of doing this depending on how you set up your layout. Above, all we’re doing is popping up an alert box to the user. You should consider this an incomplete implementation.&lt;/p&gt;
+
+&lt;p&gt;Aside: using Rails to render HTML is a technique opposite that of returning raw JSON and using client-side JS libraries to handle all things view related. You may want to look into something like &lt;a href=&quot;http://emberjs.com&quot;&gt;Ember.js&lt;/a&gt;.&lt;/p&gt;
+
+&lt;h2 id=&quot;javascript-for-create&quot;&gt;JavaScript for create&lt;/h2&gt;
+
+&lt;p&gt;We’re finally back to the JavaScript, or more specifically, CoffeeScript. I’m not an expert in either, but for this stuff you don’t need to be one. I’m using CoffeeScript because it makes the code slightly cleaner.&lt;/p&gt;
+
+&lt;p&gt;The only CoffeeScript we’re going to write can sit comfortably in the asset pipeline in the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;comments.js.coffee&lt;/code&gt; file (more specifically, app/assets/javascripts).&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;	# comments.js.coffee
+	jQuery -&amp;gt;
+	  # Create a comment
+	  $(&quot;.comment-form&quot;)
+	    .on &quot;ajax:beforeSend&quot;, (evt, xhr, settings) -&amp;gt;
+	      $(this).find(&apos;textarea&apos;)
+	        .addClass(&apos;uneditable-input&apos;)
+	        .attr(&apos;disabled&apos;, &apos;disabled&apos;);
+	    .on &quot;ajax:success&quot;, (evt, data, status, xhr) -&amp;gt;
+	      $(this).find(&apos;textarea&apos;)
+	        .removeClass(&apos;uneditable-input&apos;)
+	        .removeAttr(&apos;disabled&apos;, &apos;disabled&apos;)
+	        .val(&apos;&apos;);
+	      $(xhr.responseText).hide().insertAfter($(this)).show(&apos;slow&apos;)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;What is code actually doing? We’re simply registering for callbacks on the AJAX requests that will originate from our comment form. When those events occur, we’re going to run functions.&lt;/p&gt;
+
+&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;$(.comment-form)&lt;/code&gt; targets the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;comment-form&lt;/code&gt; class we applied to the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;div&lt;/code&gt; that wraps our comment form partial. This allows us to actually use multiple comment forms on a single page if we want to.&lt;/p&gt;
+
+&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.on&lt;/code&gt; is the jQuery function that binds an event to a function. It replaces the older jQuery functions &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.bind&lt;/code&gt;, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.delegate&lt;/code&gt;, and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.live&lt;/code&gt;. You can read about it &lt;a href=&quot;http://api.jquery.com/on/&quot;&gt;here&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;The first event we’re binding to is &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;&quot;ajax:beforeSend&quot;&lt;/code&gt;. When the user clicks the submit button, Rails will trigger this event, and our function will be called. The arguments passed to the function (and all the available callbacks) can be found on the &lt;a href=&quot;https://github.com/rails/jquery-ujs/wiki/ajax&quot;&gt;jquery-ujs wiki&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;The function that runs on this event is embedded as anonymous. We could call a function that exists elsewhere just as easily.&lt;/p&gt;
+
+&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;$(this)&lt;/code&gt; is the jQuery object version of the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.comment-form&lt;/code&gt; &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;div&lt;/code&gt; that was involved in the click. Alternatively, we could grab a reference to the form from &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;$(evt.currentTarget)&lt;/code&gt;. We’ll use &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;$(this)&lt;/code&gt; to extract the textarea element in the next line. &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.find(&apos;textarea&apos;)&lt;/code&gt; will select &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;textarea&lt;/code&gt; elements within the form. In our case, we only have one. We then chain two functions together to perform two operations on the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;textarea&lt;/code&gt;s.&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;	$(this).find(&apos;textarea&apos;)
+	  .addClass(&apos;uneditable-input&apos;)
+	  .attr(&apos;disabled&apos;, &apos;disabled&apos;);
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;is equivalent to:&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;	$(this).find(&apos;textarea&apos;).addClass(&apos;uneditable-input&apos;);
+	$(this).find(&apos;textarea&apos;).attr(&apos;disabled&apos;, &apos;disabled&apos;);
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;addClass&lt;/code&gt; adds the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;uneditable-input&lt;/code&gt; class to our textarea, which will perform some Bootstrap styling to our textarea, but not actually make it uneditable.&lt;/p&gt;
+
+&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;attr&lt;/code&gt; adds the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;disabled=&apos;disabled&apos;&lt;/code&gt; element to our textarea actually disabling the user input.&lt;/p&gt;
+
+&lt;p&gt;We’re then chaining another &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.on&lt;/code&gt; for the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ajax:success&lt;/code&gt; event that gets called if the AJAX call returns successfully. Our first move is to find the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;textarea&lt;/code&gt; and undo the temporary disabling (you may want to consider doing this at the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ajax:complete&lt;/code&gt; event, because it should be done regardless of whether the AJAX was successful). You’ll notice we chained one additional function &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.val(&apos;&apos;)&lt;/code&gt; at the end. This will clear the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;textarea&lt;/code&gt; in anticipation of the user adding another comment. You wouldn’t want to do that in the error case, because the user should have an opportunity to resubmit the comment without having to retype it.&lt;/p&gt;
+
+&lt;p&gt;We’re finally ready to add the nicely formatted comment to the top of our comment feed.&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;$(xhr.responseText)&lt;/code&gt; gets a jQuery object version of the response HTML returned by the server.&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.hide()&lt;/code&gt; disappears our new &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;div&lt;/code&gt; so it can be animated in.&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.insertAfter($(this))&lt;/code&gt; places our new &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;div&lt;/code&gt; after the comment form. If you want to put it somewhere more specific, you can replace the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;$(this)&lt;/code&gt; selector with a more specific selector.&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.show(&apos;slow&apos;)&lt;/code&gt; animates our new &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;div&lt;/code&gt; sliding down from the form.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&quot;_commenthtmlhaml--deletion&quot;&gt;_comment.html.haml / deletion&lt;/h2&gt;
+
+&lt;p&gt;I skipped our single comment template, so I’ll add it here for completeness. This will lead us into the comment deletion section.&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;	# _comment.html.haml
+	%div.comment{ :id =&amp;gt; &quot;comment-#{comment.id}&quot; }
+	  %hr
+	  = link_to &quot;×&quot;, comment_path(comment), :method =&amp;gt; :delete, :remote =&amp;gt; true, :confirm =&amp;gt; &quot;Are you sure you want to remove this comment?&quot;, :disable_with =&amp;gt; &quot;×&quot;, :class =&amp;gt; &apos;close&apos;
+	  %h4
+	    = comment.user.username
+	    %small= comment.updated_at
+	  %p= comment.body
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Our wrapper div has a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;comment&lt;/code&gt; class, and a CSS id unique to each comment. We’re not actually going to use that id, but it could be useful in the future.&lt;/p&gt;
+
+&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;link_to&lt;/code&gt; should look familiar. Our display text is an x. The link will go to the delete path we created earlier in the Routes section. To refresh your memory, it will go to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;/comments/:id&lt;/code&gt;. &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;:method =&amp;gt; :delete&lt;/code&gt; tells Rails to use the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;DELETE&lt;/code&gt; HTML method.&lt;/p&gt;
+
+&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;:remote =&amp;gt; true&lt;/code&gt; performs the Rails AJAX magic like we saw earlier with the creation form. &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;:confirm&lt;/code&gt; pops up a JS alert to confirm the user wants to do remove the comment. &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;:disable_with&lt;/code&gt; makes sure the user can’t try to delete the comment while the server is processing the first request. And the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;close&lt;/code&gt; class is Bootstrap styling.&lt;/p&gt;
+
+&lt;p&gt;Another reminder: you’ll probably want to conditionally display the delete link to the comment creator and admins. &lt;a href=&quot;https://github.com/drapergem/draper&quot;&gt;Draper&lt;/a&gt; is a good option for doing this cleanly.&lt;/p&gt;
+
+&lt;p&gt;The rest of the markup should be pretty straightforward.&lt;/p&gt;
+
+&lt;h2 id=&quot;back-to-commentscontroller&quot;&gt;Back to CommentsController&lt;/h2&gt;
+
+&lt;p&gt;Time to add the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;destroy&lt;/code&gt; method to your &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CommentsController&lt;/code&gt;.&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;	# comments_controller.rb
+	def destroy
+	  @comment = Comment.find(params[:id])
+	  if @comment.destroy
+	    render :json =&amp;gt; @comment, :status =&amp;gt; :ok
+	  else
+	    render :js =&amp;gt; &quot;alert(&apos;error deleting comment&apos;);&quot;
+	  end
+	end
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;@comment&lt;/code&gt; will track down the comment-to-be deleted from the database (check that user is allowed to delete it!).&lt;/p&gt;
+
+&lt;p&gt;Then try to destroy the comment. This time, when the call completes successfully, I’m sending raw json back to the client with an &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ok&lt;/code&gt; status. There are a myriad of options here. Use what’s best for your app.&lt;/p&gt;
+
+&lt;p&gt;And on error I’m copping out again and sending back JS.&lt;/p&gt;
+
+&lt;p&gt;Aside: if you want to do some informal testing, I recommend throwing a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;sleep 5&lt;/code&gt; call before the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;if&lt;/code&gt; statement so you have more time to observe your AJAX.&lt;/p&gt;
+
+&lt;h2 id=&quot;javascript-for-destroy&quot;&gt;JavaScript for destroy&lt;/h2&gt;
+
+&lt;p&gt;Back to our &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;comments.js.coffee&lt;/code&gt; file.&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;	jQuery -&amp;gt;
+	  # Create a comment
+	  # ...
+	
+	  # Delete a comment
+	  $(document)
+	    .on &quot;ajax:beforeSend&quot;, &quot;.comment&quot;, -&amp;gt;
+	      $(this).fadeTo(&apos;fast&apos;, 0.5)
+	    .on &quot;ajax:success&quot;, &quot;.comment&quot;, -&amp;gt;
+	      $(this).hide(&apos;fast&apos;)
+	    .on &quot;ajax:error&quot;, &quot;.comment&quot;, -&amp;gt;
+	      $(this).fadeTo(&apos;fast&apos;, 1)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;We’re going to use the other incarnation of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.on&lt;/code&gt; for the reason I’ll explain in a moment. This time we’re calling &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.on&lt;/code&gt; on the whole DOM. We specify our event first as we did before, but now we’ll add the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;&quot;.comment&quot;&lt;/code&gt; selector as the second argument. Again, this applies to all of our comment &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;div&lt;/code&gt;s with the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;comment&lt;/code&gt; class.&lt;/p&gt;
+
+&lt;p&gt;We’re not going to bother including the arguments to the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ajax&lt;/code&gt; event callbacks (for example &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;(evt, xhr, settings)&lt;/code&gt;); we don’t need them.&lt;/p&gt;
+
+&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;$(this)&lt;/code&gt; refers to the comment &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;div&lt;/code&gt; that generated the event. We’re going fade the entire comment to half opacity before sending the request to the server by calling &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.fadeTo(&apos;fast&apos;, 0.5)&lt;/code&gt;. On success, we’ll animate the comment fading the rest of the way out and disappearing to show the user the request was completed succesfully. On error, we’ll fade the comment back to full opacity to show that the comment still exists.&lt;/p&gt;
+
+&lt;p&gt;The reason we used &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;$(document)&lt;/code&gt; this time instead of calling &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.on&lt;/code&gt; on the selector directly is because it will apply the callback to newly created DOM elements as well. For example, I can add a comment and then immediately delete it without refreshing the page.&lt;/p&gt;
+
+&lt;h2 id=&quot;wrap-up&quot;&gt;Wrap up&lt;/h2&gt;
+
+&lt;p&gt;This turned out to be quite the mega-post. I may have gone into too much detail, but I’m hoping this has enlightened any new Rails devs out there.&lt;/p&gt;
+
+&lt;p&gt;We didn’t actually write that much JavaScript, and most of it was simply for decoration. But this should give you the building blocks you need to add more interesting functionality on AJAX triggers. I highly recommend &lt;a href=&quot;http://oscarotero.com/jquery&quot;&gt;this jQuery reference/overview&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;Discuss this on &lt;a href=&quot;http://news.ycombinator.com/item?id=4798823&quot;&gt;Hacker News&lt;/a&gt;.&lt;/p&gt;
+</description>
+        <pubDate>Thu, 15 Nov 2012 09:50:00 -0600</pubDate>
+        <link>https://twocentstudios.com/2012/11/15/simple-ajax-comments-with-rails/</link>
+        <guid isPermaLink="true">https://twocentstudios.com/2012/11/15/simple-ajax-comments-with-rails/</guid>
+        
+        <category>rails</category>
+        
+        
+      </item>
+    
+      <item>
+        <title>AppleCart: My First Production Rails App</title>
+        <description>&lt;p&gt;I pushed my first production Rails app to Heroku this week. Feels exciting to have a real project launch to solve a real problem after having started working with Rails such a long time ago.&lt;/p&gt;
+
+&lt;h2 id=&quot;what-is-applecart&quot;&gt;What is AppleCart?&lt;/h2&gt;
+
+&lt;p&gt;A friend of mine, Jen, has been very involved in the Making Strides Against Breast Cancer organization. There is a yearly walk that involves raising money for the cause. The last few years, she has resold gourmet candy apples from another friend who is a chocolatier as one of her fundraising efforts.&lt;/p&gt;
+
+&lt;p&gt;Jen came to me a few weeks before fundraising was to begin asking if I had a way to keep track of her apple orders. Orders involve someone looking over a list of available apples, choosing the apples they want and quantities, paying in cash, and then waiting while Jen orders the apples and distributes them a week or so later.&lt;/p&gt;
+
+&lt;p&gt;I initially recommended a free online store such as Shopify or Storenvy, but she said she did not want to deal with credit cards or any of the fees involved. It would also make it more difficult for people that just wanted to pay in cash.&lt;/p&gt;
+
+&lt;p&gt;I thought about the requirements a little more and realized it was probably perfect for a simple two screen Rails app. (Plus, you’re not a real developer until you’ve written a shopping cart app…) I promised her I’d get started on it right away and have it done in two weeks.&lt;/p&gt;
+
+&lt;h2 id=&quot;screenshots&quot;&gt;Screenshots&lt;/h2&gt;
+
+&lt;p&gt;Here are some screenshots of the final product.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/applecart-ss-1.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Homepage&quot; title=&quot;Homepage&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Homepage&lt;/div&gt;&lt;/div&gt;
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/applecart-ss-2.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Apple selection page&quot; title=&quot;Apple selection page&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Apple selection page&lt;/div&gt;&lt;/div&gt;
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/applecart-ss-3.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Cart page&quot; title=&quot;Cart page&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Cart page&lt;/div&gt;&lt;/div&gt;
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/applecart-ss-4.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Admin dashboard&quot; title=&quot;Admin dashboard&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Admin dashboard&lt;/div&gt;&lt;/div&gt;
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/applecart-ss-5.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Admin all orders page for tracking order and payment status&quot; title=&quot;Admin all orders page for tracking order and payment status&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Admin all orders page for tracking order and payment status&lt;/div&gt;&lt;/div&gt;
+
+&lt;h2 id=&quot;planning&quot;&gt;Planning&lt;/h2&gt;
+
+&lt;p&gt;The first step was diagramming out the workflow. The workflow for a customer is pretty simple for this app.&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Customer creates an account.&lt;/li&gt;
+  &lt;li&gt;Customer chooses apples from a single browsing page.&lt;/li&gt;
+  &lt;li&gt;Customer edits quantities in cart.&lt;/li&gt;
+  &lt;li&gt;Customer submits order, confirming they will be purchasing those apples.&lt;/li&gt;
+  &lt;li&gt;Jen collects money from all customers and marks them off as paid.&lt;/li&gt;
+  &lt;li&gt;Jen orders apples.&lt;/li&gt;
+  &lt;li&gt;Jen receives apples.&lt;/li&gt;
+  &lt;li&gt;Jen delivers apples to each customer, marking them off as they are delivered.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;The object diagram is actually pretty simple too. The main objects are:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Users (of course)&lt;/li&gt;
+  &lt;li&gt;Orders (collections of apples chosen by the customers)&lt;/li&gt;
+  &lt;li&gt;Items (in our case, they’re all apples)&lt;/li&gt;
+  &lt;li&gt;OrderItems (a line item in an specific order)&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;I won’t go into all the details (you can look at my &lt;a href=&quot;https://github.com/twocentstudios/applecart/blob/master/db/schema.rb&quot;&gt;schema.rb&lt;/a&gt;), but some relevant things:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;A user always has one order (it is auto generated by the user model if does not exist when requested).&lt;/li&gt;
+  &lt;li&gt;An item (apple) has a price and cost, so that apple specific totals can be shown.&lt;/li&gt;
+  &lt;li&gt;An order and item are joined by an OrderItem table which includes a quantity.&lt;/li&gt;
+  &lt;li&gt;An order has three possible states: open, processing, or delivered. An open order is one that has not been “confirmed” by the customer, and therefore is not counted in most totals shown to the admin. An order in “processing” state is submitted, but hasn’t been delivered yet. An delivered order has been received by the customer.&lt;/li&gt;
+  &lt;li&gt;An order also has a boolean “paid?” flag that the admin will set to true when they have received payment for that order. This could have arguably been rolled into the state machine after “processing”, but to handle any edge cases I decided to make it separate. It also makes it easier to convey to the customer what each state means. (Now that I’m thinking about it even further, it might have been good to change the state machine to open-&amp;gt;confirmed-&amp;gt;paid-&amp;gt;processing-&amp;gt;delivered.)&lt;/li&gt;
+  &lt;li&gt;The app should stop accepting new orders when the admin wants, so there needs to be a global flag for whether sale is enabled.&lt;/li&gt;
+  &lt;li&gt;A user should only be able to see their own order, but an admin can see/edit anyone’s order.&lt;/li&gt;
+  &lt;li&gt;A user should be able to check the status of their order even after sale is closed.&lt;/li&gt;
+  &lt;li&gt;An admin needs to see aggregate data including how many of each apple needs to be bought from the supplier, how many orders are in each state, and how much money is being processed.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;There are other rules, but that’s a good sampling. Those are starting to look like some combination of testing and user stories, but unfortunately, I did neither formally for this project. One of my next big goals is TDD, and this would have been a great project for it, but the time constraint excuse got me again.&lt;/p&gt;
+
+&lt;h2 id=&quot;interface&quot;&gt;Interface&lt;/h2&gt;
+
+&lt;p&gt;I decided on each interface problem one at a time.&lt;/p&gt;
+
+&lt;p&gt;The first decision was whether I wanted anonymous users (not logged in visitors) to be able to view the apples. In retrospect, this would have probably been better for the UX because it would have given potential customers the opportunity to view the selection before committing the time to create a user account. I went with a forced account creation though because I was worried it would have taken me too long to figure out how the additional logic would work.&lt;/p&gt;
+
+&lt;p&gt;Going with that decision for now, I had to decide whether the store section (viewing pictures of apples) and the shopping cart would be one view or two views. One of my requirements was that we have decent sized pictures of the apples, which doesn’t lend itself well to a nice tabular view like most people are used to seeing with shopping carts. The only compromise would have been to embed the cart view in the sidebar of the store view. This would have been nice, but I think it would have been necessary to have a full page cart view anyway, so it would just be a nice-to-have.&lt;/p&gt;
+
+&lt;p&gt;Once I decided on two views, it was time to decide how customers would decide on which apples they wanted (lots of decisions). I could make a view for each individual apple, but that seemed unnecessary for the small amount of information I had on each apple. It would also slow down the process of selecting apples.&lt;/p&gt;
+
+&lt;p&gt;I decided to put an “add to cart” button next to each apple. I was briefly thinking about having a quantity box next to each as well, but it seemed simpler to have the button be just an AJAX callback to increment the amount of that apple by one. That way, there wouldn’t have to be multiple form submission buttons, or a confusing combination of cart aesthetics. I’m not quite sure how this is going to work out, as I haven’t gotten to do any user testing yet, but I’m looking forward to see how (un)intuitive it is for regular users.&lt;/p&gt;
+
+&lt;p&gt;The AJAX response tells the user how many of that apple they now have in their cart, and updates on each successive click. Once they’ve scrolled through the seven apples, they’re met with a big question at the bottom of the page “Done shopping? View your cart” which guides customers to the next step.&lt;/p&gt;
+
+&lt;p&gt;In the cart view, there is a familiar tabular list (with no thumbnails) with quantities, prices, and line prices. Because the store page wasn’t very flexible at specifying quantities, the customer can edit quantities at this step. I sketched out a few ways to implement editing, including inline editing, transforming the show into edit view on a button press, or just using a separate view for it. I chose the last option both for simplicity, and because inline editing may have been unintuitive and required more explanation than a simple form. The middle option may have been the best in retrospect.&lt;/p&gt;
+
+&lt;p&gt;The final user action is confirming their order and moving it to the next step. Once this is done, they can track their order by logging in and viewing their cart at any time. I get the luxury of not keeping multiple carts because of the nature of this project, so I took advantage of the simplicity.&lt;/p&gt;
+
+&lt;h2 id=&quot;building&quot;&gt;Building&lt;/h2&gt;
+
+&lt;p&gt;So I started building. I started things off with &lt;a href=&quot;http://drone.bz&quot;&gt;drone.bz&lt;/a&gt; again which helped knock off the basic gems I needed.&lt;/p&gt;
+
+&lt;p&gt;I pulled a few gems from other recent projects I had, including using Thin for my development server and Quiet Assets. Haml is a staple now. Nested_form and simple_form for the little bit of form work I needed to do. Easy Roles simply because I needed that Admin identifier and wanted something a little more robust than a boolean just in case.&lt;/p&gt;
+
+&lt;p&gt;I decided to try out migrant again, which in some ways saved time, but probably ended up hindering more than helping. Devise and high_voltage. And bootstrap has been a huge timesaver and taught me a bunch more about SASS and CSS. I thought I’d use Dragonfly for image uploading, but since I didn’t need dynamically added images (and didn’t want to set up S3 later in the project), I decided to go with just simple asset pipeline links.&lt;/p&gt;
+
+&lt;p&gt;The final bit was stateflow as my state machine helper. I’d like to try out something different next time, although it did do the job.&lt;/p&gt;
+
+&lt;p&gt;With most of that in place, I did my models and migrations (a little backwards because of migrant), then controllers and views, controllers and views. Dropped back to models to add methods. Tweaked things here and there. Nothing to see here folks.&lt;/p&gt;
+
+&lt;p&gt;But seriously, I learned some great new stuff this go around. I dug a little deeper into rails view helpers, which I had never used before. They helped a little to clean up some of the tricky view logic I had. Some views I wrote toward the end I must admit I started slipping and using direct model accessing in the view (bad!). But overall, my code was a lot cleaner than in past projects where I was focusing more on getting it working than cracking down on technical debt.&lt;/p&gt;
+
+&lt;p&gt;The other big victory for me was doing a lot more AJAX. I feel like I’m finally getting a handle for how to make javascript do what I want. Naming methods is still difficult. My biggest weakness is understanding how to structure these calls, where the code should be placed, and where the response text should originate from. I was consistent in my inconsistency of trying a few different options on this project to see what flowed the best. One of my other big goals is to find and read more good code so that I can learn to create good structure and organization in my projects.&lt;/p&gt;
+
+&lt;p&gt;I wrestled with Twitter Bootstrap bugs at times, and I still am awful at design, but the upside was that I did my first bootstrap skinning and some more customization than usual. I dug a little more into SASS, although I’m still a bit confused about import order and had to throw in some ugly hacks in order to get the customization I needed.&lt;/p&gt;
+
+&lt;p&gt;I had the core built on my first Saturday working on the project, and then started the skinning and admin page stuff the next day. The next weekend I worked on more admin functionality, cleaned up the design a bit and added some final copy.&lt;/p&gt;
+
+&lt;h2 id=&quot;deployment&quot;&gt;Deployment&lt;/h2&gt;
+
+&lt;p&gt;I was a little nervous that I hadn’t done any deployment before and really needed everything to go smoothly with his project. It took a little digging and a little poking around, but I did indeed get my first heroku instance up and running. I made myself a little cheat sheet of all the new command line stuff I needed to remember and worked with Postgres for the first time.&lt;/p&gt;
+
+&lt;p&gt;I delt with my first 500 server errors and tailed my first heroku logs. It was exciting to see something I built up and available for all to see. I pushed several times over the course of building, and then for the last time (hopefully) last night.&lt;/p&gt;
+
+&lt;h2 id=&quot;wrap-up&quot;&gt;Wrap up&lt;/h2&gt;
+
+&lt;p&gt;I’m looking forward to seeing the reception to the site. I’m hoping people will find it relatively usable and get some constructive feedback from real users as to where my assumptions were held true and where they fell flat.&lt;/p&gt;
+</description>
+        <pubDate>Tue, 18 Sep 2012 20:20:00 -0500</pubDate>
+        <link>https://twocentstudios.com/2012/09/18/applecart-my-first-production-rails-app/</link>
+        <guid isPermaLink="true">https://twocentstudios.com/2012/09/18/applecart-my-first-production-rails-app/</guid>
+        
+        <category>rails</category>
+        
+        
+      </item>
+    
+      <item>
+        <title>Flexible Parts: A Part Attributing Prototype Project</title>
+        <description>&lt;p&gt;The company I work for recently started our implementation of Oracle’s Agile PDM/PLM system.&lt;/p&gt;
+
+&lt;p&gt;A PLM (product lifecycle management) system is a (usually) software application that guides an organization through the lifecycle of a product. This includes all aspects of design, production, and continuous management of a product. PDM (product data management) concerns the aspects of storing and managing product data, especially changes over time.&lt;/p&gt;
+
+&lt;h2 id=&quot;finding-limitations&quot;&gt;Finding Limitations&lt;/h2&gt;
+
+&lt;p&gt;Over the past few weeks of implementation, we’ve already run into several limitations of Agile. One of them is very low granularity of item attributes.&lt;/p&gt;
+
+&lt;p&gt;Agile has two object classes: part and document. Each of these has its own set of attributes applied to all its instances. For example, everything that is a part has a weight attribute and individual dimension attributes. Any custom attributes you add at the “part” level will be applied to anything under the umbrella of “part”.&lt;/p&gt;
+
+&lt;p&gt;Parts also can have subclasses. A subclass could normally just be a single attribute, one that contains multiple “tags” or a single list value. Agile uses this special subclass attribute to provide another level of granularity in spawning more specific attributes to a part instance.&lt;/p&gt;
+
+&lt;p&gt;An example for subclasses would be a resistor subclass. A resistor instance would not only have the weight and dimension attributes inherited from the “part” level, but also subclass specific attributes inherited from the subclass, like a resistance value (10 Ohms, 100 kOhms) and type (wire-wound, chip, etc.).&lt;/p&gt;
+
+&lt;p&gt;This abstraction seems to hold well for a few large groups of well defined objects. Unfortunately, if you have two groups that are similar to each other, but not similar to the rest of the groups, you either end up duplicating attributes across subgroups, or polluting the global attribute list with attributes that don’t apply to the majority of parts.&lt;/p&gt;
+
+&lt;h2 id=&quot;designing-my-own-system&quot;&gt;Designing My Own System&lt;/h2&gt;
+
+&lt;p&gt;I was unhappy with not having infinite granularity in parts. So the other weekend, I woke up on Saturday morning and designed the schema for a simple proof-of-concept Rails app that had the flexibility I expected Agile to have.&lt;/p&gt;
+
+&lt;p&gt;I called it Flexible Parts, and I worked on it furiously for two days. The design requirements were as follows:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;A part has a number and a name.&lt;/li&gt;
+  &lt;li&gt;A part can have any number of attributes.&lt;/li&gt;
+  &lt;li&gt;A part has its own unique values for its attributes.&lt;/li&gt;
+  &lt;li&gt;Attributes can be shared across parts or unique to a part.&lt;/li&gt;
+  &lt;li&gt;Attributes can be organized into “groups” in order to facilitate setup of a new part.&lt;/li&gt;
+  &lt;li&gt;When selected, attribute groups attach their attributes to a part, but individual attributes can be removed.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;The overall goals I was shooting for were:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;There should be no compromises made in being able to capture all data relevant to a part in a way that is structured and searchable. Nothing should be left out because it doesn’t “fit” the way the system is laid out (flexibility is the #1 priority).&lt;/li&gt;
+  &lt;li&gt;Parts only have the attributes that are relevant to them. There is no need to display irrelevant attributes or leave blank values during part creation.&lt;/li&gt;
+  &lt;li&gt;Attributes are not free form, but shared across parts. They must be descriptive enough so that a user could be sure any existing attribute they added to a part was actually the same usage as it was created for.&lt;/li&gt;
+  &lt;li&gt;The workflow for creating a new part that is similar to an existing part should be dead simple, either through attribute groups or copying relevant attributes from the similar part.&lt;/li&gt;
+  &lt;li&gt;The workflow for creating a new part that is NOT similar to an existing part should seamlessly guide the user through creating the proper attribute groups so that future parts will be even simpler.&lt;/li&gt;
+  &lt;li&gt;Searching across attributes should be intuitive.&lt;/li&gt;
+  &lt;li&gt;Comparing shared attributes across parts should also be intuitive.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/flexible-parts-schema.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Schema generated by Rails ERD&quot; title=&quot;Schema generated by Rails ERD&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Schema generated by Rails ERD&lt;/div&gt;&lt;/div&gt;
+
+&lt;h2 id=&quot;implementation&quot;&gt;Implementation&lt;/h2&gt;
+
+&lt;p&gt;I made a list of the conceivable features for a first release, then assigned a priority for each based on wanting to give a demo on Monday to the members of my implemenation group.&lt;/p&gt;
+
+&lt;p&gt;I compromised on the following:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Attributes are only allowable as string value and not boolean, numerical, list, or any other storage type.&lt;/li&gt;
+  &lt;li&gt;Only certain aspects of the models are directly editable through the UI.&lt;/li&gt;
+  &lt;li&gt;New parts can’t be added through the UI.&lt;/li&gt;
+  &lt;li&gt;New attributes can’t be added through the UI.&lt;/li&gt;
+  &lt;li&gt;Attribute groups can’t be modified through the UI.&lt;/li&gt;
+  &lt;li&gt;There is no search interface.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Regarding new attributes being added to parts, I consider this interface to be critical to the success of the app. Attributes should always be reused across parts (with the condition that the attribute really is describing the same characteristic of both parts). Although new attributes can be created, searching should occur in the list of already existing attributes before a new attribute is created to avoid duplication.&lt;/p&gt;
+
+&lt;p&gt;I didn’t get a chance to get this feature the way I wanted. I had to settle for a simple list box of all attributes not already applied to the part. I did experiment with different UX concepts, including modal dialogs, but nothing stuck and the JavaScript pinned me down once more.&lt;/p&gt;
+
+&lt;h2 id=&quot;screenshots&quot;&gt;Screenshots&lt;/h2&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/flexible-parts-ss-1.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Parts index page&quot; title=&quot;Parts index page&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Parts index page&lt;/div&gt;&lt;/div&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/flexible-parts-ss-2.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Choose trait groups using a chosen plugin type-ahead text box&quot; title=&quot;Choose trait groups using a chosen plugin type-ahead text box&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Choose trait groups using a chosen plugin type-ahead text box&lt;/div&gt;&lt;/div&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/flexible-parts-ss-3.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Fill in trait values, and add more from another chosen type-ahead text box&quot; title=&quot;Fill in trait values, and add more from another chosen type-ahead text box&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Fill in trait values, and add more from another chosen type-ahead text box&lt;/div&gt;&lt;/div&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/flexible-parts-ss-4.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Viewing a single part. I was planning on having the `global|plier` radio buttons filter their traits and values, but did not get around to implementing it.&quot; title=&quot;Viewing a single part. I was planning on having the `global|plier` radio buttons filter their traits and values, but did not get around to implementing it.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Viewing a single part. I was planning on having the `global|plier` radio buttons filter their traits and values, but did not get around to implementing it.&lt;/div&gt;&lt;/div&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/flexible-parts-ss-5.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;All trait groups. Trait groups can keep track of which parts they are attached to.&quot; title=&quot;All trait groups. Trait groups can keep track of which parts they are attached to.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;All trait groups. Trait groups can keep track of which parts they are attached to.&lt;/div&gt;&lt;/div&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/flexible-parts-ss-6.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;A single trait group. It shows its linked traits and associated parts.&quot; title=&quot;A single trait group. It shows its linked traits and associated parts.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;A single trait group. It shows its linked traits and associated parts.&lt;/div&gt;&lt;/div&gt;
+
+&lt;h2 id=&quot;the-outcome&quot;&gt;The Outcome&lt;/h2&gt;
+
+&lt;p&gt;Sunday night ran up on me pretty fast, but I did get most of the critical features up and running. What I was really shooting for was to show the paradigm of flexibility of attributes. I showed it to my group members during a break, and I’m not sure they had their heads wrapped around the problem I originally presented to appreciate the solution I proposed. I got some “that’s cool”s and “you must not be married or have kids” comments when I mentioned I did it over the weekend. Besides that, we moved on with the implementation and made the compromises we needed to.&lt;/p&gt;
+
+&lt;p&gt;I’m pleased with the work I did, though. I learned about a bunch of new gems through &lt;a href=&quot;http://drone.bz&quot;&gt;drone.bz&lt;/a&gt;, including &lt;a href=&quot;https://github.com/pascalh1011/migrant&quot;&gt;migrant&lt;/a&gt;, &lt;a href=&quot;https://github.com/tsechingho/chosen-rails&quot;&gt;chosen&lt;/a&gt;, &lt;a href=&quot;https://github.com/bernat/best_in_place&quot;&gt;best-in-place&lt;/a&gt;, and even &lt;a href=&quot;http://rails-erd.rubyforge.org/&quot;&gt;rails-erd&lt;/a&gt; (entity relationship diagram – see the figure above). I got much more versed in writing HAML, using Twitter Bootstrap, and getting my first taste of SCSS and SASS (and even Coffeescript). Unfortunately, I’m still very much untrained in writing tests or anything remotely BDD. I also didn’t get to tackle any client-side magic until the last minute and didn’t make the progress I’d hoped I would.&lt;/p&gt;
+
+&lt;p&gt;I like these little projects because I’m getting more comfortable with making decisions on where business logic should go, Rails conventions, getting set up, finding gems to build off of, and a host of other things I had to stop and Google every two minutes during development.&lt;/p&gt;
+
+&lt;p&gt;One of the most difficult parts of this project in particular was naming. Throughout this post, I talked about things in terms of attributes, but I couldn’t name my model “attribute” or anything remotely similar because Rails has a monopoly on generic terms like that. I actually had to go to a thesaurus and ended up using “traits” as a drop-in replacement for “attributes” throughout my project. I kept a list of Rails reserved words open in a Chrome tab throughout developement and had to check it several times to prevent the cryptic error messages that are bound to follow that type of mistake.&lt;/p&gt;
+
+&lt;p&gt;I’ve posted the code on &lt;a href=&quot;https://github.com/twocentstudios/flexibleparts&quot;&gt;github&lt;/a&gt; (more or less my first project of consequence, so that’s exciting…).&lt;/p&gt;
+</description>
+        <pubDate>Sun, 27 May 2012 20:47:00 -0500</pubDate>
+        <link>https://twocentstudios.com/2012/05/27/flexible-parts-a-part-attributing-prototype-project/</link>
+        <guid isPermaLink="true">https://twocentstudios.com/2012/05/27/flexible-parts-a-part-attributing-prototype-project/</guid>
+        
+        <category>rails</category>
+        
+        
+      </item>
+    
+      <item>
+        <title>Hosting</title>
+        <description>&lt;p&gt;My rent on my shared garbage VPS is up in early August and I’m not sure what to do. I’ve got two problems and a number of routes I could go.&lt;/p&gt;
+
+&lt;p&gt;I know very little about server admining and hosting. Next to nothing I’d say. I would like to learn, but like anything, there’s an opportunity cost to it. I’m leaning towards not taking the easy way out this time, simply because I know some more advanced knowledge of Linux will most likely be useful sometime in my not-so-distant future.&lt;/p&gt;
+
+&lt;p&gt;My first problem to solve is what platform is best for this blog. I started on Wordpress because it’s ridiculously easy to leave all the technical stuff aside and just get to writing. Unfortunately, I don’t know any PHP and don’t much care to learn it, so hacking on it is out of the question for now. And if I’m not going to try to deal with PHP, I might as well put my eggs in one basket and try to hack on a Rails blog framework. So I guess my real problem is how to migrate the few posts on here over to a Rails platform (after setting it up of course).&lt;/p&gt;
+
+&lt;p&gt;Seeing as I’ve decided not to continue on with Wordpress and switch to Rails, the next item on the agenda is where to host it.&lt;/p&gt;
+&lt;ol&gt;
+	&lt;li&gt;&lt;strong&gt;Stay on my current garbage VPS for another year.&lt;/strong&gt; This is what I&apos;d call the easy way out. I could leave the WP version of this blog and the rest of my site up and give myself some time to migrate over. While supposedly my VPS does support Rails, I don&apos;t get command line access without paying some ridiculous fee, and I have no idea what its capabilities are.&lt;/li&gt;
+	&lt;li&gt;&lt;strong&gt;Set up something on Heroku.&lt;/strong&gt; I was exploring Heroku a little bit over last weekend, and things there are looking rather nice. However, I think it may end up being too complicated for the low-key hodge-podge of things I&apos;d be running on it. At some point in the future I&apos;d like to deploy some stuff there just to check it out in greater detail.&lt;/li&gt;
+	&lt;li&gt;&lt;strong&gt;Set up a VPS on Linode.&lt;/strong&gt; I feel like I would easily learn the most on this route. I&apos;d get a chance to really dig into a Linux distro and learn how to set everything up manually. I know there are a ton of great tutorials out there for doing pretty much anything on a fresh install. The only downside is that I&apos;m sure it would pretty much every waking moment of my freetime to get everything I need up and running to the capability I&apos;m at right now. I&apos;m just not sure I have that kind of time to devote to this right now.&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;With all that being said, I looks like maybe my best option is to go with #1 (as much as I feel like I’m wussing out), and shoot for #3 next year. That will give me some more time to get a better hold on Rails.&lt;/p&gt;
+
+&lt;p&gt;If anyone else has been in this boat before, I’d love to hear about it in the comments.&lt;/p&gt;
+</description>
+        <pubDate>Sat, 30 Jul 2011 00:00:00 -0500</pubDate>
+        <link>https://twocentstudios.com/2011/07/30/hosting.html/</link>
+        <guid isPermaLink="true">https://twocentstudios.com/2011/07/30/hosting.html/</guid>
+        
+        <category>commentary</category>
+        
+        <category>hosting</category>
+        
+        <category>rails</category>
+        
+        
+      </item>
+    
+      <item>
+        <title>Learning Ruby and Rails</title>
+        <description>&lt;p&gt;Last October, a couple things came together at the same time which prompted to want to learn Rails.&lt;/p&gt;
+&lt;h2&gt;Starting Out&lt;/h2&gt;
+&lt;p&gt;I had been listening to Dan Benjamin’s &lt;a title=&quot;5by5&quot; href=&quot;http://5by5.tv&quot; target=&quot;_blank&quot;&gt;5by5&lt;/a&gt; podcasts nearly since they started at the beginning of the year, and always came away feeling like Ruby was a force to be reckoned with. I was also getting a little burnt out doing iOS stuff. All my coding in college was C and assembly. After that was strictly iOS for a year and change up to that point.&lt;/p&gt;
+
+&lt;p&gt;As I constantly brainstormed new app ideas and looked at the most successful apps that had come, gone, and stayed in the AppStore charts, I realized that the best ones (that aren’t games) are viewports into webservices. The problem was that I didn’t know anything about writing server-side anything. My web endeavors began and ended in high school before CSS was a toddler.&lt;/p&gt;
+
+&lt;p&gt;I was on a big productivity kick at work, trying to find ways to better connect the project groups in my office. Everyone was half-heartedly talking about group to-do lists, MS Project, spreadsheets on a server, all the usual suspects. My idea at the time was to have some kind of inter-office Twitter feed, and of course I needed to do some server-side stuff to get that to happen. (I can’t remember exactly what happened, but I ended up giving up on the idea and with it, learning Rails).&lt;/p&gt;
+
+&lt;p&gt;At the time, I don’t think I was aware of all the CMS frameworks in PHP and other languages that would make this a cakewalk. I know the WordPress theme would have been extremely easy to set up. But either way, I wanted to get my hands dirty. But I also wanted results. And because I was impatient, I skipped Ruby and dived straight into Rails.&lt;/p&gt;
+
+&lt;p&gt;That was my first mistake. I’ve read a few things about how most people could go either way with learning Ruby first or jumping straight into Rails. I couldn’t quite make it without Ruby.&lt;/p&gt;
+
+&lt;p&gt;&lt;span style=&quot;font-size: 20px; font-weight: bold;&quot;&gt;Diving In&lt;/span&gt;&lt;/p&gt;
+
+&lt;p&gt;It felt kind of like when your middle school teacher assigns a book to read and says, “If you get stuck, just skip the words you don’t know and keep reading”. Except that with diving straight into Rails, I felt like I didn’t know a single word. As soon as I hit something I didn’t understand, my brain would stick in a loop and I couldn’t move on without understanding what the line meant. And without base Ruby, I could go nowhere.&lt;/p&gt;
+
+&lt;p&gt;So I tried &lt;a title=&quot;tryruby&quot; href=&quot;http://tryruby.org&quot; target=&quot;_blank&quot;&gt;tryruby&lt;/a&gt;. But it kept crashing and I didn’t have a pure Ruby project to work on, so it never really stuck.&lt;/p&gt;
+
+&lt;p&gt;I then tried a couple Rails tutorials, including Rails for Zombies. &lt;a title=&quot;Rails for Zombies&quot; href=&quot;http://railsforzombies.org/&quot; target=&quot;_blank&quot;&gt;Rails for Zombies&lt;/a&gt; was great, but since my knowledge was so shallow, I was just going through the motions and not retaining anything. After a weekend or two of trying to power through the learning phase, I’m ashamed to say I quit. I gave up my idea for my office, and I quit. I came crawling back to iOS.&lt;/p&gt;
+&lt;h2&gt;Doing It the Right Way&lt;/h2&gt;
+&lt;p&gt;Fast forward to March. I came across the opportunity to learn Ruby for my day job. The idea of learning Ruby and Rails had still been simmering since the Fall. I was almost actively looking for any reason to learn them. The task I had to complete was to import a bunch of old customer support tickets into Zendesk. A nice, bite-sized Ruby project.&lt;/p&gt;
+
+&lt;p&gt;I knew that I really needed to learn Ruby this time around. Not just enough to fake my way through Rails, but really get a handle on the ins and outs. Luckily, I came across &lt;a title=&quot;Ruby Koans&quot; href=&quot;http://rubykoans.com/&quot; target=&quot;_blank&quot;&gt;Ruby Koans&lt;/a&gt; which kicked my butt up and down the text editor. I can’t say enough great things about it. Really wonderful little courselet.&lt;/p&gt;
+
+&lt;p&gt;As a quick aside, I’ve never really coded in a scripting language before, even Javascript, so one of the hardest things about Ruby at first was literally just understanding the entry point and the program flow. int main has always been my friend, but now I was just sitting at the terminal saying, “Great. I just wrote all these modules and classes and functions, now where do I use them?”.&lt;/p&gt;
+
+&lt;p&gt;I worked through Koans, and went to start on my task. The first part was finding gems to help me out. I found a gem for the Zendesk-API, a csv parser, and an XML assembler. Looking through the source of these gems helped me understand more about program flow and best practices on code structure.&lt;/p&gt;
+
+&lt;p&gt;It took plenty of trial and error, but after all that I pounded out a nice little script to import a csv file into Zendesk using Ruby. It felt good.&lt;/p&gt;
+&lt;h2&gt;Onto Rails&lt;/h2&gt;
+&lt;p&gt;Fast forward again a month, and I realized that I was in a much better position to learn Rails now. It just so happened that administrating Zendesk for a little while and starting to use &lt;a title=&quot;TestFlight&quot; href=&quot;http://testflightapp.com&quot; target=&quot;_blank&quot;&gt;TestFlight&lt;/a&gt; for my iOS beta testing really started to inspire another productivity kick around the office.&lt;/p&gt;
+
+&lt;p&gt;I’m pretty familiar with most of the engineering processes and workflows at my day job. The problem is that they’re all pretty archaic. Lots of MS Office tools because that’s what everyone knows. And even though they’re not designed for it, Excel is used to lay out forms, email is used to do workflows, and even SharePoint is now in the mix. Using the wrong tools diverts a lot of time towards the wrong things.&lt;/p&gt;
+
+&lt;p&gt;So I decided that I was going to write a workflow system for an engineering process. It doesn’t have a lot of data that needs stored, and it’s mostly users interacting with one set of objects. I don’t think it’s more than I can chew, but I guess we’ll see because it’s not done yet.&lt;/p&gt;
+
+&lt;p&gt;I ran across a Rails tutorial I hadn’t seen before. &lt;a title=&quot;Ruby on Rails Tutorial&quot; href=&quot;http://ruby.railstutorial.org/ruby-on-rails-tutorial-book&quot; target=&quot;_blank&quot;&gt;Ruby on Rails Tutorial&lt;/a&gt; by Michael Hartl was exactly what I needed. Doesn’t pull punches, but also patiently explains every step of the way. Again, highly recommended. Read it cover to cover, and I’m still going back for more. It gets pretty tough at the end though, especially for someone like me with little to no experience with databases.&lt;/p&gt;
+&lt;h2&gt;Where am I Now?&lt;/h2&gt;
+&lt;p&gt;I’ve brainstormed out my database tables, listed my routes, mocked up most of the screens, and I think I’m ready to dive into code. I wanted to mark this moment as a point of little knowledge that will hopefully make me feel better when I (hopefully) have a lot of Rails knowledge in the distant future.&lt;/p&gt;
+
+&lt;p&gt;If anyone had other good routes to Ruby and/or Rails fluency, I’d love to hear about it in the comments.&lt;/p&gt;
+</description>
+        <pubDate>Fri, 06 May 2011 00:00:00 -0500</pubDate>
+        <link>https://twocentstudios.com/2011/05/06/learning-ruby-and-rails.html/</link>
+        <guid isPermaLink="true">https://twocentstudios.com/2011/05/06/learning-ruby-and-rails.html/</guid>
+        
+        <category>commentary</category>
+        
+        <category>rails</category>
+        
+        <category>ruby</category>
+        
+        
+      </item>
+    
+  </channel>
+</rss>
