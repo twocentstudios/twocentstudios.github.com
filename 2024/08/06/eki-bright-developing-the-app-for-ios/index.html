@@ -1,0 +1,1060 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>Eki Bright - Developing the App for iOS</title>
+
+  <meta property="og:type" content="article" />
+  <meta property="og:title" content="Eki Bright - Developing the App for iOS" />
+  <meta property="og:url" content="https://twocentstudios.com/2024/08/06/eki-bright-developing-the-app-for-ios/" />
+  
+    <meta property="og:article:published_time" content="2024-08-06T08:02:00-05:00" />
+  
+  
+    <meta property="og:image" content="https://twocentstudios.com/images/eki-bright-app-icon.jpg" />
+  
+  
+  <link href='https://fonts.googleapis.com/css2?family=Work+Sans:wght@300;350;400;600' rel='stylesheet' type='text/css'>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="canonical" href="https://twocentstudios.com/2024/08/06/eki-bright-developing-the-app-for-ios/">
+  <link rel="alternate" type="application/rss+xml" title="twocentstudios" href="https://twocentstudios.com/feed.xml" />
+</head>
+
+  <!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-NE82N02W8S"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-NE82N02W8S');
+</script>
+
+  <body>
+
+    <header class="site-header">
+
+  <div class="wrapper">
+
+    <a class="site-title" href="/">twocentstudios</a>
+
+    <nav class="site-nav">
+      <a href="#" class="menu-icon">
+        <svg viewBox="0 0 18 15">
+          <path fill="#424242" d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.031C17.335,0,18,0.665,18,1.484L18,1.484z"/>
+          <path fill="#424242" d="M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0c0-0.82,0.665-1.484,1.484-1.484 h15.031C17.335,6.031,18,6.696,18,7.516L18,7.516z"/>
+          <path fill="#424242" d="M18,13.516C18,14.335,17.335,15,16.516,15H1.484C0.665,15,0,14.335,0,13.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.031C17.335,12.031,18,12.696,18,13.516L18,13.516z"/>
+        </svg>
+      </a>
+
+      <div class="trigger">
+        
+          
+          <a class="page-link" href="/about/">About</a>
+          
+        
+          
+          <a class="page-link" href="/blog/">Blog</a>
+          
+        
+          
+        
+          
+        
+          
+          <a class="page-link" href="/portfolio/">Portfolio</a>
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      </div>
+    </nav>
+
+  </div>
+
+</header>
+
+
+    <div class="page-content">
+      <div class="wrapper">
+        <div class="post">
+
+  <header class="post-header">
+    <h1 class="post-title">Eki Bright - Developing the App for iOS</h1>
+    <p class="post-meta">Aug 6, 2024</p>
+  </header>
+
+  <article class="post-content">
+    <p>Continuing my series of posts about my latest iOS app, Eki Bright 駅ブライト, I’ll discuss the more interesting parts of app at version 1.0.</p>
+
+<div class="caption-wrapper"><img class="caption" src="/images/eki-bright-app-icon.jpg" width="" height="300" alt="Eki Bright app icon" title="Eki Bright app icon" /><div class="caption-text">Eki Bright app icon</div></div>
+
+<p>Please check out the other posts in the series:</p>
+
+<ul>
+  <li><strong><a href="/2024/07/27/eki-bright-tokyo-area-train-timetables/">Eki Bright - Tokyo Area Train Timetables</a></strong> - the motivation behind the app and the solution I’ve begun to explore</li>
+  <li><strong>This post</strong> - the high-level implementation details</li>
+</ul>
+
+<p>Tokyo-area residents can download the app from the <a href="https://apps.apple.com/app/%E9%A7%85%E3%83%96%E3%83%A9%E3%82%A4%E3%83%88/id6504702463">App Store</a>.</p>
+
+<p>Eki Bright is currently closed source due to data licensing issues, but I’d like to open source it as some point once I get that aspect figured out.</p>
+
+<h2 id="stats">Stats</h2>
+
+<p>Before starting digging into the details, I’ll go over some stats about the app for context.</p>
+
+<ul>
+  <li>The app has 6 screens (5 with behavior).</li>
+  <li>The app has around 5700 lines of Swift code.</li>
+  <li>The app has a minimum deployment target of iOS 17.0.</li>
+  <li>The app supports only the iPhone form factor. There’s no technical reason for this. It was mostly to reduce complexity, promotional material requirements, and testing for the first release.</li>
+  <li>The app uses about 5 packages via Swift Package Manager: ComposableArchitecture, Collections, AsyncAlgorithms, DependenciesAdditions, GRDB, HolidayJp. ComposableArchitecture relies on several other pointfreeco packages, which I also use directly.</li>
+  <li>The app uses a basic xcodeproj file.</li>
+  <li>The app was archived with Xcode 17.4, which includes support for Swift 5.9, iOS 17, and (colloquially) SwiftUI 4.</li>
+  <li>The app has a SwiftUI <code class="language-plaintext highlighter-rouge">App</code> entry point.</li>
+  <li>The database of railway, station, and timetable data is generated by a script at develop-time and included in the app bundle at compile-time. The app makes no network requests.</li>
+  <li>The app uses the <code class="language-plaintext highlighter-rouge">licenseplist</code> library installed via Homebrew for generating a license file for packages.</li>
+  <li>The app embeds no analytics framework.</li>
+</ul>
+
+<h2 id="work-schedule">Work schedule</h2>
+
+<h3 id="prototype">Prototype</h3>
+
+<p>I started researching and prototyping the app in mid-November. This version had support for one station going inbound on weekdays. It parsed directly from a folder of the raw json files from my data source. There was no importing and no custom database yet. It had one station timetable screen and one widget layout.</p>
+
+<div class="caption-wrapper"><img class="caption" src="/images/eki-bright-v1-widget-proto.gif" width="" height="350" alt="I was excited about the animation support in the first widget" title="I was excited about the animation support in the first widget" /><div class="caption-text">I was excited about the animation support in the first widget</div></div>
+
+<div class="caption-wrapper"><img class="caption" src="/images/eki-bright-v1-proto-station-timetable.jpg" width="" height="550" alt="The only screen in the app; a station timetable for one station, inbound, on weekdays" title="The only screen in the app; a station timetable for one station, inbound, on weekdays" /><div class="caption-text">The only screen in the app; a station timetable for one station, inbound, on weekdays</div></div>
+
+<p>After a week of light usage, I’d decided to continue on to start on a production version intended for wide release.</p>
+
+<h3 id="sprint-1">Sprint 1</h3>
+
+<p>I wrote an import script to turn the input json files into a SQLite database (more on this later). I outlined a simple screen structure, still with the idea that the main app would mostly be a pre-configuration step for the widgets that users would be most interested in.</p>
+
+<p>By early-December 2023 I had a home screen with bookmarks; a station timetable screen that could show any combination of station, direction, and schedule; a station search screen that worked with romaji; and a station detail screen where you could add or remove a bookmark.</p>
+
+<video src="/images/eki-bright-sprint-1-demo.mp4" controls="" preload="none" poster="/images/eki-bright-sprint-1-demo.jpg" width="300"></video>
+
+<p>I took a break from the project for several months, whilst still continuing to use and analyze the fruits of this first sprint.</p>
+
+<h3 id="sprint-2">Sprint 2</h3>
+
+<p>I started the second sprint in June 2024.</p>
+
+<p>Although I always had a freshly pruned TODO list, my day-to-day usage of the app while out exploring Tokyo guided a lot of my feelings of what was missing from the first release.</p>
+
+<p>I made the big decision to only target Japanese for the first release. This required ensuring search worked equally well with hiragana, kanji, and romaji.</p>
+
+<div class="caption-wrapper"><img class="caption" src="/images/eki-bright-sprint-2-search.gif" width="" height="450" alt="Search supporting romaji, hiragana, and kanji" title="Search supporting romaji, hiragana, and kanji" /><div class="caption-text">Search supporting romaji, hiragana, and kanji</div></div>
+
+<p>When out riding the trains, I realized a few things:</p>
+
+<ul>
+  <li>I was using the main app a lot more than I expected; not just for my home stations.</li>
+  <li>Text search was procedurally too slow to use to look up nearby stations in the moment.</li>
+  <li>Live updating nearby stations would unlock several use cases I was really excited about.</li>
+</ul>
+
+<p>I took a detour to implement live nearby stations, first in a dedicated screen, then as a smaller section on the on the home screen.</p>
+
+<div class="caption-wrapper"><img class="caption" src="/images/eki-bright-sprint-2-nearby.jpg" width="" height="350" alt="A standalone version of the nearby screen" title="A standalone version of the nearby screen" /><div class="caption-text">A standalone version of the nearby screen</div></div>
+
+<p>Next, I had to tackle the production implementation of widgets, including a mechanism to select which station/direction pair (in the form of a bookmark) appeared in the widget.</p>
+
+<div class="caption-wrapper"><img class="caption" src="/images/eki-bright-sprint-2-widget-select-station.jpg" width="" height="250" alt="An early version of bookmark selection from the edit widget screen" title="An early version of bookmark selection from the edit widget screen" /><div class="caption-text">An early version of bookmark selection from the edit widget screen</div></div>
+
+<p>I was steadily making UX and UI tweaks across the app’s few screens, especially when considering the default Japanese localization. Especially on the station timetable screen. I implemented the swipe &amp; segmented control for switching rail directions, support for showing the entire day’s schedule, showing the current time in-line with the timetable entries, and tweaking font sizes and colors.</p>
+
+<div class="caption-wrapper"><img class="caption" src="/images/eki-bright-sprint-2-timetable-now.jpg" width="" height="450" alt="Experimenting with how to show the current time in line with timetable items" title="Experimenting with how to show the current time in line with timetable items" /><div class="caption-text">Experimenting with how to show the current time in line with timetable items</div></div>
+
+<p>I took a (probably unnecessary for version 1) sidebar to implement a train timetables screen. It shows which stations a train will visit on its journey. This was another common request from my beta testers, and a feature that vastly increased my usage opportunities for the app while riding. Users could now quickly view the destination stations of an express train on an unfamiliar railway and see whether they should get on or wait for the next one.</p>
+
+<div class="caption-wrapper"><img class="caption" src="/images/eki-bright-sprint-2-train-timetable.jpg" width="" height="450" alt="A early version of the train timetable screen" title="A early version of the train timetable screen" /><div class="caption-text">A early version of the train timetable screen</div></div>
+
+<p>The core features of the app felt pretty good. I moved onto onboarding and the about screen. It was nice to be able to copy the about screen nearly verbatim from Count Biki. Code reuse is usually never that straightforward in practice.</p>
+
+<div class="caption-wrapper"><img class="caption" src="/images/eki-bright-sprint-2-onboarding.jpg" width="" height="450" alt="Iterating on onboarding calls-to-action in English first" title="Iterating on onboarding calls-to-action in English first" /><div class="caption-text">Iterating on onboarding calls-to-action in English first</div></div>
+
+<div class="caption-wrapper"><img class="caption" src="/images/eki-bright-sprint-2-tip-kit.jpg" width="" height="250" alt="I even found a use for the Tip Kit framework new in iOS 17" title="I even found a use for the Tip Kit framework new in iOS 17" /><div class="caption-text">I even found a use for the Tip Kit framework new in iOS 17</div></div>
+
+<p>The last 1% (that takes 99% of the time) was copywriting for the App Store listing, designing the icon, and submitting.</p>
+
+<h2 id="architecture">Architecture</h2>
+
+<p>The app is built all-in with <a href="https://github.com/pointfreeco/swift-composable-architecture">The Composable Architecture (TCA) 1.11</a>. This includes passing and scoping <code class="language-plaintext highlighter-rouge">Store</code>s through the view layer, creating <code class="language-plaintext highlighter-rouge">Reducer</code>s with <code class="language-plaintext highlighter-rouge">State</code> and <code class="language-plaintext highlighter-rouge">Action</code>s for most screens, and creating dependencies in the style of the <a href="https://github.com/pointfreeco/swift-dependencies">swift-dependencies</a> library.</p>
+
+<p>This follows on from <a href="/2023/10/31/count-biki-developing-the-app-for-ios/">my experience</a> building my previous app Count Biki. TCA underwent significant changes between the time I finished Count Biki and started working on Eki Bright.</p>
+
+<p>The most significant (and welcome) change was the <code class="language-plaintext highlighter-rouge">@Shared</code> state-sharing system. It made my iterations on the bookmark system relatively trivial. Just a lot less boilerplate than I’d previously needed. Also, <code class="language-plaintext highlighter-rouge">@Shared</code> worked without a hitch in the widget extension.</p>
+
+<p>Overall, I’m getting a lot more comfortable with TCA and feel pretty confident using it as my default architecture on indie apps going forward.</p>
+
+<h2 id="data">Data</h2>
+
+<h3 id="importing-and-storage">Importing and storage</h3>
+
+<p>I used the responsible (read: no premature optimization) strategy of starting my prototyping by live parsing the json files directly from my data provider. From this experience, I decided to implement a more robust and flexible data storage system before a first release.</p>
+
+<p>As mentioned in my <a href="/2024/07/27/eki-bright-tokyo-area-train-timetables/">intro post</a>, the overarching theme of this app is speed. Searching a directory structure for the appropriate timetable file, loading multiple megabyte json files into memory, parsing them, and aggregating the results on each request did not align with my speed goals. Especially considering the various views of that data I wanted to support.</p>
+
+<p>Of the many many data storage and access systems available, I chose <a href="https://github.com/groue/GRDB.swift">GRDB</a>, a long-lived wrapper library for SQLite. Even though my requirements are of relatively minimal scale, I still can’t get get onboard with a nascent solution like Swift Data that has obvious brick-wall functionality limitations and no public roadmap as to when they will be addressed. GRDB, on the other hand, lightly abstracts SQLite, has been in heavy usage by the community for years, has robust documentation, has an extensive set of quick start code snippets, and a well respected and responsive maintainer.</p>
+
+<p>A reasonable solution in our networked world would have been to host the data on my own server and perform a network request for each timetable, etc. I could have added caching layers to improve response times in the common case.</p>
+
+<p>However, using the network goes against my speed goal. Although network coverage is admirably solid underground in Tokyo, there’s enough chance of drop outs that I wouldn’t want my users to lose trust in the app in those few cases there’s no signal for a duration of their request. All things equal, with implementation simplicity comes robustness. And a local database removes many breakable layers of abstraction from the request/response chain.</p>
+
+<p>The tradeoff is app storage space. The database started at around 300 MB, then 400 MB, then ballooned to over 1 GB (related to app extension issues), before I could optimize it pre-release back down to ~225 MB. Still quite large for such a simple app, but again, it’s both a trade-off I committed to up front and differentiation point.</p>
+
+<p>One of the best decisions I made was to invest in creating a simple and well-documented Swift script dedicated to reading JSON files and spitting out a single SQLite database. I ended up running this script dozens of times. A full import now takes about 10 minutes of wall-clock time, but in the early stages of development took less than a minute.</p>
+
+<p>The import script allowed me to make iterative decisions to my schema, normalization strategy, naming, data supplements unique to my app, etc. during development. I’d simply switch targets, run the script, and replace the database file in the app directory.</p>
+
+<p>Regarding the schema, I specifically decoupled the “import” model types from the “app” model types. This means that I can make the normalization/de-normalization decisions that affect query times <em>before</em> compile time.</p>
+
+<p>For example, for search, I added a “queryTerms” field that aggregates all language variations of a station name e.g. <code class="language-plaintext highlighter-rouge">aomi aoumi あおうみ 青海 アオウミ</code>. I can create this <code class="language-plaintext highlighter-rouge">queryTerms</code> field at import time so no CPU time is dedicated to it at run time.</p>
+
+<p>The import step also enables me to do data consistency and invariant checks. These are especially important as my provider’s data is expected to evolve over time, and relations between JSON data can get silently corrupted.</p>
+
+<h3 id="modeling-dates">Modeling dates</h3>
+
+<p>A couple invariants about dates:</p>
+
+<ul>
+  <li>The data provider uses 24-hour time, within the range 00:00-23:59, specified as strings.</li>
+  <li>There are no 24-hour trains in the Tokyo train network at the moment.</li>
+  <li>Timetable schedules are specified conceptually as either <em>weekday</em>, <em>saturday</em>, <em>sunday/holiday</em>, or <em>weekend</em> depending on the railway.</li>
+  <li>No trains on any railway start before 3am.</li>
+  <li>No trains on any railway end after 3am.</li>
+</ul>
+
+<p>I had two structs for dealing with these invariants.</p>
+
+<p><code class="language-plaintext highlighter-rouge">HourMinute</code> stores times at the most useful precision. It stores times as <em>24+ hour time</em>, which considers early morning the next day as part of the current day. It allows easy comparison and adjustment. It ensures there are no out of bounds times.</p>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">HourMinute</span><span class="p">:</span> <span class="kt">Equatable</span><span class="p">,</span> <span class="kt">Comparable</span><span class="p">,</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">hours</span><span class="p">:</span> <span class="kt">Int</span> <span class="c1">// 3...26</span>
+    <span class="k">let</span> <span class="nv">minutes</span><span class="p">:</span> <span class="kt">Int</span> <span class="c1">// 0...59</span>
+
+    <span class="kd">static</span> <span class="k">let</span> <span class="nv">earliest</span><span class="p">:</span> <span class="k">Self</span> <span class="o">=</span> <span class="o">.</span><span class="nf">init</span><span class="p">(</span><span class="nv">uncheckedHours</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span> <span class="nv">minutes</span><span class="p">:</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="kd">static</span> <span class="k">let</span> <span class="nv">latest</span><span class="p">:</span> <span class="k">Self</span> <span class="o">=</span> <span class="o">.</span><span class="nf">init</span><span class="p">(</span><span class="nv">uncheckedHours</span><span class="p">:</span> <span class="mi">26</span><span class="p">,</span> <span class="nv">minutes</span><span class="p">:</span> <span class="mi">59</span><span class="p">)</span>
+
+    <span class="kd">private</span> <span class="nf">init</span><span class="p">(</span><span class="n">uncheckedHours</span> <span class="nv">hours</span><span class="p">:</span> <span class="kt">Int</span><span class="p">,</span> <span class="nv">minutes</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">hours</span> <span class="o">=</span> <span class="n">hours</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">minutes</span> <span class="o">=</span> <span class="n">minutes</span>
+    <span class="p">}</span>
+
+    <span class="nf">init</span><span class="p">?(</span><span class="nv">hours</span><span class="p">:</span> <span class="kt">Int</span><span class="p">,</span> <span class="nv">minutes</span><span class="p">:</span> <span class="kt">Int</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nf">guard</span> <span class="p">(</span><span class="k">Self</span><span class="o">.</span><span class="n">earliest</span><span class="o">.</span><span class="n">hours</span> <span class="o">...</span> <span class="k">Self</span><span class="o">.</span><span class="n">latest</span><span class="o">.</span><span class="n">hours</span><span class="p">)</span><span class="o">.</span><span class="nf">contains</span><span class="p">(</span><span class="n">hours</span><span class="p">),</span>
+              <span class="p">(</span><span class="k">Self</span><span class="o">.</span><span class="n">earliest</span><span class="o">.</span><span class="n">minutes</span> <span class="o">...</span> <span class="k">Self</span><span class="o">.</span><span class="n">latest</span><span class="o">.</span><span class="n">minutes</span><span class="p">)</span><span class="o">.</span><span class="nf">contains</span><span class="p">(</span><span class="n">minutes</span><span class="p">)</span>
+        <span class="k">else</span> <span class="p">{</span>
+            <span class="nf">assertionFailure</span><span class="p">(</span><span class="s">"Out of bounds"</span><span class="p">)</span>
+            <span class="k">return</span> <span class="kc">nil</span>
+        <span class="p">}</span>
+
+        <span class="k">self</span><span class="o">.</span><span class="n">hours</span> <span class="o">=</span> <span class="n">hours</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">minutes</span> <span class="o">=</span> <span class="n">minutes</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p>When the user selects a station/direction pair, there are either 2 or 3 different timetables that we could show depending on the current time.</p>
+
+<p>For example, on a honest Saturday, a particular railway may not have specific <code class="language-plaintext highlighter-rouge">saturday</code> schedule, but instead may have a <code class="language-plaintext highlighter-rouge">nonWeekday</code> schedule also valid on Sundays or holidays.</p>
+
+<p>In order to determine which one to show, I use a <code class="language-plaintext highlighter-rouge">ScheduleSelector</code> helper to map the current logical schedule (weekday, Saturday, Sunday, or Holiday) to the potential <code class="language-plaintext highlighter-rouge">Schedule</code> that has a timetable.</p>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">enum</span> <span class="kt">ScheduleSelector</span><span class="p">:</span> <span class="kt">Equatable</span><span class="p">,</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="k">case</span> <span class="n">weekday</span>
+    <span class="k">case</span> <span class="n">saturday</span>
+    <span class="k">case</span> <span class="n">sunday</span>
+    <span class="k">case</span> <span class="n">holiday</span>
+    
+    <span class="c1">/// For a named day, which schedules are valid?</span>
+    <span class="k">var</span> <span class="nv">possibleSchedules</span><span class="p">:</span> <span class="p">[</span><span class="kt">Schedule</span><span class="p">]</span> <span class="p">{</span>
+        <span class="k">switch</span> <span class="k">self</span> <span class="p">{</span>
+        <span class="k">case</span> <span class="o">.</span><span class="nv">weekday</span><span class="p">:</span> <span class="p">[</span><span class="o">.</span><span class="n">weekday</span><span class="p">]</span>
+        <span class="k">case</span> <span class="o">.</span><span class="nv">saturday</span><span class="p">:</span> <span class="p">[</span><span class="o">.</span><span class="n">saturday</span><span class="p">,</span> <span class="o">.</span><span class="n">nonWeekday</span><span class="p">]</span>
+        <span class="k">case</span> <span class="o">.</span><span class="nv">sunday</span><span class="p">:</span> <span class="p">[</span><span class="o">.</span><span class="n">holiday</span><span class="p">,</span> <span class="o">.</span><span class="n">nonWeekday</span><span class="p">]</span>
+        <span class="k">case</span> <span class="o">.</span><span class="nv">holiday</span><span class="p">:</span> <span class="p">[</span><span class="o">.</span><span class="n">holiday</span><span class="p">,</span> <span class="o">.</span><span class="n">nonWeekday</span><span class="p">]</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p>If the user checks the app after midnight, I need to make sure the app still fetches the schedule from the previous calendar day.</p>
+
+<p>There’s some annoying date math involved. But since all schedules are locked to one timezone, the implementation is less complicated than it would be otherwise.</p>
+
+<h3 id="train-categories">Train Categories</h3>
+
+<p>A <em>train type</em> is a specific name expressing which stations on a railway a train will stop. For example, “local” or “express” in English and “各駅” or “急行” in Japanese.</p>
+
+<p>The names for train types follow conventions, but they are by no means standardized. For example, the Toyoko line has several train types, with a few only present on weekends:</p>
+
+<ul>
+  <li>Local</li>
+  <li>Express</li>
+  <li>Limited Express</li>
+  <li>Commuter Limited Express</li>
+  <li>Semi Express</li>
+  <li>F-Liner</li>
+  <li>S-TRAIN</li>
+</ul>
+
+<p>A train type with the same name on a different railway may have a different color indicator. This color may not even be consistent across information sources for the same railway.</p>
+
+<p>The outlier train type names can be long, even in Japanese. When I was designing the more space-constrained widgets, I realized it would be necessary to standardize train types even further for the sake of my app users.</p>
+
+<p>I manually created my own system of <em>train categories</em>.</p>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">enum</span> <span class="kt">TrainCategoryKind</span><span class="p">:</span> <span class="kt">String</span><span class="p">,</span> <span class="kt">Equatable</span><span class="p">,</span> <span class="kt">Codable</span><span class="p">,</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="k">case</span> <span class="n">local</span>
+    <span class="k">case</span> <span class="n">rapid</span>
+    <span class="k">case</span> <span class="n">semiExpress</span>
+    <span class="k">case</span> <span class="n">express</span>
+    <span class="k">case</span> <span class="n">limited</span>
+
+    <span class="k">var</span> <span class="nv">colorHexString</span><span class="p">:</span> <span class="kt">String</span> <span class="p">{</span> <span class="cm">/* ... */</span> <span class="p">}</span>
+
+    <span class="k">var</span> <span class="nv">oneCharacterJA</span><span class="p">:</span> <span class="kt">String</span> <span class="p">{</span>
+        <span class="k">switch</span> <span class="k">self</span> <span class="p">{</span>
+        <span class="k">case</span> <span class="o">.</span><span class="nv">local</span><span class="p">:</span> <span class="s">"各"</span>
+        <span class="k">case</span> <span class="o">.</span><span class="nv">rapid</span><span class="p">:</span> <span class="s">"快"</span>
+        <span class="k">case</span> <span class="o">.</span><span class="nv">semiExpress</span><span class="p">:</span> <span class="s">"準"</span>
+        <span class="k">case</span> <span class="o">.</span><span class="nv">express</span><span class="p">:</span> <span class="s">"急"</span>
+        <span class="k">case</span> <span class="o">.</span><span class="nv">limited</span><span class="p">:</span> <span class="s">"特"</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<div class="caption-wrapper"><img class="caption" src="/images/eki-bright-widget-category-character.jpg" width="" height="250" alt="The information-dense Accessory Regular widget size necessitates a single-character identifier for a train type" title="The information-dense Accessory Regular widget size necessitates a single-character identifier for a train type" /><div class="caption-text">The information-dense Accessory Regular widget size necessitates a single-character identifier for a train type</div></div>
+
+<div class="caption-wrapper"><img class="caption" src="/images/eki-bright-widget-category-color.jpg" width="" height="350" alt="In larger widget sizes where color is supported, color is a useful indicator" title="In larger widget sizes where color is supported, color is a useful indicator" /><div class="caption-text">In larger widget sizes where color is supported, color is a useful indicator</div></div>
+
+<p>My design philosophy for the app is <em>speed</em>, and I also assume long-term usage from users who are familiar with a railway (at least enough that they’d need a widget for it). Therefore, I think its reasonable for users to learn a shorthand to distinguish between a “Local” and an “SL-Taiju” train type.</p>
+
+<p>Of course, tapping on a widget takes you directly to the full station timetable in the app where the full Christian-name of the train type is shown, in case there was any confusion.</p>
+
+<p>In early betas, I had even fewer categories, but thanks to some helpful feedback (thanks, Dave), I realized there was not enough differentiation for some railways in having only 3 categories.</p>
+
+<h3 id="fetching">Fetching</h3>
+
+<p>The interface to my database is pretty straightforward.</p>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">@DependencyClient</span>
+<span class="kd">struct</span> <span class="kt">AppDatabaseClient</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">fetchStation</span><span class="p">:</span> <span class="kd">@Sendable</span> <span class="p">(</span><span class="n">_</span> <span class="nv">stationID</span><span class="p">:</span> <span class="kt">Station</span><span class="o">.</span><span class="kt">ID</span><span class="p">)</span> <span class="k">as</span><span class="n">ync</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="kt">Station</span><span class="p">)</span>
+    <span class="k">var</span> <span class="nv">fetchStationTimetable</span><span class="p">:</span> <span class="kd">@Sendable</span> <span class="p">(</span><span class="n">_</span> <span class="nv">stationID</span><span class="p">:</span> <span class="kt">Station</span><span class="o">.</span><span class="kt">ID</span><span class="p">,</span> <span class="n">_</span> <span class="nv">railDirection</span><span class="p">:</span> <span class="kt">RailDirection</span><span class="p">,</span> <span class="n">_</span> <span class="nv">scheduleSelector</span><span class="p">:</span> <span class="kt">ScheduleSelector</span><span class="p">)</span> <span class="k">as</span><span class="n">ync</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="kt">StationTimetableResponse</span><span class="p">)</span>
+    <span class="k">var</span> <span class="nv">fetchTrainTimetables</span><span class="p">:</span> <span class="kd">@Sendable</span> <span class="p">(</span><span class="n">_</span> <span class="nv">trainTimetableID</span><span class="p">:</span> <span class="kt">TrainTimetable</span><span class="o">.</span><span class="kt">ID</span><span class="p">)</span> <span class="k">as</span><span class="n">ync</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="p">([</span><span class="kt">TrainTimetableResponse</span><span class="p">])</span>
+    <span class="k">var</span> <span class="nv">fetchStationBookmarks</span><span class="p">:</span> <span class="kd">@Sendable</span> <span class="p">(</span><span class="n">_</span> <span class="nv">stationBookmarks</span><span class="p">:</span> <span class="p">[</span><span class="kt">StationBookmark</span><span class="p">])</span> <span class="k">as</span><span class="n">ync</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="p">([</span><span class="kt">StationDirectionDetail</span><span class="p">])</span>
+    <span class="k">var</span> <span class="nv">search</span><span class="p">:</span> <span class="kd">@Sendable</span> <span class="p">(</span><span class="n">_</span> <span class="nv">query</span><span class="p">:</span> <span class="kt">String</span><span class="p">)</span> <span class="k">as</span><span class="n">ync</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="p">([</span><span class="kt">StationSearchResult</span><span class="p">])</span>
+    <span class="k">var</span> <span class="nv">fetchNearbyStations</span><span class="p">:</span> <span class="kd">@Sendable</span> <span class="p">(</span><span class="n">_</span> <span class="nv">coordinate</span><span class="p">:</span> <span class="kt">CLLocationCoordinate2D</span><span class="p">)</span> <span class="k">as</span><span class="n">ync</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="p">([</span><span class="kt">NearbyStationResult</span><span class="p">])</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p>Perhaps surprisingly based on my commitment to speed as written thus far, I did not spend much time optimizing my database queries.</p>
+
+<p>My goal was to get the query working correctly with the most obvious code. Based on testing, this was usually perceivably instantaneous from the user perspective, and therefore needed no more optimization. As of v1.0, essentially all database joins are done manually in Swift.</p>
+
+<p>When I implement more complex screens with several disparate tables worth of data, I’ll probably need to revisit this! But until then, I feel like I’ve met my speed goals.</p>
+
+<h3 id="train-timetables-recursion">Train timetables recursion</h3>
+
+<p>A unique part of the Tokyo rail network is that railways across different companies share trains.</p>
+
+<p>For example, a train that starts at the end of the Minatomirai line transforms into a train on the Toyoko line train at Yokohama station, which then becomes a train on the Fukutoshin line at Shibuya station (which can actually transfer again).</p>
+
+<p>Note that each of these railways is owned by a different company (Yokohama Minatomirai Railway Company, Tokyu Corportation, and Tokyo Metro Co. Ltd., respectively). I don’t quite understand the politics of how this arrangement works for the railway companies, but for riders it’s incredibly convenient.</p>
+
+<div class="caption-wrapper"><img class="caption" src="/images/eki-bright-train-timetable-multiple-railways.gif" width="" height="550" alt="A train starting in Motomachi, Yokohama and ending in Hanno, Saitama transfers seamlessly through 5 different railways" title="A train starting in Motomachi, Yokohama and ending in Hanno, Saitama transfers seamlessly through 5 different railways" /><div class="caption-text">A train starting in Motomachi, Yokohama and ending in Hanno, Saitama transfers seamlessly through 5 different railways</div></div>
+
+<p>In the dataset, a train timetable item has an optional forward and reverse link to another train timetable item. In this way, I can recursively fetch train timetables before and after the one relevant to the user’s selected station.</p>
+
+<p>While testing my first implementation of this, I navigated to a Yamanote train timetable and realized that, since it’s a loop line, the same trains go from early morning to late evening.</p>
+
+<div class="caption-wrapper"><img class="caption" src="/images/eki-bright-train-timetable-yamanote.gif" width="" height="550" alt="A train on the Yamanote line circles all day" title="A train on the Yamanote line circles all day" /><div class="caption-text">A train on the Yamanote line circles all day</div></div>
+
+<h2 id="nearby-stations">Nearby stations</h2>
+
+<p>I modeled the infrastructure for the nearby stations feature as a composition of 3 clients:</p>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">DeviceLocationClient</code></li>
+  <li><code class="language-plaintext highlighter-rouge">AppDatabaseClient</code></li>
+  <li><code class="language-plaintext highlighter-rouge">NearbyStationsClient</code></li>
+</ul>
+
+<p><code class="language-plaintext highlighter-rouge">NearbyStationsClient</code> transforms location events from the <code class="language-plaintext highlighter-rouge">DeviceLocationClient</code> into a list of stations fetched by coordinates from <code class="language-plaintext highlighter-rouge">AppDatabaseClient</code>.</p>
+
+<h3 id="devicelocationclient">DeviceLocationClient</h3>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">DeviceLocationClient</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">locationEvents</span><span class="p">:</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">AsyncStream</span><span class="o">&lt;</span><span class="kt">LocationEvent</span><span class="o">&gt;</span>
+<span class="p">}</span>
+
+<span class="kd">enum</span> <span class="kt">LocationEvent</span> <span class="p">{</span>
+    <span class="k">case</span> <span class="n">paused</span>
+    <span class="k">case</span> <span class="nf">update</span><span class="p">(</span><span class="kt">Location</span><span class="p">)</span>
+    <span class="k">case</span> <span class="n">unavailable</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p>Under-the-hood, <code class="language-plaintext highlighter-rouge">DeviceLocationClient</code> uses the iOS 17 <a href="https://developer.apple.com/documentation/corelocation/cllocationupdate/4211321-liveupdates"><code class="language-plaintext highlighter-rouge">CLLocationUpdate.liveUpdates</code></a> API from the CoreLocation framework. I decided to investigate <code class="language-plaintext highlighter-rouge">CLLocationUpdate</code> instead of the long-standing (but clunky) <code class="language-plaintext highlighter-rouge">CLLocationManager</code> API.</p>
+
+<p>Unfortunately, the first implementation of <code class="language-plaintext highlighter-rouge">CLLocationUpdate</code> in iOS 17 is not fully baked. iOS 18 fixed several behavioral oddities, missing APIs, and integration points.</p>
+
+<p>After spending significant time integrating <code class="language-plaintext highlighter-rouge">CLLocationUpdate</code>, I ultimately decided to temporarily accept its deficiencies with the intention to update to the iOS 18 version after a few months.</p>
+
+<h3 id="nearbystationsclient">NearbyStationsClient</h3>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">NearbyStationsClient</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">nearbyStations</span><span class="p">:</span> <span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">AsyncStream</span><span class="o">&lt;</span><span class="kt">NearbyStationsEvent</span><span class="o">&gt;</span>
+<span class="p">}</span>
+
+<span class="kd">enum</span> <span class="kt">NearbyStationsEvent</span> <span class="p">{</span>
+    <span class="k">case</span> <span class="n">paused</span>
+    <span class="k">case</span> <span class="nf">update</span><span class="p">(</span><span class="kt">Location</span><span class="p">,</span> <span class="p">[</span><span class="kt">NearbyStationResult</span><span class="p">])</span>
+    <span class="k">case</span> <span class="n">unavailable</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p><code class="language-plaintext highlighter-rouge">NearbyStationsClient</code> parses the stream of <code class="language-plaintext highlighter-rouge">LocationEvent</code>s and converts them to <code class="language-plaintext highlighter-rouge">NearbyStationsEvent</code>s by performing a search for each set of coordinates on the station database.</p>
+
+<p>In the <code class="language-plaintext highlighter-rouge">AppDatabaseClient</code>, I calculate the minimum and maximum latitude and longitude around the input coordinate (4 total floats), then use these in the SQL query filter.</p>
+
+<p>For each raw station result from the database, I calculate the actual distance for each, sort the results, and do one last filter in case the station isn’t a departure station.</p>
+
+<h3 id="nearbystationsfeature">NearbyStationsFeature</h3>
+
+<p>The feature layer parses the stream of <code class="language-plaintext highlighter-rouge">NearbyStationsEvent</code>s and uses the raw <code class="language-plaintext highlighter-rouge">Location</code> and <code class="language-plaintext highlighter-rouge">[NearbyStationResult]</code> to calculate a walk estimate in minutes for each result since a distance in meters is not always easy to intuit at a glance.</p>
+
+<p><code class="language-plaintext highlighter-rouge">NearbyStationsFeature</code> powers both the <code class="language-plaintext highlighter-rouge">List</code> section on the home screen and the dedicated nearby stations screen.</p>
+
+<div class="caption-wrapper"><img class="caption" src="/images/eki-bright-v1-nearby-stations-screen.jpg" width="" height="450" alt="The nearby stations dedicated screen" title="The nearby stations dedicated screen" /><div class="caption-text">The nearby stations dedicated screen</div></div>
+
+<h2 id="widgets">Widgets</h2>
+
+<p>This project was my first time implementing widgets. The API and its gradual integration with AppIntents over the years made it tougher than I expected as I ventured beyond its trivial configurations.</p>
+
+<p>There’s only one type of widget in Eki Bright so far: station timetable widgets. I support a few families: <code class="language-plaintext highlighter-rouge">systemMedium</code>, <code class="language-plaintext highlighter-rouge">systemSmall</code>, and <code class="language-plaintext highlighter-rouge">accessoryRegular</code>. I don’t support the Apple Watch in v1.0.</p>
+
+<div class="caption-wrapper"><img class="caption" src="/images/eki-bright-widget-category-color.jpg" width="" height="350" alt="Two `systemSmall`-family widgets side-by-side under the `systemMedium`-family stock Weather app widget" title="Two `systemSmall`-family widgets side-by-side under the `systemMedium`-family stock Weather app widget" /><div class="caption-text">Two `systemSmall`-family widgets side-by-side under the `systemMedium`-family stock Weather app widget</div></div>
+
+<p>Aside: I keep relearning the lesson that it’s useful to keep up to date with all the new frameworks at WWDC each year even if you don’t plan to use them right away. Because often the Apple engineers explain and document updates with the assumption that you already understand that SiriKit was deprecated in favor of Intents which was deprecated in favor of App Intents.</p>
+
+<h3 id="timeline-provider-implementation">Timeline provider implementation</h3>
+
+<p>Implementing a <code class="language-plaintext highlighter-rouge">TimelineProvider</code> for a widget requires 3 functions:</p>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">placeholder</code> - for showing the form of the widget instantaneously.</li>
+  <li><code class="language-plaintext highlighter-rouge">snapshot</code> - for showing an accurate form of the widget quickly with real data.</li>
+  <li><code class="language-plaintext highlighter-rouge">timeline</code> - for showing many accurate states of the widget over time.</li>
+</ul>
+
+<p>The implementation of <code class="language-plaintext highlighter-rouge">snapshot</code> is similar to getting the data for the corresponding station timetable screen in the app.</p>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="k">let</span> <span class="nv">now</span> <span class="o">=</span> <span class="kt">Date</span><span class="p">()</span>
+
+<span class="c1">// Get the entire timetable for the station, direction, and schedule</span>
+<span class="k">let</span> <span class="nv">timetable</span> <span class="o">=</span> <span class="k">try</span> <span class="n">await</span> <span class="n">db</span><span class="o">.</span><span class="nf">fetchStationTimetable</span><span class="p">(</span><span class="nv">stationID</span><span class="p">:</span> <span class="n">selectedStation</span><span class="o">.</span><span class="n">station</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="nv">railDirection</span><span class="p">:</span> <span class="n">selectedStation</span><span class="o">.</span><span class="n">direction</span><span class="p">,</span> <span class="nv">scheduleSelector</span><span class="p">:</span> <span class="o">.</span><span class="nf">from</span><span class="p">(</span><span class="n">now</span><span class="p">))</span>
+
+<span class="c1">// Filter the timetable to ~9 entries</span>
+<span class="k">let</span> <span class="nv">filteredTimetable</span> <span class="o">=</span> <span class="nf">filtered</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="n">now</span><span class="p">,</span> <span class="nv">timetable</span><span class="p">:</span> <span class="n">timetable</span><span class="p">,</span> <span class="nv">family</span><span class="p">:</span> <span class="n">context</span><span class="o">.</span><span class="n">family</span><span class="p">)</span>
+
+<span class="c1">// Return success</span>
+<span class="k">return</span> <span class="o">.</span><span class="nf">init</span><span class="p">(</span><span class="nv">date</span><span class="p">:</span> <span class="n">now</span><span class="p">,</span> <span class="nv">timetable</span><span class="p">:</span> <span class="o">.</span><span class="nf">success</span><span class="p">(</span><span class="n">filteredTimetable</span><span class="p">))</span>
+</code></pre>
+</div>
+
+<p>The implementation of <code class="language-plaintext highlighter-rouge">timeline</code> is more involved.</p>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="c1">// Same as `snapshot` above</span>
+<span class="k">let</span> <span class="nv">now</span> <span class="o">=</span> <span class="kt">Date</span><span class="p">()</span>
+<span class="k">let</span> <span class="nv">fullTimetable</span> <span class="o">=</span> <span class="k">try</span> <span class="n">await</span> <span class="n">db</span><span class="o">.</span><span class="nf">fetchStationTimetable</span><span class="p">(</span><span class="nv">stationID</span><span class="p">:</span> <span class="n">selectedStation</span><span class="o">.</span><span class="n">station</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="nv">railDirection</span><span class="p">:</span> <span class="n">selectedStation</span><span class="o">.</span><span class="n">direction</span><span class="p">,</span> <span class="nv">scheduleSelector</span><span class="p">:</span> <span class="o">.</span><span class="nf">from</span><span class="p">(</span><span class="n">now</span><span class="p">))</span>
+<span class="k">let</span> <span class="nv">nowTimetable</span> <span class="o">=</span> <span class="nf">filtered</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="n">now</span><span class="p">,</span> <span class="nv">timetable</span><span class="p">:</span> <span class="n">fullTimetable</span><span class="p">,</span> <span class="nv">family</span><span class="p">:</span> <span class="n">context</span><span class="o">.</span><span class="n">family</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">nowEntry</span> <span class="o">=</span> <span class="kt">TimetableTimelineEntry</span><span class="p">(</span><span class="nv">date</span><span class="p">:</span> <span class="n">now</span><span class="p">,</span> <span class="nv">timetable</span><span class="p">:</span> <span class="o">.</span><span class="nf">success</span><span class="p">(</span><span class="n">nowTimetable</span><span class="p">))</span>
+
+<span class="c1">// Determine when the timeline should reload</span>
+<span class="k">let</span> <span class="nv">reloadDate</span> <span class="o">=</span> <span class="kt">Date</span><span class="o">.</span><span class="nf">nextDay3am</span><span class="p">(</span><span class="nv">now</span><span class="p">:</span> <span class="n">now</span><span class="p">,</span> <span class="nv">calendar</span><span class="p">:</span> <span class="n">isoTokyoCalendar</span><span class="p">)</span>
+
+<span class="c1">// Create an array of future dates that correspond with the minute _after_ a train leaves</span>
+<span class="k">let</span> <span class="nv">allFutureDates</span> <span class="o">=</span> <span class="n">fullTimetable</span><span class="o">.</span><span class="n">timetableItems</span>
+    <span class="o">.</span><span class="n">compactMap</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="n">departureTime</span><span class="o">.</span><span class="nf">advancedOneMinute</span><span class="p">()</span> <span class="p">}</span>
+    <span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="nv">$0</span><span class="o">.</span><span class="nf">toDate</span><span class="p">(</span><span class="n">now</span><span class="p">)</span> <span class="p">}</span>
+    <span class="o">.</span><span class="n">filter</span> <span class="p">{</span> <span class="nv">$0</span> <span class="o">&gt;=</span> <span class="n">now</span> <span class="p">}</span>
+
+<span class="c1">// Create a filtered timetable based on each of those dates</span>
+<span class="k">let</span> <span class="nv">allFutureTimetables</span> <span class="o">=</span> <span class="n">allFutureDates</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="nf">filtered</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="nv">$0</span><span class="p">,</span> <span class="nv">timetable</span><span class="p">:</span> <span class="n">fullTimetable</span><span class="p">,</span> <span class="nv">family</span><span class="p">:</span> <span class="n">context</span><span class="o">.</span><span class="n">family</span><span class="p">)</span> <span class="p">}</span>
+
+<span class="c1">// Create a TimelineEntry for each and return</span>
+<span class="k">let</span> <span class="nv">allFutureEntries</span> <span class="o">=</span> <span class="nf">zip</span><span class="p">(</span><span class="n">allFutureDates</span><span class="p">,</span> <span class="n">allFutureTimetables</span><span class="p">)</span><span class="o">.</span><span class="n">map</span> <span class="p">{</span> <span class="kt">TimetableTimelineEntry</span><span class="p">(</span><span class="nv">date</span><span class="p">:</span> <span class="nv">$0</span><span class="p">,</span> <span class="nv">timetable</span><span class="p">:</span> <span class="o">.</span><span class="nf">success</span><span class="p">(</span><span class="nv">$1</span><span class="p">))</span> <span class="p">}</span>
+<span class="k">let</span> <span class="nv">allEntries</span> <span class="o">=</span> <span class="p">[</span><span class="n">nowEntry</span><span class="p">]</span> <span class="o">+</span> <span class="n">allFutureEntries</span>
+<span class="k">return</span> <span class="kt">Timeline</span><span class="p">(</span><span class="nv">entries</span><span class="p">:</span> <span class="n">allEntries</span><span class="p">,</span> <span class="nv">policy</span><span class="p">:</span> <span class="o">.</span><span class="nf">after</span><span class="p">(</span><span class="n">reloadDate</span><span class="p">))</span>
+</code></pre>
+</div>
+
+<p>Additionally, I check a few error-ish conditions before calculating the snapshot or timeline:</p>
+
+<ul>
+  <li>The database has been loaded correctly.</li>
+  <li>The user has at least one bookmark in the main app (otherwise I can guide them to do that first).</li>
+  <li>The user has selected a station from the edit widget menu (otherwise I can guide them to do that first).</li>
+</ul>
+
+<h3 id="sharing-data-with-the-main-app">Sharing data with the main app</h3>
+
+<p>Because a widget is an app extension, it requires extra steps to share data.</p>
+
+<h4 id="user-settings-in-the-file-system">User settings in the file system</h4>
+
+<p>My user settings was stored as a <code class="language-plaintext highlighter-rouge">Codable</code>-generated json file in the file system within the app’s sandbox. I wanted to share the list of station bookmarks from that model with the widget extension.</p>
+
+<p>I followed the procedure to enable App Groups for the App ID in the developer portal, registered the group ID in the app target, registered the group ID to the widget target, then changed the location of my user settings file.</p>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kt">FileManager</span><span class="o">.</span><span class="k">default</span>
+	<span class="o">.</span><span class="nf">containerURL</span><span class="p">(</span><span class="nv">forSecurityApplicationGroupIdentifier</span><span class="p">:</span> <span class="s">"group.com.twocentstudios.train-timetable"</span><span class="p">)</span>
+	<span class="o">.</span><span class="nf">appendingPathComponent</span><span class="p">(</span><span class="s">"user-settings"</span><span class="p">,</span> <span class="nv">conformingTo</span><span class="p">:</span> <span class="o">.</span><span class="n">json</span><span class="p">)</span>
+</code></pre>
+</div>
+
+<p>With that change, I could access the user settings struct from the AppIntent the same way I did in the main app.</p>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">struct</span> <span class="kt">StationBookmarkEntityQuery</span><span class="p">:</span> <span class="kt">EntityQuery</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">allBookmarks</span><span class="p">:</span> <span class="kt">IdentifiedArrayOf</span><span class="o">&lt;</span><span class="kt">StationBookmark</span><span class="o">&gt;</span>
+
+    <span class="kd">public</span> <span class="nf">init</span><span class="p">()</span> <span class="p">{</span>
+        <span class="kd">@SharedReader(.userSettings)</span> <span class="k">var</span> <span class="nv">userSettings</span>
+        <span class="n">allBookmarks</span> <span class="o">=</span> <span class="n">userSettings</span><span class="o">.</span><span class="n">stationBookmarks</span>
+    <span class="p">}</span>
+    
+    <span class="c1">// ...</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<h4 id="database-as-a-file-from-the-bundle">Database as a file from the bundle</h4>
+
+<p>Sharing the database was more difficult to solve. But that goes back to the unique database use case I have.</p>
+
+<p>I’m using an SQLite database generated at development-time by my aforementioned Swift script. The database is read-only, bundled within the app, and is versioned alongside the app itself. This is perhaps a less-than-usual use case for an SQLite database according to the documentation around the internet.</p>
+
+<p>I decided to see how far I could get with opening the database directly from the <code class="language-plaintext highlighter-rouge">Bundle</code>. It’s worked fine this way so far for my use case.</p>
+
+<p>For simplicity, the widget reuses the same database access code as the main app. It therefore requires access to the database file.</p>
+
+<p>During most of development, I gave the widget extension a copy of the database for its own bundle. I wasn’t completely aware of the implications of this at first, only that it seemed to work. Unfortunately, it does make a full copy of the database file, and results in 2 full identical copies of the database shipped with the app. The size of my database makes this quite large.</p>
+
+<p>It took some research, but I found an <a href="https://stackoverflow.com/a/27849695">admittedly brittle way</a> to access the app’s bundle from the main bundle by hacking around on the bundle URL. This means I only have to include the database in the main target.</p>
+
+<p>I’m not confident in this solution, but I still prefer it over superfluously taking ~300 MB of every user’s precious device storage.</p>
+
+<h3 id="previews">Previews</h3>
+
+<p>Previews worked great while I was designing and implementing the prototype.</p>
+
+<div class="caption-wrapper"><img class="caption" src="/images/eki-bright-v1-static-widget-previews.jpg" width="" height="350" alt="SwiftUI previews showing widget context variants for a static timeline entry" title="SwiftUI previews showing widget context variants for a static timeline entry" /><div class="caption-text">SwiftUI previews showing widget context variants for a static timeline entry</div></div>
+
+<p>Unfortunately, as soon as I needed to upgrade to a AppIntent-powered timeline provider, the available <code class="language-plaintext highlighter-rouge">#Preview</code> macro no longer compiles.</p>
+
+<p>The below <a href="https://developer.apple.com/documentation/widgetkit/preview(_:as:using:widget:timelineprovider:)-4ljg1">two overloaded macros</a> do not compile under any circumstance for me.</p>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="c1">// Error: Macro 'Preview(_:as:using:widget:timelineProvider:)' requires that 'TestIntentTimelineProvider' conform to 'AppIntentTimelineProvider'</span>
+<span class="cp">#Preview(</span>
+    <span class="k">as</span><span class="p">:</span> <span class="o">.</span><span class="n">systemMedium</span><span class="p">,</span>
+    <span class="nv">using</span><span class="p">:</span> <span class="kt">TestIntent</span><span class="o">.</span><span class="k">self</span><span class="p">,</span>
+    <span class="nv">widget</span><span class="p">:</span> <span class="p">{</span> <span class="kt">TestWidget</span><span class="p">()</span> <span class="p">},</span>
+    <span class="nv">timelineProvider</span><span class="p">:</span> <span class="p">{</span> <span class="kt">TestIntentTimelineProvider</span><span class="p">()</span> <span class="p">}</span>
+<span class="p">)</span>
+
+<span class="c1">// Error: Macro 'Preview(_:as:using:widget:timelineProvider:)' requires that 'TestAppIntentTimelineProvider' conform to 'IntentTimelineProvider'</span>
+<span class="cp">#Preview(</span>
+    <span class="k">as</span><span class="p">:</span> <span class="o">.</span><span class="n">systemMedium</span><span class="p">,</span>
+    <span class="nv">using</span><span class="p">:</span> <span class="kt">TestWidgetConfigurationIntent</span><span class="o">.</span><span class="k">self</span><span class="p">,</span>
+    <span class="nv">widget</span><span class="p">:</span> <span class="p">{</span> <span class="kt">TestWidget</span><span class="p">()</span> <span class="p">},</span>
+    <span class="nv">timelineProvider</span><span class="p">:</span> <span class="p">{</span> <span class="kt">TestAppIntentTimelineProvider</span><span class="p">()</span> <span class="p">}</span>
+<span class="p">)</span>
+</code></pre>
+</div>
+
+<p>My minimal reproduction case is <a href="https://gist.github.com/twocentstudios/c4fc39c5a16115b0aa1a230f69281daa">in this gist</a>.</p>
+
+<p>I had to switch back to single TimelineEntry previews.</p>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="cp">#Preview("Default", as: .accessoryRectangular, widget: {</span>
+    <span class="kt">StationBookmarkWidget</span><span class="p">()</span>
+<span class="p">},</span> <span class="nv">timeline</span><span class="p">:</span> <span class="p">{</span>
+    <span class="kt">TimetableTimelineEntry</span><span class="o">.</span><span class="n">mock</span>
+<span class="p">})</span>
+</code></pre>
+</div>
+
+<h3 id="refreshing">Refreshing</h3>
+
+<p>Apple has several frameworks that operate fundamentally based on vaguely documented heuristics, often partially related to the unique way each user uses their device.</p>
+
+<p><code class="language-plaintext highlighter-rouge">BackgroundTasks</code> is a good example, although it’s perhaps changed in a few years since I trialed it. It took me weeks of daily usage testing to get a feel for relevant metrics like how often a task was run by the system, how long it was run on average, how much work my task completed during that time, and what other system frameworks were available during my app’s allocated period.</p>
+
+<p>I’ve found widgets to be similar to that experience.</p>
+
+<p>My home screen and today screen widgets (of small and medium family) refresh as expected.</p>
+
+<p>However, since its initial implementation, my accessory medium family lock screen widget behaves unpredictably, but always incorrectly.</p>
+
+<p>With the same timeline provider implementation as the other widget types, the lock screen widget does not refresh at 3am. In fact, it usually does not load the day’s station schedule until somewhere between 11am-2pm.</p>
+
+<div class="caption-wrapper"><img class="caption" src="/images/eki-bright-lock-widget-no-more-trains.jpg" width="" height="250" alt="The lock screen widget showing the 'no more trains' message. It should have loaded a fresh timeline at 3am." title="The lock screen widget showing the 'no more trains' message. It should have loaded a fresh timeline at 3am." /><div class="caption-text">The lock screen widget showing the 'no more trains' message. It should have loaded a fresh timeline at 3am.</div></div>
+
+<div class="caption-wrapper"><img class="caption" src="/images/eki-bright-lock-widget-placeholder.jpg" width="" height="250" alt="The lock screen widget showing the placeholder configuration" title="The lock screen widget showing the placeholder configuration" /><div class="caption-text">The lock screen widget showing the placeholder configuration</div></div>
+
+<p>To be fair, there is some <a href="https://developer.apple.com/documentation/widgetkit/keeping-a-widget-up-to-date">official documentation</a> about widget refreshing, but it leaves out enough to keep me guessing as to what the underlying problem actually is.</p>
+
+<p>My current theory is that my widget has too many timeline entries per day.</p>
+
+<p>In the same vein as my <code class="language-plaintext highlighter-rouge">BackgroundTasks</code> framework drama above, it’s painfully slow to debug this issue because I can test only one potential fix per day <em>at most</em>.</p>
+
+<p>My theory of too many timeline entries is based on a few lines from the docs:</p>
+
+<blockquote>
+  <p>A widget’s budget applies to a 24-hour period. WidgetKit tunes the 24-hour window to the user’s daily usage pattern, which means the daily budget doesn’t necessarily reset at exactly midnight.</p>
+</blockquote>
+
+<p>OK, the fact that the reload doesn’t happen until mid-day is consistent with the above.</p>
+
+<blockquote>
+  <p>For a widget the user frequently views, a daily budget typically includes from 40 to 70 refreshes. This rate roughly translates to widget reloads every 15 to 60 minutes, but it’s common for these intervals to vary due to the many factors involved.</p>
+</blockquote>
+
+<p>I’m assuming the loaded term “refresh” refers to the system taking an <code class="language-plaintext highlighter-rouge">Entry</code> struct and loading it into the widget’s UI at the requested schedule and <em>not</em> the timeline provider getting a request from the system to fetch an entire fresh timeline.</p>
+
+<p>If that’s true, then my widget’s timeline definitely has more than 70 entries. In fact, many railway’s stations see over 250 trains per day, and thus will have that many timeline entries <strong>if I always want to show the user the next 6 trains</strong> and no departed trains.</p>
+
+<p>I tested this theory by creating a build that limited the timeline to ~60 entries, basically updating every ~6 train departures. This schedule certainly treads the line between useful and not. In a few days of testing it seemed like this change resulted in the timeline reloading properly at 3am.</p>
+
+<p>With that knowledge, the rest of the docs make even less sense to me:</p>
+
+<blockquote>
+  <p>If your widget can predict points in time that it should reload, the best approach is to generate a timeline for as many future dates as possible.</p>
+</blockquote>
+
+<p>In isolation, this makes sense and is what I’m trying to do. In theory, I could generate an indefinite timeline since the station timetables are fixed.</p>
+
+<blockquote>
+  <p>Keep the interval of entries in the timeline as large as possible for the content you display.</p>
+</blockquote>
+
+<p>For me, “as large as possible” is once every train departure, which can be every minute at minimum.</p>
+
+<blockquote>
+  <p>WidgetKit imposes a minimum amount of time before it reloads a widget.</p>
+</blockquote>
+
+<p>OK, fine, understandable. Hopefully it’s doing this somewhat intelligently based on user behavior though?</p>
+
+<blockquote>
+  <p>Your timeline provider should create timeline entries that are at least about 5 minutes apart.</p>
+</blockquote>
+
+<p>Why though? Why can’t the system impose this limit dynamically, again, based on user behavior or whatever other factors it has?</p>
+
+<p>Regardless of the docs, I’m still confused as to why this failure case appears as it does:</p>
+
+<ul>
+  <li>Why am I not seeing the timeline stop updating on a random time entry instead of the “no more trains” empty state or placeholder state?</li>
+  <li>Why am I not seeing any issue with the other widget types?</li>
+  <li>Why does WidgetKit not have at least a debug accessible error for reporting “too many timeline entries”? This could even be thrown when returning the <code class="language-plaintext highlighter-rouge">Timeline</code>.</li>
+</ul>
+
+<p>A few more hypotheses I have:</p>
+
+<ul>
+  <li>I’m generally more active in the evening than the morning. Perhaps the hidden device heuristics are causing the system to expend my widget’s refresh budget during the time range I have the most device pickups.</li>
+  <li>The always-on screen feature is causes the system to be too overzealous about updating the widget. According to Screen Time, I generally have about 60-80 device pickups per day. I don’t think that counts times I wake my phone (e.g. to check notifications) but don’t unlock it. If the widget loads a new entry for each pickup and pre-pickup, plus whatever other triggers it has, that would exceed the budget.</li>
+</ul>
+
+<p>A beta tester also confirmed the widget’s errant lock screen behavior on an iPhone SE, which makes me even less sure about the causal factors I’ve hypothesized.</p>
+
+<p>As you can probably tell, this bug has been a thorn in my side for months. I considered removing the lock screen widget from v1.0, but I figured it’d get better data for debugging, and users would still see the timetable for most of the day. The failure also doesn’t prevent users tapping through the widget to quickly see the timetable in the app.</p>
+
+<h2 id="app-navigation">App navigation</h2>
+
+<p>The navigation story for Eki Bright is straightforward since there are so few screens.</p>
+
+<p>There’s one navigation stack that handles all screens except the about screen, which is presented modally.</p>
+
+<p>The behavior of the search feature is standard iOS, but still a bit weird in my opinion.</p>
+
+<p>I’m still planning to keep the navigation structure as simple as possible as the app’s features continue to evolve for the sake of speed. However, I’d like to provide more dedicated resource screens (e.g. a railway screen, a station detail screen), and more links between those screens.</p>
+
+<h3 id="navigation-in-tca">Navigation in TCA</h3>
+
+<p>The improvements to navigation in TCA are welcome. There are two ways to handle stack-based navigation in TCA: manipulating the <code class="language-plaintext highlighter-rouge">StackState</code> programmatically and/or using the SwiftUI <code class="language-plaintext highlighter-rouge">NavigationLink</code> view.</p>
+
+<p>I chose the former, and am intercepting all navigation-related reducer actions at the root level and manipulating the <code class="language-plaintext highlighter-rouge">StackState</code>. (However, dismissals are handled with the <code class="language-plaintext highlighter-rouge">dismiss</code> dependency.)</p>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kt">Reduce</span> <span class="p">{</span> <span class="n">state</span><span class="p">,</span> <span class="n">action</span> <span class="k">in</span>
+    <span class="k">switch</span> <span class="n">action</span> <span class="p">{</span>
+    <span class="k">case</span> <span class="kd">let</span> <span class="o">.</span><span class="nf">path</span><span class="p">(</span><span class="o">.</span><span class="nf">element</span><span class="p">(</span><span class="nv">id</span><span class="p">:</span> <span class="n">id</span><span class="p">,</span> <span class="nv">action</span><span class="p">:</span> <span class="o">.</span><span class="nf">stationDetail</span><span class="p">(</span><span class="o">.</span><span class="nf">railDirectionButtonTapped</span><span class="p">(</span><span class="n">railDirection</span><span class="p">)))):</span>
+        <span class="k">guard</span> <span class="k">let</span> <span class="nv">stationDetailState</span> <span class="o">=</span> <span class="n">state</span><span class="o">.</span><span class="n">path</span><span class="p">[</span><span class="nv">id</span><span class="p">:</span> <span class="n">id</span><span class="p">]?</span><span class="o">.</span><span class="n">stationDetail</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="o">.</span><span class="k">none</span> <span class="p">}</span>
+        <span class="n">state</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="o">.</span><span class="nf">stationDirections</span><span class="p">(</span><span class="o">.</span><span class="nf">init</span><span class="p">(</span><span class="nv">station</span><span class="p">:</span> <span class="n">stationDetailState</span><span class="o">.</span><span class="n">station</span><span class="p">,</span> <span class="nv">initialRailDirection</span><span class="p">:</span> <span class="n">railDirection</span><span class="p">)))</span>
+        <span class="k">return</span> <span class="o">.</span><span class="k">none</span>
+    <span class="k">case</span> <span class="kd">let</span> <span class="o">.</span><span class="nf">path</span><span class="p">(</span><span class="o">.</span><span class="nf">element</span><span class="p">(</span><span class="nv">id</span><span class="p">:</span> <span class="n">_</span><span class="p">,</span> <span class="nv">action</span><span class="p">:</span> <span class="o">.</span><span class="nf">nearbyStations</span><span class="p">(</span><span class="o">.</span><span class="nf">searchResultTapped</span><span class="p">(</span><span class="n">nearbyStation</span><span class="p">)))):</span>
+        <span class="n">state</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="o">.</span><span class="nf">stationDirections</span><span class="p">(</span><span class="o">.</span><span class="nf">init</span><span class="p">(</span><span class="nv">station</span><span class="p">:</span> <span class="n">nearbyStation</span><span class="o">.</span><span class="n">station</span><span class="p">)))</span>
+        <span class="k">return</span> <span class="o">.</span><span class="k">none</span>
+    <span class="k">case</span> <span class="kd">let</span> <span class="o">.</span><span class="nf">path</span><span class="p">(</span><span class="o">.</span><span class="nf">element</span><span class="p">(</span><span class="nv">id</span><span class="p">:</span> <span class="n">_</span><span class="p">,</span> <span class="nv">action</span><span class="p">:</span> <span class="o">.</span><span class="nf">stationDirections</span><span class="p">(</span><span class="o">.</span><span class="nf">timetableLeft</span><span class="p">(</span><span class="o">.</span><span class="nf">trainTapped</span><span class="p">(</span><span class="n">trainTimetableID</span><span class="p">,</span> <span class="nv">from</span><span class="p">:</span> <span class="n">stationID</span><span class="p">))))):</span>
+        <span class="n">state</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="nf">append</span><span class="p">(</span><span class="o">.</span><span class="nf">trainTimetable</span><span class="p">(</span><span class="o">.</span><span class="nf">init</span><span class="p">(</span><span class="nv">trainTimetableID</span><span class="p">:</span> <span class="n">trainTimetableID</span><span class="p">,</span> <span class="nv">stationOfInterest</span><span class="p">:</span> <span class="n">stationID</span><span class="p">)))</span>
+        <span class="k">return</span> <span class="o">.</span><span class="k">none</span>
+    <span class="c1">// ...</span>
+</code></pre>
+</div>
+
+<p>I consider this strategy to be somewhat brittle, but up to now it’s provided flexibility. The feature hierarchy is not so complicated yet as to be unwieldy.</p>
+
+<h2 id="design">Design</h2>
+
+<p>Depending on the app and feature, I occasionally do design work upfront in a pencil sketch and/or a Figma page. I also feel comfortable iterating quickly on design in a SwiftUI preview.</p>
+
+<p>Eki Bright evolved gradually from a prototype. And at first, I was mostly focused on the appearance of each widget family.</p>
+
+<p>I also planned to, and still plan to, commission a professional designer to make a full pass at least the visual design language of the app if not the UX and branding as well.</p>
+
+<p>However, for v1.0 I decided to play it safe with a utilitarian design focused on, you guessed it, speed. And closely related to speed, visual clarity.</p>
+
+<h3 id="utilitarian-design">Utilitarian design</h3>
+
+<p>The standard iOS design language is relatively utilitarian, so it’s not <em>too</em> difficult to play within that sandbox if you don’t have strong opinions about visual design.</p>
+
+<p>There are a lot of benefits that fall out of the decision to stick to standard UI framework components and HIG guidelines:</p>
+
+<ul>
+  <li>Dark mode requires little additional work.</li>
+  <li>Dynamic type requires thought and testing, but comparatively less work.</li>
+  <li>App-wide constants like screen margins don’t need to be maintained.</li>
+  <li>There’s no additional costs for font licensing.</li>
+  <li>Programmatic component configuration is quick.</li>
+</ul>
+
+<p>This extends to e.g. using <code class="language-plaintext highlighter-rouge">List</code> vs <code class="language-plaintext highlighter-rouge">LazyVStack</code> (a decision that’s more loaded than just visual aesthetics). <code class="language-plaintext highlighter-rouge">List</code> has out-of-the-box support for item moving, deleting, edit mode, sticky headers/footers, dividers, etc. Although I just as often found myself fighting system defaults when my particular layout requirements fell apart. There’s no free lunch in (iOS) dev.</p>
+
+<h3 id="color">Color</h3>
+
+<p>I defer my use of color to the railway colors from my data provider and the 5 train category colors I chose. From my experience as a user, these colors are incredibly important in quickly choosing a station from my bookmarks or an entry from the timetable.</p>
+
+<p>When choosing the app’s accent color (a <a href="https://developer.apple.com/design/human-interface-guidelines/color#App-accent-colors">HIG staple</a>), I intentionally picked a purple-ish color because there are few railways that use purple branding.</p>
+
+<p>I do my best to create visual hierarchy with SwiftUI’s <code class="language-plaintext highlighter-rouge">primary</code> and <code class="language-plaintext highlighter-rouge">secondary</code> foreground colors combined with font sizes and bolding. It’s a tough balance, and it took constant effort iterating, but I feel pretty good about where v1.0 ended up.</p>
+
+<h3 id="animations">Animations</h3>
+
+<p>My use of animations is relatively light. The nearby list reconfigures often while moving, and these items rearrange themselves with animation. The station timetable screen scrolls naturally when the time updates. Besides that, I follow that same utilitarian mindset mentioned above.</p>
+
+<h3 id="rail-direction">Rail direction</h3>
+
+<p>The toughest UX decisions I’ve encountered so far (and which the jury’s still out on) are related to rail directions.</p>
+
+<ul>
+  <li>How to display the rail direction name to users.</li>
+  <li>Where to put the rail direction segmented control on the station timetable screen.</li>
+</ul>
+
+<div class="caption-wrapper"><img class="caption" src="/images/eki-bright-v1-station-timetable-direction.jpg" width="" height="550" alt="The rail direction segmented control in the toolbar (bottom), and rail direction indicator (top)" title="The rail direction segmented control in the toolbar (bottom), and rail direction indicator (top)" /><div class="caption-text">The rail direction segmented control in the toolbar (bottom), and rail direction indicator (top)</div></div>
+
+<p>Most official rail direction names are in the dataset as 上り (inbound), 下り (outbound), 北へ (northbound), etc. However, these official names are either absent or de-emphasized in signage around stations.</p>
+
+<div class="caption-wrapper"><img class="caption" src="/images/eki-bright-yamanote-station-signage.jpg" width="" height="350" alt="Rare signage at JR Ebisu station showing inner-loop (内回り) and outer-loop (外回り) rail directions of the Yamanote line" title="Rare signage at JR Ebisu station showing inner-loop (内回り) and outer-loop (外回り) rail directions of the Yamanote line" /><div class="caption-text">Rare signage at JR Ebisu station showing inner-loop (内回り) and outer-loop (外回り) rail directions of the Yamanote line</div></div>
+
+<h4 id="how-to-display-the-rail-direction-name">How to display the rail direction name</h4>
+
+<p>For v1.0 especially, I wanted to keep my own large-scale supplements to the official dataset as minimal as possible.</p>
+
+<p>My choice for displaying the rail direction was to:</p>
+
+<ul>
+  <li><strong>(A)</strong> Default to showing the official direction name (“inbound”) with the awareness that users would find it jarring at first, but eventually learn and adapt for railways they used regularly (arguably the core use-case for the app).</li>
+  <li><strong>(B)</strong> Default to replacing the official direction name with the last station in that railway. This is a common display technique seen in station signage, although sometimes the <em>next</em> station or the <em>next major</em> station are used instead.</li>
+  <li><strong>(C)</strong> Default to replacing the official direction name with my own custom choice based on first-hand research of each railway.</li>
+</ul>
+
+<p>I chose (A), using the official direction name out of pragmatism.</p>
+
+<p>In user testing, this has continued to be a pain point, and will certainly be a high-priority item in the TODO list.</p>
+
+<h4 id="where-to-put-the-rail-direction-segmented-control">Where to put the rail direction segmented control</h4>
+
+<p>The (optional, depending on the station and railway) segmented control for the rail direction affects all the contents of the station timetable screen besides the station name in the navigation bar, the railway name, and the schedule.</p>
+
+<p>Considering hierarchy, it should either be in the navigation bar or the toolbar.</p>
+
+<p>The navigation bar is already full with the title, especially when used in <code class="language-plaintext highlighter-rouge">NavigationBarItem.TitleDisplayMode.large</code>. However, it could still be condensed into the trailing bar item.</p>
+
+<p>My instinct was to put the segmented control in the toolbar. This makes it easier to tap without reaching, and also filling the space and disappearing cleanly when it’s not relevant for the station. I supplemented it with a smaller label in the section header since it’s important information.</p>
+
+<p>However, in user testing, some users were completely blind to the segmented control in the toolbar position. If users don’t notice it, they’ll also be unaware they can swipe left and right to page between timetables for each rail direction.</p>
+
+<p>It is crucially important users don’t miss this control. When coming from a nearby or search result, the user will navigate to the default rail direction. If they don’t realize they need to navigate further to see the opposite direction, they may use incorrect timeline information or spend time searching the interface.</p>
+
+<p>Perhaps the simplest solution is to add a tooltip during onboarding to call this out. I’m generally pretty skeptical of making discovery of any critical feature reliant on users reading text.</p>
+
+<p>For v1.0 it was a necessary evil to ship the toolbar interface and further measure opinions.</p>
+
+<p>Short term, I should add a tap action to the rail direction label in the section header that transitions to the other rail direction timetable.</p>
+
+<p>Medium term, I’m planning on de-emphasizing the full station timetable screen and replacing it in the navigation hierarchy with a station detail screen. When designing the detail screen, I can be more careful about highlighting the rail direction distinction.</p>
+
+<h3 id="yamanote-train-destination">Yamanote train destination</h3>
+
+<p>Related to rail direction is the destination station of a particular train. In the simple case, railways always end at the same station. But sometimes a railway breaks off into other railways that end at different stations.</p>
+
+<div class="caption-wrapper"><img class="caption" src="/images/eki-bright-train-destination-nakame.jpg" width="" height="350" alt="The Toyoko line from Nakameguro continues on to a few different stations depending on the train" title="The Toyoko line from Nakameguro continues on to a few different stations depending on the train" /><div class="caption-text">The Toyoko line from Nakameguro continues on to a few different stations depending on the train</div></div>
+
+<p>The Yamanote loop line (as my constant source of edge cases) presented a user clarity issue compounded by the aforementioned “how to display the rail direction name” woes.</p>
+
+<p>The Yamanote line trains always start and end at Osaki station. That means every timetable for every Yamanote line station and rail direction showed Osaki as the destination.</p>
+
+<div class="caption-wrapper"><img class="caption" src="/images/eki-bright-destination-yamanote-before.jpg" width="" height="350" alt="Both inner-loop and outer-loop trains show a destination of Osaki 大崎" title="Both inner-loop and outer-loop trains show a destination of Osaki 大崎" /><div class="caption-text">Both inner-loop and outer-loop trains show a destination of Osaki 大崎</div></div>
+
+<p>In my use I found train destination is a good backup when rail direction was unclear. Without this affordance, the mental gymnastics I needed to do to understand inner-loop and outer-loop directions was a deal-breaker for me.</p>
+
+<p>I decided to spend a little time manually adding “direction stations” for each station on the Yamanote line only. I consulted signage for each station and chose the next most identifiable station.</p>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="k">let</span> <span class="nv">directionStations</span><span class="p">:</span> <span class="p">[</span><span class="kt">StationDirectionPair</span><span class="p">:</span> <span class="kt">Station</span><span class="o">.</span><span class="kt">ID</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="o">.</span><span class="nf">init</span><span class="p">(</span><span class="nv">stationID</span><span class="p">:</span> <span class="s">"JR-East.Yamanote.Osaki"</span><span class="p">,</span> <span class="nv">railDirection</span><span class="p">:</span> <span class="o">.</span><span class="n">innerLoop</span><span class="p">):</span> <span class="s">"JR-East.Yamanote.Shinagawa"</span><span class="p">,</span>
+    <span class="o">.</span><span class="nf">init</span><span class="p">(</span><span class="nv">stationID</span><span class="p">:</span> <span class="s">"JR-East.Yamanote.Gotanda"</span><span class="p">,</span> <span class="nv">railDirection</span><span class="p">:</span> <span class="o">.</span><span class="n">innerLoop</span><span class="p">):</span> <span class="s">"JR-East.Yamanote.Shinagawa"</span><span class="p">,</span>
+    <span class="o">.</span><span class="nf">init</span><span class="p">(</span><span class="nv">stationID</span><span class="p">:</span> <span class="s">"JR-East.Yamanote.Meguro"</span><span class="p">,</span> <span class="nv">railDirection</span><span class="p">:</span> <span class="o">.</span><span class="n">innerLoop</span><span class="p">):</span> <span class="s">"JR-East.Yamanote.Shinagawa"</span><span class="p">,</span>
+    <span class="o">.</span><span class="nf">init</span><span class="p">(</span><span class="nv">stationID</span><span class="p">:</span> <span class="s">"JR-East.Yamanote.Ebisu"</span><span class="p">,</span> <span class="nv">railDirection</span><span class="p">:</span> <span class="o">.</span><span class="n">innerLoop</span><span class="p">):</span> <span class="s">"JR-East.Yamanote.Shinagawa"</span><span class="p">,</span>
+    <span class="o">.</span><span class="nf">init</span><span class="p">(</span><span class="nv">stationID</span><span class="p">:</span> <span class="s">"JR-East.Yamanote.Shibuya"</span><span class="p">,</span> <span class="nv">railDirection</span><span class="p">:</span> <span class="o">.</span><span class="n">innerLoop</span><span class="p">):</span> <span class="s">"JR-East.Yamanote.Shinagawa"</span><span class="p">,</span>
+    <span class="o">.</span><span class="nf">init</span><span class="p">(</span><span class="nv">stationID</span><span class="p">:</span> <span class="s">"JR-East.Yamanote.Harajuku"</span><span class="p">,</span> <span class="nv">railDirection</span><span class="p">:</span> <span class="o">.</span><span class="n">innerLoop</span><span class="p">):</span> <span class="s">"JR-East.Yamanote.Shibuya"</span><span class="p">,</span>
+    <span class="o">.</span><span class="nf">init</span><span class="p">(</span><span class="nv">stationID</span><span class="p">:</span> <span class="s">"JR-East.Yamanote.Yoyogi"</span><span class="p">,</span> <span class="nv">railDirection</span><span class="p">:</span> <span class="o">.</span><span class="n">innerLoop</span><span class="p">):</span> <span class="s">"JR-East.Yamanote.Shibuya"</span><span class="p">,</span>
+    <span class="c1">// ...</span>
+</code></pre>
+</div>
+
+<div class="caption-wrapper"><img class="caption" src="/images/eki-bright-destination-yamanote-after.jpg" width="" height="350" alt="Yamanote train destinations (Shibuya 渋谷 and Shinagawa 品川) are now more relevant and make rail directions more differentiable at a glance" title="Yamanote train destinations (Shibuya 渋谷 and Shinagawa 品川) are now more relevant and make rail directions more differentiable at a glance" /><div class="caption-text">Yamanote train destinations (Shibuya 渋谷 and Shinagawa 品川) are now more relevant and make rail directions more differentiable at a glance</div></div>
+
+<h2 id="conclusion">Conclusion</h2>
+
+<p>I covered a lot in this post. This is a decent summary of the many problems I worked through to varying degrees of “solved” during the few months of development leading up to v1.0 of Eki Bright.</p>
+
+<p>As I become more confident in my solution to some of the above problems, I’ll try to write some more straightforward “How to X in Swift” posts in the future.</p>
+
+<p>Until then, thanks for reading.</p>
+
+  </article>
+
+</div>
+
+      </div>
+    </div>
+
+    <footer class="site-footer">
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">twocentstudios</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col  footer-col-1">
+        <ul class="contact-list">
+          <li><a href="mailto:chris@twocentstudios.com">chris@twocentstudios.com</a></li>
+          
+          <li>
+            <a href="https://github.com/twocentstudios">
+              <span class="icon  icon--github">
+                <svg viewBox="0 0 16 16">
+                  <path fill="#828282" d="M7.999,0.431c-4.285,0-7.76,3.474-7.76,7.761 c0,3.428,2.223,6.337,5.307,7.363c0.388,0.071,0.53-0.168,0.53-0.374c0-0.184-0.007-0.672-0.01-1.32 c-2.159,0.469-2.614-1.04-2.614-1.04c-0.353-0.896-0.862-1.135-0.862-1.135c-0.705-0.481,0.053-0.472,0.053-0.472 c0.779,0.055,1.189,0.8,1.189,0.8c0.692,1.186,1.816,0.843,2.258,0.645c0.071-0.502,0.271-0.843,0.493-1.037 C4.86,11.425,3.049,10.76,3.049,7.786c0-0.847,0.302-1.54,0.799-2.082C3.768,5.507,3.501,4.718,3.924,3.65 c0,0,0.652-0.209,2.134,0.796C6.677,4.273,7.34,4.187,8,4.184c0.659,0.003,1.323,0.089,1.943,0.261 c1.482-1.004,2.132-0.796,2.132-0.796c0.423,1.068,0.157,1.857,0.077,2.054c0.497,0.542,0.798,1.235,0.798,2.082 c0,2.981-1.814,3.637-3.543,3.829c0.279,0.24,0.527,0.713,0.527,1.437c0,1.037-0.01,1.874-0.01,2.129 c0,0.208,0.14,0.449,0.534,0.373c3.081-1.028,5.302-3.935,5.302-7.362C15.76,3.906,12.285,0.431,7.999,0.431z"/>
+                </svg>
+              </span>
+
+              <span class="username">twocentstudios</span>
+            </a>
+          </li>
+          
+
+          <li>
+            <a href="https://hackyderm.io/@twocentstudios">
+              <span class="icon">
+                <svg viewBox="0 0 24 24">
+                  <path fill="#828282" d="M21.327 8.566c0-4.339-2.843-5.61-2.843-5.61-1.433-.658-3.894-.935-6.451-.956h-.063c-2.557.021-5.016.298-6.45.956 0 0-2.843 1.272-2.843 5.61 0 .993-.019 2.181.012 3.441.103 4.243.778 8.425 4.701 9.463 1.809.479 3.362.579 4.612.51 2.268-.126 3.541-.809 3.541-.809l-.075-1.646s-1.621.511-3.441.449c-1.804-.062-3.707-.194-3.999-2.409a4.523 4.523 0 0 1-.04-.621s1.77.433 4.014.536c1.372.063 2.658-.08 3.965-.236 2.506-.299 4.688-1.843 4.962-3.254.434-2.223.398-5.424.398-5.424zm-3.353 5.59h-2.081V9.057c0-1.075-.452-1.62-1.357-1.62-1 0-1.501.647-1.501 1.927v2.791h-2.069V9.364c0-1.28-.501-1.927-1.502-1.927-.905 0-1.357.546-1.357 1.62v5.099H6.026V8.903c0-1.074.273-1.927.823-2.558.566-.631 1.307-.955 2.228-.955 1.065 0 1.872.409 2.405 1.228l.518.869.519-.869c.533-.819 1.34-1.228 2.405-1.228.92 0 1.662.324 2.228.955.549.631.822 1.484.822 2.558v5.253z"/>
+                </svg>
+              </span>
+
+              <span class="username">twocentstudios</span>
+            </a>
+          </li>
+
+          
+          <li>
+            <a href="https://twitter.com/twocentstudios">
+              <span class="icon  icon--twitter">
+                <svg viewBox="0 0 16 16">
+                  <path fill="#828282" d="M15.969,3.058c-0.586,0.26-1.217,0.436-1.878,0.515c0.675-0.405,1.194-1.045,1.438-1.809
+                  c-0.632,0.375-1.332,0.647-2.076,0.793c-0.596-0.636-1.446-1.033-2.387-1.033c-1.806,0-3.27,1.464-3.27,3.27 c0,0.256,0.029,0.506,0.085,0.745C5.163,5.404,2.753,4.102,1.14,2.124C0.859,2.607,0.698,3.168,0.698,3.767 c0,1.134,0.577,2.135,1.455,2.722C1.616,6.472,1.112,6.325,0.671,6.08c0,0.014,0,0.027,0,0.041c0,1.584,1.127,2.906,2.623,3.206 C3.02,9.402,2.731,9.442,2.433,9.442c-0.211,0-0.416-0.021-0.615-0.059c0.416,1.299,1.624,2.245,3.055,2.271 c-1.119,0.877-2.529,1.4-4.061,1.4c-0.264,0-0.524-0.015-0.78-0.046c1.447,0.928,3.166,1.469,5.013,1.469 c6.015,0,9.304-4.983,9.304-9.304c0-0.142-0.003-0.283-0.009-0.423C14.976,4.29,15.531,3.714,15.969,3.058z"/>
+                </svg>
+              </span>
+
+              <span class="username">twocentstudios</span>
+            </a>
+          </li>
+          
+        </ul>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+
+
+  </body>
+
+</html>
