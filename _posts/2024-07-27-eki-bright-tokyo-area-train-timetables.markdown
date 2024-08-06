@@ -17,7 +17,7 @@ In short, it's an app for quickly accessing offline station timetables and train
 In this series of posts I'll talk about:
 
 - **This post** - the motivation behind the app and the solution I've begun to explore
-- **[Coming soon]** Eki Bright- Developing the App for iOS - the high-level implementation details
+- **[Eki Bright- Developing the App for iOS](/2024/08/06/eki-bright-developing-the-app-for-ios/)** - the high-level implementation details
 
 Tokyo-area residents can download the app from the [App Store](https://apps.apple.com/app/%E9%A7%85%E3%83%96%E3%83%A9%E3%82%A4%E3%83%88/id6504702463).
 
@@ -232,4 +232,4 @@ I'm of course happy to see this little app make its way out into the world, and 
 
 It may simply be a naive sense of control Eki Bright gives me when bouncing around timetables, but regardless it's surprisingly entertaining (rather than burdensome) to do my own simple route planning on the fly. And knowing I'm getting the absolute fastest trip from A to B.
 
-<!-- For developers, see you in the [next post](TODO) for all the fun development details. -->
+For developers, see you in the [next post](/2024/08/06/eki-bright-developing-the-app-for-ios/) for all the fun development details.
