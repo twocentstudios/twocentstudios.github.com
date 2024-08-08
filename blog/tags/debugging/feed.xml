@@ -1,0 +1,443 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>twocentstudios</title>
+    <description>A coding blog covering iOS, Swift, and other programming topics.</description>
+    <link>https://twocentstudios.com/blog/tags/debugging/index.html</link>
+    <atom:link href="https://twocentstudios.com/blog/tags/debugging/feed.xml" rel="self" type="application/rss+xml"/>
+    <pubDate>Thu, 08 Aug 2024 01:30:14 -0500</pubDate>
+    <lastBuildDate>Thu, 08 Aug 2024 01:30:14 -0500</lastBuildDate>
+    <generator>Jekyll v3.9.3</generator>
+    
+      <item>
+        <title>Reminder: Conditional Breakpoints are Slow</title>
+        <description>&lt;p&gt;Perhaps it’s obvious that conditional breakpoints in LLDB add noticeable execution latency, but it was a lesson I needed to relearn. And relearning this lesson is fun debugging story to share.&lt;/p&gt;
+
+&lt;p&gt;The context of this story is specifically Swift Error breakpoints, which obscured the root cause of the issue long enough to cause me some serious emotional damage. Despite the lasting trauma, it was a happy ending because the fix required no code changes and no emergency app submissions.&lt;/p&gt;
+
+&lt;h2 id=&quot;tldr&quot;&gt;TL;DR&lt;/h2&gt;
+
+&lt;p&gt;&lt;strong&gt;Swift Error breakpoints with type filters or conditions can dramatically slow down execution when errors are thrown in a tight loop.&lt;/strong&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Disable conditional Swift Error breakpoints when you are not actively debugging with them.&lt;/li&gt;
+  &lt;li&gt;Consider not using error handling for control flow in cases where the error handling could end up in a tight loop.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&quot;issue-and-symptoms&quot;&gt;Issue and symptoms&lt;/h2&gt;
+
+&lt;p&gt;During normal development, I noticed slow startup and noticeable hitching when navigating to and from screens that made database fetches. However, outside the normal build/run cycle, the hitching would disappear and the app would run quickly and smoothly.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/conditional-breakpoint-station-load.gif&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Loading speed of the station timetable screen on the simulator after a build and run (it was twice as slow on device)&quot; title=&quot;Loading speed of the station timetable screen on the simulator after a build and run (it was twice as slow on device)&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Loading speed of the station timetable screen on the simulator after a build and run (it was twice as slow on device)&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;The problem appeared somewhat randomly and at first was not severe enough to disrupt my usual development cycle outside being a little annoying.&lt;/p&gt;
+
+&lt;p&gt;After adding more features, the problem gradually became so pronounced that I could no longer debug normally. I would build and run to install the app, then immediately stop debugging and re-launch the app in order to continue testing.&lt;/p&gt;
+
+&lt;p&gt;I did some light investigation throughout the subsequent weeks of development, but I never spent enough time to discover the root cause as I wanted to focus on shipping &lt;a href=&quot;/2024/08/06/eki-bright-developing-the-app-for-ios/&quot;&gt;Eki Bright&lt;/a&gt; to the App Store. At this point I had only confirmed that the issue was present:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;In both Debug and Release build configurations.&lt;/li&gt;
+  &lt;li&gt;In both the iOS simulator and on device.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;root-cause&quot;&gt;Root cause&lt;/h3&gt;
+
+&lt;p&gt;Before diving into the full story, a TL;DR on root cause of the issue.&lt;/p&gt;
+
+&lt;h4 id=&quot;swift-error-breakpoints&quot;&gt;Swift Error breakpoints&lt;/h4&gt;
+
+&lt;p&gt;Xcode/LLDB has a useful breakpoint type for Swift errors. A fresh Swift Error breakpoint will pause execution when any error is thrown.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/conditional-breakpoint-add-menu.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;All the breakpoint types you can add in Xcode 15.4&quot; title=&quot;All the breakpoint types you can add in Xcode 15.4&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;All the breakpoint types you can add in Xcode 15.4&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Additionally, a Swift Error breakpoint can be conditional to a specific error type.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/conditional-breakpoint-swift-error-edit.jpg&quot; width=&quot;&quot; height=&quot;300&quot; alt=&quot;Swift Error breakpoints also include a Type filter&quot; title=&quot;Swift Error breakpoints also include a Type filter&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Swift Error breakpoints also include a Type filter&lt;/div&gt;&lt;/div&gt;
+
+&lt;h4 id=&quot;grdb&quot;&gt;GRDB&lt;/h4&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://github.com/groue/GRDB.swift&quot;&gt;GRDB&lt;/a&gt; is a “toolkit for SQLite databases”.&lt;/p&gt;
+
+&lt;p&gt;GRDB has a useful feature called &lt;a href=&quot;https://github.com/groue/GRDB.swift/blob/dd6b98ce04eda39aa22f066cd421c24d7236ea8a/README.md#codable-records&quot;&gt;Codable Records&lt;/a&gt; alongside &lt;a href=&quot;https://github.com/groue/GRDB.swift/blob/dd6b98ce04eda39aa22f066cd421c24d7236ea8a/README.md#json-columns&quot;&gt;JSON Columns&lt;/a&gt;.&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;When a Codable record contains a property that is not a simple value (Bool, Int, String, Date, Swift enums, etc.), that value is encoded and decoded as a JSON string.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;This feature makes it simple and boilerplate-free to use embedded JSON in the context of traditional SQL tables.&lt;/p&gt;
+
+&lt;p&gt;Deep in the implementation details, GRDB uses Swift errors to fall back to JSON decoding when a column is not decodable as a simple value.&lt;/p&gt;
+
+&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;// GRDB/Record/FetchableRecord+Decodable.swift&lt;/span&gt;
+
+&lt;span class=&quot;c1&quot;&gt;/// The decoder that decodes from a database column&lt;/span&gt;
+&lt;span class=&quot;kd&quot;&gt;private&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ColumnDecoder&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;R&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;FetchableRecord&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Decoder&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;c1&quot;&gt;// ...&lt;/span&gt;
+    
+    &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;container&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Key&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;keyedBy&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;type&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Key&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;Type&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;throws&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;KeyedDecodingContainer&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Key&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;c1&quot;&gt;// We need to switch to JSON decoding&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;throw&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;JSONRequiredError&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;c1&quot;&gt;/// The decoder that decodes a record from a database row&lt;/span&gt;
+&lt;span class=&quot;kd&quot;&gt;private&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;_RowDecoder&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;R&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;FetchableRecord&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Decoder&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;c1&quot;&gt;// ...&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;KeyedContainer&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Key&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;CodingKey&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;KeyedDecodingContainerProtocol&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;c1&quot;&gt;// ...&lt;/span&gt;
+
+        &lt;span class=&quot;kd&quot;&gt;private&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;decode&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;T&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;_&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;type&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;T&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;Type&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;fromRow&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;row&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Row&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;columnAtIndex&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;index&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Int&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;key&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Key&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;throws&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;T&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;where&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;T&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Decodable&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;do&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+                &lt;span class=&quot;c1&quot;&gt;// This decoding will fail for types that decode from keyed&lt;/span&gt;
+                &lt;span class=&quot;c1&quot;&gt;// or unkeyed containers, because we&apos;re decoding a single&lt;/span&gt;
+                &lt;span class=&quot;c1&quot;&gt;// value here (string, int, double, data, null). If such an&lt;/span&gt;
+                &lt;span class=&quot;c1&quot;&gt;// error happens, we&apos;ll switch to JSON decoding.&lt;/span&gt;
+                &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;columnDecoder&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ColumnDecoder&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;R&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;row&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;row&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;columnIndex&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;index&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;codingPath&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;codingPath&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;key&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;])&lt;/span&gt;
+                &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;try&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;T&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;from&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;columnDecoder&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+            &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;catch&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;is&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;JSONRequiredError&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+                &lt;span class=&quot;c1&quot;&gt;// Decode from JSON&lt;/span&gt;
+                &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;try&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;row&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;withUnsafeData&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;atIndex&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;index&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;data&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt;
+                    &lt;span class=&quot;k&quot;&gt;guard&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;data&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;else&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;throw&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;DecodingError&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;valueNotFound&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Data&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;DecodingError&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Context&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;codingPath&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;codingPath&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;key&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;],&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;debugDescription&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;Missing Data&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+                    &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;try&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;R&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;databaseJSONDecoder&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;for&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;key&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;stringValue&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;decode&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;type&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;from&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;data&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+                &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+            &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;JSONRequiredError&lt;/code&gt; is used for control flow. When decoding dozens of rows with several JSON columns, this error will be thrown hundreds of times from &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ColumnDecoder&lt;/code&gt; but caught and handled immediately in the caller &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;_RowDecoder&lt;/code&gt;.&lt;/p&gt;
+
+&lt;h4 id=&quot;swift-error-breakpoint--grdb&quot;&gt;Swift Error breakpoint + GRDB&lt;/h4&gt;
+
+&lt;p&gt;Each time GRDB would throw a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;JSONRequiredError&lt;/code&gt;, the debugger would check a Swift Error breakpoint with the unrelated type filter &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;train-timetable.AppDatabaseClient.Error&lt;/code&gt; I had set during feature development and forgotten about.&lt;/p&gt;
+
+&lt;p&gt;Since the &lt;em&gt;throw-error-check-breakpoint&lt;/em&gt; procedure happened hundreds of times for certain queries, the result was a noticeable lag that appeared in the UI more and more as I added more features to the app and therefore database fetches.&lt;/p&gt;
+
+&lt;h4 id=&quot;fix&quot;&gt;Fix&lt;/h4&gt;
+
+&lt;p&gt;The fix was literally just disabling the Swift Error breakpoint.&lt;/p&gt;
+
+&lt;h2 id=&quot;full-debugging-story&quot;&gt;Full debugging story&lt;/h2&gt;
+
+&lt;p&gt;Although I do not enjoy living through a good debugging story, I enjoy telling a good debugging story.&lt;/p&gt;
+
+&lt;p&gt;Documenting your bug investigation can feel slow, but it helps so much in retrospect to develop better instincts for next time. Doing so in a simple text log allowed me to write the following tale as it actually happened.&lt;/p&gt;
+
+&lt;h3 id=&quot;measuring&quot;&gt;Measuring&lt;/h3&gt;
+
+&lt;p&gt;My first step was narrowing down which area of the code was affected. Although almost all screens in my app use the database, the About screen does not, and did not show any sort of hitches.&lt;/p&gt;
+
+&lt;p&gt;I re-ran a measurement test on both device and simulator that I had previously written.&lt;/p&gt;
+
+&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;testMeasureDatabaseFetch&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;as&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ync&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;throws&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;measure&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;client&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;AppDatabaseClient&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;liveValue&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;exp&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;expectation&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;description&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;kt&quot;&gt;Task&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;response&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;try&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;await&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;client&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;fetchStationTimetable&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;stationID&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;init&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;Minatomirai.Minatomirai.Bashamichi&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;railDirection&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;inbound&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;scheduleSelector&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;weekday&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+            &lt;span class=&quot;n&quot;&gt;exp&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;fulfill&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+        &lt;span class=&quot;nf&quot;&gt;wait&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;for&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;exp&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;])&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;I confirmed that this simple fetch was taking between 1.5 and 3.0 seconds when there’s no way it should be taking more than 0.01 seconds.&lt;/p&gt;
+
+&lt;p&gt;I enabled database tracing in GRDB.&lt;/p&gt;
+
+&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;dbLogger&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Logger&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;subsystem&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Bundle&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;main&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;bundleIdentifier&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;!&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;category&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;db&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;config&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Configuration&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;config&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;prepareDatabase&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;db&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;db&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;trace&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;options&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;profile&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;event&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;profile&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;statement&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;duration&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;event&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;duration&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;mf&quot;&gt;0.5&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;n&quot;&gt;dbLogger&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;warning&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;Slow query: &lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;event&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;This helped me keep an eye on query times throughout my investigation.&lt;/p&gt;
+
+&lt;h3 id=&quot;poking-the-database&quot;&gt;Poking the database&lt;/h3&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;Slow query: 1.491s SELECT * FROM &quot;station&quot; WHERE &quot;id&quot; IN (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;The first thing I noticed was that I was erroneously submitting way too many keys to the query when doing my ad-hoc database joins. However, after uniquing the keys, the query time didn’t change. After all, if that were the issue I’d see it in production too.&lt;/p&gt;
+
+&lt;p&gt;I thought perhaps reading the database from the bundle could be the problem. But that setup is tacitly endorsed in the &lt;a href=&quot;https://swiftpackageindex.com/groue/grdb.swift/v6.29.0/documentation/grdb/databaseconnections#Opening-a-Connection&quot;&gt;GRDB quickstart&lt;/a&gt;. And again, I’d presumably see this problem in production.&lt;/p&gt;
+
+&lt;p&gt;In fact, almost all the hypotheses I had at first didn’t make sense when considering this problem only appeared in the build/run cycle.&lt;/p&gt;
+
+&lt;p&gt;Another symptom I noticed due to the database logging was that the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;EntityQuery&lt;/code&gt; I’d added when creating the widget extension was being called several times during app launch. This explained why app launch became unbearably slow at some point.&lt;/p&gt;
+
+&lt;h3 id=&quot;the-debugger&quot;&gt;The debugger&lt;/h3&gt;
+
+&lt;p&gt;At this point, I decided to fire up Instruments and do some profiling. But I couldn’t reproduce the problem with the default Instruments setup. I even changed the build configuration from the default of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Release&lt;/code&gt; to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Debug&lt;/code&gt; and still no change.&lt;/p&gt;
+
+&lt;p&gt;This was my first clue that the debugger was involved. But how could I confirm this? Well, I found two ways.&lt;/p&gt;
+
+&lt;p&gt;The first was disabling the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Debug executable&lt;/code&gt; option in the Scheme settings under &lt;em&gt;Run&lt;/em&gt;.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/conditional-breakpoint-debug-executable.jpg&quot; width=&quot;&quot; height=&quot;300&quot; alt=&quot;You can prevent Xcode from automatically attaching the debugger when running in the Scheme settings&quot; title=&quot;You can prevent Xcode from automatically attaching the debugger when running in the Scheme settings&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;You can prevent Xcode from automatically attaching the debugger when running in the Scheme settings&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;&lt;strong&gt;Without the debugger attached, the issue was fixed!&lt;/strong&gt; This was a useful discovery. If I had to stop here, I could at least workaround the issue at the cost of not being able to use the debugger.&lt;/p&gt;
+
+&lt;p&gt;The second confirmation of the debugger’s role in the issue would be useful later on in the investigation. It turns out you can manually attach a debugger to an app being profiled in Instruments.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/conditional-breakpoint-attach-debugger.jpg&quot; width=&quot;&quot; height=&quot;300&quot; alt=&quot;You can manually attach/detach the debugger to/from a running process in Xcode&quot; title=&quot;You can manually attach/detach the debugger to/from a running process in Xcode&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;You can manually attach/detach the debugger to/from a running process in Xcode&lt;/div&gt;&lt;/div&gt;
+
+&lt;h3 id=&quot;rabbit-holes&quot;&gt;Rabbit holes&lt;/h3&gt;
+
+&lt;p&gt;I’d like to say at this point I quickly narrowed down the problem even further. But unfortunately, I went down some unrelated rabbit holes. Yet those rabbit holes eventually led me to another useful discovery.&lt;/p&gt;
+
+&lt;p&gt;A few stray pieces of advice I noticed while Googling prompted me to completely purge derived data, but that made no difference. I’d done this previously when testing whether the issue was fixed in Xcode 16 beta (it was not).&lt;/p&gt;
+
+&lt;p&gt;I dug deeper into the extensive GRDB docs.&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;I tried switching from &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;DatabaseQueue&lt;/code&gt; to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;DatabasePool&lt;/code&gt;. No change.&lt;/li&gt;
+  &lt;li&gt;I tried switching from &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;db.read&lt;/code&gt; to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;db.unsafeRead&lt;/code&gt; (and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;config.allowsUnsafeTransations&lt;/code&gt;). No change.&lt;/li&gt;
+  &lt;li&gt;I tried adding &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;await&lt;/code&gt; in front of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;db.read&lt;/code&gt;. No change.&lt;/li&gt;
+  &lt;li&gt;I stepped through the execution of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Station.fetchAll(_:keys:)&lt;/code&gt; and didn’t see anything too strange.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;I changed my database calls to fetch all results (~2000) instead of just those for a few keys. The fetch time went up from 3 seconds to 30 seconds. This was actually a good clue that &lt;strong&gt;the slowdown scaled linearly with the number of results&lt;/strong&gt;. Although I didn’t yet know what that meant.&lt;/p&gt;
+
+&lt;p&gt;I successfully attached the debugger to the app while profiling in Instruments. Strangely, I saw long calls to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;read&lt;/code&gt;, but the trace went dead there. Plus, the raw function duration values/weights looked normal. Instruments also highlighted a long hang during that period, which re-raised another lingering question: &lt;strong&gt;why was the UI hanging when the entire database fetch was happening on a background queue?&lt;/strong&gt;.&lt;/p&gt;
+
+&lt;p&gt;Returning to the normal debugger, the extra long query generated by fetching all stations allowed me to pause execution during the database fetch. I had to hammer on the pause button in Xcode for it to “catch”, but when it did, I usually ended up in the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ColumnDecoder&lt;/code&gt; struct mentioned earlier:&lt;/p&gt;
+
+&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;/// The decoder that decodes from a database column&lt;/span&gt;
+&lt;span class=&quot;kd&quot;&gt;private&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ColumnDecoder&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;R&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;FetchableRecord&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Decoder&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;c1&quot;&gt;// ...&lt;/span&gt;
+    
+    &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;container&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Key&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;keyedBy&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;type&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Key&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;Type&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;throws&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;KeyedDecodingContainer&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Key&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;c1&quot;&gt;// We need to switch to JSON decoding&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;throw&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;JSONRequiredError&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;/// &amp;lt;--- execution usually paused here&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;When pausing execution randomly as opposed to using a breakpoint, you can’t rely on landing in a relevant section of the code. However, in this case, stepping through and exploring this section of GRDB source showed me two important points:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;GRDB was intentionally using errors for control flow.&lt;/li&gt;
+  &lt;li&gt;I should look into GRDB’s JSON column decoding support.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;grdbs-json-column-decoding-support&quot;&gt;GRDB’s JSON column decoding support&lt;/h3&gt;
+
+&lt;p&gt;I noticed my &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Station&lt;/code&gt; model had two JSON columns, one of which I’d added later in development (in retrospect, another decision that unwittingly exacerbated the slowdown).&lt;/p&gt;
+
+&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Station&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Identifiable&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Equatable&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Codable&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;PersistableRecord&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;FetchableRecord&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Sendable&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;c1&quot;&gt;// ...&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;title&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;TitleLocalization&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;railDirections&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Set&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;RailDirection&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;TitleLocalization&lt;/code&gt; is a super simple two-String struct and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;RailDirection&lt;/code&gt; is an enum.&lt;/p&gt;
+
+&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;TitleLocalization&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Equatable&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Codable&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Sendable&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;en&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;ja&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;enum&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;RailDirection&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Identifiable&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Equatable&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Codable&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;CaseIterable&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Comparable&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Sendable&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;inbound&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;Inbound&quot;&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;outbound&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;Outbound&quot;&lt;/span&gt;
+    &lt;span class=&quot;c1&quot;&gt;// ...&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;I disabled temporarily decoding for these two columns by setting their values to constants.&lt;/p&gt;
+
+&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Station&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Identifiable&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Equatable&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Codable&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;PersistableRecord&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;FetchableRecord&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Sendable&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;c1&quot;&gt;// ...&lt;/span&gt;
+
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;title&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;TitleLocalization&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;init&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;en&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;test&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;ja&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;test&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;railDirections&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Set&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;RailDirection&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;inbound&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;outbound&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;&lt;strong&gt;Disabling decoding for the JSON columns fixed the slowdown!&lt;/strong&gt; This was another big breakthrough.&lt;/p&gt;
+
+&lt;p&gt;So to summarize, at this point I had the following facts:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;The Instruments time profile looked normal besides the hang.&lt;/li&gt;
+  &lt;li&gt;The debugger was involved somehow.&lt;/li&gt;
+  &lt;li&gt;GRDB’s JSON column decoding support was involved somehow.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;not-just-the-debugger-but-also-breakpoints&quot;&gt;Not just the debugger, but also breakpoints&lt;/h3&gt;
+
+&lt;p&gt;I knew the debugger was my enemy, but I was now using it heavily to pause, step in and out and over code, and set breakpoints.&lt;/p&gt;
+
+&lt;p&gt;At one point while stepping through GRDB code, I thought I was losing my mind. In my normal course of debugging I’d clicked the little “disable breakpoints” button in Xcode debug area header. Sometime later I noticed I could no longer reproduce the slowdown no matter what code I added or removed.&lt;/p&gt;
+
+&lt;p&gt;Luckily I connected the dots and realized that it was disabling breakpoints that solved the slowdown. I’d successfully narrowed down the problem from &lt;em&gt;debugger&lt;/em&gt; to &lt;em&gt;breakpoint&lt;/em&gt;. But now what? Googling “how are breakpoints implemented in LLDB” was obviously a dead end.&lt;/p&gt;
+
+&lt;h3 id=&quot;back-to-grdb&quot;&gt;Back to GRDB&lt;/h3&gt;
+
+&lt;p&gt;In my two front war, I switched back to focusing on GRDB. I re-read the docs and tried a few small code tweaks to see if it was a model configuration problem on my end. After all, I’d written a lot of this code several months ago and probably moved on once it apparently worked.&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;I tried adding &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;FetchableRecord&lt;/code&gt; conformance to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;TitleLocalization&lt;/code&gt;, but that didn’t change anything and it didn’t make sense anyway.&lt;/li&gt;
+  &lt;li&gt;I tried adding manual &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Codable&lt;/code&gt; implementations to both &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;TitleLocalization&lt;/code&gt; and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Station&lt;/code&gt;. No change.&lt;/li&gt;
+  &lt;li&gt;I tried adding my own &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;JSONDecoder&lt;/code&gt; to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Station&lt;/code&gt; via the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;static func databaseJSONDecoder(for column: String) -&amp;gt; JSONDecoder&lt;/code&gt; method on the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;FetchableRecord&lt;/code&gt; protocol. No change.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;I tried manually decoding the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;TitleLocalization&lt;/code&gt; with my own one-off &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;JSONDecoder&lt;/code&gt; instance.&lt;/p&gt;
+
+&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Station&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Identifiable&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Equatable&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Codable&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;PersistableRecord&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;FetchableRecord&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Sendable&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;c1&quot;&gt;// ...&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;init&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;from&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;decoder&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Decoder&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;throws&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;container&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;try&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;decoder&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;container&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;keyedBy&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;CodingKeys&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;c1&quot;&gt;// ...&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;titleString&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;try&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;container&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;decode&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;forKey&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;title&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;titleData&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;titleString&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;data&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;using&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;utf8&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;!&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;title&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;try&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;JSONDecoder&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;decode&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;TitleLocalization&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;from&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;titleData&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;This is a bit unintuitive because the top-level decoder from &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Station&lt;/code&gt; is not a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;JSONDecoder&lt;/code&gt;; it’s a custom decoder from GRDB to decode a row of SQL data. I’m then manually creating a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;JSONDecoder&lt;/code&gt; to decode the raw string column as a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;TitleLocalization&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;Somewhat as expected, bypassing the error-throwing logic in GRDB and &lt;strong&gt;using my own JSON decoding solved the slowdown&lt;/strong&gt;.&lt;/p&gt;
+
+&lt;h3 id=&quot;reconnaissance-and-rest&quot;&gt;Reconnaissance and Rest&lt;/h3&gt;
+
+&lt;p&gt;I’d been investigating for about 6 hours straight and was starting to lose my mind, yet I felt so close to finding the underlying problem.&lt;/p&gt;
+
+&lt;p&gt;At this point I was considering a few paths forward for the next day:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Workaround: give up using breakpoints indefinitely.&lt;/li&gt;
+  &lt;li&gt;Workaround: rewrite my model layer’s &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Codable&lt;/code&gt; support to manually decode all JSON columns, but in &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;DEBUG&lt;/code&gt; mode only.&lt;/li&gt;
+  &lt;li&gt;Ask for help: create a sample project that showed a minimal reproduction of the bug and share it in an Issue on the GRDB GitHub repo.&lt;/li&gt;
+  &lt;li&gt;Forge ahead: continue investigating on my own.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Before I hung it up for the day I wrote and shared a short &lt;a href=&quot;https://hachyderm.io/@twocentstudios/112920118896935621&quot;&gt;cry-for-help post&lt;/a&gt; on Mastodon.&lt;/p&gt;
+
+&lt;p&gt;While writing the Mastodon post, I realized that I could leave the breakpoints feature enabled, but &lt;strong&gt;disable the individual breakpoints in the breakpoint panel and the slowdown was solved&lt;/strong&gt;. This led me to notice I had left a Swift Error breakpoint on that I’d must have added several weeks back and forgot about.&lt;/p&gt;
+
+&lt;p&gt;Exasperated, I shared a few of the salient discoveries to my friend and fellow iOS dev Dave Fox. He asked:&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;So it’s purely down to that custom [Swift Error] breakpoint?&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Without checking because I was now away from the computer, I responded, no, it was any breakpoint.&lt;/p&gt;
+
+&lt;p&gt;I had dinner and went to bed, the investigation still stewing somewhere in the back of my mind.&lt;/p&gt;
+
+&lt;h3 id=&quot;the-solution&quot;&gt;The solution&lt;/h3&gt;
+
+&lt;p&gt;I woke up in the middle of the night and in a delirious state and the two pieces of the puzzle had suddenly come together.&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;I actually &lt;em&gt;hadn’t&lt;/em&gt; checked whether it was only the Swift Error breakpoint that caused the slowdown (triggered by Dave’s question).&lt;/li&gt;
+  &lt;li&gt;The GRDB JSON column decoding implementation throws errors as normal control flow.&lt;/li&gt;
+  &lt;li&gt;The number of errors thrown by GRDB would increase linearly with the number of rows and JSON columns.&lt;/li&gt;
+  &lt;li&gt;My decoding workaround did not throw any errors.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;I got up and went to the computer and turned off the Swift Error breakpoint while leaving the other breakpoints on. &lt;strong&gt;The slowdown was fixed.&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;The solution finally made sense: LLDB conditionally type checking every error thrown by GRDB during JSON column decoding was taking significant time and adding up enough to be noticeable. Even though the decoding was happening off the main queue, the debugger was still locking up the entire app while it was processing the breakpoint.&lt;/p&gt;
+
+&lt;p&gt;And thus, I solved the underlying problem. The problem caused no issues for my end users (besides slowing down my ability to ship new features) and required no code changes. I literally just needed to delete a breakpoint.&lt;/p&gt;
+
+&lt;h2 id=&quot;retrospective&quot;&gt;Retrospective&lt;/h2&gt;
+
+&lt;p&gt;At this point I look back and wonder, could I have solved this earlier? What heuristics can I incorporate into my future debugging investigation procedure? What can I do to proactively prevent an issue shaped like this in the future?&lt;/p&gt;
+
+&lt;p&gt;A bug with the debugger as the root cause was new to me. I think it showed a weakness in my overall understanding of LLDB. Based on my awareness that Release builds are always faster than Debug builds (and &lt;a href=&quot;https://github.com/groue/GRDB.swift/issues/1173&quot;&gt;this issue&lt;/a&gt; from the GRDB repo, seemingly resigning to that fact), my assumption was that the root cause was the Debug build configuration. Although following that thinking, that couldn’t have been it because there was no slowdown after the debugger was detached.&lt;/p&gt;
+
+&lt;p&gt;Another ambiguous point I should have clarified early on in the investigation: did the query trace times reported by SQLite include only time spent inside the SQLite library or did they also include time spent in GRDB while a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;TRANSACTION&lt;/code&gt; was still open? The answer was the latter, and knowing that definitively would have allowed me to investigate GRDB internals with more confidence.&lt;/p&gt;
+
+&lt;p&gt;The rabbit holes I went down were time consuming, but ultimately, pulling any string was enough to stumble upon insights that got me to the solution.&lt;/p&gt;
+
+&lt;p&gt;The quickest path to the solution would have been:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;The slowdown does not occur when debugging with Instruments in the Debug build configuration.
+    &lt;ul&gt;
+      &lt;li&gt;→ must be related to the debugger.&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+  &lt;li&gt;The slowdown does not occur when Xcode does not attach the debugger.
+    &lt;ul&gt;
+      &lt;li&gt;→ debugger-related confirmed.&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+  &lt;li&gt;The slowdown does not occur when breakpoints are disabled at runtime.
+    &lt;ul&gt;
+      &lt;li&gt;→ must be related to breakpoints.&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+  &lt;li&gt;The slowdown does not occur when breakpoints are enabled but no individual breakpoints are disabled.
+    &lt;ul&gt;
+      &lt;li&gt;→ must be an individual breakpoint.&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+  &lt;li&gt;The slowdown does not occur when a normal breakpoint is enabled but a conditional breakpoint is not enabled.
+    &lt;ul&gt;
+      &lt;li&gt;→ must be the conditional breakpoint.&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+  &lt;li&gt;The slowdown occurs when only the conditional breakpoint is enabled.
+    &lt;ul&gt;
+      &lt;li&gt;→ conditional breakpoint root-cause confirmed.&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;The big missing piece in being able to jump to each conclusion was the understanding of &lt;em&gt;what components make up a debugger?&lt;/em&gt;&lt;/p&gt;
+
+&lt;p&gt;If I would have thought: “A debugger’s primary component tools are viewing memory, viewing thread state, viewing the stack frame, setting breakpoints, setting watchpoints, and executing statements”, it may then have been obvious, either right away or through process of elimination, that a way the debugger could directly affect execution was through breakpoints or watchpoints.&lt;/p&gt;
+
+&lt;p&gt;Ultimately, I think most programmers feel instinctual dread when they suspect the bug they’re investigating &lt;em&gt;changes its behavior when it’s being observed&lt;/em&gt;. The quantum nature of these bugs is why we call them &lt;a href=&quot;https://en.wikipedia.org/wiki/Heisenbug&quot;&gt;&lt;em&gt;Heisenbugs&lt;/em&gt;&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;Even though I was admittedly slow in connecting the dots along the debugger line of inquiry, I do give myself credit for recognizing that GRDB was using errors for control flow and filing that away as notable in the back of my head.&lt;/p&gt;
+
+&lt;p&gt;Perhaps I should have jumped first to trying to reproduce the slowdown in a clean room project. However, in this particular case I believe that approach would have been counterproductive and taken longer to find the root cause. The clean room project would have taken time to build up to the complexity of main app, and at that point would still not have any chance of recreating the issue (because I would not have noticed the offending breakpoint still in the main app).&lt;/p&gt;
+
+&lt;p&gt;This experience was a good opportunity to spelunk through the docs and extensive codebase of GRDB. Spelunking through unfamiliar codebases is itself a muscle that must be stretched regularly.&lt;/p&gt;
+
+&lt;p&gt;It would have been nicer to have solved this issue in one hour instead of six (plus the weeks I spent working around it). But I am satisfied I discovered the root cause in one session (plus sleep).&lt;/p&gt;
+
+&lt;h2 id=&quot;conclusion&quot;&gt;Conclusion&lt;/h2&gt;
+
+&lt;p&gt;Hopefully you’ve stored this tidbit about the relative slowness of conditional breakpoints away in your memory alongside all the other great Xcode trivia, and you’ll recognize this issue immediately should you ever come across it. Hopefully you enjoyed the story, and I hope I don’t have another one like it for a while.&lt;/p&gt;
+</description>
+        <pubDate>Thu, 08 Aug 2024 00:02:00 -0500</pubDate>
+        <link>https://twocentstudios.com/2024/08/08/conditional-breakpoints/</link>
+        <guid isPermaLink="true">https://twocentstudios.com/2024/08/08/conditional-breakpoints/</guid>
+        
+        <category>apple</category>
+        
+        <category>ios</category>
+        
+        <category>debugging</category>
+        
+        
+      </item>
+    
+  </channel>
+</rss>
