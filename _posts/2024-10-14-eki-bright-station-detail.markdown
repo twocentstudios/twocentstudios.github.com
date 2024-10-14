@@ -38,7 +38,7 @@ I already had a simple station timetable screen whose focus was on departure tim
 
 {% caption_img /images/station-detail-simple-timetable.jpg h400 The simple station timetable screen in v1.0 %}
 
-The station timetable screen was built as the logical next step to choosing a **StationBookmark**. A **StationBookmark** stores both the **Station** a user often departs from and the **Direction** they're headed. For example, I often depart from _Bashamichi_ station going _inbound_ towards Yokohama.
+The station timetable screen was built as the logical next step to choosing a **StationBookmark**. A **StationBookmark** stores both the **Station** a user often departs from and the **Direction** they're headed. For example, I often depart from _Bashamichi_ station going _inbound_ towards Yokohama on a _weekday_ schedule.
 
 Without that second piece of data – the **Direction** – there's not enough information yet to show a timetable. Not a problem for bookmarks, but a big problem for nearby stations and searched stations.
 
