@@ -5,9 +5,278 @@
     <description>A coding blog covering iOS, Swift, and other programming topics.</description>
     <link>https://twocentstudios.com/blog/tags/ios/index.html</link>
     <atom:link href="https://twocentstudios.com/blog/tags/ios/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Sun, 18 Aug 2024 04:47:06 -0500</pubDate>
-    <lastBuildDate>Sun, 18 Aug 2024 04:47:06 -0500</lastBuildDate>
+    <pubDate>Mon, 14 Oct 2024 08:25:28 -0500</pubDate>
+    <lastBuildDate>Mon, 14 Oct 2024 08:25:28 -0500</lastBuildDate>
     <generator>Jekyll v3.9.3</generator>
+    
+      <item>
+        <title>Eki Bright - Design of Station Detail</title>
+        <description>&lt;p&gt;I’ve done a few nice-sized releases of &lt;a href=&quot;/2024/07/27/eki-bright-tokyo-area-train-timetables/&quot;&gt;Eki Bright&lt;/a&gt; since my &lt;a href=&quot;/2024/08/06/eki-bright-developing-the-app-for-ios/&quot;&gt;first launch&lt;/a&gt; in August.&lt;/p&gt;
+
+&lt;p&gt;Eki Bright is my solo-developed iOS app for viewing station timetables for the Tokyo-area train network.&lt;/p&gt;
+
+&lt;p&gt;In this post, I want to share some of the design decisions for a screen I added in v1.2 and v1.3: the &lt;strong&gt;station detail screen&lt;/strong&gt;.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/station-detail-current.jpg&quot; width=&quot;&quot; height=&quot;600&quot; alt=&quot;The station detail screen, added in v1.2&quot; title=&quot;The station detail screen, added in v1.2&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The station detail screen, added in v1.2&lt;/div&gt;&lt;/div&gt;
+
+&lt;h2 id=&quot;background&quot;&gt;Background&lt;/h2&gt;
+
+&lt;p&gt;The first release of Eki Bright had 4 screens: home, station timetable, train timetable, and station search (disregarding the about screen, nearby screen, and widgets).&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/station-detail-app-v1.png&quot; width=&quot;&quot; height=&quot;380&quot; alt=&quot;The four screens available in v1.0&quot; title=&quot;The four screens available in v1.0&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The four screens available in v1.0&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;In all honesty, even the “nearby stations” section of the home screen and the train timetables screens were superfluous to my original concept for the app. Even station search by text was only required to populate your station bookmarks.&lt;/p&gt;
+
+&lt;p&gt;However, as most projects go, the scope started to naturally increase as I found myself out and about using the prototype and missing features.&lt;/p&gt;
+
+&lt;h2 id=&quot;the-problem-with-the-station-timetable-screen&quot;&gt;The problem with the station timetable screen&lt;/h2&gt;
+
+&lt;p&gt;A &lt;strong&gt;Station&lt;/strong&gt; is the core model concept in the app. A &lt;strong&gt;Railway&lt;/strong&gt; connects an ordered group of stations.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/station-detail-railway-model.png&quot; width=&quot;&quot; height=&quot;320&quot; alt=&quot;A Station belongs to a Railway&quot; title=&quot;A Station belongs to a Railway&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;A Station belongs to a Railway&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;A &lt;strong&gt;StationTimetable&lt;/strong&gt; shows when a &lt;strong&gt;Train&lt;/strong&gt; departs a &lt;strong&gt;Station&lt;/strong&gt; going in one &lt;strong&gt;Direction&lt;/strong&gt; on a particular &lt;strong&gt;Schedule&lt;/strong&gt;.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/station-detail-station-timetable-model.png&quot; width=&quot;&quot; height=&quot;370&quot; alt=&quot;A StationTimetable is defined by its Station, Direction, and Schedule&quot; title=&quot;A StationTimetable is defined by its Station, Direction, and Schedule&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;A StationTimetable is defined by its Station, Direction, and Schedule&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;I already had a simple station timetable screen whose focus was on departure times.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/station-detail-simple-timetable.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;The simple station timetable screen in v1.0&quot; title=&quot;The simple station timetable screen in v1.0&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The simple station timetable screen in v1.0&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;The station timetable screen was built as the logical next step to choosing a &lt;strong&gt;StationBookmark&lt;/strong&gt;. A &lt;strong&gt;StationBookmark&lt;/strong&gt; stores both the &lt;strong&gt;Station&lt;/strong&gt; a user often departs from and the &lt;strong&gt;Direction&lt;/strong&gt; they’re headed. For example, I often depart from &lt;em&gt;Bashamichi&lt;/em&gt; station going &lt;em&gt;inbound&lt;/em&gt; towards Yokohama.&lt;/p&gt;
+
+&lt;p&gt;Without that second piece of data – the &lt;strong&gt;Direction&lt;/strong&gt; – there’s not enough information yet to show a timetable. Not a problem for bookmarks, but a big problem for nearby stations and searched stations.&lt;/p&gt;
+
+&lt;p&gt;For v1.0, my design solution was:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Add a direction switcher to the station timetable screen (when applicable – some stations only have one direction).&lt;/li&gt;
+  &lt;li&gt;Default the user to one of the directions when they selected a station from nearby or search.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;The assumption was that the user would double check the default direction and switch to the opposite direction if necessary. More than half the time, this gets the user to their desired information (the timetable) faster than the alternative designs.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/station-detail-timetable-direction-segmented.jpg&quot; width=&quot;&quot; height=&quot;600&quot; alt=&quot;Station timetable screen in v1.0 with a direction segmented control&quot; title=&quot;Station timetable screen in v1.0 with a direction segmented control&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Station timetable screen in v1.0 with a direction segmented control&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;One alternative design would be to show both rail directions as tappable buttons on the home or search screen.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/station-detail-alternate-nearby.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Unimplemented alternative design making the user choose both station and direction at the same time&quot; title=&quot;Unimplemented alternative design making the user choose both station and direction at the same time&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Unimplemented alternative design making the user choose both station and direction at the same time&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Another alternative design would be to present an inter-statial screen that only asked: “which direction are you going?”&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/station-detail-station-detail-alternate.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Alternative design explored during pre-release making the user choose a direction in a separate step after choosing a station before showing the timetable&quot; title=&quot;Alternative design explored during pre-release making the user choose a direction in a separate step after choosing a station before showing the timetable&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Alternative design explored during pre-release making the user choose a direction in a separate step after choosing a station before showing the timetable&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;I considered both those alternatives to be clearer in the short term, but slower in the long term once the user understood the flow.&lt;/p&gt;
+
+&lt;p&gt;My guiding principle of the app is speed. Therefore, I chose the v1.0 design solution with the intention to return to the decision later.&lt;/p&gt;
+
+&lt;h2 id=&quot;identifying-user-flows&quot;&gt;Identifying user flows&lt;/h2&gt;
+
+&lt;p&gt;There’s clearly two user main user flows that branch off from when the user opens the app:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;A. The user is in a familiar place and chooses a station bookmark&lt;/li&gt;
+  &lt;li&gt;B. The user is in an unfamiliar place and chooses a nearby station&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/station-detail-use-cases.png&quot; width=&quot;&quot; height=&quot;600&quot; alt=&quot;(A) and (B) use cases&quot; title=&quot;(A) and (B) use cases&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;(A) and (B) use cases&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Additionally, there’s a third flow for when the user is perhaps first setting up their bookmarks or doing some other station research.&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;C. The user is searching for a station by text&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Use cases (B) and (C) are similar in that &lt;em&gt;the user needs to choose a direction&lt;/em&gt;, so I’ll combine them.&lt;/p&gt;
+
+&lt;p&gt;The (A) case is already solved well enough with the existing station timetable screen. If anything, it’d be great to &lt;em&gt;remove&lt;/em&gt; the complexity of having a direction switcher in this case where it’s ambiguously useful.&lt;/p&gt;
+
+&lt;p&gt;My goal was to find a better solution to the (B) use cases than I’d previously pitched (to myself).&lt;/p&gt;
+
+&lt;h2 id=&quot;identifying-design-goals&quot;&gt;Identifying design goals&lt;/h2&gt;
+
+&lt;p&gt;The primary design goal is for the user to find their timetable departure as quickly as possible with as few taps as possible.&lt;/p&gt;
+
+&lt;p&gt;Another key observation I got from my own experience and user feedback was that it’s often quite burdensome trying to figure out which direction is the &lt;em&gt;correct&lt;/em&gt; one in any given trip scenario.&lt;/p&gt;
+
+&lt;p&gt;Of course, this is mostly a solved problem with traditional algorithmic based routing based on departure and destination points, like the UX of Google Maps or Jorudan apps. You type in your destination and the app gives you a route and tells you which platform to wait at.&lt;/p&gt;
+
+&lt;p&gt;But despite of the ease of use of traditional routing apps, I was still finding myself wanting to explore the relative simplicity of a &lt;em&gt;departure-based&lt;/em&gt; UX rather than a &lt;em&gt;destination-based&lt;/em&gt; UX.&lt;/p&gt;
+
+&lt;p&gt;So my secondary design goal was helping the user decide which direction was correct as quickly as possible with the least amount of mental overhead.&lt;/p&gt;
+
+&lt;p&gt;And finally, I realized that I had a lot of often extraneous yet sometimes interesting and useful data about each station that I had nowhere to display. As a tertiary goal, it would be nice to have a place for all that data that respects the principle of &lt;em&gt;progressive disclosure&lt;/em&gt;: staying out of the way while still being accessible when desired.&lt;/p&gt;
+
+&lt;h2 id=&quot;exploring-solutions&quot;&gt;Exploring solutions&lt;/h2&gt;
+
+&lt;p&gt;Starting from the most important of the design goals, I started mapping out the station detail screen.&lt;/p&gt;
+
+&lt;h3 id=&quot;first-design-goal-timetable-departures&quot;&gt;First design goal: timetable departures&lt;/h3&gt;
+
+&lt;p&gt;If we want the user to find their timetable departure as quickly as possible, the most direct solution is to simply show the timetables for both directions as the same time. The upside to this design is that there are no additional taps. The downside is visual complexity.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/station-detail-side-by-side-timetables.png&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;An interface sketch with timetable items for directions side-by-side&quot; title=&quot;An interface sketch with timetable items for directions side-by-side&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;An interface sketch with timetable items for directions side-by-side&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Honestly, this was the biggest unknown that I wrestled with throughout the design and implementation process. I doubled down on the bet that the gain in speed would outweigh the visual complexity of the screen. The only way to test it was to progressively build out more and more of the screen, enough so that I could test it in context with a wide variety of stations in a wide variety of situations.&lt;/p&gt;
+
+&lt;p&gt;But showing two directions means doubling much of the data on the screen. And making the visual complexity even worse.&lt;/p&gt;
+
+&lt;p&gt;What fell out of this design decision was that there were situations where the user &lt;em&gt;had&lt;/em&gt; already specified which direction they were interested in. In this case, the screen could hide a full column.&lt;/p&gt;
+
+&lt;p&gt;What made this screen different from the station timetable screen? Well, I would have truncate the full timetable since there were other sections. The fact that I could link out the station timetable screen meant I could be smart about narrowing down the timetable items based on projected use cases.&lt;/p&gt;
+
+&lt;p&gt;Most often, the user is starting their journey &lt;em&gt;now&lt;/em&gt; and doesn’t need earlier departures. I can also bet the user is not planning a journey too far into the future. But I need to account for stations that have significantly frequent departures with different train types and destination stations. Without knowing how much could be fit on the screen, I guessed &lt;em&gt;4 timetable items&lt;/em&gt; would fit the requirements (and later expanded it to 6).&lt;/p&gt;
+
+&lt;p&gt;For better or worse (UX), showing a station’s departures for both directions &lt;strong&gt;solves the first design goal&lt;/strong&gt;.&lt;/p&gt;
+
+&lt;h3 id=&quot;second-design-goal-determining-direction&quot;&gt;Second design goal: determining direction&lt;/h3&gt;
+
+&lt;p&gt;The second design goal – giving the user enough information to determine their direction – also could be solved several ways. I turned to skeuomorphism and the humble rail diagram commonly found in train stations.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/station-detail-bashamichi-photo.jpg&quot; width=&quot;&quot; height=&quot;500&quot; alt=&quot;A rail diagram on the wall at Bashamichi station&quot; title=&quot;A rail diagram on the wall at Bashamichi station&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;A rail diagram on the wall at Bashamichi station&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;The rail diagram format has several upsides:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Almost all train riders have seen its shape before.&lt;/li&gt;
+  &lt;li&gt;I already have the data to construct it dynamically.&lt;/li&gt;
+  &lt;li&gt;It maps somewhat logically to directions.&lt;/li&gt;
+  &lt;li&gt;It shows both terminal stations and neighboring stations (one of which is usually enough to orient a rider)&lt;/li&gt;
+  &lt;li&gt;It implicitly includes railway information so users don’t get confused about e.g. &lt;em&gt;which&lt;/em&gt; Shibuya station they’re looking at.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Posting a rail diagram at the top of the screen acts as a guide. The user can look for their destination station on the left or right side of the rail diagram, and then choose a departure from the timetable on that side. &lt;strong&gt;This solved the second design goal.&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;The distinct look of the rail diagram also acted as a nice way to distinguish the station detail screen from the station timetable screen or other screens.&lt;/p&gt;
+
+&lt;h3 id=&quot;third-design-goal-tactfully-show-infrequently-used-data&quot;&gt;Third design goal: tactfully show infrequently used data&lt;/h3&gt;
+
+&lt;p&gt;Finally, there was the third design goal of including some lesser used information about the station.&lt;/p&gt;
+
+&lt;p&gt;I started by listing out all the potential pieces of data that might fit.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/station-detail-data-ideas.jpg&quot; width=&quot;&quot; height=&quot;600&quot; alt=&quot;Station data ideas&quot; title=&quot;Station data ideas&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Station data ideas&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;To keep scope reasonable, I didn’t want to force myself to implement all these sections for the first release. But I did want to keep a record of ideas for later while also getting an intuitive feel for how flexible the design would be for adding new types of data.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/station-detail-layout-ideas.jpg&quot; width=&quot;&quot; height=&quot;700&quot; alt=&quot;Layout ideas for the station detail screen&quot; title=&quot;Layout ideas for the station detail screen&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Layout ideas for the station detail screen&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;With this very rough sketch, I got to work on my design-via-SwiftUI procedure.&lt;/p&gt;
+
+&lt;h2 id=&quot;arranging-the-composite-data&quot;&gt;Arranging the composite data&lt;/h2&gt;
+
+&lt;p&gt;The required data for this screen is more complex than all the other screens so far.&lt;/p&gt;
+
+&lt;p&gt;Starting from the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Station.ID&lt;/code&gt;, I’d need the full &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Station&lt;/code&gt; and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Railway&lt;/code&gt; data.&lt;/p&gt;
+
+&lt;p&gt;For timetables, I’d need 1 or 2 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Direction&lt;/code&gt; for each &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Schedule&lt;/code&gt; because I’d committed during the planning phase to support user-selectable &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Schedule&lt;/code&gt; alongside using the automatically calculated schedule for the current day.&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;Aside: in retrospect, committing to user-selectable &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Schedule&lt;/code&gt; was a significant development burden that was completely unnecessary and unrelated to any design goals. Although I fully designed and built the feature, because of its downstream unintended consequences on the UX of other screens, I ended up removing the option to use it before release.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/station-detail-schedule-button.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;A schedule selector button (bottom right) fully implemented but removed before release&quot; title=&quot;A schedule selector button (bottom right) fully implemented but removed before release&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;A schedule selector button (bottom right) fully implemented but removed before release&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;For connected stations (i.e. transfer stations, connected railways), I had the data but had not yet imported it into the app’s domain model. I ended up adding this section in the next point release (v1.3).&lt;/p&gt;
+
+&lt;p&gt;Disregarding the additional &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Schedule&lt;/code&gt; infrastructure, it wasn’t significantly slower to create the composite model for this screen than it would have been to assemble a mock data structure. Therefore I designed with the final data structure fetched from the database. This is always preferable to mock data because the marginal cost of choosing other stations as test data to populate your design or prototype is so low. For example, it was much quicker to find station examples from the database with long text that broke my initial layouts.&lt;/p&gt;
+
+&lt;h2 id=&quot;list-sections&quot;&gt;List sections&lt;/h2&gt;
+
+&lt;h3 id=&quot;designing-and-implementing-the-railway-diagram&quot;&gt;Designing and implementing the railway diagram&lt;/h3&gt;
+
+&lt;p&gt;The railway diagram was important enough to the design and implement first.&lt;/p&gt;
+
+&lt;p&gt;I started with a paper sketch that helped me understand the nuanced cases I’d need to cover.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/station-detail-railway-diagram-cases.jpg&quot; width=&quot;&quot; height=&quot;600&quot; alt=&quot;Sketch of the railway diagram and 5-ish distinct cases&quot; title=&quot;Sketch of the railway diagram and 5-ish distinct cases&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Sketch of the railway diagram and 5-ish distinct cases&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;This was a fun design and layout challenge. I wanted to show the terminal stations of the railway and both neighboring stations to the target station. I also wanted to change the line style to be solid when the stations on the diagram were directly connected and dotted when there were other stations in between them.&lt;/p&gt;
+
+&lt;p&gt;Of course, the Yamanote circle line broke a lot of my assumptions and required some special casing and a custom algorithm. But overall I felt like the design ended up where I wanted it to.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/station-detail-final-railway-diagram.png&quot; width=&quot;&quot; height=&quot;300&quot; alt=&quot;The finished railway diagram&quot; title=&quot;The finished railway diagram&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The finished railway diagram&lt;/div&gt;&lt;/div&gt;
+
+&lt;h3 id=&quot;designing-the-timetable-section&quot;&gt;Designing the timetable section&lt;/h3&gt;
+
+&lt;p&gt;I reused the timetable item design language from other parts of the app. Including the 1-character train type indicator. Some lines are all local and all have the same destination, but many do not and require this data in order to be useful at a glance.&lt;/p&gt;
+
+&lt;p&gt;In the first version, I always calculated the timetable lower cutoff based on the current (live updating) time. However, after implementing connecting stations, I realized that when calculating transfer times, it made sense to pass through times from previous screens and allow the user to toggle between them if necessary.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/station-detail-toggle-departure-time.gif&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Toggling between cutoff times&quot; title=&quot;Toggling between cutoff times&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Toggling between cutoff times&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;I was a little unsure of whether the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;...&lt;/code&gt; button would be clear enough to indicate the full station timetable. So far it seems to be okay.&lt;/p&gt;
+
+&lt;h3 id=&quot;last-train-by-type&quot;&gt;Last train by type&lt;/h3&gt;
+
+&lt;p&gt;A bit of speculative feature: I thought seeing last train times at a glance would be occasionally useful. You can see this data by searching for “last” in the Google Maps schedule selector, but it only shows the actual last train regardless of type. As a user, sometimes I want to know when the last limited express train is because for me taking the local is about twice as long.&lt;/p&gt;
+
+&lt;p&gt;Technically, I should also be showing the last trains by both type &lt;em&gt;and&lt;/em&gt; destination. But for most railways, I think type is enough for now.&lt;/p&gt;
+
+&lt;p&gt;Another tough part about this section was what to name it in both English and Japanese.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/station-detail-last-train.png&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Last train by type (local, express, etc.)&quot; title=&quot;Last train by type (local, express, etc.)&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Last train by type (local, express, etc.)&lt;/div&gt;&lt;/div&gt;
+
+&lt;h3 id=&quot;bookmarks&quot;&gt;Bookmarks&lt;/h3&gt;
+
+&lt;p&gt;Bookmarks was one of the most difficult layout choices I had to make for station detail, and I’m still not completely satisfied with it.&lt;/p&gt;
+
+&lt;p&gt;In my view as the designer of Eki Bright, bookmarks are the core feature of the app because they enable lookup speed and so heavily differentiate the app from its full-featured competitors. They also enable use of widgets, another core feature of the app.&lt;/p&gt;
+
+&lt;p&gt;The flow of adding bookmarks needs to be &lt;em&gt;fast&lt;/em&gt;, &lt;em&gt;obvious&lt;/em&gt;, and &lt;em&gt;efficient&lt;/em&gt;, but after bookmarks are added, it will be rarely used. This makes it very difficult to design for.&lt;/p&gt;
+
+&lt;p&gt;I ended up compromising. I added a bookmark icon to the top right navigation bar that scrolls to the bookmark button section lower in the list.&lt;/p&gt;
+
+&lt;video src=&quot;/images/station-detail-bookmark-jump.mp4&quot; controls=&quot;&quot; preload=&quot;auto&quot; height=&quot;400&quot;&gt;&lt;/video&gt;
+
+&lt;p&gt;Why not just have the button in the navigation bar work as the real button? Each station direction can have its own independent bookmark, so it makes more sense to have buttons segregated in the same way.&lt;/p&gt;
+
+&lt;p&gt;Still, it’s confusing, and definitely requires a more long term solution.&lt;/p&gt;
+
+&lt;h3 id=&quot;train-types&quot;&gt;Train types&lt;/h3&gt;
+
+&lt;p&gt;Getting less useful now, but I still think it’s good to see an overview of which train types exists for more complicated railways.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/station-detail-train-types.png&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;A list of train types that run from this station and their assigned category&quot; title=&quot;A list of train types that run from this station and their assigned category&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;A list of train types that run from this station and their assigned category&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;In a future version, I’d like to add some calculations for each train type to show an average of how often each arrives and what part of the day each is active for.&lt;/p&gt;
+
+&lt;h3 id=&quot;destination-stations&quot;&gt;Destination stations&lt;/h3&gt;
+
+&lt;p&gt;Another rarely useful bit of information, depending on the railway. I added this mostly because it was easy to calculate.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/station-detail-destinations.png&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;A list of destination stations and how many trains end there on the scheduled day&quot; title=&quot;A list of destination stations and how many trains end there on the scheduled day&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;A list of destination stations and how many trains end there on the scheduled day&lt;/div&gt;&lt;/div&gt;
+
+&lt;h3 id=&quot;rail-direction-toggle&quot;&gt;Rail direction toggle&lt;/h3&gt;
+
+&lt;p&gt;For stations that have more than one direction, the toolbar is shown with individually toggleable direction buttons.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/station-detail-toggle-direction.gif&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Tap either button to hide or show it in the list&quot; title=&quot;Tap either button to hide or show it in the list&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Tap either button to hide or show it in the list&lt;/div&gt;&lt;/div&gt;
+
+&lt;h2 id=&quot;self-critique&quot;&gt;Self critique&lt;/h2&gt;
+
+&lt;p&gt;As discussed above at various points, I think this screen has plenty of room left for improvement. However, I’m pleased enough with how it accomplishes the three design goals I set out to accomplish.&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Railway diagram: there are a few stations where the text gets cut off in strange ways.&lt;/li&gt;
+  &lt;li&gt;Bookmarks: I’d like to experiment with popping up a separate modal for adding a bookmark instead of scrolling the list.&lt;/li&gt;
+  &lt;li&gt;Direction toggle buttons: I’d like to try moving these buttons above the railway diagram. Although important, in real usage I rarely find myself changing them.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;I’m of course interested in real user feedback. If you’re a Tokyo-area resident, &lt;a href=&quot;https://apps.apple.com/app/%E9%A7%85%E3%83%96%E3%83%A9%E3%82%A4%E3%83%88/id6504702463&quot;&gt;download the app&lt;/a&gt;, give it a go, and send me your thoughts.&lt;/p&gt;
+</description>
+        <pubDate>Mon, 14 Oct 2024 17:20:00 -0500</pubDate>
+        <link>https://twocentstudios.com/2024/10/14/eki-bright-station-detail/</link>
+        <guid isPermaLink="true">https://twocentstudios.com/2024/10/14/eki-bright-station-detail/</guid>
+        
+        <category>apple</category>
+        
+        <category>ios</category>
+        
+        <category>ekibright</category>
+        
+        
+      </item>
     
       <item>
         <title>Reminder: Conditional Breakpoints are Slow</title>
@@ -4320,474 +4589,6 @@
         <category>ios</category>
         
         <category>app</category>
-        
-        
-      </item>
-    
-      <item>
-        <title>Testing Reducers and Interactors</title>
-        <description>&lt;p&gt;In this post we’ll discuss some techniques for testing the reducers and interactors we introduced in the previous &lt;a href=&quot;/2017/08/02/transitioning-between-view-states-using-reducers/&quot;&gt;reducers post&lt;/a&gt; and &lt;a href=&quot;/2017/11/05/interactors/&quot;&gt;interactors post&lt;/a&gt;.&lt;/p&gt;
-
-&lt;p&gt;The entire test suite can be viewed in the &lt;a href=&quot;https://github.com/twocentstudios/ViewState&quot;&gt;GitHub repo&lt;/a&gt; for the example app. I’ll be excerpting a few illustrative cases in this post.&lt;/p&gt;
-
-&lt;h2 id=&quot;goal&quot;&gt;Goal&lt;/h2&gt;
-
-&lt;p&gt;One of the prescribed benefits of splitting our architecture into inert view models, single-state change reducers, long lived interactors, and a view layer is so that we could test each component individually.&lt;/p&gt;
-
-&lt;p&gt;Leaning on structs and enums as the input and output boundary of each component makes testing more straightforward; we need to create fewer mock classes to observe the behavior of the system.&lt;/p&gt;
-
-&lt;p&gt;Using a special &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Scheduler&lt;/code&gt; type to control the flow of time allows us to test asynchronous behavior without slowing down testing. It also allows us to mimic any sort of delays or operation ordering that would usually cause subtle, difficult to reproduce bugs in production.&lt;/p&gt;
-
-&lt;h2 id=&quot;preview&quot;&gt;Preview&lt;/h2&gt;
-
-&lt;p&gt;In the example app we had two systems: Profile and Posts. In this post we’ll only be showing examples from the Profile.&lt;/p&gt;
-
-&lt;p&gt;The reducer is trivial to test. It’s a pure function with two inputs, one output, and no side effects.&lt;/p&gt;
-
-&lt;p&gt;The interactor is a bit more complex. It will require a mock &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Service&lt;/code&gt; class for the data layer. It will require a special &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Scheduler&lt;/code&gt; type in order to control the flow of time.&lt;/p&gt;
-
-&lt;h2 id=&quot;testing-the-reducer&quot;&gt;Testing the reducer&lt;/h2&gt;
-
-&lt;p&gt;For the reducer, we’ll be testing each of the valid transitions specified by this diagram:&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/transitioning_view_states-04.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;&quot; title=&quot;&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;These will be more akin to &lt;em&gt;unit tests&lt;/em&gt;.&lt;/p&gt;
-
-&lt;h3 id=&quot;outline-of-profileinteractorreducertests&quot;&gt;Outline of ProfileInteractorReducerTests&lt;/h3&gt;
-
-&lt;p&gt;Let’s start with an outline of the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;XCTestCase&lt;/code&gt; subclass we’ll be writing.&lt;/p&gt;
-
-&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ProfileInteractorReducerTests&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;XCTestCase&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;kd&quot;&gt;typealias&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Reducer&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ProfileInteractor&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Reducer&lt;/span&gt;
-    
-    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;user&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Mocks&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;user&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;error&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Mocks&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;error&lt;/span&gt;
-    
-    &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;testInitializedLoad&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-        &lt;span class=&quot;c1&quot;&gt;// TODO&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-
-    &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;testLoadingLoaded&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-        &lt;span class=&quot;c1&quot;&gt;// TODO&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-    
-    &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;testLoadingFailed&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-        &lt;span class=&quot;c1&quot;&gt;// TODO&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-    
-    &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;testFailedLoad&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-        &lt;span class=&quot;c1&quot;&gt;// TODO&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-    
-    &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;testLoadedLoad&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-        &lt;span class=&quot;c1&quot;&gt;// TODO&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;h3 id=&quot;mocks-and-helpers&quot;&gt;Mocks and helpers&lt;/h3&gt;
-
-&lt;p&gt;Because we’ve namespaced our reducer under &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ProfileInteractor&lt;/code&gt; we’ll make a type alias to cut down on some boilerplate.&lt;/p&gt;
-
-&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;    &lt;span class=&quot;kd&quot;&gt;typealias&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Reducer&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ProfileInteractor&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Reducer&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;We’ll also make some mock structs to cut down on boilerplate.&lt;/p&gt;
-
-&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;user&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Mocks&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;user&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;error&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Mocks&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;error&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;Where the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Mock&lt;/code&gt; enum acts as a namespace:&lt;/p&gt;
-
-&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;enum&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Mocks&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;kd&quot;&gt;static&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;user&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;User&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;id&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
-                           &lt;span class=&quot;nv&quot;&gt;avatarURL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;URL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;string&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;https://en.gravatar.com/userimage/30721452/beb8f097031268cc19d5e6261603d419.jpeg&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;!&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
-                           &lt;span class=&quot;nv&quot;&gt;username&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;twocentstudios&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
-                           &lt;span class=&quot;nv&quot;&gt;friendsCount&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;100&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
-                           &lt;span class=&quot;nv&quot;&gt;location&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;Chicago&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
-                           &lt;span class=&quot;nv&quot;&gt;website&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;URL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;string&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;twocentstudios.com&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;!&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-    
-    &lt;span class=&quot;kd&quot;&gt;static&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;error&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;NSError&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;domain&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;code&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;userInfo&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;nil&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-    
-    &lt;span class=&quot;c1&quot;&gt;// ...&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;Finally, we’ll need to ensure we’ve implemented equatable for all of the structs we’ll use. This includes &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ProfileViewModel&lt;/code&gt;, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ProfileInteractor.Reducer.State&lt;/code&gt;, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ProfileInteractor.Reducer.Command&lt;/code&gt;, and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ProfileInteractor.Reducer.Effect&lt;/code&gt;. Otherwise, we’d have no way to assert.&lt;/p&gt;
-
-&lt;h3 id=&quot;writing-the-reducer-tests&quot;&gt;Writing the reducer tests&lt;/h3&gt;
-
-&lt;p&gt;With the boilerplate out of the way, let’s write our first test.&lt;/p&gt;
-
-&lt;p&gt;Our first valid transition is a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ProfileViewModel&lt;/code&gt; from &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Initialized&lt;/code&gt; to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Loading&lt;/code&gt; state.&lt;/p&gt;
-
-&lt;p&gt;Remember that this state transition does not go directly from &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Initialized&lt;/code&gt; to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Loaded&lt;/code&gt; and hit the network or perform other side effects. The reducer is a synchronous function. Its two outputs are 1. the state of the view model updated to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Loading&lt;/code&gt; and 2. the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.load&lt;/code&gt; &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Effect&lt;/code&gt; which will be used by the interactor to perform side effects.&lt;/p&gt;
-
-&lt;blockquote&gt;
-  &lt;p&gt;Refer to the &lt;a href=&quot;/2017/08/02/transitioning-between-view-states-using-reducers/&quot;&gt;view state post&lt;/a&gt; and &lt;a href=&quot;/2017/08/02/transitioning-between-view-states-using-reducers/&quot;&gt;reducers post&lt;/a&gt; for more background.&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ProfileInteractorReducerTests&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;XCTestCase&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;testInitializedLoad&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    
-        &lt;span class=&quot;c1&quot;&gt;// 1a. Create an initial `ProfileViewModel` and state containing it.&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;initialViewModel&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ProfileViewModel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;state&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;initialized&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;initialState&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Reducer&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;State&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;viewModel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;initialViewModel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;effect&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;nil&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-        &lt;span class=&quot;c1&quot;&gt;// 1b. Specify the `Command` that will direct the state transition.&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;command&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Reducer&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Command&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;load&lt;/span&gt;
-        
-        &lt;span class=&quot;c1&quot;&gt;// 2. Specify the target (expected) `ProfileViewModel`, `Effect`, and `State` combining the two.&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;targetViewModel&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ProfileViewModel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;state&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;loading&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;targetEffect&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Reducer&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Effect&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;load&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;targetState&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Reducer&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;State&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;viewModel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;targetViewModel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;effect&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;targetEffect&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-        
-        &lt;span class=&quot;c1&quot;&gt;// 3. Call the function with (1) and (2) and store the result.&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;result&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Reducer&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;reduce&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;state&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;initialState&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;command&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;command&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-        
-        &lt;span class=&quot;c1&quot;&gt;// 4. Assert the result from (4) is what we expect from (3).&lt;/span&gt;
-        &lt;span class=&quot;kt&quot;&gt;XCTAssertEqual&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;targetState&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;result&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt; 
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;This is about as straightforward as you can get with a test.&lt;/p&gt;
-
-&lt;ol&gt;
-  &lt;li&gt;Create some inert input data&lt;/li&gt;
-  &lt;li&gt;Create our expected output structs&lt;/li&gt;
-  &lt;li&gt;Call the function with the input data.&lt;/li&gt;
-  &lt;li&gt;Assert that our function output equals the output we expect.&lt;/li&gt;
-&lt;/ol&gt;
-
-&lt;p&gt;From here, we can copy paste this general structure and change the input and expected values.&lt;/p&gt;
-
-&lt;blockquote&gt;
-  &lt;p&gt;There are probably better ways to automate writing and testing the reducer since it’s just a state machine. I’m open to ideas!&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;p&gt;Let’s show one more test for the transition from state &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Loading&lt;/code&gt; to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Failed&lt;/code&gt;. Remember that the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Command&lt;/code&gt; for this state transition comes as a result of the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Service&lt;/code&gt; returning a value (presumably from the server), and all of that is handled by the interactor.&lt;/p&gt;
-
-&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ProfileInteractorReducerTests&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;XCTestCase&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;testLoadingFailed&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;initialViewModel&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ProfileViewModel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;state&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;loading&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;initialState&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Reducer&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;State&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;viewModel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;initialViewModel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;effect&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;nil&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-        
-        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;command&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Reducer&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Command&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;failed&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;error&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-        
-        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;targetViewModel&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ProfileViewModel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;state&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;failed&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;error&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;targetEffect&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Reducer&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Effect&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;nil&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;targetState&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Reducer&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;State&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;viewModel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;targetViewModel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;effect&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;targetEffect&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-        
-        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;result&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Reducer&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;reduce&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;state&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;initialState&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;command&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;command&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-        
-        &lt;span class=&quot;kt&quot;&gt;XCTAssertEqual&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;targetState&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;result&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;The same sequence of statements is used, but we’re comparing different inputs and outputs.&lt;/p&gt;
-
-&lt;h3 id=&quot;which-transitions-to-test&quot;&gt;Which transitions to test?&lt;/h3&gt;
-
-&lt;p&gt;In the &lt;a href=&quot;&quot;&gt;source&lt;/a&gt;, I’m only testing valid transitions. However, we could also test that invalid transitions are handled in a deterministic way. The rigor of your test coverage is up to you.&lt;/p&gt;
-
-&lt;p&gt;In the most rigorous implementation of a reducer, you could add an &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Effect&lt;/code&gt; for invalid transitions. Upstream, in the interactor, you could use that &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Effect&lt;/code&gt; to log an error to an external service. This would keep your reducer completely deterministic and side-effect free.&lt;/p&gt;
-
-&lt;h2 id=&quot;testing-the-interactor&quot;&gt;Testing the interactor&lt;/h2&gt;
-
-&lt;p&gt;For the interactor, we’ll be testing end-to-end transitions. We could also mirror our reducer tests, but as you’ll see, it makes more sense to lean towards &lt;em&gt;integration tests&lt;/em&gt; here since we can now fully exercise the asynchronous nature of the interactor.&lt;/p&gt;
-
-&lt;blockquote&gt;
-  &lt;p&gt;I’ll talk a little bit about integration testing with the interactor vs UI testing with UIKit and Xcode a bit later.&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;h3 id=&quot;outline-of-profileinteractortests&quot;&gt;Outline of ProfileInteractorTests&lt;/h3&gt;
-
-&lt;p&gt;Going back to our state transition diagram:&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/transitioning_view_states-04.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;&quot; title=&quot;&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;Let’s outline &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ProfileInteractorTests&lt;/code&gt;.&lt;/p&gt;
-
-&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ProfileInteractorTests&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;XCTestCase&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;kd&quot;&gt;typealias&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Command&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ProfileInteractor&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Command&lt;/span&gt;
-    &lt;span class=&quot;kd&quot;&gt;typealias&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Effect&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ProfileInteractor&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Effect&lt;/span&gt;
-    
-    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;user&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Mocks&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;user&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;error&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Mocks&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;error&lt;/span&gt;
-    
-    &lt;span class=&quot;c1&quot;&gt;// Initialized&lt;/span&gt;
-    &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;testInitialState&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-        &lt;span class=&quot;c1&quot;&gt;// TODO&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-    
-    &lt;span class=&quot;c1&quot;&gt;// Initialized -&amp;gt; Load -&amp;gt; Loaded&lt;/span&gt;
-    &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;testInitializedLoadSuccess&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-        &lt;span class=&quot;c1&quot;&gt;// TODO&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-
-    &lt;span class=&quot;c1&quot;&gt;// Initialized -&amp;gt; Load -&amp;gt; Failed    &lt;/span&gt;
-    &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;testInitializedLoadFailure&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-        &lt;span class=&quot;c1&quot;&gt;// TODO&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-    
-    &lt;span class=&quot;c1&quot;&gt;// Failed -&amp;gt; Load -&amp;gt; Success&lt;/span&gt;
-    &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;testFailureThenSuccess&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-        &lt;span class=&quot;c1&quot;&gt;// TODO&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;We’ve decided on four cases:&lt;/p&gt;
-
-&lt;ol&gt;
-  &lt;li&gt;&lt;strong&gt;Initialized&lt;/strong&gt; - ensure our system starts in a known state.&lt;/li&gt;
-  &lt;li&gt;&lt;strong&gt;Initialized -&amp;gt; Load -&amp;gt; Loaded&lt;/strong&gt; - expected success case.&lt;/li&gt;
-  &lt;li&gt;&lt;strong&gt;Initialized -&amp;gt; Load -&amp;gt; Failed&lt;/strong&gt; - failure case.&lt;/li&gt;
-  &lt;li&gt;&lt;strong&gt;Failed -&amp;gt; Load -&amp;gt; Success&lt;/strong&gt; - retry failure to success case.&lt;/li&gt;
-&lt;/ol&gt;
-
-&lt;h3 id=&quot;mocks-and-helpers-1&quot;&gt;Mocks and helpers&lt;/h3&gt;
-
-&lt;p&gt;Like the reducer tests above, we’ll use some &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;typealias&lt;/code&gt;es and mocks to cut down on boilerplate.&lt;/p&gt;
-
-&lt;p&gt;We’ll also need to add two new mock classes that our interactor(s) have as dependencies.&lt;/p&gt;
-
-&lt;h4 id=&quot;profileservice&quot;&gt;ProfileService&lt;/h4&gt;
-
-&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Mock.ProfileService&lt;/code&gt; should conform to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ProfileServiceType&lt;/code&gt;:&lt;/p&gt;
-
-&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;protocol&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ProfileServiceType&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;readProfile&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;userId&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Int&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;SignalProducer&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;User&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;NSError&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;Our mock should return a valid user or an error depending on what we want to test.&lt;/p&gt;
-
-&lt;p&gt;The simplest version of this mock can just mirror whatever &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Result&lt;/code&gt; we set.&lt;/p&gt;
-
-&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;enum&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Mocks&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;kd&quot;&gt;final&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ProfileService&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ProfileServiceType&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;result&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Result&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;User&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;NSError&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;!&lt;/span&gt;
-        
-        &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;readProfile&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;userId&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Int&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;SignalProducer&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;User&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;NSError&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-            &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;SignalProducer&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;result&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;result&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;But I made some helpers so the test code looks a little cleaner.&lt;/p&gt;
-
-&lt;h4 id=&quot;testschedulercontext&quot;&gt;TestSchedulerContext&lt;/h4&gt;
-
-&lt;p&gt;The interface for the interactor accepts a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;SchedulerContextType&lt;/code&gt;. This requires a more detailed explanation, but for now I’ll explain the basics.&lt;/p&gt;
-
-&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;SchedulerContextType&lt;/code&gt; asks for three distinct schedulers:&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;state&lt;/code&gt; to update state by running the synchronous reducer function.&lt;/li&gt;
-  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;work&lt;/code&gt; to dispatch asynchronous work like network requests.&lt;/li&gt;
-  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;output&lt;/code&gt; to set the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;viewModel&lt;/code&gt; and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;effect&lt;/code&gt; variables.&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;This will allow us to manipulate the flow of time and observe/assert the state of the system at critical points.&lt;/p&gt;
-
-&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;TestSchedulerContext&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;SchedulerContextType&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    
-    &lt;span class=&quot;c1&quot;&gt;// ...&lt;/span&gt;
-    
-    &lt;span class=&quot;nf&quot;&gt;init&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;state&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;TestScheduler&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;TestScheduler&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(),&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;work&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;TestScheduler&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;TestScheduler&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(),&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;output&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;TestScheduler&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;TestScheduler&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;())&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;testState&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;state&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;testWork&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;work&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;testOutput&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;output&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-    
-    &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;nextOutput&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-        &lt;span class=&quot;n&quot;&gt;testState&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;advance&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
-        &lt;span class=&quot;n&quot;&gt;testOutput&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;advance&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-    
-    &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;doWork&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-        &lt;span class=&quot;n&quot;&gt;testWork&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;advance&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;I’ve added two helper functions to formalize how the schedulers should be advanced: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;nextOutput&lt;/code&gt; which accepts input, computes a new state, and delivers output; and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;doWork&lt;/code&gt; which simulates the service layer returning a new result.&lt;/p&gt;
-
-&lt;h4 id=&quot;testobserver&quot;&gt;TestObserver&lt;/h4&gt;
-
-&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;TestObserver&lt;/code&gt; is a helper class specifically for testing the output of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ReactiveSwift&lt;/code&gt; signals. This was originally written by the Kickstarter team (their source &lt;a href=&quot;https://github.com/kickstarter/Kickstarter-ReactiveExtensions/blob/15631b40c437d18db4187d9b8ad117115775ea3f/ReactiveExtensions/test-helpers/TestObserver.swift&quot;&gt;here&lt;/a&gt;).&lt;/p&gt;
-
-&lt;p&gt;The header comments explain its purpose:&lt;/p&gt;
-
-&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;A `TestObserver` is a wrapper around an `Observer` that saves all events 
-to an internal array so that assertions can be made on a signal&apos;s behavior. 
-To use, just create an instance of `TestObserver` that matches the type of 
-signal/producer you are testing, and observer/start your signal by feeding 
-it the wrapped observer. For example,
-
- let test = TestObserver&amp;lt;Int, NoError&amp;gt;()
- mySignal.observer(test.observer)
- 
- // ... later ...
- 
- test.assertValues([1, 2, 3])
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;h3 id=&quot;writing-the-interactor-tests&quot;&gt;Writing the interactor tests&lt;/h3&gt;
-
-&lt;p&gt;Let’s start with the first test: ensuring our interactor has the expected initial state.&lt;/p&gt;
-
-&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ProfileInteractorTests&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;XCTestCase&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;c1&quot;&gt;// ...&lt;/span&gt;
-    
-    &lt;span class=&quot;c1&quot;&gt;// Initialized&lt;/span&gt;
-    &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;testInitialState&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;schedulerContext&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;TestSchedulerContext&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;service&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Mocks&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;ProfileService&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;user&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-        
-        &lt;span class=&quot;c1&quot;&gt;// 1. Create the interactor with dependencies.&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;interactor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ProfileInteractor&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;userId&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;user&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;id&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;service&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;service&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;scheduler&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;schedulerContext&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-        
-        &lt;span class=&quot;c1&quot;&gt;// 2. Create the expected view model.&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;targetViewModel&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ProfileViewModel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;state&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;initialized&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-        
-        &lt;span class=&quot;c1&quot;&gt;// 3. Probe the result view model stored in the property.&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;result&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;interactor&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;viewModel&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;value&lt;/span&gt;
-        
-        &lt;span class=&quot;c1&quot;&gt;// 4. Assert equality.&lt;/span&gt;
-        &lt;span class=&quot;kt&quot;&gt;XCTAssertEqual&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;targetViewModel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;result&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;blockquote&gt;
-  &lt;p&gt;Note that we don’t need to run the output scheduler since the interactor’s &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;viewModel.value&lt;/code&gt; is set on whatever scheduler &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;init&lt;/code&gt; is called on.&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ProfileInteractorTests&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;XCTestCase&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;c1&quot;&gt;// ...&lt;/span&gt;
-    
-    &lt;span class=&quot;c1&quot;&gt;// Initialized -&amp;gt; Load -&amp;gt; Loaded&lt;/span&gt;
-    &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;testInitializedLoadSuccess&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;schedulerContext&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;TestSchedulerContext&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;service&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Mocks&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;ProfileService&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;user&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-        
-        &lt;span class=&quot;c1&quot;&gt;// 1. Create the interactor with dependencies.&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;interactor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ProfileInteractor&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;userId&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;user&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;id&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;service&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;service&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;scheduler&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;schedulerContext&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-        
-        &lt;span class=&quot;c1&quot;&gt;// 2. Create a TestObserver for the `Effect` output.&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;effect&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;TestObserver&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Effect&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;NoError&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;TestObserver&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
-        &lt;span class=&quot;n&quot;&gt;interactor&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;effect&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;observe&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;effect&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;observer&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-        
-        &lt;span class=&quot;c1&quot;&gt;// 3. Create the `Command` to test.&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;command&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Command&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;load&lt;/span&gt;
-        
-        &lt;span class=&quot;c1&quot;&gt;// 4. Create the two expected view model states.&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;loadingViewModel&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ProfileViewModel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;state&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;loading&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;loadedViewModel&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ProfileViewModel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;state&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;loaded&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;user&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;
-        
-        &lt;span class=&quot;c1&quot;&gt;// 5. Send `Command.Load` to simulate the load start.&lt;/span&gt;
-        &lt;span class=&quot;n&quot;&gt;interactor&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;commandSink&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;send&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;value&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;command&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-        
-        &lt;span class=&quot;c1&quot;&gt;// 6. Tell the `schedulerContext` to run one output cycle.&lt;/span&gt;
-        &lt;span class=&quot;n&quot;&gt;schedulerContext&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;nextOutput&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
-        
-        &lt;span class=&quot;c1&quot;&gt;// 7. Probe the result view model stored in the property.&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;loadingResult&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;interactor&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;viewModel&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;value&lt;/span&gt;
-        
-        &lt;span class=&quot;c1&quot;&gt;// 8. Assert that the view model is now in `loading` state.&lt;/span&gt;
-        &lt;span class=&quot;kt&quot;&gt;XCTAssertEqual&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;loadingViewModel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;loadingResult&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-        
-        &lt;span class=&quot;c1&quot;&gt;// 9. Assert that there were no other side-effects produced.&lt;/span&gt;
-        &lt;span class=&quot;n&quot;&gt;effect&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;assertValueCount&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-        &lt;span class=&quot;n&quot;&gt;effect&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;assertDidNotComplete&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
-        
-        &lt;span class=&quot;c1&quot;&gt;// 10. Tell the `schedulerContext` to run one service cycle and one output cycle.&lt;/span&gt;
-        &lt;span class=&quot;n&quot;&gt;schedulerContext&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;doWork&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
-        &lt;span class=&quot;n&quot;&gt;schedulerContext&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;nextOutput&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
-        
-        &lt;span class=&quot;c1&quot;&gt;// 11. Probe the result view model stored in the property again.&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;loadedResult&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;interactor&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;viewModel&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;value&lt;/span&gt;
-        
-        &lt;span class=&quot;c1&quot;&gt;// 12. Assert that the view model is now in `loading` state.&lt;/span&gt;
-        &lt;span class=&quot;kt&quot;&gt;XCTAssertEqual&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;loadedViewModel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;loadedResult&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-
-        &lt;span class=&quot;c1&quot;&gt;// 13. Assert that there were no other side-effects produced.&lt;/span&gt;
-        &lt;span class=&quot;n&quot;&gt;effect&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;assertValueCount&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-        &lt;span class=&quot;n&quot;&gt;effect&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;assertDidNotComplete&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;A couple things to note:&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;[2][9][13] Because our &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;interactor.effect&lt;/code&gt; is a stateless &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Signal&lt;/code&gt;, we need to use &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;TestObserver&lt;/code&gt; to temporary capture its values (or lack there of) to assert.&lt;/li&gt;
-  &lt;li&gt;[6][10] We have to call functions on &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;schedulerContext&lt;/code&gt; to artificially advance time.&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;The interactor tests are more like integration tests. There’s a lot more internal behavior handled by the interactor in order to produce the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;viewModel&lt;/code&gt; and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;effect&lt;/code&gt; outputs. However, we get much more control and granularity as opposed to UI testing.&lt;/p&gt;
-
-&lt;p&gt;See &lt;a href=&quot;&quot;&gt;the source&lt;/a&gt; for the other two cases I decided to test. They’re very similar.&lt;/p&gt;
-
-&lt;h2 id=&quot;ui-testing&quot;&gt;UI testing&lt;/h2&gt;
-
-&lt;p&gt;Judging from the types of testing I’ve decided to focus on in this post, you can probably glean some of my views on testing.&lt;/p&gt;
-
-&lt;p&gt;My past team experience focused on using manual pre-release testing to discover UI bugs. We did no automated UI testing at all. The biggest reason was that almost every screen in our app changed in a non-trivial way at least once a month. Maintaining expectation images and UI automation testing would have required resources we didn’t have.&lt;/p&gt;
-
-&lt;p&gt;In this post, I specifically target my tests in code outside of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;UIKit&lt;/code&gt;. The architecture itself from the last four posts is designed to push code as far as reasonably possible outside of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;UIKit&lt;/code&gt;. &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;UIKit&lt;/code&gt; simply introduces far too much state and far too many side-effects into a system for me to feel confident that my tests are useful.&lt;/p&gt;
-
-&lt;p&gt;Although there has been lots of progress made both by Apple and in open source in making UI testing more useful and feasible, I still consider manual testing to be more resource efficient than writing and maintaining a suite of UI tests especially for the kinds of apps I currently work on.&lt;/p&gt;
-
-&lt;p&gt;I would love to have my mind changed though. I hope UI testing becomes more mainstream as tooling improves. And certainly if you have the design stability and the resources, automate as much testing as you can!&lt;/p&gt;
-
-&lt;h2 id=&quot;summary&quot;&gt;Summary&lt;/h2&gt;
-
-&lt;p&gt;In this post we looked at writing tests for our reducer and interactor.&lt;/p&gt;
-
-&lt;p&gt;The reducer tests were trivial unit tests. The interactor tests are more involved, but give us a lot of control to test the limited interface of the interactor.&lt;/p&gt;
-
-&lt;p&gt;Although on the surface scheduler contexts seem to complicate our code a bit, I think it’s really useful to have both control and understanding of how and when code is being run. Notice that we didn’t have to wait for any expectations. The test code follows a linear and logical progression.&lt;/p&gt;
-
-&lt;p&gt;A few questions I’d like to ponder for the future:&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;Since our reducer is a straightforward state machine, are there better ways to automate testing?&lt;/li&gt;
-  &lt;li&gt;Is there a way we can eliminate at least one of the three scheduler context types? Perhaps the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;state&lt;/code&gt; scheduler can use the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;output&lt;/code&gt; scheduler instead?&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h2 id=&quot;further-reading&quot;&gt;Further reading&lt;/h2&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;&lt;a href=&quot;https://talk.objc.io/episodes/S01E53-test-driven-reactive-programming-at-kickstarer&quot;&gt;objc.io: Test-Driven Reactive Programming&lt;/a&gt;&lt;/li&gt;
-  &lt;li&gt;&lt;a href=&quot;http://adamborek.com/rxtests-rxactionsheet/&quot;&gt;RxTest – How to test the Observable in Swift&lt;/a&gt;&lt;/li&gt;
-&lt;/ul&gt;
-</description>
-        <pubDate>Sun, 18 Feb 2018 16:21:38 -0600</pubDate>
-        <link>https://twocentstudios.com/2018/02/18/testing-reducers-and-interactors/</link>
-        <guid isPermaLink="true">https://twocentstudios.com/2018/02/18/testing-reducers-and-interactors/</guid>
-        
-        <category>apple</category>
-        
-        <category>ios</category>
         
         
       </item>
