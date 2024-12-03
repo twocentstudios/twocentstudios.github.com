@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>Core Location Modern API Tips</title>
+
+  <meta property="og:type" content="article" />
+  <meta property="og:title" content="Core Location Modern API Tips" />
+  <meta property="og:url" content="https://twocentstudios.com/2024/12/02/core-location-modern-api-tips/" />
+  
+    <meta property="og:article:published_time" content="2024-12-02T16:20:00-06:00" />
+  
+  
+    <meta property="og:image" content="https://twocentstudios.com/images/core-location-title-card.png" />
+  
+  
+  <link href='https://fonts.googleapis.com/css2?family=Work+Sans:wght@300;350;400;600' rel='stylesheet' type='text/css'>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="canonical" href="https://twocentstudios.com/2024/12/02/core-location-modern-api-tips/">
+  <link rel="alternate" type="application/rss+xml" title="twocentstudios" href="https://twocentstudios.com/feed.xml" />
+</head>
+
+  <!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-NE82N02W8S"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-NE82N02W8S');
+</script>
+
+  <body>
+
+    <header class="site-header">
+
+  <div class="wrapper">
+
+    <a class="site-title" href="/">twocentstudios</a>
+
+    <nav class="site-nav">
+      <a href="#" class="menu-icon">
+        <svg viewBox="0 0 18 15">
+          <path fill="#424242" d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.031C17.335,0,18,0.665,18,1.484L18,1.484z"/>
+          <path fill="#424242" d="M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0c0-0.82,0.665-1.484,1.484-1.484 h15.031C17.335,6.031,18,6.696,18,7.516L18,7.516z"/>
+          <path fill="#424242" d="M18,13.516C18,14.335,17.335,15,16.516,15H1.484C0.665,15,0,14.335,0,13.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.031C17.335,12.031,18,12.696,18,13.516L18,13.516z"/>
+        </svg>
+      </a>
+
+      <div class="trigger">
+        
+          
+          <a class="page-link" href="/about/">About</a>
+          
+        
+          
+          <a class="page-link" href="/blog/">Blog</a>
+          
+        
+          
+        
+          
+        
+          
+          <a class="page-link" href="/portfolio/">Portfolio</a>
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      </div>
+    </nav>
+
+  </div>
+
+</header>
+
+
+    <div class="page-content">
+      <div class="wrapper">
+        <div class="post">
+
+  <header class="post-header">
+    <h1 class="post-title">Core Location Modern API Tips</h1>
+    <p class="post-meta">Dec 2, 2024</p>
+  </header>
+
+  <article class="post-content">
+    <p>The Core Location framework for Apple platforms received some fresh API updates alongside even more permissions minutia in iOS 17 and iOS 18.</p>
+
+<p>In this post I’ll list as many gotchas as I’ve found in the “modern” Core Location as of iOS 18.1 while developing my train timetables app <a href="/2024/07/27/eki-bright-tokyo-area-train-timetables/">Eki Bright</a>. Some documented, some not. This is not a quick start or tutorial, but you may want to skim it if you’re thinking about using an iOS 17+ Core Location API so you know what to look out for.</p>
+
+<p>I’ll be discussing iOS usage of Core Location exclusively (not macOS, visionOS, watchOS).</p>
+
+<h1 id="overall-recommendations">Overall recommendations</h1>
+
+<h2 id="prefer-cllocationmanager-over-clmonitor-and-cllocationupdate">Prefer <code class="language-plaintext highlighter-rouge">CLLocationManager</code> over <code class="language-plaintext highlighter-rouge">CLMonitor</code> and <code class="language-plaintext highlighter-rouge">CLLocationUpdate</code></h2>
+
+<p><code class="language-plaintext highlighter-rouge">CLLocationManager</code> has been around since the beginning of iPhone OS. Its delegate-based API can feel a bit cumbersome in the current era, but overall, I would still recommend creating your own wrapper over <code class="language-plaintext highlighter-rouge">CLLocationManager</code> if the core competency of your app is even adjacent to location services.</p>
+
+<p>As far as I can tell, <code class="language-plaintext highlighter-rouge">CLMonitor</code> and <code class="language-plaintext highlighter-rouge">CLLocationUpdate</code> are both wrappers themselves over <code class="language-plaintext highlighter-rouge">CLLocationManager</code> albeit with fewer options, fewer capabilities, and many more gotchas spread across iOS minor versions.</p>
+
+<p>If you’d still like to try them, please read my observations below.</p>
+
+<h2 id="prefer-clservicesession-if-your-deployment-target-is-ios-180">Prefer <code class="language-plaintext highlighter-rouge">CLServiceSession</code> if your deployment target is iOS 18.0+</h2>
+
+<p>In my testing, <code class="language-plaintext highlighter-rouge">CLServiceSession</code> has worked as advertised and requires less babysitting than the older imperative location permission APIs.</p>
+
+<p>Location services permissions is still ripe with complexity and edge cases, so I recommend reading all the documentation and my observations below.</p>
+
+<h1 id="official-documentation">Official documentation</h1>
+
+<p>I’ll start by listing the documentation for the iOS 17+ APIs I’ve found useful.</p>
+
+<h2 id="wwdc-videos">WWDC videos</h2>
+
+<p>There are three videos from WWDC 2023 and 2024 from the Core Location team introducing iOS 17 and iOS 18 changes.</p>
+
+<ul>
+  <li><a href="https://developer.apple.com/videos/play/wwdc2023/10180">Discover streamlined location updates (2023)</a></li>
+  <li><a href="https://developer.apple.com/videos/play/wwdc2023/10147">Meet Core Location Monitor (2023)</a></li>
+  <li><a href="https://developer.apple.com/videos/play/wwdc2024/10212">What’s new in location authorization (2024)</a></li>
+</ul>
+
+<p>These videos do a nice job of explaining the rationale behind the new APIs. They also illustrate the intended usage pretty well for extremely simple use cases.</p>
+
+<h2 id="sample-projects">Sample projects</h2>
+
+<p>The sample projects, although very freshly updated, do a poor job of actually proving the capabilities of the framework work as advertised. They’re more useful in seeing how the API designers intend the framework user to compose all the pieces together.</p>
+
+<ul>
+  <li><a href="https://developer.apple.com/documentation/corelocation/adopting-live-updates-in-core-location">Adopting live updates in Core Location</a></li>
+  <li><a href="https://developer.apple.com/documentation/corelocation/monitoring-location-changes-with-core-location">Monitoring location changes with Core Location</a></li>
+</ul>
+
+<h2 id="warning-about-the-documentation">Warning about the documentation</h2>
+
+<p>Some official articles have been written or rewritten assuming your app’s base deployment is iOS 17 or iOS 18. <a href="https://developer.apple.com/documentation/corelocation/suspending-authorization-requests">Suspending authorization requests</a> shows only permission requests based on <code class="language-plaintext highlighter-rouge">CLServiceSession</code>.</p>
+
+<p>…while some articles have not been updated. <a href="https://developer.apple.com/documentation/corelocation/requesting-authorization-to-use-location-services">Requesting authorization to use location services</a> does not mention <code class="language-plaintext highlighter-rouge">CLServiceSession</code> at all.</p>
+
+<p>Some newer API’s documentation pages are missing important notes that exist in their deprecated counterpart API’s pages. For example, <a href="https://developer.apple.com/documentation/corelocation/clmonitor-2r51v">CLMonitor</a> and <a href="https://developer.apple.com/documentation/corelocation/cllocationmanager/startmonitoring(for:)">startMonitoring(for:)</a>.</p>
+
+<p>Be sure to check the individual pages under <a href="https://developer.apple.com/documentation/corelocation/deprecated-symbols">Deprecated symbols</a> as well.</p>
+
+<h1 id="tips">Tips</h1>
+
+<p>This section is an unstructured brain dump of everything I’ve run into while using the iOS 17+ Core Location APIs. I’ve divided up the subsections into:</p>
+
+<ul>
+  <li>Permissions (<code class="language-plaintext highlighter-rouge">CLServiceSession</code>)</li>
+  <li>Background operation</li>
+  <li>Location updates firehose (<code class="language-plaintext highlighter-rouge">CLLocationUpdate</code>)</li>
+  <li>Location monitoring (<code class="language-plaintext highlighter-rouge">CLMonitor</code>)</li>
+</ul>
+
+<h2 id="permissions">Permissions</h2>
+
+<p>I recommend starting by reading <a href="https://developer.apple.com/documentation/corelocation/requesting-authorization-to-use-location-services">Requesting authorization to use location services</a> carefully, and watching <a href="https://developer.apple.com/videos/play/wwdc2024/10212">What’s new in location authorization</a>.</p>
+
+<h3 id="implicit-vs-explicit-clservicesession-usage">Implicit vs. explicit CLServiceSession usage</h3>
+
+<p>In iOS 18+, <code class="language-plaintext highlighter-rouge">CLLocationUpdate</code> or <code class="language-plaintext highlighter-rouge">CLMonitor</code> allow implicit usage of permissions via the underlying <code class="language-plaintext highlighter-rouge">CLServiceSession</code> mechanism. If you’re using iOS 17 or below, or using <code class="language-plaintext highlighter-rouge">CLLocationManager</code> you can skip this part.</p>
+
+<p>As a pseudo flowchart:</p>
+
+<p>If:</p>
+
+<ul>
+  <li>You’re only using either <code class="language-plaintext highlighter-rouge">CLLocationUpdate</code> or <code class="language-plaintext highlighter-rouge">CLMonitor</code> (not <code class="language-plaintext highlighter-rouge">CLLocationManager</code>) <em>and</em></li>
+  <li>You’re supporting iOS 18+ <em>and</em></li>
+  <li>You only need <code class="language-plaintext highlighter-rouge">whenInUse</code> authorization without explicit full accuracy</li>
+</ul>
+
+<p>Then you have 2 options:</p>
+
+<ol>
+  <li>Use implicit authorization: simply call <code class="language-plaintext highlighter-rouge">CLLocationUpdate</code> or <code class="language-plaintext highlighter-rouge">CLMonitor</code> and Core Location will take a <code class="language-plaintext highlighter-rouge">CLServiceSession</code> (the permissions mechanism) for you behind the scenes.</li>
+  <li>Use explicit authorization: add the <code class="language-plaintext highlighter-rouge">NSLocationRequireExplicitServiceSession</code> key to <code class="language-plaintext highlighter-rouge">Info.plist</code> and hold an instance of <code class="language-plaintext highlighter-rouge">CLServiceSession</code> for as long as you’re getting values from <code class="language-plaintext highlighter-rouge">CLLocationUpdate</code> or <code class="language-plaintext highlighter-rouge">CLMonitor</code>.</li>
+</ol>
+
+<p>If:</p>
+
+<ul>
+  <li>You’re only using either <code class="language-plaintext highlighter-rouge">CLLocationUpdate</code> or <code class="language-plaintext highlighter-rouge">CLMonitor</code> (not <code class="language-plaintext highlighter-rouge">CLLocationManager</code>) <em>and</em></li>
+  <li>You’re supporting iOS 18+ <em>and</em></li>
+  <li>You need <code class="language-plaintext highlighter-rouge">always</code> authorization <em>or</em> explicit full accuracy</li>
+</ul>
+
+<p>Then:</p>
+
+<p>You must take a <code class="language-plaintext highlighter-rouge">CLServiceSession</code>. You can still add <code class="language-plaintext highlighter-rouge">NSLocationRequireExplicitServiceSession</code> if you want to ensure you don’t make a mistake.</p>
+
+<h3 id="testing-the-full-accuracy-permission-prompt">Testing the full accuracy permission prompt</h3>
+
+<p>One way to test the permission prompt for full accuracy usage is:</p>
+
+<ul>
+  <li>Start a fresh copy of your app on a simulator.</li>
+  <li>Trigger the location prompt and allow <code class="language-plaintext highlighter-rouge">whenInUse</code> permissions.</li>
+  <li>Force quit the app.</li>
+  <li>In the simulator’s Settings.app, go to your app’s settings page -&gt; Location Services and disable Full Accuracy.</li>
+  <li>Cold launch your app.</li>
+  <li>Trigger your feature that requires full accuracy permissions.</li>
+  <li>The permission prompt should appear.</li>
+</ul>
+
+<div class="caption-wrapper"><img class="caption" src="/images/core-location-full-accuracy-prompt.jpg" width="" height="380" alt="An example of the temporary full accuracy permission prompt" title="An example of the temporary full accuracy permission prompt" /><div class="caption-text">An example of the temporary full accuracy permission prompt</div></div>
+
+<p>If you approve this permission prompt it will still appear every time you trigger your feature in future cold launches (it’s “temporary” after all).</p>
+
+<h3 id="localizing-fullaccuracypurposekey">Localizing <code class="language-plaintext highlighter-rouge">fullAccuracyPurposeKey</code></h3>
+
+<p>Full accuracy requests are available in two API:</p>
+
+<ul>
+  <li><a href="https://developer.apple.com/documentation/corelocation/clservicesession-pt7n/init(authorization:fullaccuracypurposekey:)">init(authorization:fullAccuracyPurposeKey:)</a></li>
+  <li><a href="https://developer.apple.com/documentation/corelocation/cllocationmanager/requesttemporaryfullaccuracyauthorization(withpurposekey:completion:)">requestTemporaryFullAccuracyAuthorization(withPurposeKey:completion:)</a></li>
+</ul>
+
+<p>(This is another one of those cases where all the documentation is on the page of the deprecated API.)</p>
+
+<p>I’m using <code class="language-plaintext highlighter-rouge">CLServiceSession</code> in the following manner:</p>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kt">CLServiceSession</span><span class="p">(</span><span class="nv">authorization</span><span class="p">:</span> <span class="o">.</span><span class="n">whenInUse</span><span class="p">,</span> <span class="nv">fullAccuracyPurposeKey</span><span class="p">:</span> <span class="s">"NSLocationTemporaryUsageDescriptionDictionaryMonitor"</span><span class="p">)</span>
+</code></pre>
+</div>
+
+<p>Specifying <code class="language-plaintext highlighter-rouge">fullAccuracyPurposeKey</code> tells <code class="language-plaintext highlighter-rouge">CLServiceSession</code> that the feature associated with the <code class="language-plaintext highlighter-rouge">CLServiceSession</code> instance prefers having <code class="language-plaintext highlighter-rouge">fullAccuracy</code>, and will try to prompt for it automatically when possible (“possible” being any number of rules).</p>
+
+<p>The relevant part of the <code class="language-plaintext highlighter-rouge">Info.plist</code> should look like the below plist for specifying your app’s reason for wanting full accuracy permission. Notice I have two different keys because I have two features that each instantiate their own <code class="language-plaintext highlighter-rouge">CLServiceSession</code>.</p>
+
+<div class="language-xml highlighter-rouge"><pre class="highlight"><code><span class="nt">&lt;plist</span> <span class="na">version=</span><span class="s">"1.0"</span><span class="nt">&gt;</span>
+<span class="nt">&lt;dict&gt;</span>
+	<span class="nt">&lt;key&gt;</span>NSLocationTemporaryUsageDescriptionDictionary<span class="nt">&lt;/key&gt;</span>
+	<span class="nt">&lt;dict&gt;</span>
+		<span class="nt">&lt;key&gt;</span>NSLocationTemporaryUsageDescriptionDictionaryMonitor<span class="nt">&lt;/key&gt;</span>
+		<span class="nt">&lt;string&gt;</span>NSLocationTemporaryUsageDescriptionDictionaryMonitor<span class="nt">&lt;/string&gt;</span>
+		<span class="nt">&lt;key&gt;</span>NSLocationTemporaryUsageDescriptionDictionaryNearbyStations<span class="nt">&lt;/key&gt;</span>
+		<span class="nt">&lt;string&gt;</span>NSLocationTemporaryUsageDescriptionDictionaryNearbyStations<span class="nt">&lt;/string&gt;</span>
+	<span class="nt">&lt;/dict&gt;</span>
+<span class="nt">&lt;/dict&gt;</span>
+<span class="nt">&lt;/plist&gt;</span>
+</code></pre>
+</div>
+
+<p>If you’re not localizing and have no <code class="language-plaintext highlighter-rouge">InfoPlist.xcstrings</code>, you can add the actual message you show the user to the <code class="language-plaintext highlighter-rouge">&lt;string&gt;your message&lt;/string&gt;</code> part.</p>
+
+<p>If you are localizing, then you should add <code class="language-plaintext highlighter-rouge">NSLocationTemporaryUsageDescriptionDictionaryMonitor</code> and <code class="language-plaintext highlighter-rouge">NSLocationTemporaryUsageDescriptionDictionaryNearbyStations</code> as keys in your <code class="language-plaintext highlighter-rouge">InfoPlist.xcstrings</code> file, with the corresponding translations.</p>
+
+<p>In the above plist I’ve repeated the key name as the value, but it won’t be used since I added the key to <code class="language-plaintext highlighter-rouge">InfoPlist.xcstrings</code>.</p>
+
+<p>I’ve used a key name with the full prefix of the root dictionary key <code class="language-plaintext highlighter-rouge">NSLocationTemporaryUsageDescriptionDictionary</code>, but you can use any valid localization key name.</p>
+
+<p>The setup is documented <a href="https://developer.apple.com/documentation/corelocation/cllocationmanager/requesttemporaryfullaccuracyauthorization(withpurposekey:completion:)">in this API</a> and <a href="https://developer.apple.com/forums/thread/652801?answerId=624692022#624692022">in the forums</a>.</p>
+
+<h2 id="location-updates-in-the-background">Location updates in the background</h2>
+
+<p>If you need to run in the background based on location changes, you have a few requirements and a few options to consider.</p>
+
+<ul>
+  <li>You must to add <code class="language-plaintext highlighter-rouge">Background Modes -&gt; Location updates</code> to the <code class="language-plaintext highlighter-rouge">Signing &amp; Capabilities</code> section of your app target.</li>
+  <li>You must still add the proper permissions key (probably <code class="language-plaintext highlighter-rouge">NSLocationWhenInUseUsageDescription</code> or <code class="language-plaintext highlighter-rouge">NSLocationAlwaysAndWhenInUseUsageDescription</code>).</li>
+  <li>You must have either <code class="language-plaintext highlighter-rouge">.whenInUse</code> or <code class="language-plaintext highlighter-rouge">.always</code> permission. As far as I know, <code class="language-plaintext highlighter-rouge">fullAccuracy</code> permission is not required but I imagine the lack of it would affect most features that require background location updates.</li>
+  <li>You must either:
+    <ul>
+      <li>Run a Live Activity <em>or</em></li>
+      <li>Create and hold an instance of <a href="https://developer.apple.com/documentation/corelocation/clbackgroundactivitysession-3mzv3"><code class="language-plaintext highlighter-rouge">CLBackgroundActivitySession</code></a> (which is conceptually a single-purpose pre-configured Live Activity).</li>
+    </ul>
+  </li>
+  <li>You must^ be subscribed to an <code class="language-plaintext highlighter-rouge">AsyncStream</code> from either a <code class="language-plaintext highlighter-rouge">CLLocationUpdates</code> of <code class="language-plaintext highlighter-rouge">CLMonitor</code> instance. (^I have not tested how the <code class="language-plaintext highlighter-rouge">CLLocationManager</code> APIs work with iOS 17+ location background APIs, so you are on your own verifying how they work.)</li>
+</ul>
+
+<p>I want to specifically call out that <code class="language-plaintext highlighter-rouge">.always</code> permission is <em>not</em> required to receive location updates in the background assuming the above requirements are satisfied. As discussed in <a href="https://developer.apple.com/documentation/corelocation/requesting-authorization-to-use-location-services">this article</a>, the main difference between <code class="language-plaintext highlighter-rouge">whenInUse</code> and <code class="language-plaintext highlighter-rouge">always</code> permission is that:</p>
+
+<ul>
+  <li>With <code class="language-plaintext highlighter-rouge">always</code> permission, your app has the chance of being cold launched in the background in response to “significant location change, visits, and region monitoring services” if it was previously terminated.</li>
+  <li>With <code class="language-plaintext highlighter-rouge">whenInUse</code> permission, if your app is terminated for any reason, the user must open it again before location updates may be received in the background.</li>
+</ul>
+
+<p>Note: there’s something called a <a href="https://developer.apple.com/documentation/corelocation/creating-a-location-push-service-extension">Location push service extension</a> that requires <code class="language-plaintext highlighter-rouge">.always</code> permission, but I have no experience with what the other requirements are for this feature.</p>
+
+<p>Relevant docs:</p>
+
+<ul>
+  <li><a href="https://developer.apple.com/documentation/corelocation/handling-location-updates-in-the-background">Handling location updates in the background</a></li>
+  <li><a href="https://developer.apple.com/videos/play/wwdc2023/10180">Discover streamlined location updates</a></li>
+  <li><a href="https://developer.apple.com/documentation/corelocation/requesting-authorization-to-use-location-services">Requesting authorization to use location services</a></li>
+</ul>
+
+<h2 id="the-location-updates-firehose-cllocationupdate">The location updates firehose (<code class="language-plaintext highlighter-rouge">CLLocationUpdate</code>)</h2>
+
+<p><code class="language-plaintext highlighter-rouge">CLLocationUpdate.liveUpdates</code> returns a stream of both location coordinates, “errors”, and permissions issues in the form of the <code class="language-plaintext highlighter-rouge">CLLocationUpdate</code> struct.</p>
+
+<p>Although in theory the API is more streamlined for the simplest of use cases, I’d generally still recommend creating your own system around <code class="language-plaintext highlighter-rouge">CLLocationManager</code> if you’re doing anything that requires stability, robustness, or reliability with Core Location. Regardless, some usage notes for <code class="language-plaintext highlighter-rouge">CLLocationUpdate</code> are below.</p>
+
+<h3 id="ios-18-recommended">iOS 18+ recommended</h3>
+
+<p>Although <code class="language-plaintext highlighter-rouge">CLLocationUpdate</code> was introduced in iOS 17, I don’t recommend using it until iOS 18 for the following reasons:</p>
+
+<p>In my testing, <code class="language-plaintext highlighter-rouge">CLLocationUpdate.liveUpdates</code> will return no results on iOS 17 when <code class="language-plaintext highlighter-rouge">fullAccuracy</code> permission is denied. I have no idea whether this was related to the permissions system and fixed in iOS 18 alongside <code class="language-plaintext highlighter-rouge">CLServiceSession</code> or whether it was simply a bug, but iOS 18 has the expected behavior of returning less accurate <code class="language-plaintext highlighter-rouge">CLLocationUpdate</code> results when <code class="language-plaintext highlighter-rouge">fullAccuracy</code> is denied by the user.</p>
+
+<p>According to the WWDC video, when background usage is not requested by the app, Core Location handles automatically disabling <code class="language-plaintext highlighter-rouge">CLLocationUpdate.liveUpdates</code> when going to the background and re-enabling it when coming back into the foreground, but only in iOS 18 alongside <code class="language-plaintext highlighter-rouge">CLServiceSession</code>. I can’t say for sure how it works in iOS 17, only that my view layer was handling this manually to make sure there were no issues.</p>
+
+<p><code class="language-plaintext highlighter-rouge">CLLocationUpdate</code> does not include any properties for permissions or other errors in iOS 17 (e.g. <code class="language-plaintext highlighter-rouge">authorizationDenied</code>, <code class="language-plaintext highlighter-rouge">locationUnavailable</code>).</p>
+
+<p>Not a huge issue by any means, but <code class="language-plaintext highlighter-rouge">CLLocationUpdate.isStationary</code> was introduced in iOS 17 and deprecated in iOS 18 and renamed to <code class="language-plaintext highlighter-rouge">CLLocationUpdate.stationary</code>.</p>
+
+<h3 id="stationary-is-rarely-set-when-the-app-is-in-the-foreground"><code class="language-plaintext highlighter-rouge">stationary</code> is rarely set (when the app is in the foreground?)</h3>
+
+<p>The <code class="language-plaintext highlighter-rouge">stationary</code> flag is set “on the last update before updates are paused because the device has stopped moving” according to the <a href="https://developer.apple.com/videos/play/wwdc2024/10212?time=1003">WWDC video</a>.</p>
+
+<p>What “stopped moving” means is not explicitly documented.</p>
+
+<p>In practice I’ve never seen an update with the <code class="language-plaintext highlighter-rouge">stationary</code> flag set to <code class="language-plaintext highlighter-rouge">true</code>. Based on hints from the WWDC videos, my hypothesis is that <code class="language-plaintext highlighter-rouge">stationary</code> is most relevant when using <code class="language-plaintext highlighter-rouge">CLLocationUpdate</code> and your app is in the background. Perhaps in that setting, Core Location will offer fewer updates and set the <code class="language-plaintext highlighter-rouge">stationary</code> flag more liberally.</p>
+
+<h3 id="cllocationupdate-has-no-concept-of-filtering"><code class="language-plaintext highlighter-rouge">CLLocationUpdate</code> has no concept of filtering</h3>
+
+<p>The “old” API <code class="language-plaintext highlighter-rouge">CLLocationManager</code> has <code class="language-plaintext highlighter-rouge">distanceFilter</code> and <code class="language-plaintext highlighter-rouge">desiredAccuracy</code> you can use to have Core Location filter updates on your behalf.</p>
+
+<p><code class="language-plaintext highlighter-rouge">CLLocationUpdate</code> does not have these options. You have to do filtering on the stream yourself.</p>
+
+<p>Perhaps the <code class="language-plaintext highlighter-rouge">CLLocationUpdate.LiveConfiguration</code> values are supposed to influence this instead.</p>
+
+<h3 id="cllocationupdatelocationunavailable-is-unpredictable"><code class="language-plaintext highlighter-rouge">CLLocationUpdate.locationUnavailable</code> is unpredictable</h3>
+
+<p><code class="language-plaintext highlighter-rouge">locationUnavailable</code> was introduced in iOS 18. Previously, a <code class="language-plaintext highlighter-rouge">CLLocationUpdate</code> could only have a <code class="language-plaintext highlighter-rouge">location == nil</code>.</p>
+
+<p>I expected <code class="language-plaintext highlighter-rouge">locationUnavailable</code> to be useful as a way to change my UI and alert my users that there may be a temporary issue with getting their location.</p>
+
+<p>In practice, the behavior changed in iOS 18.1 and <code class="language-plaintext highlighter-rouge">locationUnavailable</code> updates would be returned in quick succession and interspersed with normal location updates under what I’d consider ideal device conditions. It caused my UI to flicker in distressing ways (nod to SwiftUI) and was unpredictable enough to be hard to filter manually.</p>
+
+<p>For now, I’ve started ignoring <code class="language-plaintext highlighter-rouge">locationUnavailable</code> updates completely. I’ll probably revisit it again in iOS 19 to see whether it’s stable enough to positively influence the UX.</p>
+
+<h3 id="updates-are-returned-about-1-or-2-times-per-second">Updates are returned about 1 or 2 times per second</h3>
+
+<p>I haven’t seen any official documentation about the update interval from <code class="language-plaintext highlighter-rouge">CLLocationUpdate.liveUpdates</code>. In practice I usually see updates on average of about 1 or 2 per second while in the foreground. It’s similar on device and on the simulator. Just an FYI.</p>
+
+<h3 id="background-behavior-of-cllocationupdate">Background behavior of <code class="language-plaintext highlighter-rouge">CLLocationUpdate</code></h3>
+
+<p>I don’t (yet) have a feature that uses <code class="language-plaintext highlighter-rouge">CLLocationUpdate</code> in the background so my testing has been light. But I can report that I’ve seen <code class="language-plaintext highlighter-rouge">CLLocationUpdate</code> send results while in the background as long as the app has been configured properly for it (see the above “Location updates in the background” section).</p>
+
+<h2 id="location-monitoring-clmonitor">Location monitoring (<code class="language-plaintext highlighter-rouge">CLMonitor</code>)</h2>
+
+<h3 id="documented-limitations">Documented limitations</h3>
+
+<p><a href="https://developer.apple.com/documentation/corelocation/cllocationmanager/startmonitoring(for:)">Source</a> for most of the below quotes:</p>
+
+<blockquote>
+  <p>An app can register up to 20 regions at a time.</p>
+</blockquote>
+
+<p>From my testing in iOS 18.1, if you add more than 20, the <code class="language-plaintext highlighter-rouge">CLMonitor</code> will emit one event for each condition over the limit with state <code class="language-plaintext highlighter-rouge">CLMonitor.Event.State.unmonitored</code>.</p>
+
+<p>According to the WWDC video, <code class="language-plaintext highlighter-rouge">CLMonitor.Event.conditionLimitExceeded</code> should also be set in this case, although I haven’t confirmed this.</p>
+
+<blockquote>
+  <p>The region monitoring service requires network connectivity.</p>
+</blockquote>
+
+<p>However, a note from <a href="https://developer.apple.com/documentation/corelocation/cllocationmanager/startmonitoringsignificantlocationchanges()">startMonitoringSignificantLocationChanges</a> says that “If the device is able to retrieve data from the network, the location manager is much more likely to deliver notifications in a timely manner.”</p>
+
+<p>So maybe network connectivity isn’t always required?</p>
+
+<blockquote>
+  <p>an app can expect to receive the appropriate region entered or region exited notification within 3 to 5 minutes on average, if not sooner.</p>
+</blockquote>
+
+<p>This is more or less what I’ve experienced in my testing, with the simulator reporting slightly less on average than the device. It makes testing difficult and also makes it difficult to ensure my feature reacts predictably in the background.</p>
+
+<blockquote>
+  <p>In iOS 6, regions with a radius between 1 and 400 meters work better on iPhone 4S or later devices.</p>
+</blockquote>
+
+<p>Since this hasn’t been updated since iOS 6, the only other advice I’ve found was in <a href="https://developer.apple.com/forums/thread/757363?answerId=791471022#791471022">this forums thread</a> where an Apple engineer says to be careful about making the regions too small:</p>
+
+<blockquote>
+  <p>Also, I wonder if your regions are appropriately large. If you are getting significant location updates every 5 miles, that means you are in an area where the mobile/wifi based signal coverage (which these services depend on) is only adequate for that kind of accuracy. If your region radii are smaller than what the horizontalAccuracy the significant location updates provide, you may actually miss the entry or exit events to those smaller regions.</p>
+</blockquote>
+
+<p>The above quote broadly references a note buried in the <a href="https://developer.apple.com/documentation/corelocation/cllocationmanager/startmonitoringsignificantlocationchanges()">startMonitoringSignificantLocationChanges</a> documentation:</p>
+
+<blockquote>
+  <p>Apps can expect a notification as soon as the device moves 500 meters or more from its previous notification.</p>
+</blockquote>
+
+<h3 id="clmonitor-on-the-ios-simulator">CLMonitor on the iOS simulator</h3>
+
+<p>I had varying success using <code class="language-plaintext highlighter-rouge">CLMonitor</code> on the iOS 18.1 simulator alongside active location simulation using a GPX file (discussed later). It was a flakey enough that I’d recommend using a real device, although using one was only slightly more successful in verifying <code class="language-plaintext highlighter-rouge">CLMonitor</code> usage.</p>
+
+<h3 id="clmonitoreventstate-values">CLMonitor.Event.State values</h3>
+
+<p><a href="https://developer.apple.com/documentation/corelocation/clmonitor-2r51v/event/state-swift.typealias">CLMonitor.Event.State</a> is an alias for the undocumented <code class="language-plaintext highlighter-rouge">__CLMonitoringState</code>. I can only access the values occasionally via autocomplete:</p>
+
+<p>My understanding of the 4 states is:</p>
+
+<ul>
+  <li><code class="language-plaintext highlighter-rouge">unknown</code>: the initial state of the condition unless otherwise specified at the <code class="language-plaintext highlighter-rouge">add</code> callsite.</li>
+  <li><code class="language-plaintext highlighter-rouge">unmonitored</code>: I believe this is only used when there are too many conditions (over the 20 limit) and <code class="language-plaintext highlighter-rouge">CLMonitor</code> is reporting which conditions will not be monitored.</li>
+  <li><code class="language-plaintext highlighter-rouge">unsatisfied</code>: the device is outside the condition region.</li>
+  <li><code class="language-plaintext highlighter-rouge">satisfied</code>: the device is inside the condition region.</li>
+</ul>
+
+<h3 id="how-to-set-up-clmonitor">How to set up <code class="language-plaintext highlighter-rouge">CLMonitor</code></h3>
+
+<p>When using <code class="language-plaintext highlighter-rouge">CLMonitor</code> (on iOS 18+) you need to manage the lifetime of multiple objects:</p>
+
+<ul>
+  <li>A <code class="language-plaintext highlighter-rouge">CLServiceSession</code> for ensuring Core Location knows your permission goals.</li>
+  <li>A named <code class="language-plaintext highlighter-rouge">CLMonitor</code> instance for registering conditions.</li>
+  <li>A <code class="language-plaintext highlighter-rouge">Task</code> that awaits <code class="language-plaintext highlighter-rouge">await monitor.events</code>.</li>
+</ul>
+
+<p>If your requirements are simple – for example, you’re only monitoring a static condition – you can do all this setup in one place and then tear everything down when cancelling the <code class="language-plaintext highlighter-rouge">monitor.events</code> stream.</p>
+
+<p>My requirements are more complicated. The user can modify their route at any time, which triggers a full update of which conditions are monitored. The route may be discarded, at which point I need to stop all monitoring completely.</p>
+
+<p>If the conditions you need to monitor change unpredictably, I recommend the following pseudocode when changing monitored conditions:</p>
+
+<ul>
+  <li>If there are no more conditions to monitor:
+    <ul>
+      <li>Cancel any existing <code class="language-plaintext highlighter-rouge">Task</code> you have monitoring events already.</li>
+      <li>If a monitor exists, remove all conditions from it, and <code class="language-plaintext highlighter-rouge">nil</code> it out.</li>
+      <li>Call <code class="language-plaintext highlighter-rouge">invalidate</code> and  <code class="language-plaintext highlighter-rouge">nil</code> out the <code class="language-plaintext highlighter-rouge">CLBackgroundActivitySession</code> if it exists.</li>
+      <li><code class="language-plaintext highlighter-rouge">nil</code> out the <code class="language-plaintext highlighter-rouge">CLServiceSession</code> if it exists.</li>
+    </ul>
+  </li>
+  <li>Otherwise:
+    <ul>
+      <li>Create a <code class="language-plaintext highlighter-rouge">CLServiceSession</code> if one does not already exist.</li>
+      <li>Create a <code class="language-plaintext highlighter-rouge">CLBackgroundActivitySession</code> if one does not already exist and you want monitoring to keep your <code class="language-plaintext highlighter-rouge">whenInUse</code> authorized app alive in the background without a dedicated Live Activity.</li>
+      <li>Create a <code class="language-plaintext highlighter-rouge">CLMonitor</code> with a static name if one does not already exist.</li>
+      <li>Calculate which identifiers you need to add and which ones you need to remove (or simpler: remove all conditions and add all new ones)</li>
+      <li>Remove unused conditions</li>
+      <li>Add new conditions</li>
+      <li>If a monitoring <code class="language-plaintext highlighter-rouge">Task</code> exists, do nothing.</li>
+      <li>Otherwise, start a new <code class="language-plaintext highlighter-rouge">Task</code> awaiting <code class="language-plaintext highlighter-rouge">CLMonitor.events</code> and save a reference to the <code class="language-plaintext highlighter-rouge">Task</code>.</li>
+    </ul>
+  </li>
+</ul>
+
+<h3 id="tips-for-creating-a-system-around-clmonitor">Tips for creating a system around CLMonitor</h3>
+
+<h4 id="you-should-target-ios-18">You should target iOS 18+</h4>
+
+<p>You can technically use <code class="language-plaintext highlighter-rouge">CLMonitor</code> with iOS 17, but handling permissions will be either be more complicated or less robust without <code class="language-plaintext highlighter-rouge">CLServiceSession</code> (iOS 18+).</p>
+
+<h4 id="you-need-to-keep-a-reference-to-clservicesession-clmonitor-and-the-task-that-contains-your-monitoring">You <em>need</em> to keep a reference to <code class="language-plaintext highlighter-rouge">CLServiceSession</code>, <code class="language-plaintext highlighter-rouge">CLMonitor</code>, and the <code class="language-plaintext highlighter-rouge">Task</code> that contains your monitoring</h4>
+
+<p>This is because:</p>
+
+<p>The <code class="language-plaintext highlighter-rouge">CLServiceSession</code> defines the authorization requirements of your use of location services for the lifetime of your feature that uses them.</p>
+
+<p>It is dangerous to try to “recover” a <code class="language-plaintext highlighter-rouge">CLMonitor</code> with the same name via the initializer if you lose the reference. This means that <code class="language-plaintext highlighter-rouge">CLMonitor</code> is not designed to be cheaply created and discarded. I tried this strategy at first: create a monitor and discard the old one each time my conditions changed. However, the internal bookkeeping done by Core Location means that the <code class="language-plaintext highlighter-rouge">CLMonitor</code> may outlive your expectations. This means that if you try to initialize a <code class="language-plaintext highlighter-rouge">CLMonitor</code> with the same name too soon after you’ve discarded one, the app will crash with:</p>
+
+<div class="language-plaintext highlighter-rouge"><pre class="highlight"><code>Assertion failure in +[CLMonitor _requestMonitorWithConfiguration:locationManager:completion:], CLMonitor.mm:517
+Terminating app due to uncaught exception 'NSInternalInconsistencyException', reason: 'Monitor named myMonitor is already in use'
+</code></pre>
+</div>
+
+<p>From my testing, it seems best to subscribe to <code class="language-plaintext highlighter-rouge">CLMonitor.events</code> once and only once per instance of <code class="language-plaintext highlighter-rouge">CLMonitor</code> over the <code class="language-plaintext highlighter-rouge">CLMonitor</code>’s entire lifetime. Let me try to explain this thoroughly.</p>
+
+<ul>
+  <li>You have a <code class="language-plaintext highlighter-rouge">CLMonitor</code></li>
+  <li>You add some conditions to the <code class="language-plaintext highlighter-rouge">CLMonitor</code></li>
+  <li>You subscribe to <code class="language-plaintext highlighter-rouge">CLMonitor.events</code></li>
+  <li>Now you want to change the conditions</li>
+</ul>
+
+<p>At this point, you should keep the same <code class="language-plaintext highlighter-rouge">CLMonitor</code> and the subscription to <code class="language-plaintext highlighter-rouge">CLMonitor.events</code> alive and call <code class="language-plaintext highlighter-rouge">CLMonitor.add</code> and <code class="language-plaintext highlighter-rouge">CLMonitor.remove</code> as necessary.</p>
+
+<p>The other reason it’s “better” to do diffing and only add/remove conditions as necessary is because <code class="language-plaintext highlighter-rouge">CLMonitor</code> keeps some state on your behalf as illustrated by the <code class="language-plaintext highlighter-rouge">CLMonitor.record(for:)</code> API that returns a <code class="language-plaintext highlighter-rouge">CLMonitor.Record.lastEvent</code>.</p>
+
+<h4 id="do-not-treat-clmonitor-as-cheaply-disposable">Do not treat <code class="language-plaintext highlighter-rouge">CLMonitor</code> as cheaply disposable</h4>
+
+<p>You <em>should not</em> discard the <code class="language-plaintext highlighter-rouge">CLMonitor</code> and immediately create a new one with the same name (crash described above) and you <em>should not</em> cancel the subscription and create a new subscription.</p>
+
+<p><code class="language-plaintext highlighter-rouge">CLMonitor</code> has a bug (I presume) where any later subscription attempt to <code class="language-plaintext highlighter-rouge">CLMonitor.events</code> after the first has been cancelled will itself cancel and fall through immediately.</p>
+
+<h4 id="do-not-subscribe-to-clmonitor-multiple-times-simultaneously">Do not subscribe to <code class="language-plaintext highlighter-rouge">CLMonitor</code> multiple times simultaneously</h4>
+
+<p>You <em>should not</em> try to subscribe to the same <code class="language-plaintext highlighter-rouge">CLMonitor</code> multiple times for whatever reason you might want to do that. In my testing, events will be pushed out randomly between subscriptions. This may be a standard <code class="language-plaintext highlighter-rouge">AsyncStream</code> behavior, but regardless, I can’t think of a reason why you’d want this behavior unless you were building some sort of system of distributed workers.</p>
+
+<h4 id="you-may-tear-down-the-system-and-stop-monitoring-completely-while-still-being-able-to-recreate-the-system-later">You <em>may</em> tear down the system and stop monitoring completely, while still being able to recreate the system later</h4>
+
+<p>OK, so what about the situation where you <em>do</em> want to completely stop monitoring but also retain the ability to start monitoring again later?</p>
+
+<p>The “stop monitoring for now” situation should be covered by the above pseudocode. As long as you do the proper cleanup of cancelling the subscription, removing conditions from the <code class="language-plaintext highlighter-rouge">CLMonitor</code>, and removing your reference to the <code class="language-plaintext highlighter-rouge">CLMonitor</code> and <code class="language-plaintext highlighter-rouge">CLServiceSession</code> you should be set up fine to recreate the entire system at some later point (but <em>not</em> right away, with “right away” meaning at least in the same run loop).</p>
+
+<h4 id="define-your-system-as-an-actor">Define your system as an actor</h4>
+
+<p><code class="language-plaintext highlighter-rouge">CLMonitor</code> is an <code class="language-plaintext highlighter-rouge">actor</code>, which means that basically every one of its APIs requires an <code class="language-plaintext highlighter-rouge">await</code>. I found it more idiomatic and convenient to define my wrapper system as an <code class="language-plaintext highlighter-rouge">actor</code>.</p>
+
+<h4 id="reinitializing-the-system-in-a-terminatedcold-launch-scenario">Reinitializing the system in a terminated/cold launch scenario</h4>
+
+<p>There are specific requirements around reinitializing a <code class="language-plaintext highlighter-rouge">CLMonitor</code> system after the app has been terminated. My use case doesn’t require this functionality, and therefore my implementation does not handle it. If you do need to handle it (and have <code class="language-plaintext highlighter-rouge">.always</code> authorization), I encourage you to read <a href="https://developer.apple.com/documentation/corelocation/handling-location-updates-in-the-background">the docs</a>, <a href="https://developer.apple.com/documentation/corelocation/monitoring-location-changes-with-core-location">sample code</a>, and watch <a href="https://developer.apple.com/videos/play/wwdc2023/10147/">the WWDC video</a>.</p>
+
+<h4 id="be-careful-about-running-multiple-clmonitor-instances-simultaneously">Be careful about running multiple <code class="language-plaintext highlighter-rouge">CLMonitor</code> instances simultaneously</h4>
+
+<p>In theory, it should be fine to create multiple <code class="language-plaintext highlighter-rouge">CLMonitor</code> instances within the same app session. However, the “up to 20 conditions” limitation is per-app, so with multiple <code class="language-plaintext highlighter-rouge">CLMonitor</code>s you will need to ensure globally you’re not exceeding that limit (if your use case has a danger of doing so).</p>
+
+<p>I haven’t tested running multiple <code class="language-plaintext highlighter-rouge">CLMonitor</code>s in parallel, so your milage my vary.</p>
+
+<h3 id="clmonitor-wrapper-sample-code"><code class="language-plaintext highlighter-rouge">CLMonitor</code> wrapper sample code</h3>
+
+<p>Below is a lightly tested implementation of the above pseudocode based on my app’s own implementation. I’d encourage you to use it only as reference when writing your own implementation based on your own app’s requirements and testing it accordingly.</p>
+
+<p>This implementation assumes you’ve set up the rest of your project correctly with permissions strings, background modes, etc.</p>
+
+<p>This implementation allows you create an instance of <code class="language-plaintext highlighter-rouge">SampleLocationMonitor</code> with the same lifetime as your app (read: singleton). Call <code class="language-plaintext highlighter-rouge">monitor()</code> each time your set of conditions changes. If the input set of conditions is empty, the instance will go dormant, otherwise it will update the conditions interactively.</p>
+
+<p>This implementation also supports background operation via <code class="language-plaintext highlighter-rouge">CLBackgroundActivitySession</code>. You should remove this if you already have a Live Activity tied to the lifetime of your monitoring. Or remove it if you don’t need any updates in the background.</p>
+
+<p>The missing piece (see “TODO” below) is what you want to do in response to receiving an event. In my case (not shown), I’m simply refreshing a Live Activity based on an existing schedule.</p>
+
+<p>If you want access to all events, I would be careful about modifying this to return the <code class="language-plaintext highlighter-rouge">monitor.events</code> <code class="language-plaintext highlighter-rouge">AsyncStream</code> directly because of the limitations discussed above, namely: there can only be one subscription per <code class="language-plaintext highlighter-rouge">CLMonitor</code> <em>and</em> you cannot cancel a subscription and create a new one later.</p>
+
+<p>Instead, I’d consider either:</p>
+
+<ul>
+  <li>Registering a closure along side each <code class="language-plaintext highlighter-rouge">MonitorCondition</code> for the <code class="language-plaintext highlighter-rouge">SampleLocationMonitor</code> to execute (this may be difficult to design due to Swift 6 concurrency isolation).</li>
+  <li>Creating a long-lived <code class="language-plaintext highlighter-rouge">AsyncStream</code> as a property of and bound to the lifetime of <code class="language-plaintext highlighter-rouge">SampleLocationMonitor</code> that relays all events to a subscriber.</li>
+</ul>
+
+<p>I haven’t tested either strategy, so your milage my vary.</p>
+
+<p>Anyway, here is the sample implementation:</p>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">MonitorCondition</span><span class="p">:</span> <span class="kt">Identifiable</span><span class="p">,</span> <span class="kt">Equatable</span><span class="p">,</span> <span class="kt">Sendable</span><span class="p">,</span> <span class="kt">Hashable</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">id</span><span class="p">:</span> <span class="kt">String</span>
+    <span class="k">let</span> <span class="nv">coordinates</span><span class="p">:</span> <span class="kt">CLLocationCoordinate2D</span>
+    <span class="k">let</span> <span class="nv">radiusInMeters</span><span class="p">:</span> <span class="kt">CLLocationDistance</span>
+<span class="p">}</span>
+
+<span class="kd">@available(iOS 18.0, *)</span>
+<span class="n">actor</span> <span class="kt">SampleLocationMonitor</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">authSession</span><span class="p">:</span> <span class="kt">CLServiceSession</span><span class="p">?</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">monitor</span><span class="p">:</span> <span class="kt">CLMonitor</span><span class="p">?</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">backgroundSession</span><span class="p">:</span> <span class="kt">CLBackgroundActivitySession</span><span class="p">?</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">monitoringTask</span><span class="p">:</span> <span class="kt">Task</span><span class="o">&lt;</span><span class="kt">Void</span><span class="p">,</span> <span class="n">any</span> <span class="kt">Error</span><span class="o">&gt;</span><span class="p">?</span>
+    
+    <span class="kd">private</span> <span class="kd">static</span> <span class="k">let</span> <span class="nv">monitorID</span> <span class="o">=</span> <span class="s">"monitor"</span>
+
+    <span class="kd">func</span> <span class="nf">monitor</span><span class="p">(</span><span class="n">_</span> <span class="nv">monitorConditions</span><span class="p">:</span> <span class="kt">Set</span><span class="o">&lt;</span><span class="kt">MonitorCondition</span><span class="o">&gt;</span><span class="p">)</span> <span class="k">as</span><span class="n">ync</span> <span class="k">throws</span> <span class="p">{</span>
+        <span class="k">guard</span> <span class="o">!</span><span class="n">monitorConditions</span><span class="o">.</span><span class="n">isEmpty</span> <span class="k">else</span> <span class="p">{</span>
+            <span class="n">monitoringTask</span><span class="p">?</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span>
+            <span class="n">monitoringTask</span> <span class="o">=</span> <span class="kc">nil</span>
+            <span class="k">if</span> <span class="k">let</span> <span class="nv">monitor</span> <span class="p">{</span>
+                <span class="k">let</span> <span class="nv">monitoringIdentifiers</span> <span class="o">=</span> <span class="n">await</span> <span class="n">monitor</span><span class="o">.</span><span class="n">identifiers</span>
+                <span class="k">for</span> <span class="n">identifier</span> <span class="k">in</span> <span class="n">monitoringIdentifiers</span> <span class="p">{</span>
+                    <span class="n">await</span> <span class="n">monitor</span><span class="o">.</span><span class="nf">remove</span><span class="p">(</span><span class="n">identifier</span><span class="p">)</span>
+                <span class="p">}</span>
+                <span class="k">self</span><span class="o">.</span><span class="n">monitor</span> <span class="o">=</span> <span class="kc">nil</span>
+            <span class="p">}</span>
+            <span class="n">backgroundSession</span><span class="p">?</span><span class="o">.</span><span class="nf">invalidate</span><span class="p">()</span>
+            <span class="n">backgroundSession</span> <span class="o">=</span> <span class="kc">nil</span>
+            <span class="n">authSession</span> <span class="o">=</span> <span class="kc">nil</span>
+            <span class="k">return</span>
+        <span class="p">}</span>
+        
+        <span class="k">let</span> <span class="nv">authSession</span> <span class="o">=</span> <span class="n">authSession</span> <span class="p">??</span> <span class="kt">CLServiceSession</span><span class="p">(</span><span class="nv">authorization</span><span class="p">:</span> <span class="o">.</span><span class="n">whenInUse</span><span class="p">,</span> <span class="nv">fullAccuracyPurposeKey</span><span class="p">:</span> <span class="s">"NSLocationTemporaryUsageDescriptionDictionarySampleLocationMonitor"</span><span class="p">)</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">authSession</span> <span class="o">=</span> <span class="n">authSession</span>
+        
+        <span class="n">backgroundSession</span> <span class="o">=</span> <span class="n">backgroundSession</span> <span class="p">??</span> <span class="kt">CLBackgroundActivitySession</span><span class="p">()</span>
+        
+        <span class="k">let</span> <span class="nv">monitor</span><span class="p">:</span> <span class="kt">CLMonitor</span>
+        <span class="k">if</span> <span class="k">let</span> <span class="nv">existingMonitor</span> <span class="o">=</span> <span class="k">self</span><span class="o">.</span><span class="n">monitor</span> <span class="p">{</span>
+            <span class="n">monitor</span> <span class="o">=</span> <span class="n">existingMonitor</span>
+        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+            <span class="k">let</span> <span class="nv">newMonitor</span> <span class="o">=</span> <span class="n">await</span> <span class="kt">CLMonitor</span><span class="p">(</span><span class="k">Self</span><span class="o">.</span><span class="n">monitorID</span><span class="p">)</span>
+            <span class="n">monitor</span> <span class="o">=</span> <span class="n">newMonitor</span>
+            <span class="k">self</span><span class="o">.</span><span class="n">monitor</span> <span class="o">=</span> <span class="n">monitor</span>
+        <span class="p">}</span>
+        
+        <span class="nf">assert</span><span class="p">(</span><span class="n">monitorConditions</span><span class="o">.</span><span class="n">count</span> <span class="o">&lt;=</span> <span class="mi">20</span><span class="p">,</span> <span class="s">"CLMonitor supports up to 20 conditions"</span><span class="p">)</span>
+        
+        <span class="k">let</span> <span class="nv">existingIdentifiers</span> <span class="o">=</span> <span class="n">await</span> <span class="kt">Set</span><span class="p">(</span><span class="n">monitor</span><span class="o">.</span><span class="n">identifiers</span><span class="p">)</span>
+        <span class="k">let</span> <span class="nv">identifiersToAdd</span><span class="p">:</span> <span class="kt">Set</span><span class="o">&lt;</span><span class="kt">String</span><span class="o">&gt;</span> <span class="o">=</span> <span class="kt">Set</span><span class="p">(</span><span class="n">monitorConditions</span><span class="o">.</span><span class="nf">map</span><span class="p">(</span><span class="err">\</span><span class="o">.</span><span class="n">id</span><span class="p">))</span><span class="o">.</span><span class="nf">subtracting</span><span class="p">(</span><span class="n">existingIdentifiers</span><span class="p">)</span>
+        <span class="k">let</span> <span class="nv">identifiersToRemove</span><span class="p">:</span> <span class="kt">Set</span><span class="o">&lt;</span><span class="kt">String</span><span class="o">&gt;</span> <span class="o">=</span> <span class="n">existingIdentifiers</span><span class="o">.</span><span class="nf">subtracting</span><span class="p">(</span><span class="kt">Set</span><span class="p">(</span><span class="n">monitorConditions</span><span class="o">.</span><span class="nf">map</span><span class="p">(</span><span class="err">\</span><span class="o">.</span><span class="n">id</span><span class="p">)))</span>
+        
+        <span class="k">for</span> <span class="n">identifierToRemove</span> <span class="k">in</span> <span class="n">identifiersToRemove</span> <span class="p">{</span>
+            <span class="n">await</span> <span class="n">monitor</span><span class="o">.</span><span class="nf">remove</span><span class="p">(</span><span class="n">identifierToRemove</span><span class="p">)</span>
+        <span class="p">}</span>
+        <span class="k">for</span> <span class="n">monitorCondition</span> <span class="k">in</span> <span class="n">monitorConditions</span> <span class="p">{</span>
+            <span class="k">guard</span> <span class="n">identifiersToAdd</span><span class="o">.</span><span class="nf">contains</span><span class="p">(</span><span class="n">monitorCondition</span><span class="o">.</span><span class="n">id</span><span class="p">)</span> <span class="k">else</span> <span class="p">{</span> <span class="k">continue</span> <span class="p">}</span>
+            <span class="k">let</span> <span class="nv">condition</span> <span class="o">=</span> <span class="kt">CLMonitor</span><span class="o">.</span><span class="kt">CircularGeographicCondition</span><span class="p">(</span><span class="nv">center</span><span class="p">:</span> <span class="n">monitorCondition</span><span class="o">.</span><span class="n">coordinates</span><span class="p">,</span> <span class="nv">radius</span><span class="p">:</span> <span class="n">monitorCondition</span><span class="o">.</span><span class="n">radiusInMeters</span><span class="p">)</span>
+            <span class="n">await</span> <span class="n">monitor</span><span class="o">.</span><span class="nf">add</span><span class="p">(</span><span class="n">condition</span><span class="p">,</span> <span class="nv">identifier</span><span class="p">:</span> <span class="n">monitorCondition</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="k">as</span><span class="nv">suming</span><span class="p">:</span> <span class="o">.</span><span class="n">unsatisfied</span><span class="p">)</span>
+        <span class="p">}</span>
+        
+        <span class="k">guard</span> <span class="k">self</span><span class="o">.</span><span class="n">monitoringTask</span> <span class="o">==</span> <span class="kc">nil</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="p">}</span>
+        <span class="k">let</span> <span class="nv">monitoringTask</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span>
+            <span class="k">for</span> <span class="k">try</span> <span class="n">await</span> <span class="n">event</span> <span class="k">in</span> <span class="n">await</span> <span class="n">monitor</span><span class="o">.</span><span class="n">events</span> <span class="p">{</span>
+                <span class="c1">// Optional: the last event if you need to do comparisons to derive _entry_ or _exit_ events.</span>
+                <span class="k">let</span> <span class="nv">lastEvent</span> <span class="o">=</span> <span class="n">await</span> <span class="n">monitor</span><span class="o">.</span><span class="nf">record</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="n">event</span><span class="o">.</span><span class="n">identifier</span><span class="p">)?</span><span class="o">.</span><span class="n">lastEvent</span>
+
+                <span class="c1">// TODO: Do whatever you want to do with the events here</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">monitoringTask</span> <span class="o">=</span> <span class="n">monitoringTask</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<h2 id="testing">Testing</h2>
+
+<h3 id="simulating-a-moving-location">Simulating a moving location</h3>
+
+<p>I had some success using simulated location changes via GPX files. It works on both simulator and device.</p>
+
+<p>The GPX file playback starts immediately on app launch. The file playback will repeat immediately after reaching the last entry.</p>
+
+<p>I used this tutorial: <a href="https://digitalbunker.dev/simulating-a-moving-location-in-ios/">Simulating A Moving Location In iOS</a>.</p>
+
+<h3 id="fixing-issue-where-gpx-files-cannot-be-selected-in-the-file-picker-in-xcode">Fixing issue where GPX files cannot be selected in the file picker in Xcode</h3>
+
+<p>A strange issue blocked me from using location simulation at first.</p>
+
+<p>In the file picker that appears when selecting “Add GPS Exchange to Project” in the Scheme editor, all GPX files would be greyed out and unselectable. The issue appeared in a few random Stack Overflow and forum posts scattered across several years.</p>
+
+<p>Eventually I tracked it down to an app I had installed called Guitar Pro asserting ownership over <code class="language-plaintext highlighter-rouge">.gpx</code> files in macOS system wide. I confirmed this with the <code class="language-plaintext highlighter-rouge">mdls</code> CLI utility (output abridged for clarity):</p>
+
+<div class="language-bash highlighter-rouge"><pre class="highlight"><code><span class="gp">$ </span>mdls basha-yoko.gpx
+
+_kMDItemDisplayNameWithExtensions  <span class="o">=</span> <span class="s2">"basha-yoko.gpx"</span>
+kMDItemContentCreationDate         <span class="o">=</span> 2024-11-30 03:31:08 +0000
+kMDItemContentType                 <span class="o">=</span> <span class="s2">"com.arobas-music.guitarpro6.document"</span>
+kMDItemContentTypeTree             <span class="o">=</span> <span class="o">(</span>
+    <span class="s2">"com.arobas-music.guitarpro6.document"</span>,
+    <span class="s2">"public.data"</span>,
+    <span class="s2">"public.item"</span>
+<span class="o">)</span>
+kMDItemDisplayName                 <span class="o">=</span> <span class="s2">"basha-yoko.gpx"</span>
+kMDItemDocumentIdentifier          <span class="o">=</span> 57051
+kMDItemKind                        <span class="o">=</span> <span class="s2">"Guitar Pro 6 document"</span>
+</code></pre>
+</div>
+
+<p>Uninstalling Guitar Pro was the only thing that fixed it long enough for me to select one file. After I restarted my computer, the file picker was broken again.</p>
+
+<p>For anyone else suffering with this issue, you may be able to fix it by opening your <code class="language-plaintext highlighter-rouge">.xcscheme</code> file (sometimes embedded in the <code class="language-plaintext highlighter-rouge">.xcodeproj</code> or <code class="language-plaintext highlighter-rouge">.xcodeworkspace</code> bundle) and adding the following xml when <code class="language-plaintext highlighter-rouge">locations.gpx</code> is in the same folder as your <code class="language-plaintext highlighter-rouge">.xcodeproj</code>. Basically, the file path of <code class="language-plaintext highlighter-rouge">identifier</code> is in reference to the <code class="language-plaintext highlighter-rouge">.xcscheme</code> file, which in my case is two folders deep inside the <code class="language-plaintext highlighter-rouge">.xcodeproj</code> bundle.</p>
+
+<div class="language-xml highlighter-rouge"><pre class="highlight"><code><span class="nt">&lt;LocationScenarioReference</span>
+    <span class="na">identifier =</span> <span class="s">"../../locations.gpx"</span>
+    <span class="na">referenceType =</span> <span class="s">"0"</span><span class="nt">&gt;</span>
+<span class="nt">&lt;/LocationScenarioReference&gt;</span>
+</code></pre>
+</div>
+
+<p>The only way to tell if it’s working is by running it on the simulator and seeing it the location updates are played back as you’d expect. For me, Xcode still wouldn’t show the GPX file as active in its UI.</p>
+
+<p>I don’t think your GPX file needs to be added to the <code class="language-plaintext highlighter-rouge">.xcodeproj</code> but I’m not 100% sure.</p>
+
+<p>Reference: <a href="https://forums.developer.apple.com/forums/thread/686875">Apple forums</a></p>
+
+<h1 id="conclusion">Conclusion</h1>
+
+<p>I hope this post will help those in the Core Location avant-garde.</p>
+
+<p>Core Location is an important part of my app, but I still have many other features to manage, so although I’ll try to update this post with any new behavior I discover, I also welcome any well-researched tips or links to related blog posts. Feel free to send them over.</p>
+
+  </article>
+
+</div>
+
+      </div>
+    </div>
+
+    <footer class="site-footer">
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">twocentstudios</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col  footer-col-1">
+        <ul class="contact-list">
+          <li><a href="mailto:chris@twocentstudios.com">chris@twocentstudios.com</a></li>
+          
+          <li>
+            <a href="https://github.com/twocentstudios">
+              <span class="icon  icon--github">
+                <svg viewBox="0 0 16 16">
+                  <path fill="#828282" d="M7.999,0.431c-4.285,0-7.76,3.474-7.76,7.761 c0,3.428,2.223,6.337,5.307,7.363c0.388,0.071,0.53-0.168,0.53-0.374c0-0.184-0.007-0.672-0.01-1.32 c-2.159,0.469-2.614-1.04-2.614-1.04c-0.353-0.896-0.862-1.135-0.862-1.135c-0.705-0.481,0.053-0.472,0.053-0.472 c0.779,0.055,1.189,0.8,1.189,0.8c0.692,1.186,1.816,0.843,2.258,0.645c0.071-0.502,0.271-0.843,0.493-1.037 C4.86,11.425,3.049,10.76,3.049,7.786c0-0.847,0.302-1.54,0.799-2.082C3.768,5.507,3.501,4.718,3.924,3.65 c0,0,0.652-0.209,2.134,0.796C6.677,4.273,7.34,4.187,8,4.184c0.659,0.003,1.323,0.089,1.943,0.261 c1.482-1.004,2.132-0.796,2.132-0.796c0.423,1.068,0.157,1.857,0.077,2.054c0.497,0.542,0.798,1.235,0.798,2.082 c0,2.981-1.814,3.637-3.543,3.829c0.279,0.24,0.527,0.713,0.527,1.437c0,1.037-0.01,1.874-0.01,2.129 c0,0.208,0.14,0.449,0.534,0.373c3.081-1.028,5.302-3.935,5.302-7.362C15.76,3.906,12.285,0.431,7.999,0.431z"/>
+                </svg>
+              </span>
+
+              <span class="username">twocentstudios</span>
+            </a>
+          </li>
+          
+
+          <li>
+            <a href="https://hackyderm.io/@twocentstudios">
+              <span class="icon">
+                <svg viewBox="0 0 24 24">
+                  <path fill="#828282" d="M21.327 8.566c0-4.339-2.843-5.61-2.843-5.61-1.433-.658-3.894-.935-6.451-.956h-.063c-2.557.021-5.016.298-6.45.956 0 0-2.843 1.272-2.843 5.61 0 .993-.019 2.181.012 3.441.103 4.243.778 8.425 4.701 9.463 1.809.479 3.362.579 4.612.51 2.268-.126 3.541-.809 3.541-.809l-.075-1.646s-1.621.511-3.441.449c-1.804-.062-3.707-.194-3.999-2.409a4.523 4.523 0 0 1-.04-.621s1.77.433 4.014.536c1.372.063 2.658-.08 3.965-.236 2.506-.299 4.688-1.843 4.962-3.254.434-2.223.398-5.424.398-5.424zm-3.353 5.59h-2.081V9.057c0-1.075-.452-1.62-1.357-1.62-1 0-1.501.647-1.501 1.927v2.791h-2.069V9.364c0-1.28-.501-1.927-1.502-1.927-.905 0-1.357.546-1.357 1.62v5.099H6.026V8.903c0-1.074.273-1.927.823-2.558.566-.631 1.307-.955 2.228-.955 1.065 0 1.872.409 2.405 1.228l.518.869.519-.869c.533-.819 1.34-1.228 2.405-1.228.92 0 1.662.324 2.228.955.549.631.822 1.484.822 2.558v5.253z"/>
+                </svg>
+              </span>
+
+              <span class="username">twocentstudios</span>
+            </a>
+          </li>
+
+          
+          <li>
+            <a href="https://twitter.com/twocentstudios">
+              <span class="icon  icon--twitter">
+                <svg viewBox="0 0 16 16">
+                  <path fill="#828282" d="M15.969,3.058c-0.586,0.26-1.217,0.436-1.878,0.515c0.675-0.405,1.194-1.045,1.438-1.809
+                  c-0.632,0.375-1.332,0.647-2.076,0.793c-0.596-0.636-1.446-1.033-2.387-1.033c-1.806,0-3.27,1.464-3.27,3.27 c0,0.256,0.029,0.506,0.085,0.745C5.163,5.404,2.753,4.102,1.14,2.124C0.859,2.607,0.698,3.168,0.698,3.767 c0,1.134,0.577,2.135,1.455,2.722C1.616,6.472,1.112,6.325,0.671,6.08c0,0.014,0,0.027,0,0.041c0,1.584,1.127,2.906,2.623,3.206 C3.02,9.402,2.731,9.442,2.433,9.442c-0.211,0-0.416-0.021-0.615-0.059c0.416,1.299,1.624,2.245,3.055,2.271 c-1.119,0.877-2.529,1.4-4.061,1.4c-0.264,0-0.524-0.015-0.78-0.046c1.447,0.928,3.166,1.469,5.013,1.469 c6.015,0,9.304-4.983,9.304-9.304c0-0.142-0.003-0.283-0.009-0.423C14.976,4.29,15.531,3.714,15.969,3.058z"/>
+                </svg>
+              </span>
+
+              <span class="username">twocentstudios</span>
+            </a>
+          </li>
+          
+        </ul>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+
+
+  </body>
+
+</html>

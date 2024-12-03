@@ -5,9 +5,598 @@
     <description>A coding blog covering iOS, Swift, and other programming topics.</description>
     <link>https://twocentstudios.com/blog/tags/apple/index.html</link>
     <atom:link href="https://twocentstudios.com/blog/tags/apple/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Tue, 15 Oct 2024 00:30:28 -0500</pubDate>
-    <lastBuildDate>Tue, 15 Oct 2024 00:30:28 -0500</lastBuildDate>
+    <pubDate>Tue, 03 Dec 2024 06:10:31 -0600</pubDate>
+    <lastBuildDate>Tue, 03 Dec 2024 06:10:31 -0600</lastBuildDate>
     <generator>Jekyll v3.9.3</generator>
+    
+      <item>
+        <title>Core Location Modern API Tips</title>
+        <description>&lt;p&gt;The Core Location framework for Apple platforms received some fresh API updates alongside even more permissions minutia in iOS 17 and iOS 18.&lt;/p&gt;
+
+&lt;p&gt;In this post I’ll list as many gotchas as I’ve found in the “modern” Core Location as of iOS 18.1 while developing my train timetables app &lt;a href=&quot;/2024/07/27/eki-bright-tokyo-area-train-timetables/&quot;&gt;Eki Bright&lt;/a&gt;. Some documented, some not. This is not a quick start or tutorial, but you may want to skim it if you’re thinking about using an iOS 17+ Core Location API so you know what to look out for.&lt;/p&gt;
+
+&lt;p&gt;I’ll be discussing iOS usage of Core Location exclusively (not macOS, visionOS, watchOS).&lt;/p&gt;
+
+&lt;h1 id=&quot;overall-recommendations&quot;&gt;Overall recommendations&lt;/h1&gt;
+
+&lt;h2 id=&quot;prefer-cllocationmanager-over-clmonitor-and-cllocationupdate&quot;&gt;Prefer &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLLocationManager&lt;/code&gt; over &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLMonitor&lt;/code&gt; and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLLocationUpdate&lt;/code&gt;&lt;/h2&gt;
+
+&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLLocationManager&lt;/code&gt; has been around since the beginning of iPhone OS. Its delegate-based API can feel a bit cumbersome in the current era, but overall, I would still recommend creating your own wrapper over &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLLocationManager&lt;/code&gt; if the core competency of your app is even adjacent to location services.&lt;/p&gt;
+
+&lt;p&gt;As far as I can tell, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLMonitor&lt;/code&gt; and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLLocationUpdate&lt;/code&gt; are both wrappers themselves over &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLLocationManager&lt;/code&gt; albeit with fewer options, fewer capabilities, and many more gotchas spread across iOS minor versions.&lt;/p&gt;
+
+&lt;p&gt;If you’d still like to try them, please read my observations below.&lt;/p&gt;
+
+&lt;h2 id=&quot;prefer-clservicesession-if-your-deployment-target-is-ios-180&quot;&gt;Prefer &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLServiceSession&lt;/code&gt; if your deployment target is iOS 18.0+&lt;/h2&gt;
+
+&lt;p&gt;In my testing, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLServiceSession&lt;/code&gt; has worked as advertised and requires less babysitting than the older imperative location permission APIs.&lt;/p&gt;
+
+&lt;p&gt;Location services permissions is still ripe with complexity and edge cases, so I recommend reading all the documentation and my observations below.&lt;/p&gt;
+
+&lt;h1 id=&quot;official-documentation&quot;&gt;Official documentation&lt;/h1&gt;
+
+&lt;p&gt;I’ll start by listing the documentation for the iOS 17+ APIs I’ve found useful.&lt;/p&gt;
+
+&lt;h2 id=&quot;wwdc-videos&quot;&gt;WWDC videos&lt;/h2&gt;
+
+&lt;p&gt;There are three videos from WWDC 2023 and 2024 from the Core Location team introducing iOS 17 and iOS 18 changes.&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;a href=&quot;https://developer.apple.com/videos/play/wwdc2023/10180&quot;&gt;Discover streamlined location updates (2023)&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://developer.apple.com/videos/play/wwdc2023/10147&quot;&gt;Meet Core Location Monitor (2023)&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://developer.apple.com/videos/play/wwdc2024/10212&quot;&gt;What’s new in location authorization (2024)&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;These videos do a nice job of explaining the rationale behind the new APIs. They also illustrate the intended usage pretty well for extremely simple use cases.&lt;/p&gt;
+
+&lt;h2 id=&quot;sample-projects&quot;&gt;Sample projects&lt;/h2&gt;
+
+&lt;p&gt;The sample projects, although very freshly updated, do a poor job of actually proving the capabilities of the framework work as advertised. They’re more useful in seeing how the API designers intend the framework user to compose all the pieces together.&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;a href=&quot;https://developer.apple.com/documentation/corelocation/adopting-live-updates-in-core-location&quot;&gt;Adopting live updates in Core Location&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://developer.apple.com/documentation/corelocation/monitoring-location-changes-with-core-location&quot;&gt;Monitoring location changes with Core Location&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&quot;warning-about-the-documentation&quot;&gt;Warning about the documentation&lt;/h2&gt;
+
+&lt;p&gt;Some official articles have been written or rewritten assuming your app’s base deployment is iOS 17 or iOS 18. &lt;a href=&quot;https://developer.apple.com/documentation/corelocation/suspending-authorization-requests&quot;&gt;Suspending authorization requests&lt;/a&gt; shows only permission requests based on &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLServiceSession&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;…while some articles have not been updated. &lt;a href=&quot;https://developer.apple.com/documentation/corelocation/requesting-authorization-to-use-location-services&quot;&gt;Requesting authorization to use location services&lt;/a&gt; does not mention &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLServiceSession&lt;/code&gt; at all.&lt;/p&gt;
+
+&lt;p&gt;Some newer API’s documentation pages are missing important notes that exist in their deprecated counterpart API’s pages. For example, &lt;a href=&quot;https://developer.apple.com/documentation/corelocation/clmonitor-2r51v&quot;&gt;CLMonitor&lt;/a&gt; and &lt;a href=&quot;https://developer.apple.com/documentation/corelocation/cllocationmanager/startmonitoring(for:)&quot;&gt;startMonitoring(for:)&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;Be sure to check the individual pages under &lt;a href=&quot;https://developer.apple.com/documentation/corelocation/deprecated-symbols&quot;&gt;Deprecated symbols&lt;/a&gt; as well.&lt;/p&gt;
+
+&lt;h1 id=&quot;tips&quot;&gt;Tips&lt;/h1&gt;
+
+&lt;p&gt;This section is an unstructured brain dump of everything I’ve run into while using the iOS 17+ Core Location APIs. I’ve divided up the subsections into:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Permissions (&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLServiceSession&lt;/code&gt;)&lt;/li&gt;
+  &lt;li&gt;Background operation&lt;/li&gt;
+  &lt;li&gt;Location updates firehose (&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLLocationUpdate&lt;/code&gt;)&lt;/li&gt;
+  &lt;li&gt;Location monitoring (&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLMonitor&lt;/code&gt;)&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&quot;permissions&quot;&gt;Permissions&lt;/h2&gt;
+
+&lt;p&gt;I recommend starting by reading &lt;a href=&quot;https://developer.apple.com/documentation/corelocation/requesting-authorization-to-use-location-services&quot;&gt;Requesting authorization to use location services&lt;/a&gt; carefully, and watching &lt;a href=&quot;https://developer.apple.com/videos/play/wwdc2024/10212&quot;&gt;What’s new in location authorization&lt;/a&gt;.&lt;/p&gt;
+
+&lt;h3 id=&quot;implicit-vs-explicit-clservicesession-usage&quot;&gt;Implicit vs. explicit CLServiceSession usage&lt;/h3&gt;
+
+&lt;p&gt;In iOS 18+, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLLocationUpdate&lt;/code&gt; or &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLMonitor&lt;/code&gt; allow implicit usage of permissions via the underlying &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLServiceSession&lt;/code&gt; mechanism. If you’re using iOS 17 or below, or using &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLLocationManager&lt;/code&gt; you can skip this part.&lt;/p&gt;
+
+&lt;p&gt;As a pseudo flowchart:&lt;/p&gt;
+
+&lt;p&gt;If:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;You’re only using either &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLLocationUpdate&lt;/code&gt; or &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLMonitor&lt;/code&gt; (not &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLLocationManager&lt;/code&gt;) &lt;em&gt;and&lt;/em&gt;&lt;/li&gt;
+  &lt;li&gt;You’re supporting iOS 18+ &lt;em&gt;and&lt;/em&gt;&lt;/li&gt;
+  &lt;li&gt;You only need &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;whenInUse&lt;/code&gt; authorization without explicit full accuracy&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Then you have 2 options:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Use implicit authorization: simply call &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLLocationUpdate&lt;/code&gt; or &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLMonitor&lt;/code&gt; and Core Location will take a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLServiceSession&lt;/code&gt; (the permissions mechanism) for you behind the scenes.&lt;/li&gt;
+  &lt;li&gt;Use explicit authorization: add the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;NSLocationRequireExplicitServiceSession&lt;/code&gt; key to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Info.plist&lt;/code&gt; and hold an instance of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLServiceSession&lt;/code&gt; for as long as you’re getting values from &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLLocationUpdate&lt;/code&gt; or &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLMonitor&lt;/code&gt;.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;If:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;You’re only using either &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLLocationUpdate&lt;/code&gt; or &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLMonitor&lt;/code&gt; (not &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLLocationManager&lt;/code&gt;) &lt;em&gt;and&lt;/em&gt;&lt;/li&gt;
+  &lt;li&gt;You’re supporting iOS 18+ &lt;em&gt;and&lt;/em&gt;&lt;/li&gt;
+  &lt;li&gt;You need &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;always&lt;/code&gt; authorization &lt;em&gt;or&lt;/em&gt; explicit full accuracy&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Then:&lt;/p&gt;
+
+&lt;p&gt;You must take a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLServiceSession&lt;/code&gt;. You can still add &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;NSLocationRequireExplicitServiceSession&lt;/code&gt; if you want to ensure you don’t make a mistake.&lt;/p&gt;
+
+&lt;h3 id=&quot;testing-the-full-accuracy-permission-prompt&quot;&gt;Testing the full accuracy permission prompt&lt;/h3&gt;
+
+&lt;p&gt;One way to test the permission prompt for full accuracy usage is:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Start a fresh copy of your app on a simulator.&lt;/li&gt;
+  &lt;li&gt;Trigger the location prompt and allow &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;whenInUse&lt;/code&gt; permissions.&lt;/li&gt;
+  &lt;li&gt;Force quit the app.&lt;/li&gt;
+  &lt;li&gt;In the simulator’s Settings.app, go to your app’s settings page -&amp;gt; Location Services and disable Full Accuracy.&lt;/li&gt;
+  &lt;li&gt;Cold launch your app.&lt;/li&gt;
+  &lt;li&gt;Trigger your feature that requires full accuracy permissions.&lt;/li&gt;
+  &lt;li&gt;The permission prompt should appear.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/core-location-full-accuracy-prompt.jpg&quot; width=&quot;&quot; height=&quot;380&quot; alt=&quot;An example of the temporary full accuracy permission prompt&quot; title=&quot;An example of the temporary full accuracy permission prompt&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;An example of the temporary full accuracy permission prompt&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;If you approve this permission prompt it will still appear every time you trigger your feature in future cold launches (it’s “temporary” after all).&lt;/p&gt;
+
+&lt;h3 id=&quot;localizing-fullaccuracypurposekey&quot;&gt;Localizing &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;fullAccuracyPurposeKey&lt;/code&gt;&lt;/h3&gt;
+
+&lt;p&gt;Full accuracy requests are available in two API:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;a href=&quot;https://developer.apple.com/documentation/corelocation/clservicesession-pt7n/init(authorization:fullaccuracypurposekey:)&quot;&gt;init(authorization:fullAccuracyPurposeKey:)&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://developer.apple.com/documentation/corelocation/cllocationmanager/requesttemporaryfullaccuracyauthorization(withpurposekey:completion:)&quot;&gt;requestTemporaryFullAccuracyAuthorization(withPurposeKey:completion:)&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;(This is another one of those cases where all the documentation is on the page of the deprecated API.)&lt;/p&gt;
+
+&lt;p&gt;I’m using &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLServiceSession&lt;/code&gt; in the following manner:&lt;/p&gt;
+
+&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kt&quot;&gt;CLServiceSession&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;authorization&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;whenInUse&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;fullAccuracyPurposeKey&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;NSLocationTemporaryUsageDescriptionDictionaryMonitor&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Specifying &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;fullAccuracyPurposeKey&lt;/code&gt; tells &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLServiceSession&lt;/code&gt; that the feature associated with the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLServiceSession&lt;/code&gt; instance prefers having &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;fullAccuracy&lt;/code&gt;, and will try to prompt for it automatically when possible (“possible” being any number of rules).&lt;/p&gt;
+
+&lt;p&gt;The relevant part of the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Info.plist&lt;/code&gt; should look like the below plist for specifying your app’s reason for wanting full accuracy permission. Notice I have two different keys because I have two features that each instantiate their own &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLServiceSession&lt;/code&gt;.&lt;/p&gt;
+
+&lt;div class=&quot;language-xml highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nt&quot;&gt;&amp;lt;plist&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;version=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;1.0&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;dict&amp;gt;&lt;/span&gt;
+	&lt;span class=&quot;nt&quot;&gt;&amp;lt;key&amp;gt;&lt;/span&gt;NSLocationTemporaryUsageDescriptionDictionary&lt;span class=&quot;nt&quot;&gt;&amp;lt;/key&amp;gt;&lt;/span&gt;
+	&lt;span class=&quot;nt&quot;&gt;&amp;lt;dict&amp;gt;&lt;/span&gt;
+		&lt;span class=&quot;nt&quot;&gt;&amp;lt;key&amp;gt;&lt;/span&gt;NSLocationTemporaryUsageDescriptionDictionaryMonitor&lt;span class=&quot;nt&quot;&gt;&amp;lt;/key&amp;gt;&lt;/span&gt;
+		&lt;span class=&quot;nt&quot;&gt;&amp;lt;string&amp;gt;&lt;/span&gt;NSLocationTemporaryUsageDescriptionDictionaryMonitor&lt;span class=&quot;nt&quot;&gt;&amp;lt;/string&amp;gt;&lt;/span&gt;
+		&lt;span class=&quot;nt&quot;&gt;&amp;lt;key&amp;gt;&lt;/span&gt;NSLocationTemporaryUsageDescriptionDictionaryNearbyStations&lt;span class=&quot;nt&quot;&gt;&amp;lt;/key&amp;gt;&lt;/span&gt;
+		&lt;span class=&quot;nt&quot;&gt;&amp;lt;string&amp;gt;&lt;/span&gt;NSLocationTemporaryUsageDescriptionDictionaryNearbyStations&lt;span class=&quot;nt&quot;&gt;&amp;lt;/string&amp;gt;&lt;/span&gt;
+	&lt;span class=&quot;nt&quot;&gt;&amp;lt;/dict&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;/dict&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;/plist&amp;gt;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;If you’re not localizing and have no &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;InfoPlist.xcstrings&lt;/code&gt;, you can add the actual message you show the user to the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;&amp;lt;string&amp;gt;your message&amp;lt;/string&amp;gt;&lt;/code&gt; part.&lt;/p&gt;
+
+&lt;p&gt;If you are localizing, then you should add &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;NSLocationTemporaryUsageDescriptionDictionaryMonitor&lt;/code&gt; and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;NSLocationTemporaryUsageDescriptionDictionaryNearbyStations&lt;/code&gt; as keys in your &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;InfoPlist.xcstrings&lt;/code&gt; file, with the corresponding translations.&lt;/p&gt;
+
+&lt;p&gt;In the above plist I’ve repeated the key name as the value, but it won’t be used since I added the key to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;InfoPlist.xcstrings&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;I’ve used a key name with the full prefix of the root dictionary key &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;NSLocationTemporaryUsageDescriptionDictionary&lt;/code&gt;, but you can use any valid localization key name.&lt;/p&gt;
+
+&lt;p&gt;The setup is documented &lt;a href=&quot;https://developer.apple.com/documentation/corelocation/cllocationmanager/requesttemporaryfullaccuracyauthorization(withpurposekey:completion:)&quot;&gt;in this API&lt;/a&gt; and &lt;a href=&quot;https://developer.apple.com/forums/thread/652801?answerId=624692022#624692022&quot;&gt;in the forums&lt;/a&gt;.&lt;/p&gt;
+
+&lt;h2 id=&quot;location-updates-in-the-background&quot;&gt;Location updates in the background&lt;/h2&gt;
+
+&lt;p&gt;If you need to run in the background based on location changes, you have a few requirements and a few options to consider.&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;You must to add &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Background Modes -&amp;gt; Location updates&lt;/code&gt; to the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Signing &amp;amp; Capabilities&lt;/code&gt; section of your app target.&lt;/li&gt;
+  &lt;li&gt;You must still add the proper permissions key (probably &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;NSLocationWhenInUseUsageDescription&lt;/code&gt; or &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;NSLocationAlwaysAndWhenInUseUsageDescription&lt;/code&gt;).&lt;/li&gt;
+  &lt;li&gt;You must have either &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.whenInUse&lt;/code&gt; or &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.always&lt;/code&gt; permission. As far as I know, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;fullAccuracy&lt;/code&gt; permission is not required but I imagine the lack of it would affect most features that require background location updates.&lt;/li&gt;
+  &lt;li&gt;You must either:
+    &lt;ul&gt;
+      &lt;li&gt;Run a Live Activity &lt;em&gt;or&lt;/em&gt;&lt;/li&gt;
+      &lt;li&gt;Create and hold an instance of &lt;a href=&quot;https://developer.apple.com/documentation/corelocation/clbackgroundactivitysession-3mzv3&quot;&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLBackgroundActivitySession&lt;/code&gt;&lt;/a&gt; (which is conceptually a single-purpose pre-configured Live Activity).&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+  &lt;li&gt;You must^ be subscribed to an &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;AsyncStream&lt;/code&gt; from either a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLLocationUpdates&lt;/code&gt; of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLMonitor&lt;/code&gt; instance. (^I have not tested how the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLLocationManager&lt;/code&gt; APIs work with iOS 17+ location background APIs, so you are on your own verifying how they work.)&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;I want to specifically call out that &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.always&lt;/code&gt; permission is &lt;em&gt;not&lt;/em&gt; required to receive location updates in the background assuming the above requirements are satisfied. As discussed in &lt;a href=&quot;https://developer.apple.com/documentation/corelocation/requesting-authorization-to-use-location-services&quot;&gt;this article&lt;/a&gt;, the main difference between &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;whenInUse&lt;/code&gt; and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;always&lt;/code&gt; permission is that:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;With &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;always&lt;/code&gt; permission, your app has the chance of being cold launched in the background in response to “significant location change, visits, and region monitoring services” if it was previously terminated.&lt;/li&gt;
+  &lt;li&gt;With &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;whenInUse&lt;/code&gt; permission, if your app is terminated for any reason, the user must open it again before location updates may be received in the background.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Note: there’s something called a &lt;a href=&quot;https://developer.apple.com/documentation/corelocation/creating-a-location-push-service-extension&quot;&gt;Location push service extension&lt;/a&gt; that requires &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.always&lt;/code&gt; permission, but I have no experience with what the other requirements are for this feature.&lt;/p&gt;
+
+&lt;p&gt;Relevant docs:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;a href=&quot;https://developer.apple.com/documentation/corelocation/handling-location-updates-in-the-background&quot;&gt;Handling location updates in the background&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://developer.apple.com/videos/play/wwdc2023/10180&quot;&gt;Discover streamlined location updates&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://developer.apple.com/documentation/corelocation/requesting-authorization-to-use-location-services&quot;&gt;Requesting authorization to use location services&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&quot;the-location-updates-firehose-cllocationupdate&quot;&gt;The location updates firehose (&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLLocationUpdate&lt;/code&gt;)&lt;/h2&gt;
+
+&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLLocationUpdate.liveUpdates&lt;/code&gt; returns a stream of both location coordinates, “errors”, and permissions issues in the form of the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLLocationUpdate&lt;/code&gt; struct.&lt;/p&gt;
+
+&lt;p&gt;Although in theory the API is more streamlined for the simplest of use cases, I’d generally still recommend creating your own system around &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLLocationManager&lt;/code&gt; if you’re doing anything that requires stability, robustness, or reliability with Core Location. Regardless, some usage notes for &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLLocationUpdate&lt;/code&gt; are below.&lt;/p&gt;
+
+&lt;h3 id=&quot;ios-18-recommended&quot;&gt;iOS 18+ recommended&lt;/h3&gt;
+
+&lt;p&gt;Although &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLLocationUpdate&lt;/code&gt; was introduced in iOS 17, I don’t recommend using it until iOS 18 for the following reasons:&lt;/p&gt;
+
+&lt;p&gt;In my testing, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLLocationUpdate.liveUpdates&lt;/code&gt; will return no results on iOS 17 when &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;fullAccuracy&lt;/code&gt; permission is denied. I have no idea whether this was related to the permissions system and fixed in iOS 18 alongside &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLServiceSession&lt;/code&gt; or whether it was simply a bug, but iOS 18 has the expected behavior of returning less accurate &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLLocationUpdate&lt;/code&gt; results when &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;fullAccuracy&lt;/code&gt; is denied by the user.&lt;/p&gt;
+
+&lt;p&gt;According to the WWDC video, when background usage is not requested by the app, Core Location handles automatically disabling &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLLocationUpdate.liveUpdates&lt;/code&gt; when going to the background and re-enabling it when coming back into the foreground, but only in iOS 18 alongside &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLServiceSession&lt;/code&gt;. I can’t say for sure how it works in iOS 17, only that my view layer was handling this manually to make sure there were no issues.&lt;/p&gt;
+
+&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLLocationUpdate&lt;/code&gt; does not include any properties for permissions or other errors in iOS 17 (e.g. &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;authorizationDenied&lt;/code&gt;, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;locationUnavailable&lt;/code&gt;).&lt;/p&gt;
+
+&lt;p&gt;Not a huge issue by any means, but &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLLocationUpdate.isStationary&lt;/code&gt; was introduced in iOS 17 and deprecated in iOS 18 and renamed to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLLocationUpdate.stationary&lt;/code&gt;.&lt;/p&gt;
+
+&lt;h3 id=&quot;stationary-is-rarely-set-when-the-app-is-in-the-foreground&quot;&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;stationary&lt;/code&gt; is rarely set (when the app is in the foreground?)&lt;/h3&gt;
+
+&lt;p&gt;The &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;stationary&lt;/code&gt; flag is set “on the last update before updates are paused because the device has stopped moving” according to the &lt;a href=&quot;https://developer.apple.com/videos/play/wwdc2024/10212?time=1003&quot;&gt;WWDC video&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;What “stopped moving” means is not explicitly documented.&lt;/p&gt;
+
+&lt;p&gt;In practice I’ve never seen an update with the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;stationary&lt;/code&gt; flag set to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;true&lt;/code&gt;. Based on hints from the WWDC videos, my hypothesis is that &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;stationary&lt;/code&gt; is most relevant when using &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLLocationUpdate&lt;/code&gt; and your app is in the background. Perhaps in that setting, Core Location will offer fewer updates and set the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;stationary&lt;/code&gt; flag more liberally.&lt;/p&gt;
+
+&lt;h3 id=&quot;cllocationupdate-has-no-concept-of-filtering&quot;&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLLocationUpdate&lt;/code&gt; has no concept of filtering&lt;/h3&gt;
+
+&lt;p&gt;The “old” API &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLLocationManager&lt;/code&gt; has &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;distanceFilter&lt;/code&gt; and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;desiredAccuracy&lt;/code&gt; you can use to have Core Location filter updates on your behalf.&lt;/p&gt;
+
+&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLLocationUpdate&lt;/code&gt; does not have these options. You have to do filtering on the stream yourself.&lt;/p&gt;
+
+&lt;p&gt;Perhaps the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLLocationUpdate.LiveConfiguration&lt;/code&gt; values are supposed to influence this instead.&lt;/p&gt;
+
+&lt;h3 id=&quot;cllocationupdatelocationunavailable-is-unpredictable&quot;&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLLocationUpdate.locationUnavailable&lt;/code&gt; is unpredictable&lt;/h3&gt;
+
+&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;locationUnavailable&lt;/code&gt; was introduced in iOS 18. Previously, a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLLocationUpdate&lt;/code&gt; could only have a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;location == nil&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;I expected &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;locationUnavailable&lt;/code&gt; to be useful as a way to change my UI and alert my users that there may be a temporary issue with getting their location.&lt;/p&gt;
+
+&lt;p&gt;In practice, the behavior changed in iOS 18.1 and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;locationUnavailable&lt;/code&gt; updates would be returned in quick succession and interspersed with normal location updates under what I’d consider ideal device conditions. It caused my UI to flicker in distressing ways (nod to SwiftUI) and was unpredictable enough to be hard to filter manually.&lt;/p&gt;
+
+&lt;p&gt;For now, I’ve started ignoring &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;locationUnavailable&lt;/code&gt; updates completely. I’ll probably revisit it again in iOS 19 to see whether it’s stable enough to positively influence the UX.&lt;/p&gt;
+
+&lt;h3 id=&quot;updates-are-returned-about-1-or-2-times-per-second&quot;&gt;Updates are returned about 1 or 2 times per second&lt;/h3&gt;
+
+&lt;p&gt;I haven’t seen any official documentation about the update interval from &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLLocationUpdate.liveUpdates&lt;/code&gt;. In practice I usually see updates on average of about 1 or 2 per second while in the foreground. It’s similar on device and on the simulator. Just an FYI.&lt;/p&gt;
+
+&lt;h3 id=&quot;background-behavior-of-cllocationupdate&quot;&gt;Background behavior of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLLocationUpdate&lt;/code&gt;&lt;/h3&gt;
+
+&lt;p&gt;I don’t (yet) have a feature that uses &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLLocationUpdate&lt;/code&gt; in the background so my testing has been light. But I can report that I’ve seen &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLLocationUpdate&lt;/code&gt; send results while in the background as long as the app has been configured properly for it (see the above “Location updates in the background” section).&lt;/p&gt;
+
+&lt;h2 id=&quot;location-monitoring-clmonitor&quot;&gt;Location monitoring (&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLMonitor&lt;/code&gt;)&lt;/h2&gt;
+
+&lt;h3 id=&quot;documented-limitations&quot;&gt;Documented limitations&lt;/h3&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://developer.apple.com/documentation/corelocation/cllocationmanager/startmonitoring(for:)&quot;&gt;Source&lt;/a&gt; for most of the below quotes:&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;An app can register up to 20 regions at a time.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;From my testing in iOS 18.1, if you add more than 20, the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLMonitor&lt;/code&gt; will emit one event for each condition over the limit with state &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLMonitor.Event.State.unmonitored&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;According to the WWDC video, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLMonitor.Event.conditionLimitExceeded&lt;/code&gt; should also be set in this case, although I haven’t confirmed this.&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;The region monitoring service requires network connectivity.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;However, a note from &lt;a href=&quot;https://developer.apple.com/documentation/corelocation/cllocationmanager/startmonitoringsignificantlocationchanges()&quot;&gt;startMonitoringSignificantLocationChanges&lt;/a&gt; says that “If the device is able to retrieve data from the network, the location manager is much more likely to deliver notifications in a timely manner.”&lt;/p&gt;
+
+&lt;p&gt;So maybe network connectivity isn’t always required?&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;an app can expect to receive the appropriate region entered or region exited notification within 3 to 5 minutes on average, if not sooner.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;This is more or less what I’ve experienced in my testing, with the simulator reporting slightly less on average than the device. It makes testing difficult and also makes it difficult to ensure my feature reacts predictably in the background.&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;In iOS 6, regions with a radius between 1 and 400 meters work better on iPhone 4S or later devices.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Since this hasn’t been updated since iOS 6, the only other advice I’ve found was in &lt;a href=&quot;https://developer.apple.com/forums/thread/757363?answerId=791471022#791471022&quot;&gt;this forums thread&lt;/a&gt; where an Apple engineer says to be careful about making the regions too small:&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;Also, I wonder if your regions are appropriately large. If you are getting significant location updates every 5 miles, that means you are in an area where the mobile/wifi based signal coverage (which these services depend on) is only adequate for that kind of accuracy. If your region radii are smaller than what the horizontalAccuracy the significant location updates provide, you may actually miss the entry or exit events to those smaller regions.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;The above quote broadly references a note buried in the &lt;a href=&quot;https://developer.apple.com/documentation/corelocation/cllocationmanager/startmonitoringsignificantlocationchanges()&quot;&gt;startMonitoringSignificantLocationChanges&lt;/a&gt; documentation:&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;Apps can expect a notification as soon as the device moves 500 meters or more from its previous notification.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;h3 id=&quot;clmonitor-on-the-ios-simulator&quot;&gt;CLMonitor on the iOS simulator&lt;/h3&gt;
+
+&lt;p&gt;I had varying success using &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLMonitor&lt;/code&gt; on the iOS 18.1 simulator alongside active location simulation using a GPX file (discussed later). It was a flakey enough that I’d recommend using a real device, although using one was only slightly more successful in verifying &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLMonitor&lt;/code&gt; usage.&lt;/p&gt;
+
+&lt;h3 id=&quot;clmonitoreventstate-values&quot;&gt;CLMonitor.Event.State values&lt;/h3&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://developer.apple.com/documentation/corelocation/clmonitor-2r51v/event/state-swift.typealias&quot;&gt;CLMonitor.Event.State&lt;/a&gt; is an alias for the undocumented &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;__CLMonitoringState&lt;/code&gt;. I can only access the values occasionally via autocomplete:&lt;/p&gt;
+
+&lt;p&gt;My understanding of the 4 states is:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;unknown&lt;/code&gt;: the initial state of the condition unless otherwise specified at the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;add&lt;/code&gt; callsite.&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;unmonitored&lt;/code&gt;: I believe this is only used when there are too many conditions (over the 20 limit) and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLMonitor&lt;/code&gt; is reporting which conditions will not be monitored.&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;unsatisfied&lt;/code&gt;: the device is outside the condition region.&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;satisfied&lt;/code&gt;: the device is inside the condition region.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;how-to-set-up-clmonitor&quot;&gt;How to set up &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLMonitor&lt;/code&gt;&lt;/h3&gt;
+
+&lt;p&gt;When using &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLMonitor&lt;/code&gt; (on iOS 18+) you need to manage the lifetime of multiple objects:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;A &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLServiceSession&lt;/code&gt; for ensuring Core Location knows your permission goals.&lt;/li&gt;
+  &lt;li&gt;A named &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLMonitor&lt;/code&gt; instance for registering conditions.&lt;/li&gt;
+  &lt;li&gt;A &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Task&lt;/code&gt; that awaits &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;await monitor.events&lt;/code&gt;.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;If your requirements are simple – for example, you’re only monitoring a static condition – you can do all this setup in one place and then tear everything down when cancelling the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;monitor.events&lt;/code&gt; stream.&lt;/p&gt;
+
+&lt;p&gt;My requirements are more complicated. The user can modify their route at any time, which triggers a full update of which conditions are monitored. The route may be discarded, at which point I need to stop all monitoring completely.&lt;/p&gt;
+
+&lt;p&gt;If the conditions you need to monitor change unpredictably, I recommend the following pseudocode when changing monitored conditions:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;If there are no more conditions to monitor:
+    &lt;ul&gt;
+      &lt;li&gt;Cancel any existing &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Task&lt;/code&gt; you have monitoring events already.&lt;/li&gt;
+      &lt;li&gt;If a monitor exists, remove all conditions from it, and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;nil&lt;/code&gt; it out.&lt;/li&gt;
+      &lt;li&gt;Call &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;invalidate&lt;/code&gt; and  &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;nil&lt;/code&gt; out the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLBackgroundActivitySession&lt;/code&gt; if it exists.&lt;/li&gt;
+      &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;nil&lt;/code&gt; out the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLServiceSession&lt;/code&gt; if it exists.&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+  &lt;li&gt;Otherwise:
+    &lt;ul&gt;
+      &lt;li&gt;Create a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLServiceSession&lt;/code&gt; if one does not already exist.&lt;/li&gt;
+      &lt;li&gt;Create a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLBackgroundActivitySession&lt;/code&gt; if one does not already exist and you want monitoring to keep your &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;whenInUse&lt;/code&gt; authorized app alive in the background without a dedicated Live Activity.&lt;/li&gt;
+      &lt;li&gt;Create a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLMonitor&lt;/code&gt; with a static name if one does not already exist.&lt;/li&gt;
+      &lt;li&gt;Calculate which identifiers you need to add and which ones you need to remove (or simpler: remove all conditions and add all new ones)&lt;/li&gt;
+      &lt;li&gt;Remove unused conditions&lt;/li&gt;
+      &lt;li&gt;Add new conditions&lt;/li&gt;
+      &lt;li&gt;If a monitoring &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Task&lt;/code&gt; exists, do nothing.&lt;/li&gt;
+      &lt;li&gt;Otherwise, start a new &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Task&lt;/code&gt; awaiting &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLMonitor.events&lt;/code&gt; and save a reference to the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Task&lt;/code&gt;.&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;tips-for-creating-a-system-around-clmonitor&quot;&gt;Tips for creating a system around CLMonitor&lt;/h3&gt;
+
+&lt;h4 id=&quot;you-should-target-ios-18&quot;&gt;You should target iOS 18+&lt;/h4&gt;
+
+&lt;p&gt;You can technically use &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLMonitor&lt;/code&gt; with iOS 17, but handling permissions will be either be more complicated or less robust without &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLServiceSession&lt;/code&gt; (iOS 18+).&lt;/p&gt;
+
+&lt;h4 id=&quot;you-need-to-keep-a-reference-to-clservicesession-clmonitor-and-the-task-that-contains-your-monitoring&quot;&gt;You &lt;em&gt;need&lt;/em&gt; to keep a reference to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLServiceSession&lt;/code&gt;, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLMonitor&lt;/code&gt;, and the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Task&lt;/code&gt; that contains your monitoring&lt;/h4&gt;
+
+&lt;p&gt;This is because:&lt;/p&gt;
+
+&lt;p&gt;The &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLServiceSession&lt;/code&gt; defines the authorization requirements of your use of location services for the lifetime of your feature that uses them.&lt;/p&gt;
+
+&lt;p&gt;It is dangerous to try to “recover” a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLMonitor&lt;/code&gt; with the same name via the initializer if you lose the reference. This means that &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLMonitor&lt;/code&gt; is not designed to be cheaply created and discarded. I tried this strategy at first: create a monitor and discard the old one each time my conditions changed. However, the internal bookkeeping done by Core Location means that the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLMonitor&lt;/code&gt; may outlive your expectations. This means that if you try to initialize a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLMonitor&lt;/code&gt; with the same name too soon after you’ve discarded one, the app will crash with:&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;Assertion failure in +[CLMonitor _requestMonitorWithConfiguration:locationManager:completion:], CLMonitor.mm:517
+Terminating app due to uncaught exception &apos;NSInternalInconsistencyException&apos;, reason: &apos;Monitor named myMonitor is already in use&apos;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;From my testing, it seems best to subscribe to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLMonitor.events&lt;/code&gt; once and only once per instance of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLMonitor&lt;/code&gt; over the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLMonitor&lt;/code&gt;’s entire lifetime. Let me try to explain this thoroughly.&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;You have a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLMonitor&lt;/code&gt;&lt;/li&gt;
+  &lt;li&gt;You add some conditions to the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLMonitor&lt;/code&gt;&lt;/li&gt;
+  &lt;li&gt;You subscribe to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLMonitor.events&lt;/code&gt;&lt;/li&gt;
+  &lt;li&gt;Now you want to change the conditions&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;At this point, you should keep the same &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLMonitor&lt;/code&gt; and the subscription to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLMonitor.events&lt;/code&gt; alive and call &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLMonitor.add&lt;/code&gt; and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLMonitor.remove&lt;/code&gt; as necessary.&lt;/p&gt;
+
+&lt;p&gt;The other reason it’s “better” to do diffing and only add/remove conditions as necessary is because &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLMonitor&lt;/code&gt; keeps some state on your behalf as illustrated by the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLMonitor.record(for:)&lt;/code&gt; API that returns a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLMonitor.Record.lastEvent&lt;/code&gt;.&lt;/p&gt;
+
+&lt;h4 id=&quot;do-not-treat-clmonitor-as-cheaply-disposable&quot;&gt;Do not treat &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLMonitor&lt;/code&gt; as cheaply disposable&lt;/h4&gt;
+
+&lt;p&gt;You &lt;em&gt;should not&lt;/em&gt; discard the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLMonitor&lt;/code&gt; and immediately create a new one with the same name (crash described above) and you &lt;em&gt;should not&lt;/em&gt; cancel the subscription and create a new subscription.&lt;/p&gt;
+
+&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLMonitor&lt;/code&gt; has a bug (I presume) where any later subscription attempt to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLMonitor.events&lt;/code&gt; after the first has been cancelled will itself cancel and fall through immediately.&lt;/p&gt;
+
+&lt;h4 id=&quot;do-not-subscribe-to-clmonitor-multiple-times-simultaneously&quot;&gt;Do not subscribe to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLMonitor&lt;/code&gt; multiple times simultaneously&lt;/h4&gt;
+
+&lt;p&gt;You &lt;em&gt;should not&lt;/em&gt; try to subscribe to the same &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLMonitor&lt;/code&gt; multiple times for whatever reason you might want to do that. In my testing, events will be pushed out randomly between subscriptions. This may be a standard &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;AsyncStream&lt;/code&gt; behavior, but regardless, I can’t think of a reason why you’d want this behavior unless you were building some sort of system of distributed workers.&lt;/p&gt;
+
+&lt;h4 id=&quot;you-may-tear-down-the-system-and-stop-monitoring-completely-while-still-being-able-to-recreate-the-system-later&quot;&gt;You &lt;em&gt;may&lt;/em&gt; tear down the system and stop monitoring completely, while still being able to recreate the system later&lt;/h4&gt;
+
+&lt;p&gt;OK, so what about the situation where you &lt;em&gt;do&lt;/em&gt; want to completely stop monitoring but also retain the ability to start monitoring again later?&lt;/p&gt;
+
+&lt;p&gt;The “stop monitoring for now” situation should be covered by the above pseudocode. As long as you do the proper cleanup of cancelling the subscription, removing conditions from the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLMonitor&lt;/code&gt;, and removing your reference to the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLMonitor&lt;/code&gt; and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLServiceSession&lt;/code&gt; you should be set up fine to recreate the entire system at some later point (but &lt;em&gt;not&lt;/em&gt; right away, with “right away” meaning at least in the same run loop).&lt;/p&gt;
+
+&lt;h4 id=&quot;define-your-system-as-an-actor&quot;&gt;Define your system as an actor&lt;/h4&gt;
+
+&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLMonitor&lt;/code&gt; is an &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;actor&lt;/code&gt;, which means that basically every one of its APIs requires an &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;await&lt;/code&gt;. I found it more idiomatic and convenient to define my wrapper system as an &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;actor&lt;/code&gt;.&lt;/p&gt;
+
+&lt;h4 id=&quot;reinitializing-the-system-in-a-terminatedcold-launch-scenario&quot;&gt;Reinitializing the system in a terminated/cold launch scenario&lt;/h4&gt;
+
+&lt;p&gt;There are specific requirements around reinitializing a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLMonitor&lt;/code&gt; system after the app has been terminated. My use case doesn’t require this functionality, and therefore my implementation does not handle it. If you do need to handle it (and have &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.always&lt;/code&gt; authorization), I encourage you to read &lt;a href=&quot;https://developer.apple.com/documentation/corelocation/handling-location-updates-in-the-background&quot;&gt;the docs&lt;/a&gt;, &lt;a href=&quot;https://developer.apple.com/documentation/corelocation/monitoring-location-changes-with-core-location&quot;&gt;sample code&lt;/a&gt;, and watch &lt;a href=&quot;https://developer.apple.com/videos/play/wwdc2023/10147/&quot;&gt;the WWDC video&lt;/a&gt;.&lt;/p&gt;
+
+&lt;h4 id=&quot;be-careful-about-running-multiple-clmonitor-instances-simultaneously&quot;&gt;Be careful about running multiple &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLMonitor&lt;/code&gt; instances simultaneously&lt;/h4&gt;
+
+&lt;p&gt;In theory, it should be fine to create multiple &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLMonitor&lt;/code&gt; instances within the same app session. However, the “up to 20 conditions” limitation is per-app, so with multiple &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLMonitor&lt;/code&gt;s you will need to ensure globally you’re not exceeding that limit (if your use case has a danger of doing so).&lt;/p&gt;
+
+&lt;p&gt;I haven’t tested running multiple &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLMonitor&lt;/code&gt;s in parallel, so your milage my vary.&lt;/p&gt;
+
+&lt;h3 id=&quot;clmonitor-wrapper-sample-code&quot;&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLMonitor&lt;/code&gt; wrapper sample code&lt;/h3&gt;
+
+&lt;p&gt;Below is a lightly tested implementation of the above pseudocode based on my app’s own implementation. I’d encourage you to use it only as reference when writing your own implementation based on your own app’s requirements and testing it accordingly.&lt;/p&gt;
+
+&lt;p&gt;This implementation assumes you’ve set up the rest of your project correctly with permissions strings, background modes, etc.&lt;/p&gt;
+
+&lt;p&gt;This implementation allows you create an instance of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;SampleLocationMonitor&lt;/code&gt; with the same lifetime as your app (read: singleton). Call &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;monitor()&lt;/code&gt; each time your set of conditions changes. If the input set of conditions is empty, the instance will go dormant, otherwise it will update the conditions interactively.&lt;/p&gt;
+
+&lt;p&gt;This implementation also supports background operation via &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLBackgroundActivitySession&lt;/code&gt;. You should remove this if you already have a Live Activity tied to the lifetime of your monitoring. Or remove it if you don’t need any updates in the background.&lt;/p&gt;
+
+&lt;p&gt;The missing piece (see “TODO” below) is what you want to do in response to receiving an event. In my case (not shown), I’m simply refreshing a Live Activity based on an existing schedule.&lt;/p&gt;
+
+&lt;p&gt;If you want access to all events, I would be careful about modifying this to return the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;monitor.events&lt;/code&gt; &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;AsyncStream&lt;/code&gt; directly because of the limitations discussed above, namely: there can only be one subscription per &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLMonitor&lt;/code&gt; &lt;em&gt;and&lt;/em&gt; you cannot cancel a subscription and create a new one later.&lt;/p&gt;
+
+&lt;p&gt;Instead, I’d consider either:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Registering a closure along side each &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;MonitorCondition&lt;/code&gt; for the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;SampleLocationMonitor&lt;/code&gt; to execute (this may be difficult to design due to Swift 6 concurrency isolation).&lt;/li&gt;
+  &lt;li&gt;Creating a long-lived &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;AsyncStream&lt;/code&gt; as a property of and bound to the lifetime of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;SampleLocationMonitor&lt;/code&gt; that relays all events to a subscriber.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;I haven’t tested either strategy, so your milage my vary.&lt;/p&gt;
+
+&lt;p&gt;Anyway, here is the sample implementation:&lt;/p&gt;
+
+&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;MonitorCondition&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Identifiable&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Equatable&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Sendable&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Hashable&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;id&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;coordinates&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;CLLocationCoordinate2D&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;radiusInMeters&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;CLLocationDistance&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;kd&quot;&gt;@available(iOS 18.0, *)&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;actor&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;SampleLocationMonitor&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;private&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;authSession&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;CLServiceSession&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;private&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;monitor&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;CLMonitor&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;private&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;backgroundSession&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;CLBackgroundActivitySession&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;private&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;monitoringTask&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Task&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Void&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;any&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Error&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;
+    
+    &lt;span class=&quot;kd&quot;&gt;private&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;static&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;monitorID&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;monitor&quot;&lt;/span&gt;
+
+    &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;monitor&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;_&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;monitorConditions&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Set&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;MonitorCondition&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;as&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ync&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;throws&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;guard&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;!&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;monitorConditions&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;isEmpty&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;else&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;n&quot;&gt;monitoringTask&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;cancel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+            &lt;span class=&quot;n&quot;&gt;monitoringTask&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;nil&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;monitor&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+                &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;monitoringIdentifiers&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;await&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;monitor&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;identifiers&lt;/span&gt;
+                &lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;identifier&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;monitoringIdentifiers&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+                    &lt;span class=&quot;n&quot;&gt;await&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;monitor&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;remove&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;identifier&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+                &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+                &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;monitor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;nil&lt;/span&gt;
+            &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+            &lt;span class=&quot;n&quot;&gt;backgroundSession&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;invalidate&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+            &lt;span class=&quot;n&quot;&gt;backgroundSession&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;nil&lt;/span&gt;
+            &lt;span class=&quot;n&quot;&gt;authSession&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;nil&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+        
+        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;authSession&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;authSession&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;??&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;CLServiceSession&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;authorization&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;whenInUse&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;fullAccuracyPurposeKey&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;NSLocationTemporaryUsageDescriptionDictionarySampleLocationMonitor&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;authSession&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;authSession&lt;/span&gt;
+        
+        &lt;span class=&quot;n&quot;&gt;backgroundSession&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;backgroundSession&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;??&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;CLBackgroundActivitySession&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+        
+        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;monitor&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;CLMonitor&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;existingMonitor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;monitor&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;n&quot;&gt;monitor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;existingMonitor&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;else&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;newMonitor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;await&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;CLMonitor&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;Self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;monitorID&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+            &lt;span class=&quot;n&quot;&gt;monitor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;newMonitor&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;monitor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;monitor&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+        
+        &lt;span class=&quot;nf&quot;&gt;assert&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;monitorConditions&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;count&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;20&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;CLMonitor supports up to 20 conditions&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        
+        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;existingIdentifiers&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;await&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Set&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;monitor&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;identifiers&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;identifiersToAdd&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Set&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Set&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;monitorConditions&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;map&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;\&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;id&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;subtracting&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;existingIdentifiers&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;identifiersToRemove&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Set&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;existingIdentifiers&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;subtracting&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Set&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;monitorConditions&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;map&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;\&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;id&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)))&lt;/span&gt;
+        
+        &lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;identifierToRemove&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;identifiersToRemove&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;n&quot;&gt;await&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;monitor&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;remove&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;identifierToRemove&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;monitorCondition&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;monitorConditions&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;guard&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;identifiersToAdd&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;contains&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;monitorCondition&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;id&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;else&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;continue&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;condition&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;CLMonitor&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;CircularGeographicCondition&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;center&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;monitorCondition&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;coordinates&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;radius&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;monitorCondition&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;radiusInMeters&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+            &lt;span class=&quot;n&quot;&gt;await&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;monitor&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;add&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;condition&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;identifier&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;monitorCondition&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;id&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;as&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;suming&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;unsatisfied&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+        
+        &lt;span class=&quot;k&quot;&gt;guard&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;monitoringTask&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;nil&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;else&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;monitoringTask&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Task&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;try&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;await&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;event&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;await&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;monitor&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;events&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+                &lt;span class=&quot;c1&quot;&gt;// Optional: the last event if you need to do comparisons to derive _entry_ or _exit_ events.&lt;/span&gt;
+                &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;lastEvent&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;await&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;monitor&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;record&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;for&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;event&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;identifier&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)?&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;lastEvent&lt;/span&gt;
+
+                &lt;span class=&quot;c1&quot;&gt;// TODO: Do whatever you want to do with the events here&lt;/span&gt;
+            &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;monitoringTask&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;monitoringTask&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;h2 id=&quot;testing&quot;&gt;Testing&lt;/h2&gt;
+
+&lt;h3 id=&quot;simulating-a-moving-location&quot;&gt;Simulating a moving location&lt;/h3&gt;
+
+&lt;p&gt;I had some success using simulated location changes via GPX files. It works on both simulator and device.&lt;/p&gt;
+
+&lt;p&gt;The GPX file playback starts immediately on app launch. The file playback will repeat immediately after reaching the last entry.&lt;/p&gt;
+
+&lt;p&gt;I used this tutorial: &lt;a href=&quot;https://digitalbunker.dev/simulating-a-moving-location-in-ios/&quot;&gt;Simulating A Moving Location In iOS&lt;/a&gt;.&lt;/p&gt;
+
+&lt;h3 id=&quot;fixing-issue-where-gpx-files-cannot-be-selected-in-the-file-picker-in-xcode&quot;&gt;Fixing issue where GPX files cannot be selected in the file picker in Xcode&lt;/h3&gt;
+
+&lt;p&gt;A strange issue blocked me from using location simulation at first.&lt;/p&gt;
+
+&lt;p&gt;In the file picker that appears when selecting “Add GPS Exchange to Project” in the Scheme editor, all GPX files would be greyed out and unselectable. The issue appeared in a few random Stack Overflow and forum posts scattered across several years.&lt;/p&gt;
+
+&lt;p&gt;Eventually I tracked it down to an app I had installed called Guitar Pro asserting ownership over &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.gpx&lt;/code&gt; files in macOS system wide. I confirmed this with the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;mdls&lt;/code&gt; CLI utility (output abridged for clarity):&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;gp&quot;&gt;$ &lt;/span&gt;mdls basha-yoko.gpx
+
+_kMDItemDisplayNameWithExtensions  &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;basha-yoko.gpx&quot;&lt;/span&gt;
+kMDItemContentCreationDate         &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; 2024-11-30 03:31:08 +0000
+kMDItemContentType                 &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;com.arobas-music.guitarpro6.document&quot;&lt;/span&gt;
+kMDItemContentTypeTree             &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;
+    &lt;span class=&quot;s2&quot;&gt;&quot;com.arobas-music.guitarpro6.document&quot;&lt;/span&gt;,
+    &lt;span class=&quot;s2&quot;&gt;&quot;public.data&quot;&lt;/span&gt;,
+    &lt;span class=&quot;s2&quot;&gt;&quot;public.item&quot;&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+kMDItemDisplayName                 &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;basha-yoko.gpx&quot;&lt;/span&gt;
+kMDItemDocumentIdentifier          &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; 57051
+kMDItemKind                        &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;Guitar Pro 6 document&quot;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Uninstalling Guitar Pro was the only thing that fixed it long enough for me to select one file. After I restarted my computer, the file picker was broken again.&lt;/p&gt;
+
+&lt;p&gt;For anyone else suffering with this issue, you may be able to fix it by opening your &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.xcscheme&lt;/code&gt; file (sometimes embedded in the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.xcodeproj&lt;/code&gt; or &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.xcodeworkspace&lt;/code&gt; bundle) and adding the following xml when &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;locations.gpx&lt;/code&gt; is in the same folder as your &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.xcodeproj&lt;/code&gt;. Basically, the file path of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;identifier&lt;/code&gt; is in reference to the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.xcscheme&lt;/code&gt; file, which in my case is two folders deep inside the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.xcodeproj&lt;/code&gt; bundle.&lt;/p&gt;
+
+&lt;div class=&quot;language-xml highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nt&quot;&gt;&amp;lt;LocationScenarioReference&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;identifier =&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;../../locations.gpx&quot;&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;referenceType =&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;0&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;/LocationScenarioReference&amp;gt;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;The only way to tell if it’s working is by running it on the simulator and seeing it the location updates are played back as you’d expect. For me, Xcode still wouldn’t show the GPX file as active in its UI.&lt;/p&gt;
+
+&lt;p&gt;I don’t think your GPX file needs to be added to the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.xcodeproj&lt;/code&gt; but I’m not 100% sure.&lt;/p&gt;
+
+&lt;p&gt;Reference: &lt;a href=&quot;https://forums.developer.apple.com/forums/thread/686875&quot;&gt;Apple forums&lt;/a&gt;&lt;/p&gt;
+
+&lt;h1 id=&quot;conclusion&quot;&gt;Conclusion&lt;/h1&gt;
+
+&lt;p&gt;I hope this post will help those in the Core Location avant-garde.&lt;/p&gt;
+
+&lt;p&gt;Core Location is an important part of my app, but I still have many other features to manage, so although I’ll try to update this post with any new behavior I discover, I also welcome any well-researched tips or links to related blog posts. Feel free to send them over.&lt;/p&gt;
+</description>
+        <pubDate>Mon, 02 Dec 2024 16:20:00 -0600</pubDate>
+        <link>https://twocentstudios.com/2024/12/02/core-location-modern-api-tips/</link>
+        <guid isPermaLink="true">https://twocentstudios.com/2024/12/02/core-location-modern-api-tips/</guid>
+        
+        <category>apple</category>
+        
+        <category>ios</category>
+        
+        <category>ekibright</category>
+        
+        
+      </item>
     
       <item>
         <title>Eki Bright - Design of Station Detail</title>
@@ -4397,198 +4986,6 @@
         <category>ios</category>
         
         <category>countbiki</category>
-        
-        
-      </item>
-    
-      <item>
-        <title>Goalie - A Bespoke macOS App for Time Tracking</title>
-        <description>&lt;p&gt;I self-released a bespoke time tracking app for macOS called Goalie in July 2023. I also &lt;a href=&quot;https://github.com/twocentstudios/goalie&quot;&gt;open sourced&lt;/a&gt; it. It looks like this:&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/goalie-main.png&quot; width=&quot;&quot; height=&quot;350&quot; alt=&quot;Today view&quot; title=&quot;Today view&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Today view&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;Download the latest version directly from the GitHub &lt;a href=&quot;https://github.com/twocentstudios/goalie/releases&quot;&gt;releases page&lt;/a&gt; if you want to try it out.&lt;/p&gt;
-
-&lt;p&gt;In this post I’ll give some background behind the app and a discuss a few notes about the implementation, and talk about how I created the icon.&lt;/p&gt;
-
-&lt;h2 id=&quot;background&quot;&gt;Background&lt;/h2&gt;
-
-&lt;p&gt;I created Goalie as my first bite-sized project after &lt;a href=&quot;/2023/10/18/cookpad-retrospective/&quot;&gt;leaving Cookpad&lt;/a&gt; at the end of June 2023. Since I’d no longer be immersed in the Japanese language at the office every day, I wanted to make sure I was putting in a fair amount of time studying Japanese on my own.&lt;/p&gt;
-
-&lt;p&gt;I could have used one of a million time tracking apps focused on invoicing or Pomodoro, or even macOS’s built-in Screen Time feature. But this felt like a great opportunity to make a focused piece of software to my own specifications. I also wanted to do a SwiftUI-based macOS app to see where the framework was currently at. My past experience and impression from reading other developers’ thoughts was that SwiftUI on macOS has always significantly lagged behind iOS.&lt;/p&gt;
-
-&lt;h2 id=&quot;how-does-it-work&quot;&gt;How does it work?&lt;/h2&gt;
-
-&lt;h3 id=&quot;start-and-stop-the-timer&quot;&gt;Start and stop the timer&lt;/h3&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/goalie-main.png&quot; width=&quot;&quot; height=&quot;350&quot; alt=&quot;Today view&quot; title=&quot;Today view&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Today view&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;Clicking start starts a new “session”. Stopping ends the session.&lt;/p&gt;
-
-&lt;p&gt;Once you reach your daily goal, the goal button lights up green.&lt;/p&gt;
-
-&lt;h3 id=&quot;optionally-set-a-goal&quot;&gt;Optionally set a goal&lt;/h3&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/goalie-set-goal.png&quot; width=&quot;&quot; height=&quot;350&quot; alt=&quot;Goal view&quot; title=&quot;Goal view&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Goal view&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;Click the goal button and drag the slider to set your daily goal. Changing the goal sets the goal from that day forward until you change it again. It doesn’t affect past goals.&lt;/p&gt;
-
-&lt;h3 id=&quot;show-and-edit-daily-sessions&quot;&gt;Show and edit daily sessions&lt;/h3&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/goalie-main-expanded.png&quot; width=&quot;&quot; height=&quot;350&quot; alt=&quot;Today view with sessions expanded&quot; title=&quot;Today view with sessions expanded&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Today view with sessions expanded&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;Click the “sessions today” button to show other sessions from the day. If you want to remove one, click the “x” button to its left.&lt;/p&gt;
-
-&lt;h3 id=&quot;show-history&quot;&gt;Show history&lt;/h3&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/goalie-history.png&quot; width=&quot;&quot; height=&quot;350&quot; alt=&quot;History view&quot; title=&quot;History view&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;History view&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;Click the calendar to show a weekly summary of your goal. Click the arrows in the header to page back through the history by weeks.&lt;/p&gt;
-
-&lt;h2 id=&quot;implementation&quot;&gt;Implementation&lt;/h2&gt;
-
-&lt;h3 id=&quot;architecture&quot;&gt;Architecture&lt;/h3&gt;
-
-&lt;p&gt;Goalie targets the SwiftUI 4 APIs (i.e. macOS 13, iOS 16).&lt;/p&gt;
-
-&lt;p&gt;I decided to go with a vanilla SwiftUI architecture that separates the view and store. The one new thing I wanted to try was pointfreeco’s &lt;a href=&quot;https://github.com/pointfreeco/swift-dependencies&quot;&gt;swift-dependencies&lt;/a&gt; library to control my dependency layer.&lt;/p&gt;
-
-&lt;p&gt;Although this kind of app is often implemented as a &lt;a href=&quot;https://developer.apple.com/design/human-interface-guidelines/the-menu-bar#Menu-bar-extras&quot;&gt;menu bar extra&lt;/a&gt;, I preferred a simple app window I can keep off to the corner of my big monitor. My menu bar is already too full. As an app window I can keep it in my peripheral vision or hide it behind other windows easily. If I were to formally release this app for a more general audience, I’d probably add a menu bar extra though.&lt;/p&gt;
-
-&lt;p&gt;I used a ViewData abstraction to encapsulate some of the simple synchronous logic that turns raw model data into properties ready for the view to display directly.&lt;/p&gt;
-
-&lt;p&gt;For styling, I tried to use UIKit system colors and font styles as best I could to get a classic look and dark mode support. I picked a bluish purple for the tint color. I kept branding to an absolute minimum.&lt;/p&gt;
-
-&lt;p&gt;For persistence, I made my model layer &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Codable&lt;/code&gt; and save it to the application support directory. The app currently only supports one “topic”, but I’ve left the door open to make it a proper document-based app that allows having multiple topics going at the same time. At the moment that goes beyond my personal use case, so I haven’t explored it any more.&lt;/p&gt;
-
-&lt;h3 id=&quot;dates-and-times&quot;&gt;Dates and times&lt;/h3&gt;
-
-&lt;p&gt;Dates and times and calendars are well known to &lt;a href=&quot;https://infiniteundo.com/post/25326999628/falsehoods-programmers-believe-about-time&quot;&gt;cause headaches&lt;/a&gt; for developers.&lt;/p&gt;
-
-&lt;p&gt;Even for what I considered to be as close to a trivial time tracking code as one could write, I still immediately ran into gotchas. Especially when I went to write the history code.&lt;/p&gt;
-
-&lt;p&gt;I think any time you start to divide hours up into days with a beginning and end, you’ve got use a calendar and time zones, of which there are many. When you want to divide days up into weeks, the problems compound.&lt;/p&gt;
-
-&lt;p&gt;It doesn’t help that many of Apple’s underlying APIs for calendars silently use the user’s current locale and more specific localization settings under the hood. This usually great, but makes it incredibly difficult to introduce complexity to your codebase slowly, and also easily test each locale.&lt;/p&gt;
-
-&lt;p&gt;I made significant use of the new Foundation formatter APIs, which, in theory, wield like a Swiss Army Knife. But in practice, there’s no official documentation, the source is completely obscured by the heavy use of generics, and you still need detailed background knowledge of how the several dozen locales affect the results. Luckily &lt;a href=&quot;https://goshdarnformatstyle.com/&quot;&gt;Gosh Darn Format Style!&lt;/a&gt; helped take some of the edge off.&lt;/p&gt;
-
-&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;/// An example of calculating and displaying the duration of an ongoing session:&lt;/span&gt;
-
-&lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;now&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Date&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
-&lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;startOfDay&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;calendar&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;startOfDay&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;for&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;now&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-
-&lt;span class=&quot;c1&quot;&gt;// Enumerates all sessions to calculate the total number of seconds logged for the current day up to now.&lt;/span&gt;
-&lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;totalIntervalToday&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;topic&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;totalIntervalBetween&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;start&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;startOfDay&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;end&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;now&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-
-&lt;span class=&quot;c1&quot;&gt;// Convert to `Duration` type for formatting.&lt;/span&gt;
-&lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;duration&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Duration&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;seconds&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;totalIntervalToday&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-
-&lt;span class=&quot;c1&quot;&gt;// Produces something like 02:15:12 for a number of seconds.&lt;/span&gt;
-&lt;span class=&quot;c1&quot;&gt;// (This should probably explicitly reference `locale`).&lt;/span&gt;
-&lt;span class=&quot;n&quot;&gt;duration&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;formatted&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
-    &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;time&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
-        &lt;span class=&quot;nv&quot;&gt;pattern&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; 
-            &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;hourMinuteSecond&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
-                &lt;span class=&quot;nv&quot;&gt;padHourToLength&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; 
-                &lt;span class=&quot;nv&quot;&gt;fractionalSecondsLength&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; 
-                &lt;span class=&quot;nv&quot;&gt;roundFractionalSeconds&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;up&lt;/span&gt;
-            &lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-        &lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;What this all means is that this code is unfortunately not well tested in all locales, which is the main reason I haven’t pushed for a wide release.&lt;/p&gt;
-
-&lt;h3 id=&quot;data-modeling&quot;&gt;Data modeling&lt;/h3&gt;
-
-&lt;p&gt;I chose to model a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Topic&lt;/code&gt; (the highest level model) as such:&lt;/p&gt;
-
-&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Topic&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Equatable&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Identifiable&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Codable&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;id&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;UUID&lt;/span&gt;
-
-    &lt;span class=&quot;c1&quot;&gt;// non-nil when a session is active&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;activeSessionStart&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Date&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt; 
-
-    &lt;span class=&quot;c1&quot;&gt;// assume sorted past to future&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;sessions&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;IdentifiedArrayOf&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Session&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; 
-
-    &lt;span class=&quot;c1&quot;&gt;// assume sorted past to future, no two goals on the same day&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;goals&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;IdentifiedArrayOf&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Goal&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; 
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;This data is relatively normalized in that I have to parse it a bit to configure the view layer. Let me show the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Session&lt;/code&gt; and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Goal&lt;/code&gt; models before explaining further.&lt;/p&gt;
-
-&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Session&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Equatable&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Identifiable&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Codable&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;id&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;UUID&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;start&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Date&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;end&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Date&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-
-&lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Goal&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Equatable&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Identifiable&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Codable&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;id&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;UUID&lt;/span&gt;
-
-    &lt;span class=&quot;c1&quot;&gt;// always normalized to the start of a day (this has known issues with time zone changing)&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;start&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Date&lt;/span&gt; 
-
-    &lt;span class=&quot;c1&quot;&gt;// nil intentionally unsets a goal, always &amp;gt; 0&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;duration&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;TimeInterval&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt; 
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;The main consequence of logging only the start and end date of a session instead of updating the model to count up seconds is that the SwiftUI view updates independently from the model using the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;TimelineView&lt;/code&gt; primitive. If the computer is put to sleep or hidden, there won’t be any error in the model timekeeping. A downside is that using TimelineView offloads some necessary logic to the view layer, especially with date formatting. It’s a trade off.&lt;/p&gt;
-
-&lt;p&gt;This setup generally uses the least amount of data necessary to capture the full state and history of the system. I calculate the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Goal&lt;/code&gt; moving forward in time indefinitely or until the next &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Goal&lt;/code&gt; object is logged. This adds some calculation burden, but it more efficient in storage. Of course, if users were allowed to, for example, insert a new goal for just one day, it would make that insertion logic slightly more complicated in the code.&lt;/p&gt;
-
-&lt;p&gt;Solving the user-can-move-time-zones problem is tough enough that I haven’t bothered. There are a couple UX questions about the “correct” behavior that aren’t immediately obvious to me.&lt;/p&gt;
-
-&lt;h3 id=&quot;start-of-day&quot;&gt;Start of day&lt;/h3&gt;
-
-&lt;p&gt;The concept of “start of the current day” is important since the count up timer is always calculated based on that point in time.&lt;/p&gt;
-
-&lt;p&gt;I thought macOS would have some sort of globally posted notification for when the day rolls over, but I couldn’t find one. One lingering issue is that my workaround code for updating that very important start-of-day value wasn’t running reliably. I’m much more familiar with the iOS app lifecycle than the macOS lifecycle so it’s unclear to me whether it’s an alarm setting error on my part, or whether the app just isn’t firing the alarm and updating the date when it’s not the key window. Either way, I added a workaround in v1.0.1 to simply ensure the start-of-day value is updated when the window is foregrounded. I recognize it’s not a perfect fix, but one step at a time.&lt;/p&gt;
-
-&lt;h3 id=&quot;deployment&quot;&gt;Deployment&lt;/h3&gt;
-
-&lt;p&gt;I haven’t set up fastlane, CI, or even Xcodegen for this project. But it’s surprisingly straightforward to do your own manual app build, signing, and distribution through GitHub. Next on the list would be a proper App Store release or Sparkle integration.&lt;/p&gt;
-
-&lt;h2 id=&quot;designing-the-icon&quot;&gt;Designing the icon&lt;/h2&gt;
-
-&lt;p&gt;I was initially tempted to use Stable Diffusion to create a low-effort app icon. However, lately I’ve been dabbling in 3D modeling with Blender and I decided to see how far I could get using it to create an icon.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/goalie-icon.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;App icon&quot; title=&quot;App icon&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;App icon&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;It turns out, pretty far! I actually like this icon a lot and it didn’t take so long to put together.&lt;/p&gt;
-
-&lt;p&gt;If I were to log some more hours on it, I’d make it give it more of a macOS vibe by removing the heavy white border and try overhanging some of the foreground elements. Also I’d make some more custom low-res versions. Overall though, I find it easy to recognize in my dock when I need it.&lt;/p&gt;
-
-&lt;p&gt;Here are some more WIP shots of the design process:&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/goalie-icon-design-01.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Modeling the goal&quot; title=&quot;Modeling the goal&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Modeling the goal&lt;/div&gt;&lt;/div&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/goalie-icon-design-02.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;The grass and camera position&quot; title=&quot;The grass and camera position&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The grass and camera position&lt;/div&gt;&lt;/div&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/goalie-icon-design-03.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Setting up the shaders&quot; title=&quot;Setting up the shaders&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Setting up the shaders&lt;/div&gt;&lt;/div&gt;
-
-&lt;h2 id=&quot;conclusion&quot;&gt;Conclusion&lt;/h2&gt;
-
-&lt;p&gt;This app has been working well for me over the past month or two. It’s been great having some extra time to make some scratch-your-own-itch apps. There are plenty of ways I could improve the app, but for now, I’m satisfied with where it’s at and hope it continues to serve me well.&lt;/p&gt;
-
-&lt;p&gt;Here’s one more link to the source and releases: &lt;a href=&quot;https://github.com/twocentstudios/goalie&quot;&gt;twocentstudios/goalie&lt;/a&gt;.&lt;/p&gt;
-</description>
-        <pubDate>Fri, 20 Oct 2023 14:20:00 -0500</pubDate>
-        <link>https://twocentstudios.com/2023/10/20/goalie-time-tracking-macos/</link>
-        <guid isPermaLink="true">https://twocentstudios.com/2023/10/20/goalie-time-tracking-macos/</guid>
-        
-        <category>apple</category>
-        
-        <category>ios</category>
-        
-        <category>app</category>
         
         
       </item>
