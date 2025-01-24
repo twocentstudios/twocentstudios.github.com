@@ -2,7 +2,7 @@
 layout: post
 title: "Eki Bright - The Case for DIY Routing"
 date: 2025-01-24 16:43:00
-image: /images/
+image: /images/eki-bright-diy-route-example.jpg
 tags: ekibright
 ---
 
