@@ -6,7 +6,7 @@ image: /images/eki-bright-diy-route-example.jpg
 tags: ekibright
 ---
 
-When I set out making the first prototypes of Eki Bright, my train timetables iOS app for the Tokyo metropolitan area, I had no intentions of tackling routing. In fact, that was one of the selling points; the lack of routing, like lack of maps, made it visually and conceptually simpler for solving the problem of getting the next train departure time at any particular station.
+When I set out making the first prototypes of [Eki Bright](https://twocentstudios.com/2024/07/27/eki-bright-tokyo-area-train-timetables/), my train timetables iOS app for the Tokyo metropolitan area, I had no intentions of tackling routing. In fact, that was one of the selling points; the lack of routing, like lack of maps, made it visually and conceptually simpler for solving the problem of getting the next train departure time at any particular station.
 
 {% caption_img /images/eki-bright-diy-route-example.jpg h300 A DIY route in Eki Bright as it appears in the bottom Route Bar %}
 
