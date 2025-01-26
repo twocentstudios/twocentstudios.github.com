@@ -5,9 +5,156 @@
     <description>A coding blog covering iOS, Swift, and other programming topics.</description>
     <link>https://twocentstudios.com/blog/tags/ios/index.html</link>
     <atom:link href="https://twocentstudios.com/blog/tags/ios/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Fri, 24 Jan 2025 02:18:36 -0600</pubDate>
-    <lastBuildDate>Fri, 24 Jan 2025 02:18:36 -0600</lastBuildDate>
+    <pubDate>Sun, 26 Jan 2025 04:34:43 -0600</pubDate>
+    <lastBuildDate>Sun, 26 Jan 2025 04:34:43 -0600</lastBuildDate>
     <generator>Jekyll v3.9.3</generator>
+    
+      <item>
+        <title>Fixing the Crash: ActivityKit is Unavailable on macOS</title>
+        <description>&lt;p&gt;If you have an iOS app that:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;supports “Designed for iPad” or “Designed for iPhone” and is on the Mac App Store (or is otherwise available on macOS)&lt;/li&gt;
+  &lt;li&gt;uses the ActivityKit framework&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Then your app will crash on macOS when you reference an ActivityKit symbol (through at least iOS 18.2).&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/activity-kit-macos-crash.png&quot; width=&quot;&quot; height=&quot;250&quot; alt=&quot;Welcome to Crashville&quot; title=&quot;Welcome to Crashville&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Welcome to Crashville&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;How to fix it:&lt;/p&gt;
+
+&lt;h3 id=&quot;link-activitykitframework-as-optional&quot;&gt;Link ActivityKit.framework as optional&lt;/h3&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Go to project -&amp;gt; app target -&amp;gt; &lt;em&gt;Link Binary With Libraries&lt;/em&gt;&lt;/li&gt;
+  &lt;li&gt;Add ActivityKit.framework&lt;/li&gt;
+  &lt;li&gt;Set ActivityKit.framework’s status as &lt;em&gt;Optional&lt;/em&gt;&lt;/li&gt;
+  &lt;li&gt;Repeat for the widget app extension target as well&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/activity-kit-macos-link-optional.png&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Link ActivityKit.framework as optional in app target and widget target&quot; title=&quot;Link ActivityKit.framework as optional in app target and widget target&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Link ActivityKit.framework as optional in app target and widget target&lt;/div&gt;&lt;/div&gt;
+
+&lt;h3 id=&quot;avoid-calling-activitykit-symbols-in-your-code&quot;&gt;Avoid calling ActivityKit symbols in your code&lt;/h3&gt;
+
+&lt;p&gt;There are a lot of different ways to conditionally reference ActivityKit symbols.&lt;/p&gt;
+
+&lt;p&gt;Conditional referencing must be done at runtime since even when running on macOS the compiler directive &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;#if canImport(ActivityKit)&lt;/code&gt; will still evaluate to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;true&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;Use &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;if !ProcessInfo.processInfo.isiOSAppOnMac&lt;/code&gt; to short circuit code that shouldn’t run on macOS.&lt;/p&gt;
+
+&lt;p&gt;In the case of &lt;a href=&quot;https://twocentstudios.com/2024/07/27/eki-bright-tokyo-area-train-timetables/&quot;&gt;Eki Bright&lt;/a&gt;, I have my direct usage of ActivityKit behind a dependency, defined and configured with the &lt;a href=&quot;https://github.com/pointfreeco/swift-dependencies&quot;&gt;swift-dependencies&lt;/a&gt; library. This allows me to swap out a fully functional dependency with a dummy dependency at launch time.&lt;/p&gt;
+
+&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;/// LiveActivityClient.swift&lt;/span&gt;
+&lt;span class=&quot;kd&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ActivityKit&lt;/span&gt;
+&lt;span class=&quot;kd&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ComposableArchitecture&lt;/span&gt;
+&lt;span class=&quot;kd&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;WidgetKit&lt;/span&gt;
+
+&lt;span class=&quot;kd&quot;&gt;typealias&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ActivityID&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// Same as `Activity.ID?`&lt;/span&gt;
+
+&lt;span class=&quot;kd&quot;&gt;@DependencyClient&lt;/span&gt;
+&lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;LiveActivityClient&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;startOrReplaceRouteActivity&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;@Sendable&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;_&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;routeItem&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;RouteItem&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;as&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ync&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;throws&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ActivityID&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;updateOrEndRouteActivity&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;@Sendable&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;_&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;now&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Date&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;as&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ync&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Void&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;kd&quot;&gt;extension&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;LiveActivityClient&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;DependencyKey&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;static&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;liveValue&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;Self&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;init&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
+        &lt;span class=&quot;nv&quot;&gt;startOrReplaceRouteActivity&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;routeItem&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;segmentActivePhases&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;now&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt;
+            &lt;span class=&quot;c1&quot;&gt;/// Call real implementation of `Activity.request`, etc.&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;},&lt;/span&gt;
+        &lt;span class=&quot;nv&quot;&gt;updateOrEndRouteActivity&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;now&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt;
+            &lt;span class=&quot;c1&quot;&gt;/// Call real implementation of `activity.update`, `activity.end`, etc.&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+
+    &lt;span class=&quot;kd&quot;&gt;static&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;unavailableValue&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;Self&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;init&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
+        &lt;span class=&quot;nv&quot;&gt;startOrReplaceRouteActivity&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;_&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;nil&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;},&lt;/span&gt;
+        &lt;span class=&quot;nv&quot;&gt;updateOrEndRouteActivity&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;_&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Then in the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;App.swift&lt;/code&gt; file I use &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.unavailableValue&lt;/code&gt; instead of the default &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.liveValue&lt;/code&gt; on macOS:&lt;/p&gt;
+
+&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;@main&lt;/span&gt;
+&lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;TrainApp&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;App&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;static&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;store&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;
+        &lt;span class=&quot;kt&quot;&gt;Store&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;initialState&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;init&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;())&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;kt&quot;&gt;RootFeature&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;withDependencies&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ProcessInfo&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;processInfo&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;isiOSAppOnMac&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+                &lt;span class=&quot;nv&quot;&gt;$0&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;liveActivity&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;unavailableValue&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// ActivityKit framework crashes on macOS&lt;/span&gt;
+            &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;body&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;some&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Scene&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;kt&quot;&gt;WindowGroup&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;kt&quot;&gt;RootView&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;store&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;Self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;store&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;I can then use &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;@Dependency(\.liveActivity) var liveActivity&lt;/code&gt; in any one of my features.&lt;/p&gt;
+
+&lt;p&gt;Of course, the implementation of your &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;unavailableValue&lt;/code&gt; can also throw specific errors handled by your feature code. In my case, the LiveActivity silently failing on macOS is acceptable.&lt;/p&gt;
+
+&lt;h3 id=&quot;hardening-your-widget-extension&quot;&gt;Hardening your widget extension&lt;/h3&gt;
+
+&lt;p&gt;If you’re using ActivityKit.framework, then you may have a widget extension that configures the LiveActivity. In my case, I have a normal widget as well as a LiveActivity widget. In order to conditionally enable the LiveActivity widget on non-macOS platforms, I’m using the following technique from &lt;a href=&quot;https://stackoverflow.com/a/72807287&quot;&gt;this Stack Overflow post&lt;/a&gt;:&lt;/p&gt;
+
+&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;@main&lt;/span&gt;
+&lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;WidgetLauncher&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;static&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;main&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ProcessInfo&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;processInfo&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;isiOSAppOnMac&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;kt&quot;&gt;WidgetOnlyBundle&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;main&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;else&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;kt&quot;&gt;WidgetActivityBundle&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;main&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;WidgetOnlyBundle&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;WidgetBundle&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;body&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;some&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Widget&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;kt&quot;&gt;StationBookmarkWidget&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;WidgetActivityBundle&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;WidgetBundle&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;body&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;some&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Widget&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;kt&quot;&gt;StationBookmarkWidget&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+        &lt;span class=&quot;kt&quot;&gt;RouteActivityWidget&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;However, there are some bugs with macOS widgets in Xcode 16.2 that I haven’t found a workaround for yet. I can’t 100% say this technique works, but if the default configuration doesn’t work for you, try the above and see if it helps. I’m still &lt;a href=&quot;https://hachyderm.io/@twocentstudios/113887068005326578&quot;&gt;pretty confused&lt;/a&gt; about how to efficiently test and debug widgets on macOS, so I don’t have a lot of guidance for this part.&lt;/p&gt;
+
+&lt;h3 id=&quot;references&quot;&gt;References&lt;/h3&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;a href=&quot;https://stackoverflow.com/q/75589730&quot;&gt;Stack Overflow: Launching a designed for iPad mac app crashes at startup: Library not loaded&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://stackoverflow.com/a/72807287&quot;&gt;Stack Overflow: WidgetBundle return widgets based on some logic&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://forums.developer.apple.com/forums/thread/773125&quot;&gt;Apple Developer Forums: WidgetKit Simulator with Intent Configurations&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://developer.apple.com/documentation/widgetkit/debugging-widgets&quot;&gt;Apple Developer Documentation: Debugging Widgets&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+        <pubDate>Sat, 25 Jan 2025 05:10:00 -0600</pubDate>
+        <link>https://twocentstudios.com/2025/01/25/activitykit-unavailable-on-macos/</link>
+        <guid isPermaLink="true">https://twocentstudios.com/2025/01/25/activitykit-unavailable-on-macos/</guid>
+        
+        <category>apple</category>
+        
+        <category>ios</category>
+        
+        <category>ekibright</category>
+        
+        
+      </item>
     
       <item>
         <title>Core Location Modern API Tips</title>
@@ -4766,226 +4913,6 @@ kMDItemKind                        &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt
         <category>countbiki</category>
         
         <category>tca</category>
-        
-        
-      </item>
-    
-      <item>
-        <title>Count Biki - App and Character Design</title>
-        <description>&lt;p&gt;Continuing my series of posts about my latest iOS app, Count Biki, I’ll discuss the planning, design, and character design details.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/count-biki-app-icon.png&quot; width=&quot;&quot; height=&quot;300&quot; alt=&quot;Count Biki app icon, featuring the character Count Biki&quot; title=&quot;Count Biki app icon, featuring the character Count Biki&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Count Biki app icon, featuring the character Count Biki&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;Please check out the other posts in the series:&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;&lt;strong&gt;&lt;a href=&quot;/2023/10/29/count-biki-japanese-numbers/&quot;&gt;Count Biki - Drill Japanese Numbers&lt;/a&gt;&lt;/strong&gt; - the motivation behind the app and the solution I’ve begun to explore from the learner (user) perspective&lt;/li&gt;
-  &lt;li&gt;&lt;strong&gt;This post&lt;/strong&gt; - the design process and specifics of creating the Count Biki character&lt;/li&gt;
-  &lt;li&gt;&lt;strong&gt;&lt;a href=&quot;/2023/10/31/count-biki-developing-the-app-for-ios/&quot;&gt;Count Biki - Developing the App for iOS&lt;/a&gt;&lt;/strong&gt; - the high-level implementation details&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;Japanese learners can download the app from the &lt;a href=&quot;https://apps.apple.com/us/app/count-biki/id6463796779&quot;&gt;App Store&lt;/a&gt;.&lt;/p&gt;
-
-&lt;p&gt;Like many of my other apps, Count Biki is open source on &lt;a href=&quot;https://github.com/twocentstudios/count-biki&quot;&gt;GitHub&lt;/a&gt;.&lt;/p&gt;
-
-&lt;h2 id=&quot;planning&quot;&gt;Planning&lt;/h2&gt;
-
-&lt;p&gt;I made a big list of every number-adjacent concept in the language and the different modes I wanted to practice.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/count-biki-enumerating-concepts.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Brainstorming which topics I could cover and how I could test them&quot; title=&quot;Brainstorming which topics I could cover and how I could test them&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Brainstorming which topics I could cover and how I could test them&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;This was a bit overwhelming at first.&lt;/p&gt;
-
-&lt;p&gt;I did a bit of prototyping in a Swift Playground to figure out which of Apple’s APIs – speech recognition, numeral-to-text transliteration – were feasible to use.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/count-biki-swift-playground-prototyping.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Starting in Swift Playgrounds to test out the system APIs&quot; title=&quot;Starting in Swift Playgrounds to test out the system APIs&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Starting in Swift Playgrounds to test out the system APIs&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;I decided to start with the flow of:&lt;/p&gt;
-
-&lt;ol&gt;
-  &lt;li&gt;generate a random number&lt;/li&gt;
-  &lt;li&gt;speak the number out loud&lt;/li&gt;
-  &lt;li&gt;the user types the number on a 10-key keyboard&lt;/li&gt;
-&lt;/ol&gt;
-
-&lt;p&gt;My first sketches looked like this:&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/count-biki-sketch-listening-quiz.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;The first UI sketch in my notebook&quot; title=&quot;The first UI sketch in my notebook&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The first UI sketch in my notebook&lt;/div&gt;&lt;/div&gt;
-
-&lt;h2 id=&quot;prototyping&quot;&gt;Prototyping&lt;/h2&gt;
-
-&lt;p&gt;And the first prototype looked like this:&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/count-biki-first-prototype.jpg&quot; width=&quot;&quot; height=&quot;450&quot; alt=&quot;The first prototype&quot; title=&quot;The first prototype&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The first prototype&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;I made a fun little animated barber pole to imply that review sessions were infinite:&lt;/p&gt;
-
-&lt;video src=&quot;/images/count-biki-animated-barber-pole.mp4&quot; controls=&quot;&quot; preload=&quot;none&quot; poster=&quot;/images/count-biki-animated-barber-pole-poster.png&quot; width=&quot;100%&quot;&gt;&lt;/video&gt;
-
-&lt;p&gt;And cleaned up the design a little bit:&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/count-biki-second-prototype.jpg&quot; width=&quot;&quot; height=&quot;450&quot; alt=&quot;The cleaned up prototype&quot; title=&quot;The cleaned up prototype&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The cleaned up prototype&lt;/div&gt;&lt;/div&gt;
-
-&lt;h2 id=&quot;designing-an-original-character&quot;&gt;Designing an original character&lt;/h2&gt;
-
-&lt;p&gt;You may have noticed in the top right corner of the above sketch, there’s a little character I marked “The Count”.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/count-biki-sketch-the-count.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;A sketch of The Count&quot; title=&quot;A sketch of The Count&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;A sketch of The Count&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;I wanted to riff on Duolingo’s use of characters to motivate the learner and keep the app lighthearted. Duolingo &lt;a href=&quot;https://blog.duolingo.com/world-character-visemes/&quot;&gt;uses a tool&lt;/a&gt; called &lt;a href=&quot;https://rive.app/&quot;&gt;Rive&lt;/a&gt; (although I didn’t know this at the time). I’ve been dabbling in &lt;a href=&quot;https://blender.org&quot;&gt;Blender&lt;/a&gt; for 3D modeling for the last few years, so I thought I’d experiment with creating a 3D modeled character with animations and rendering it in the app with Apple’s native &lt;a href=&quot;https://developer.apple.com/documentation/scenekit/&quot;&gt;SceneKit&lt;/a&gt; framework.&lt;/p&gt;
-
-&lt;p&gt;Of course, this little maneuver set me back a couple weeks 😅. And to be clear, adding an animated character to the app was way more of an “I’m interested in learning something new” rather than “the app will be useless without this feature”. However, this did make naming and branding and making an icon for the app way easier!&lt;/p&gt;
-
-&lt;h3 id=&quot;animated-character-proof-of-concept&quot;&gt;Animated character proof of concept&lt;/h3&gt;
-
-&lt;p&gt;Before spending an awful lot of time perfecting a character and its animations, I wanted to get a proof of concept working that covered the entire use case end-to-end, namely:&lt;/p&gt;
-
-&lt;ol&gt;
-  &lt;li&gt;a 3D-character model&lt;/li&gt;
-  &lt;li&gt;textured with either physically-based shaders or UV-unwrapping on a bitmap&lt;/li&gt;
-  &lt;li&gt;rigged with at least one bone&lt;/li&gt;
-  &lt;li&gt;with multiple animations defined in Blender&lt;/li&gt;
-  &lt;li&gt;with lighting and a camera&lt;/li&gt;
-  &lt;li&gt;exportable from Blender and importable with Xcode&lt;/li&gt;
-  &lt;li&gt;displayable in a SceneView in SwiftUI&lt;/li&gt;
-  &lt;li&gt;with each animation triggerable on demand from a SwiftUI button&lt;/li&gt;
-&lt;/ol&gt;
-
-&lt;p&gt;This is a lot of new concepts for me! Some of the Blender tasks I’d done once or twice under the guidance of random YouTube tutorials, but the SceneKit integration was completely unknown.&lt;/p&gt;
-
-&lt;p&gt;I started by modeling a character with only 3 objects, UV-unwrapping him, and painting the texture.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/count-biki-blender-proto-modeling.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Modeling and UV-unwrapping the prototype character&quot; title=&quot;Modeling and UV-unwrapping the prototype character&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Modeling and UV-unwrapping the prototype character&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;Then I rigged him with a single bone and added 3 animations (doing my best to understand how the non-linear animation editor worked).&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/count-biki-blender-proto-animation.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Rigging and animating the prototype character&quot; title=&quot;Rigging and animating the prototype character&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Rigging and animating the prototype character&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;Here’s the “you got the question incorrect” animation rendered out of Blender for reference:&lt;/p&gt;
-
-&lt;video src=&quot;/images/count-biki-blender-proto-incorrect.mp4&quot; controls=&quot;&quot; preload=&quot;none&quot; poster=&quot;/images/count-biki-blender-proto-incorrect-poster.png&quot; width=&quot;100%&quot;&gt;&lt;/video&gt;
-
-&lt;p&gt;Next was probably the hardest part of the entire process: the exporting/importing dance. Like &lt;a href=&quot;https://xkcd.com/979/&quot;&gt;DenverCoder9&lt;/a&gt;, I found only a &lt;a href=&quot;https://developer.apple.com/forums/thread/79321?answerId=751657022#751657022&quot;&gt;few faint traces&lt;/a&gt; on the internet of how I’d go about getting both a model and its separate animations out of Blender and into SceneKit. I naively followed the instructions from the thread, made some tweaks to the SceneKit file, tweaked the camera and lighting, mocked out a SwiftUI view with some buttons, and the result was:&lt;/p&gt;
-
-&lt;video src=&quot;/images/count-biki-blender-proto-swiftui.mp4&quot; controls=&quot;&quot; preload=&quot;none&quot; poster=&quot;/images/count-biki-blender-proto-swiftui-poster.png&quot; height=&quot;600&quot;&gt;&lt;/video&gt;
-
-&lt;p&gt;I noticed that the animations were more subdued in app version than they were in the Blender version. I wasn’t sure why, but I decided to move on since it was a gamble of whether the subtle differences in the production version of the model would surface the same problem.&lt;/p&gt;
-
-&lt;h3 id=&quot;animated-character-production-version&quot;&gt;Animated character production version&lt;/h3&gt;
-
-&lt;p&gt;Now that I had a working proof of concept, it was time to do the hard work of actually designing the real character.&lt;/p&gt;
-
-&lt;p&gt;First, I did a short interlude of powering through a few character modeling and animation tutorials on YouTube. &lt;a href=&quot;https://www.youtube.com/watch?v=PTWV67qUX2k&quot;&gt;This long tutorial&lt;/a&gt; from Imphenzia was particularly influential and useful.&lt;/p&gt;
-
-&lt;p&gt;Like many ideas, I can’t say exactly where or when all the parts of the Count Biki branding came to me. I knew I wanted to riff on the &lt;a href=&quot;https://en.wikipedia.org/wiki/Count_von_Count&quot;&gt;Count von Count&lt;/a&gt; character from Sesame Street. However, I also wanted to incorporate Japanese counters. I always thought 匹 (ひき hiki), the small animals counter, was kind of cute sounding. The version for 3 small animals is pronounced biki (びき).&lt;/p&gt;
-
-&lt;p&gt;Why a rabbit? I can’t remember for sure, but the ironic part is that rabbits are traditionally &lt;em&gt;not&lt;/em&gt; counted with 匹 (ひき hiki), but 羽 (わ wa) due to &lt;a href=&quot;https://www.tofugu.com/japanese/japanese-counter-wa/#rabbits&quot;&gt;rumored historical reasons&lt;/a&gt;. Regardless, a cute, vampiric rabbit felt like a unique take.&lt;/p&gt;
-
-&lt;p&gt;I did some Dribbble hunting for references and mood board creation, did a few notebook sketches (that are much too embarrassing to post publicly), then began 3D modeling.&lt;/p&gt;
-
-&lt;p&gt;My first attempt was… not great. Luckily, a few friends gave some very useful feedback and my next iteration was much better.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/count-biki-first-render.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Revised model of Count Biki rendered in Blender&quot; title=&quot;Revised model of Count Biki rendered in Blender&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Revised model of Count Biki rendered in Blender&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;I specifically modeled Biki sitting so I could simplify the rig. Rigging – adding virtual bones that stretch the polygons and are easier to animate – was my next step.&lt;/p&gt;
-
-&lt;p&gt;I can’t emphasize enough how complex rigging is. It may seem like an afterthought, but it’s an entire division at 3D studios, and for good reason. Below is Biki’s humble rig showing his suit in weight painting mode.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/count-biki-rig.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Biki with his rig bones visible&quot; title=&quot;Biki with his rig bones visible&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Biki with his rig bones visible&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;With all that in place, I moved on to the animation part. Even though I’d never done keyframe animation in Blender for a 3D character before, getting the basics done felt surprisingly natural to me. This was probably the most fun part of the entire process.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/count-biki-blender-animation.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Animating Biki one keyframe at a time&quot; title=&quot;Animating Biki one keyframe at a time&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Animating Biki one keyframe at a time&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;The final result for the “you got the answer correct” animation looked like this straight out of Blender:&lt;/p&gt;
-
-&lt;video src=&quot;/images/count-biki-blender-animation-correct.mov&quot; controls=&quot;&quot; preload=&quot;none&quot; poster=&quot;/images/count-biki-blender-animation-correct-poster.png&quot; width=&quot;100%&quot;&gt;&lt;/video&gt;
-
-&lt;p&gt;Getting the model and animations out of Blender… this part was dreadful. I tried so hard to use Apple’s newest, most blessed workflow of USDZ, but some combination of the Blender exporter and the Xcode importer made this impossible. In the end, I used the same combination of one DAE (Collada) file with just the model and armature, and one DAE file per animation.&lt;/p&gt;
-
-&lt;p&gt;I imported the model file into Xcode, creating a new SceneKit scene, then painstakingly re-added the camera, lights, and materials, all of which look and work differently (read: worse) in SceneKit than they do in Blender. I couldn’t get Biki to look as clean in the app as he does in Blender.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/count-biki-model-scn.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Biki moved into his new home in an SCN file&quot; title=&quot;Biki moved into his new home in an SCN file&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Biki moved into his new home in an SCN file&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;I exported the animations next. When playing them back in the app, I found that some polygons on the suit were getting caught during the animation. This was somewhat expected due to my inexperience modeling and rigging and weight painting. I powered my way through these issues and ended up with the final result: Biki in the test app, playing his idle animation and reacting to questions being answered right and wrong.&lt;/p&gt;
-
-&lt;video src=&quot;/images/count-biki-test-app-demo.mp4&quot; controls=&quot;&quot; preload=&quot;none&quot; poster=&quot;/images/count-biki-test-app-demo-poster.png&quot; height=&quot;720&quot;&gt;&lt;/video&gt;
-
-&lt;h2 id=&quot;app-ux-design&quot;&gt;App UX Design&lt;/h2&gt;
-
-&lt;p&gt;After integrating Biki and doing a little cleanup, the listening quiz screen looked like this:&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/count-biki-v01-listening-quiz.png&quot; width=&quot;&quot; height=&quot;700&quot; alt=&quot;A beta version of the listening quiz screen including an integrated Biki&quot; title=&quot;A beta version of the listening quiz screen including an integrated Biki&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;A beta version of the listening quiz screen including an integrated Biki&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;The listening quiz screen was still the “base” app screen. You could switch to a short list of topics from a modal settings screen, but since this didn’t seem sustainable for the dozens of topics I wanted to target for v1.0 release, I started preparing to have a new root app screen.&lt;/p&gt;
-
-&lt;p&gt;For this app, I was basically doing the static UI design step straight in SwiftUI. The main reason for this is that I was primarily using the build-in SwiftUI components and styling for lists, etc., and therefore it would have taken me more time to make pixel perfect mockup in Figma than it took to throw together some SwiftUI code in Xcode.&lt;/p&gt;
-
-&lt;p&gt;I made a topic categories view mockup with some additional features I didn’t plan on implementing right away. I did this in order to see how the screen could adapt to these planned features. The v1.0 doesn’t include favorites, recent topics, or the reading skill.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/count-biki-v01-topic-categories-planning.png&quot; width=&quot;&quot; height=&quot;700&quot; alt=&quot;A SwiftUI-based mockup for the topic categories screen with some yet-to-be-developed features&quot; title=&quot;A SwiftUI-based mockup for the topic categories screen with some yet-to-be-developed features&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;A SwiftUI-based mockup for the topic categories screen with some yet-to-be-developed features&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;Back on the listening screen, I had to make some changes to support the screen no longer being the root of the app. The session settings screen needed a way to exit the current session.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/count-biki-v01-session-settings.png&quot; width=&quot;&quot; height=&quot;700&quot; alt=&quot;The session settings screen with an end session button&quot; title=&quot;The session settings screen with an end session button&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The session settings screen with an end session button&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;Next, I added more voice settings for rate and pitch. And a test voice button for easy preview.&lt;/p&gt;
-
-&lt;p&gt;Adding a very simple counter for correct and incorrect answers to the listening quiz screen and the session settings screen rounded out all the main UI elements I wanted for the first release.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/count-biki-v02-listening-quiz.png&quot; width=&quot;&quot; height=&quot;700&quot; alt=&quot;The listening quiz screen for v1.0&quot; title=&quot;The listening quiz screen for v1.0&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The listening quiz screen for v1.0&lt;/div&gt;&lt;/div&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/count-biki-v02-session-settings.png&quot; width=&quot;&quot; height=&quot;700&quot; alt=&quot;The session settings screen for v1.0&quot; title=&quot;The session settings screen for v1.0&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The session settings screen for v1.0&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;Although I knew it’d delay my first release, I wanted to get an app info screen out of the way. This was mostly because I wanted my in app purchase tip jar system in place out of the gate.&lt;/p&gt;
-
-&lt;p&gt;I approached the design of the info screen by checking out what was included in some similar apps, doing a rough UI sketch in my notebook, then jumping straight into coding it up in SwiftUI.&lt;/p&gt;
-
-&lt;p&gt;I landed on this:&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/count-biki-v1-info-screen-top.png&quot; width=&quot;&quot; height=&quot;700&quot; alt=&quot;The top of the app info screen for v1.0&quot; title=&quot;The top of the app info screen for v1.0&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The top of the app info screen for v1.0&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;I followed the same design process for the in app purchase tip jar screen. I got really into fleshing out the “lore” of the app, and I really wanted to 3D model all the whimsical objects I introduced, but I knew it’d take some time and wouldn’t really impact my first batch of users enough to warrant delaying the release any further.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/count-biki-v1-transylvania-tier.png&quot; width=&quot;&quot; height=&quot;700&quot; alt=&quot;The unlocked variant of the Transylvania Tier screen for v1.0&quot; title=&quot;The unlocked variant of the Transylvania Tier screen for v1.0&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The unlocked variant of the Transylvania Tier screen for v1.0&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;With the info screen complete, I was ready to release the app! Well, I still needed to do all the App Store preparation: designing screenshots, writing the description, etc.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/count-biki-v1-app-screenshots-figma.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Putting together the app screenshots in Figma&quot; title=&quot;Putting together the app screenshots in Figma&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Putting together the app screenshots in Figma&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;My first submission was denied by the App Store reviewers. (I think it was an issue with the in-review in app purchases not being available from the Store Kit 2 API on the reviewer’s device). I resubmitted with a few more guards, and luckily it was approved and released!&lt;/p&gt;
-
-&lt;p&gt;Some initial user feedback helped me realize that my “end session” button shouldn’t be so buried, especially in the infinite session mode. I did some design concepting with paper sketches and directly in SwiftUI (which in retrospect was probably slower than leaning on Figma).&lt;/p&gt;
-
-&lt;p&gt;Honestly, the listening quiz screen is very busy. It has a lot of elements and it’s tough to look at it with fresh eyes to understand which parts could be removed.&lt;/p&gt;
-
-&lt;p&gt;I think that including the Count Biki avatar makes fitting in the other elements more difficult, but I’m planning to keep him in for at least a few versions to gather feedback about him.&lt;/p&gt;
-
-&lt;p&gt;I’d also like to remove the progress bar completely, but when I add time attack mode, I think it will be necessary, so I don’t want to eliminate the progress bar now and have to solve the design problem again later.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/count-biki-v1-listening-quiz-rejected-concepts.jpg&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Rejected concepts for redesigning the listening quiz&quot; title=&quot;Rejected concepts for redesigning the listening quiz&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Rejected concepts for redesigning the listening quiz&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;In the end, I moved the progress bar closer to the keyboard and surfaced the end session and settings buttons with clear labels.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/count-biki-v1-listening-quiz.png&quot; width=&quot;&quot; height=&quot;700&quot; alt=&quot;Updated design of the listening quiz for v1.1 to allow quicker access to ending the current session&quot; title=&quot;Updated design of the listening quiz for v1.1 to allow quicker access to ending the current session&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Updated design of the listening quiz for v1.1 to allow quicker access to ending the current session&lt;/div&gt;&lt;/div&gt;
-
-&lt;h2 id=&quot;conclusion&quot;&gt;Conclusion&lt;/h2&gt;
-
-&lt;p&gt;This is just the beginning of the design journey. I’ve intentionally leaned towards a generic iOS design, but I would love to make the app more stylized and personable. New topics and new features will undoubtedly require rethinking my original design assumptions. And I’ll need to decide whether I want to double-down on the character Count Biki and add more animations, new outfits, etc.&lt;/p&gt;
-
-&lt;p&gt;Thanks for reading this design walkthrough, and if you’re a Japanese learner or developer, please check out the app on the &lt;a href=&quot;https://apps.apple.com/us/app/count-biki/id6463796779&quot;&gt;App Store&lt;/a&gt; or the source on &lt;a href=&quot;https://github.com/twocentstudios/count-biki&quot;&gt;GitHub&lt;/a&gt;.&lt;/p&gt;
-
-&lt;p&gt;The next post in the series is &lt;a href=&quot;/2023/10/31/count-biki-developing-the-app-for-ios/&quot;&gt;Count Biki - Developing the App for iOS&lt;/a&gt;.&lt;/p&gt;
-</description>
-        <pubDate>Mon, 30 Oct 2023 14:36:58 -0500</pubDate>
-        <link>https://twocentstudios.com/2023/10/30/count-biki-app-and-character-design/</link>
-        <guid isPermaLink="true">https://twocentstudios.com/2023/10/30/count-biki-app-and-character-design/</guid>
-        
-        <category>apple</category>
-        
-        <category>ios</category>
-        
-        <category>countbiki</category>
         
         
       </item>
