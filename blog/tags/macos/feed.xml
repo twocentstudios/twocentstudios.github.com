@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>twocentstudios</title>
+    <description>A coding blog covering iOS, Swift, and other programming topics.</description>
+    <link>https://twocentstudios.com/blog/tags/macos/index.html</link>
+    <atom:link href="https://twocentstudios.com/blog/tags/macos/feed.xml" rel="self" type="application/rss+xml"/>
+    <pubDate>Sun, 26 Jan 2025 22:25:28 -0600</pubDate>
+    <lastBuildDate>Sun, 26 Jan 2025 22:25:28 -0600</lastBuildDate>
+    <generator>Jekyll v3.9.3</generator>
+    
+      <item>
+        <title>Using a USB Soundcard with Video Conferencing Apps on macOS</title>
+        <description>&lt;h2 id=&quot;problem&quot;&gt;Problem&lt;/h2&gt;
+
+&lt;p&gt;Video conferencing apps (e.g. Zoom, Google Meet) generally do not support USB soundcards (e.g. UA Volt, Focusrite Scarlett) with &lt;strong&gt;multiple inputs&lt;/strong&gt; on macOS the way proper recording software does. It’s possible to select the entire soundcard input, but not specify which of the multiple inputs will be used, or how they will be combined.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/soundcard-macos-zoom-volt.png&quot; width=&quot;&quot; height=&quot;450&quot; alt=&quot;Zoom settings for my UA Volt as an input do not allow specifying which input channel to use&quot; title=&quot;Zoom settings for my UA Volt as an input do not allow specifying which input channel to use&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Zoom settings for my UA Volt as an input do not allow specifying which input channel to use&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;For example, I have a 2-input &lt;a href=&quot;https://www.uaudio.com/uad-plugins/volt-2-usb.html&quot;&gt;UA Volt 2&lt;/a&gt;. I plug a Rode NT2-A condenser mic into &lt;em&gt;INPUT 1&lt;/em&gt; via an XLR cable and use the Volt’s 48V phantom power. I often use &lt;em&gt;INPUT 2&lt;/em&gt; for direct input electric guitar recording.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/soundcard-macos-volt-device.jpg&quot; width=&quot;&quot; height=&quot;250&quot; alt=&quot;Your soundcard probably looks something like this UA Volt 2&quot; title=&quot;Your soundcard probably looks something like this UA Volt 2&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Your soundcard probably looks something like this UA Volt 2&lt;/div&gt;&lt;/div&gt;
+
+&lt;h2 id=&quot;solution&quot;&gt;Solution&lt;/h2&gt;
+
+&lt;p&gt;The solution I’ve found through random forum posts is annoying, but free and reasonable until the day that video conferencing providers or Apple support this use case natively.&lt;/p&gt;
+
+&lt;h3 id=&quot;step-1-download-ladiocast-and-blackhole&quot;&gt;Step 1: Download LadioCast and BlackHole&lt;/h3&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://apps.apple.com/us/app/ladiocast/id411213048?mt=12&quot;&gt;LadioCast&lt;/a&gt; does the input mixing. It’s available for free on the Mac App Store. While running, it sits in your Menu Bar and has a popup window for configuration.&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://github.com/ExistentialAudio/BlackHole&quot;&gt;BlackHole&lt;/a&gt; acts as an virtual audio input that other apps can use, but LadioCast can write to using real device input. The BlackHole &lt;strong&gt;2ch variant is fine&lt;/strong&gt; for this use case. Follow the directions on the GitHub page to download the installer or use Homebrew.&lt;/p&gt;
+
+&lt;p&gt;I open LadioCast before I start a video call and close it after I finish because it adds the “an app is using mic” indicator to the macOS menu bar I find annoying. If you don’t care, it doesn’t hurt to leave it open all the time.&lt;/p&gt;
+
+&lt;p&gt;BlackHole runs in the background all the time with no issues.&lt;/p&gt;
+
+&lt;p&gt;To be safe, restart your Mac after installing these, running them, giving permissions, etc.&lt;/p&gt;
+
+&lt;h3 id=&quot;step-2-configure-ladiocast&quot;&gt;Step 2: Configure LadioCast&lt;/h3&gt;
+
+&lt;p&gt;For my use case, I want to have my UA Volt input 1 act as a mono input. In other words, it should have the same level on both the left and right stereo input channel. I’ve configured it as so:&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/soundcard-macos-ladiocast-setup.png&quot; width=&quot;&quot; height=&quot;200&quot; alt=&quot;Ladiocast settings I use for routing input 1 of my UA Volt as a mono source&quot; title=&quot;Ladiocast settings I use for routing input 1 of my UA Volt as a mono source&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Ladiocast settings I use for routing input 1 of my UA Volt as a mono source&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;The important parts are that I’ve:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;selected Volt 2 as the input device&lt;/li&gt;
+  &lt;li&gt;set channel 1 to both left and right&lt;/li&gt;
+  &lt;li&gt;set the output to be +0db&lt;/li&gt;
+  &lt;li&gt;set the output to &lt;em&gt;main&lt;/em&gt;, highlighted red&lt;/li&gt;
+  &lt;li&gt;set the main output to device Blackhole 2ch&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;If your configuration is set up correctly, you should see green bars on both sides firing while using your mic.&lt;/p&gt;
+
+&lt;p&gt;You should only need to do this configuration once. Your settings will be saved after you close and reopen LadioCast.&lt;/p&gt;
+
+&lt;h3 id=&quot;step-3-configure-your-video-conferencing-software&quot;&gt;Step 3: Configure your video conferencing software&lt;/h3&gt;
+
+&lt;p&gt;For this example I’m using Zoom.&lt;/p&gt;
+
+&lt;p&gt;Set your microphone to &lt;em&gt;BlackHole 2ch&lt;/em&gt; and you should be good to go.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/soundcard-macos-zoom-setup.png&quot; width=&quot;&quot; height=&quot;450&quot; alt=&quot;Zoom configured to use the LadioCast -&amp;gt; Blackhole setup&quot; title=&quot;Zoom configured to use the LadioCast -&amp;gt; Blackhole setup&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Zoom configured to use the LadioCast -&amp;gt; Blackhole setup&lt;/div&gt;&lt;/div&gt;
+
+&lt;h2 id=&quot;other-notes&quot;&gt;Other notes&lt;/h2&gt;
+
+&lt;p&gt;This setup should also work if you want to record audio using simple apps with the same input selection limitations like QuickTime.&lt;/p&gt;
+
+&lt;p&gt;As mentioned in the references below, there are other ways to accomplish this using heavier software packages like GarageBand, Logic Pro, OBS, etc., but in my experience, the method in this post is the most lightweight I’ve found so far.&lt;/p&gt;
+
+&lt;p&gt;I thought macOS’s built-in Audio MIDI Setup app could handle this via the &lt;em&gt;Create Aggregate Device&lt;/em&gt; function, but it cannot.&lt;/p&gt;
+
+&lt;p&gt;If you’ve come across better ways, feel free to email me and I’ll update this post.&lt;/p&gt;
+
+&lt;h2 id=&quot;references&quot;&gt;References&lt;/h2&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;a href=&quot;https://apple.stackexchange.com/questions/400173/how-can-i-mix-multi-channel-input-device-down-to-mono?rq=1&quot;&gt;macos - How can I mix multi-channel input device down to mono? - Ask Different&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://apple.stackexchange.com/questions/37538/how-can-i-force-mac-os-x-to-treat-my-mackie-onyx-blackjack-as-a-mono-input-devic?rq=1&quot;&gt;macos - How can I force Mac OS X to treat my Mackie Onyx Blackjack as a mono input device? - Ask Different&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://github.com/ExistentialAudio/BlackHole&quot;&gt;ExistentialAudio/BlackHole: BlackHole is a modern macOS audio loopback driver that allows applications to pass audio to other applications with zero additional latency.&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://existential.audio/howto/StreamFromLogicProXtoZoom.php&quot;&gt;Existential Audio - How To Stream From Logic Pro X to Zoom&lt;/a&gt;&lt;a href=&quot;https://existential.audio/howto/StreamFromLogicProXtoZoom.php&quot;&gt;Existential Audio - How To Stream From Logic Pro X to Zoom&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://support.apple.com/en-us/102171&quot;&gt;Create an Aggregate Device to combine multiple audio devices - Apple Support&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://apps.apple.com/us/app/ladiocast/id411213048?mt=12&quot;&gt;LadioCast on the Mac App Store&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+        <pubDate>Mon, 27 Jan 2025 06:43:00 -0600</pubDate>
+        <link>https://twocentstudios.com/2025/01/27/usb-soundcard-macos-video-conferencing/</link>
+        <guid isPermaLink="true">https://twocentstudios.com/2025/01/27/usb-soundcard-macos-video-conferencing/</guid>
+        
+        <category>macOS</category>
+        
+        
+      </item>
+    
+  </channel>
+</rss>
