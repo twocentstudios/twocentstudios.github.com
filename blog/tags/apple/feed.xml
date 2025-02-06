@@ -5,9 +5,90 @@
     <description>A coding blog covering iOS, Swift, and other programming topics.</description>
     <link>https://twocentstudios.com/blog/tags/apple/index.html</link>
     <atom:link href="https://twocentstudios.com/blog/tags/apple/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Sun, 26 Jan 2025 22:25:28 -0600</pubDate>
-    <lastBuildDate>Sun, 26 Jan 2025 22:25:28 -0600</lastBuildDate>
+    <pubDate>Thu, 06 Feb 2025 09:50:15 -0600</pubDate>
+    <lastBuildDate>Thu, 06 Feb 2025 09:50:15 -0600</lastBuildDate>
     <generator>Jekyll v3.9.3</generator>
+    
+      <item>
+        <title>AVCaptureMovieFileOutput recordedDuration Value is Inaccurate</title>
+        <description>&lt;p&gt;In the AVFoundation framework on Apple platforms, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;AVCaptureMovieFileOutput&lt;/code&gt; (or more accurately, the abstract base class &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;AVCaptureFileOutput&lt;/code&gt;) has a property called &lt;a href=&quot;https://developer.apple.com/documentation/avfoundation/avcapturefileoutput/1389028-recordedduration&quot;&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;recordedDuration&lt;/code&gt;&lt;/a&gt;.&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;If recording is in progress, this property returns the total time recorded so far.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Like in the &lt;a href=&quot;https://developer.apple.com/documentation/avfoundation/capture_setup/avcam_building_a_camera_app&quot;&gt;AVCam sample project&lt;/a&gt;, this property is often used to show the elapsed time to the user while they’re recording a video at a base increment of seconds.&lt;/p&gt;
+
+&lt;p&gt;Through testing, I’ve found this value is only accurate to around 0.06 seconds or 16 frames per second (FPS). If you try to sample the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;recordedDuration&lt;/code&gt; property faster, say at 30 FPS, you’ll see repeated values.&lt;/p&gt;
+
+&lt;p&gt;If you need more accuracy than this, you can use one of the following strategies.&lt;/p&gt;
+
+&lt;h3 id=&quot;calculating-an-accurate-recordedduration-on-ios-182&quot;&gt;Calculating an accurate &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;recordedDuration&lt;/code&gt; on iOS 18.2+&lt;/h3&gt;
+
+&lt;p&gt;On iOS 18.2+, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;AVCaptureFileOutputRecordingDelegate&lt;/code&gt; includes the method:&lt;/p&gt;
+
+&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;optional&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;fileOutput&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;_&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;output&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;AVCaptureFileOutput&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;didStartRecordingTo&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;fileURL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;URL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;startPTS&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;CMTime&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;from&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;connections&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;AVCaptureConnection&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;])&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;startPTS&lt;/code&gt; stands for “start presentation timestamp”. It looks like a random &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CMTime&lt;/code&gt;, but it’s in reference to a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CMClock&lt;/code&gt; instance. In this case &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;AVCaptureSession&lt;/code&gt;’s &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;synchronizationClock&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;To get the amount of time elapsed since recording, you can therefore use:&lt;/p&gt;
+
+&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;recordedDurationCMTime&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;captureSession&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;synchronizationClock&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;!.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;time&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;startPTS&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;recordedDurationSeconds&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;recordedDurationCMTime&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;seconds&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;h3 id=&quot;calculating-mostly-accurate-recordedduration-before-ios-182&quot;&gt;Calculating mostly accurate &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;recordedDuration&lt;/code&gt; before iOS 18.2&lt;/h3&gt;
+
+&lt;p&gt;Older versions of iOS don’t include the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;startPTS&lt;/code&gt; variant of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;fileOutput(didStartRecordingTo:)&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;Therefore, the best we can do is capture our own &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;startPTS&lt;/code&gt; from the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;synchronizationClock&lt;/code&gt; at the moment of the delegate callback:&lt;/p&gt;
+
+&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;fileOutput&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;_&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;output&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;AVCaptureFileOutput&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;didStartRecordingTo&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;fileURL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;URL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;from&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;connections&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;AVCaptureConnection&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;])&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;startPTS&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;captureSession&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;synchronizationClock&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;!.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;time&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Then use the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;recordedDurationCMTime&lt;/code&gt; code from the above section.&lt;/p&gt;
+
+&lt;h3 id=&quot;calculating-a-slightly-less-accurate-recordedduration-converting-to-the-host-time-clock&quot;&gt;Calculating a slightly less accurate &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;recordedDuration&lt;/code&gt; converting to the host time clock&lt;/h3&gt;
+
+&lt;p&gt;Using &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;AVCaptureSession.synchronizationClock&lt;/code&gt; in other parts of your app might be inconvenient. You can instead convert the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;startPTS&lt;/code&gt; to be in relation to the host time clock. Then, in the rest of your app, you can reference the singleton &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CMClock.hostTimeClock&lt;/code&gt; more easily.&lt;/p&gt;
+
+&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;hostClockStartPTS&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;captureSession&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;synchronizationClock&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;!.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;convertTime&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;startPTS&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;to&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;CMClock&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;hostTimeClock&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;In my testing, the synchronizationClock and hostTimeClock are very close in value already. Essentially less than 1 ms difference or around 1000 FPS. However, they are different clocks and the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CMClock&lt;/code&gt; utilities report that they can “drift”.&lt;/p&gt;
+
+&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nf&quot;&gt;print&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;captureSession&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;synchronizationClock&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;!.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;mightDrift&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;relativeTo&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;CMClock&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;hostTimeClock&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// true&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Depending on your use case, you may want to avoid using the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;hostTimeClock&lt;/code&gt; and instead continue to reference &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;captureSession.synchronizationClock&lt;/code&gt;. &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CMClock&lt;/code&gt; does not have a lot of documentation, so I can’t make any accuracy guarantees.&lt;/p&gt;
+
+&lt;h3 id=&quot;calculating-the-most-accurate-recordedduration-using-avcapturevideodataoutput&quot;&gt;Calculating the most accurate &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;recordedDuration&lt;/code&gt; using &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;AVCaptureVideoDataOutput&lt;/code&gt;&lt;/h3&gt;
+
+&lt;p&gt;You can get the absolute best accuracy by not using &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;AVCaptureMovieFileOutput&lt;/code&gt; and instead using &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;AVCaptureVideoDataOutput&lt;/code&gt; to get the presentation timestamps of the raw frame buffers yourself. This is left as an exercise to the reader. The implementation is much more involved, but it’s not uncommon to attempt.&lt;/p&gt;
+
+&lt;p&gt;You can view an example of working with presentation timestamps in this way in the docs for &lt;a href=&quot;https://developer.apple.com/documentation/avfoundation/avcapturesession/3915813-synchronizationclock&quot;&gt;AVCaptureSession.synchronizationClock&lt;/a&gt;.&lt;/p&gt;
+
+</description>
+        <pubDate>Thu, 06 Feb 2025 17:10:00 -0600</pubDate>
+        <link>https://twocentstudios.com/2025/02/06/avcapturemoviefileoutput-recordedduration-is-inaccurate/</link>
+        <guid isPermaLink="true">https://twocentstudios.com/2025/02/06/avcapturemoviefileoutput-recordedduration-is-inaccurate/</guid>
+        
+        <category>apple</category>
+        
+        <category>ios</category>
+        
+        <category>handcrankcamera</category>
+        
+        
+      </item>
     
       <item>
         <title>Fixing the Crash: ActivityKit is Unavailable on macOS</title>
@@ -4179,738 +4260,6 @@ kMDItemKind                        &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt
         <category>apple</category>
         
         <category>ios</category>
-        
-        <category>tca</category>
-        
-        
-      </item>
-    
-      <item>
-        <title>Count Biki - Developing the App for iOS</title>
-        <description>&lt;p&gt;Continuing my series of posts about my latest iOS app, Count Biki, I’ll discuss the more interesting parts of app at version 1.1.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/count-biki-app-icon.png&quot; width=&quot;&quot; height=&quot;300&quot; alt=&quot;Count Biki app icon, featuring the character Count Biki&quot; title=&quot;Count Biki app icon, featuring the character Count Biki&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Count Biki app icon, featuring the character Count Biki&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;Please check out the other posts in the series:&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;&lt;strong&gt;&lt;a href=&quot;/2023/10/29/count-biki-japanese-numbers/&quot;&gt;Count Biki - Drill Japanese Numbers&lt;/a&gt;&lt;/strong&gt; - the motivation behind the app and the solution I’ve begun to explore from the learner (user) perspective&lt;/li&gt;
-  &lt;li&gt;&lt;strong&gt;&lt;a href=&quot;/2023/10/30/count-biki-app-and-character-design/&quot;&gt;Count Biki - App and Character Design&lt;/a&gt;&lt;/strong&gt; - the design process and specifics of creating the Count Biki character&lt;/li&gt;
-  &lt;li&gt;&lt;strong&gt;This post&lt;/strong&gt; - a guided tour of the codebase and implementation details&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;Japanese learners can download the app from the &lt;a href=&quot;https://apps.apple.com/us/app/count-biki/id6463796779&quot;&gt;App Store&lt;/a&gt;.&lt;/p&gt;
-
-&lt;p&gt;Like many of my other apps, Count Biki is open source on &lt;a href=&quot;https://github.com/twocentstudios/count-biki&quot;&gt;GitHub&lt;/a&gt;. The commit/tag referenced in this post is &lt;a href=&quot;https://github.com/twocentstudios/count-biki/tree/v1.1&quot;&gt;v1.1&lt;/a&gt;, so the main branch will not fully align with the post’s content.&lt;/p&gt;
-
-&lt;h2 id=&quot;stats&quot;&gt;Stats&lt;/h2&gt;
-
-&lt;p&gt;Before starting digging into the details, I’ll go over some stats about the app for context.&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;The app has 6 screens (5 with behavior).&lt;/li&gt;
-  &lt;li&gt;The app has around 3600 lines of Swift code.&lt;/li&gt;
-  &lt;li&gt;The app has a minimum deployment target of iOS 16.4.&lt;/li&gt;
-  &lt;li&gt;The app supports only portrait mode and the iPhone form factor. There’s no technical reason for this. It was mostly to reduce complexity, promotional material requirements, and testing for the first release.&lt;/li&gt;
-  &lt;li&gt;The app uses about 5 packages via Swift Package Manager: ComposableArchitecture, Collections, AsyncExtensions, DependenciesAdditions, ConfettiSwiftUI. ComposableArchitecture relies on several other pointfreeco packages, which I also use directly.&lt;/li&gt;
-  &lt;li&gt;The app uses a basic xcodeproj file.&lt;/li&gt;
-  &lt;li&gt;The app was archived with Xcode 17.0.1, which includes support for Swift 5.9, iOS 17, and (colloquially) SwiftUI 4, although I don’t use any iOS 17 specific APIs.&lt;/li&gt;
-  &lt;li&gt;The app has a SwiftUI &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;App&lt;/code&gt; entrypoint.&lt;/li&gt;
-  &lt;li&gt;The only network requests made by the app are via StoreKit 2.&lt;/li&gt;
-  &lt;li&gt;The app embeds an &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;scnassets&lt;/code&gt; file for SceneKit-related files.&lt;/li&gt;
-  &lt;li&gt;The app uses the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;licenseplist&lt;/code&gt; library installed via Homebrew for generating a license file for packages.&lt;/li&gt;
-  &lt;li&gt;The app embeds no analytics framework.&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h2 id=&quot;architecture&quot;&gt;Architecture&lt;/h2&gt;
-
-&lt;p&gt;The app is built all-in with &lt;a href=&quot;https://github.com/pointfreeco/swift-composable-architecture&quot;&gt;The Composable Architecture (TCA) 1.0&lt;/a&gt;. This includes passing and scoping &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Store&lt;/code&gt;s through the view layer, creating &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Reducer&lt;/code&gt;s with &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;State&lt;/code&gt; and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Action&lt;/code&gt;s for most screens, and creating dependencies in the style of the &lt;a href=&quot;https://github.com/pointfreeco/swift-dependencies&quot;&gt;swift-dependencies&lt;/a&gt; library.&lt;/p&gt;
-
-&lt;p&gt;This post is not a tutorial on using TCA. However, I will do my best to describe my experience learning TCA by writing this app, and mention the convenient points and the points that tripped me up while developing it.&lt;/p&gt;
-
-&lt;p&gt;I started rewriting an existing app with TCA back in 2020, but never finished it. I got stuck due to performance problems and the rewrite fell off my radar. Since then I’ve used SwiftUI extensively for both production and prototyping. The architecture of most of those projects has been either loose MVVM or everything-in-the-view style. This includes &lt;a href=&quot;https://github.com/twocentstudios/goalie&quot;&gt;Goalie&lt;/a&gt;, which I consider MVVM style.&lt;/p&gt;
-
-&lt;p&gt;I started off development for Count Biki by prototyping the &lt;a href=&quot;https://github.com/twocentstudios/count-biki/blob/8195c7fde3703166d5b3a41743c8a19486448a14/count/Feature/ListeningQuizFeature.swift&quot;&gt;listening quiz feature&lt;/a&gt;. This is the core of the app and the most complex feature (although the in app purchase support is arguably more complex).&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/count-biki-v1-listening-quiz.png&quot; width=&quot;&quot; height=&quot;700&quot; alt=&quot;the listening quiz screen&quot; title=&quot;the listening quiz screen&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;the listening quiz screen&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;Even as the most complex screen, it’s not particularly complex. But getting started was relatively slow because I was referencing the TCA 1.0 &lt;a href=&quot;https://www.pointfree.co/collections/composable-architecture/composable-architecture-1-0&quot;&gt;guided tour videos&lt;/a&gt; (as they were being released), the TCA &lt;a href=&quot;https://github.com/pointfreeco/swift-composable-architecture/tree/main/Examples/CaseStudies/SwiftUICaseStudies&quot;&gt;case studies&lt;/a&gt;, and the OSS &lt;a href=&quot;https://github.com/pointfreeco/isowords/&quot;&gt;isowords&lt;/a&gt; codebase.&lt;/p&gt;
-
-&lt;p&gt;Even though TCA is more ergonomic than it was when I first started experimenting with it a few years ago, there were a lot more concepts to digest this time around, particularly around navigation. &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;BindableAction&lt;/code&gt;, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;@Bindable&lt;/code&gt;, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;@PresentationState&lt;/code&gt;, the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Destination&lt;/code&gt; reducer pattern.&lt;/p&gt;
-
-&lt;h3 id=&quot;shared-state&quot;&gt;Shared state&lt;/h3&gt;
-
-&lt;p&gt;The most difficult conceptual problem I had with TCA was the techniques for sharing state across an app.&lt;/p&gt;
-
-&lt;h4 id=&quot;parent-and-child-reducer-intercommunication&quot;&gt;Parent and child reducer intercommunication&lt;/h4&gt;
-
-&lt;p&gt;My preconception of Redux-like systems such as TCA was that there was one big bag of state and any reducer could grab any part of it. The scoping part of TCA – paring down the state and actions to hand off to a subsystem – tripped me up. It wasn’t clear to me whether changes to state made in child stores would change that same state in the parent part. In other words, I think it’s similar to the sort of implicit learning curve there was while learning SwiftUI, namely:&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;how does a parent communicate to a child?&lt;/li&gt;
-  &lt;li&gt;how does a child communicate to a parent?&lt;/li&gt;
-  &lt;li&gt;where is the source of truth for a piece of state?&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;I know the answers to the SwiftUI variant of these questions much better than the TCA variant, but they were certainly hard-won answers.&lt;/p&gt;
-
-&lt;h4 id=&quot;quiz-and-settings-example--source-of-truth-in-parent-state&quot;&gt;Quiz and settings example – source of truth in parent state&lt;/h4&gt;
-
-&lt;p&gt;A simple example of my sharing state confusion is with my listening quiz and settings screen. The system has the following behavior:&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;The quiz screen needs read-only settings values.&lt;/li&gt;
-  &lt;li&gt;The settings screen allows read/write access to settings values.&lt;/li&gt;
-  &lt;li&gt;The quiz presents the settings screen modally.&lt;/li&gt;
-  &lt;li&gt;The settings values are persisted to disk.&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/count-biki-v1-quiz-settings-parent-child.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;The quiz and settings screens (parent and child)&quot; title=&quot;The quiz and settings screens (parent and child)&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The quiz and settings screens (parent and child)&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;In view terms, the quiz screen is the parent and the settings screen is the child. But the quiz reducer needs access to the settings values immediately, which means that settings state can’t be modeled as optional view state. The “is the settings view visible?” part of the state and the “what are the settings?” part of the state can’t be combined in this case.&lt;/p&gt;
-
-&lt;p&gt;I modeled this by:&lt;/p&gt;
-
-&lt;ol&gt;
-  &lt;li&gt;having a full copy of the settings values owned by the quiz reducer.&lt;/li&gt;
-  &lt;li&gt;keeping a copy of the settings values as optional destination state.&lt;/li&gt;
-  &lt;li&gt;loading the settings values from the dependency on initialization of the quiz state.&lt;/li&gt;
-  &lt;li&gt;copying the current settings values to the settings state when the settings button is tapped as representation that the view is presented.&lt;/li&gt;
-  &lt;li&gt;updating the “source of truth” version of settings values when the settings reducer sends an updated version, and ensuring the latest value is persisted to disk.&lt;/li&gt;
-&lt;/ol&gt;
-
-&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ListeningQuizFeature&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Reducer&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;State&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Equatable&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;speechSettings&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;SpeechSynthesisSettings&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// 1&lt;/span&gt;
-        &lt;span class=&quot;kd&quot;&gt;@PresentationState&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;destination&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Destination&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;State&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// 2&lt;/span&gt;
-        &lt;span class=&quot;c1&quot;&gt;// ...&lt;/span&gt;
-
-        &lt;span class=&quot;nf&quot;&gt;init&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-            &lt;span class=&quot;kd&quot;&gt;@Dependency(\.speechSynthesisSettingsClient)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;speechSettingsClient&lt;/span&gt;
-            &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;speechSettings&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;speechSettingsClient&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;get&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// 3&lt;/span&gt;
-        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-    
-    &lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Destination&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Reducer&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-        &lt;span class=&quot;kd&quot;&gt;enum&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;State&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Equatable&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-            &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;settings&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;SettingsFeature&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;State&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// 2&lt;/span&gt;
-        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-        &lt;span class=&quot;c1&quot;&gt;// ...&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-
-    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;body&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;some&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ReducerOf&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;Self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-        &lt;span class=&quot;kt&quot;&gt;Reduce&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;state&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;action&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt;
-            &lt;span class=&quot;k&quot;&gt;switch&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;action&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-
-            &lt;span class=&quot;c1&quot;&gt;// 4&lt;/span&gt;
-            &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;titleButtonTapped&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
-                &lt;span class=&quot;n&quot;&gt;state&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;destination&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;settings&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;init&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
-                    &lt;span class=&quot;nv&quot;&gt;topicID&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;state&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;topicID&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
-                    &lt;span class=&quot;nv&quot;&gt;speechSettings&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;state&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;speechSettings&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
-                    &lt;span class=&quot;nv&quot;&gt;sessionChallenges&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;state&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;completedChallenges&lt;/span&gt;
-                &lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;
-                &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;none&lt;/span&gt;
-            
-            &lt;span class=&quot;c1&quot;&gt;// 5&lt;/span&gt;
-            &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;destination&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;presented&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;settings&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;delegate&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;speechSettingsUpdated&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;newSpeechSettings&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))))):&lt;/span&gt;
-                &lt;span class=&quot;n&quot;&gt;state&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;speechSettings&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;newSpeechSettings&lt;/span&gt;
-                &lt;span class=&quot;k&quot;&gt;do&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-                    &lt;span class=&quot;k&quot;&gt;try&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;speechSettingsClient&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;set&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;newSpeechSettings&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-                &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;catch&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-                    &lt;span class=&quot;kt&quot;&gt;XCTFail&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;SpeechSettingsClient unexpectedly failed to write&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-                &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-                &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;none&lt;/span&gt;
-            &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-    &lt;span class=&quot;c1&quot;&gt;// ...&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;This strategy of keeping source-of-truth state in a parent, passing a copy to the child reducer, and playing back changes from child to parent to ensure the state is in sync is seemingly the strategy shared in the &lt;a href=&quot;https://github.com/pointfreeco/swift-composable-architecture/blob/9b0f600253f467f61cbd53f60ccc243cc4ff27cd/Examples/SyncUps/SyncUps/AppFeature.swift#L28-L73&quot;&gt;SyncUps&lt;/a&gt; example app.&lt;/p&gt;
-
-&lt;p&gt;I’m not 100% happy with my strategy. For this simple app, it’s fine. But it perhaps unnecessarily spreads responsibility for the settings across multiple reducers.&lt;/p&gt;
-
-&lt;h4 id=&quot;about-and-iap-example---source-of-truth-in-a-dependency&quot;&gt;About and IAP example - source-of-truth in a dependency&lt;/h4&gt;
-
-&lt;p&gt;Another way to go about sharing state between parent, child, or sibling reducers is:&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;keep the source-of-truth state in a dependency&lt;/li&gt;
-  &lt;li&gt;mutating the state through the dependency&lt;/li&gt;
-  &lt;li&gt;set up a one-way binding to copy the dependency state into the reducer state from any number of reducers&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;My first impression of this strategy was that it goes against the ethos of TCA/Redux. Especially for cases where the state is &lt;em&gt;not&lt;/em&gt; owned by an external subsystem under only loose control by the application, like from an Apple framework. However, reading &lt;a href=&quot;https://github.com/pointfreeco/swift-composable-architecture/discussions/2320&quot;&gt;this discussion&lt;/a&gt; made me consider dependency-managed state as more often the preferred option.&lt;/p&gt;
-
-&lt;p&gt;Concretely, this means a dependency with a get/set/observe interface. As a very generic example:&lt;/p&gt;
-
-&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;CurrentUserClient&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-  &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;currentUser&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;User&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;
-  &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;setCurrentUser&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;User&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;as&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ync&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Void&lt;/span&gt;
-  &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;currentUserStream&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;as&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ync&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;AsyncStream&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;User&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;Then each reducer that reads/writes/observes the current user can use &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CurrentUserClient&lt;/code&gt; like so:&lt;/p&gt;
-
-&lt;ol&gt;
-  &lt;li&gt;Create a reducer-local derived copy of the state as &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;var currentUser: User?&lt;/code&gt; in &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;UserReducer.State&lt;/code&gt;.&lt;/li&gt;
-  &lt;li&gt;In &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;State.init&lt;/code&gt;, read in &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;currentUser&lt;/code&gt; from the dependency.&lt;/li&gt;
-  &lt;li&gt;Add a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Action.setCurrentUser(User)&lt;/code&gt; action.&lt;/li&gt;
-  &lt;li&gt;On receiving the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;setCurrentUser&lt;/code&gt; action, update the state iff the current user has changed.&lt;/li&gt;
-  &lt;li&gt;Add a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.onChangeOf(\.currentUser)&lt;/code&gt; modifier to the reducer to write updated values to the dependency’s setter.&lt;/li&gt;
-  &lt;li&gt;In &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Action.onTask&lt;/code&gt;, set up a long running async stream that sends new values back into the system as actions through &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Action.setCurrentUser&lt;/code&gt;.&lt;/li&gt;
-  &lt;li&gt;The reducer should make changes to its local copy of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;State.currentUser&lt;/code&gt;.&lt;/li&gt;
-&lt;/ol&gt;
-
-&lt;p&gt;The get/set/observe-style state allows both push and pull state management in reducers. For example, a pull-style read-only version would only need (1) (2), then an &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Action.refreshButtonTapped&lt;/code&gt; that copies the current value from the dependency into local reducer state.&lt;/p&gt;
-
-&lt;p&gt;Unfortunately, I’ve yet to find a more automated version of encapsulating the read/write/observe system.&lt;/p&gt;
-
-&lt;p&gt;The closest I got to implementing this type of system was while implementing my &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;About&lt;/code&gt; and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;TransylvaniaTier&lt;/code&gt; (In app purchase) features.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/count-biki-v1-about-tier-parent-child.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;the about and IAP screens (as parent and child)&quot; title=&quot;the about and IAP screens (as parent and child)&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;the about and IAP screens (as parent and child)&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;The about screen is the parent. The IAP screen is the child. The about screen observes the purchases state from a dependency and updates its own state and its child state in response to changes. The key parts of the &lt;a href=&quot;https://github.com/twocentstudios/count-biki/blob/8195c7fde3703166d5b3a41743c8a19486448a14/count/Feature/AboutFeature.swift&quot;&gt;full reducer&lt;/a&gt; are clipped out below:&lt;/p&gt;
-
-&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;AboutFeature&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Reducer&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;State&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Equatable&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;appIcon&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;AppIconFeature&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;State&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;transylvaniaTier&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;TransylvaniaTierFeature&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;State&lt;/span&gt;
-
-        &lt;span class=&quot;nf&quot;&gt;init&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-            &lt;span class=&quot;kd&quot;&gt;@Dependency(\.tierProductsClient.purchaseHistory)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;purchaseHistory&lt;/span&gt;
-            &lt;span class=&quot;n&quot;&gt;appIcon&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;init&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;isAppIconChangingAvailable&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;purchaseHistory&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;status&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;unlocked&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-            &lt;span class=&quot;n&quot;&gt;transylvaniaTier&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;init&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;tierHistory&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;purchaseHistory&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;())&lt;/span&gt;
-        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-
-    &lt;span class=&quot;c1&quot;&gt;// ...&lt;/span&gt;
-
-    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;body&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;some&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ReducerOf&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;Self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-        &lt;span class=&quot;c1&quot;&gt;// ...&lt;/span&gt;
-        &lt;span class=&quot;kt&quot;&gt;Reduce&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;state&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;action&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt;
-            &lt;span class=&quot;k&quot;&gt;switch&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;action&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-            &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;onPurchaseHistoryUpdated&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;newHistory&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;):&lt;/span&gt;
-                &lt;span class=&quot;n&quot;&gt;state&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;appIcon&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;isAppIconChangingAvailable&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;newHistory&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;status&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;unlocked&lt;/span&gt;
-                &lt;span class=&quot;n&quot;&gt;state&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;transylvaniaTier&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tierHistory&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;newHistory&lt;/span&gt;
-                &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;none&lt;/span&gt;
-            &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;onTask&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
-                &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;run&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;send&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt;
-                    &lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;await&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;newHistory&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;purchaseHistoryStream&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-                        &lt;span class=&quot;n&quot;&gt;await&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;send&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;onPurchaseHistoryUpdated&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;newHistory&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;
-                    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-                &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-            &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-            &lt;span class=&quot;c1&quot;&gt;// ...&lt;/span&gt;
-        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;I will probably refactor the about and IAP reducers to be more independent in the future. I will probably want to present the IAP screen from more places throughout the app, which will require it to handle its own purchase history state updates.&lt;/p&gt;
-
-&lt;h4 id=&quot;reducers-with-no-state-sharing&quot;&gt;Reducers with no state sharing&lt;/h4&gt;
-
-&lt;p&gt;For the record, I found writing TCA reducers without inter-system state sharing to be very straightforward and exhibit all the benefits of TCA (testability, side-effect isolation, previewability, etc.). Of course, this app has not had multiple contributors nor survived years of releases, so take my experience as you will.&lt;/p&gt;
-
-&lt;h4 id=&quot;sidebar-starting-with-one-reducer&quot;&gt;Sidebar: starting with one reducer&lt;/h4&gt;
-
-&lt;p&gt;During the exploratory phase of development, what I really wanted to do was have one reducer with one state and one action enum shared across all the views in my app. Of course this doesn’t scale and perhaps would cause performance problems sooner than later. But after I was more confident in the view structure, it’d be obvious how to split up the reducers and communicate state changes between them, avoiding a lot of rework. I’m sure there’s a way to do this, but while I was learning TCA I didn’t feel confident enough to stray from the case studies.&lt;/p&gt;
-
-&lt;h3 id=&quot;navigation&quot;&gt;Navigation&lt;/h3&gt;
-
-&lt;p&gt;Navigation was one of the later additions to the TCA 1.0 release. Since the app only has a few screens, and I did at least a little reconfiguration of the UX, I never felt like I put the navigation tools through their paces.&lt;/p&gt;
-
-&lt;h4 id=&quot;going-by-the-book&quot;&gt;Going “by-the-book”&lt;/h4&gt;
-
-&lt;p&gt;I consider navigation “by-the-book” as storing each piece of navigation state in the reducer, usually with a separate &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Destination&lt;/code&gt; reducer.&lt;/p&gt;
-
-&lt;p&gt;I did this in a few places in the app that have obvious boundaries of behavior: The topics screen, the quiz screen, the settings screen, the about screen, etc.&lt;/p&gt;
-
-&lt;p&gt;However, in a few places within &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;NavigationStack&lt;/code&gt;, I decided to take the lazy way and use raw &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;NavigationLink&lt;/code&gt;s. The obvious downside to this is that the navigation state can only be directly manipulated by the user and not programmatically (notably through deep linking). In practice, I haven’t found this to be an issue yet. I found the TCA &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;NavigationStack&lt;/code&gt; modeling to feel &lt;em&gt;heavy&lt;/em&gt; enough at the outset that I didn’t want to delay my release implementing it by-the-book.&lt;/p&gt;
-
-&lt;p&gt;The topics screen in particular felt like there was little benefit in creating an additional reducer to handle a screen of static data. I wanted the flexibility to keep all that topic view structure and logic in one place, even though in reality it’s covering both &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;TopicCategory&lt;/code&gt; and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Topic&lt;/code&gt; entities. (Aside: it’s kind of similar how SwiftUI forms give you the ability to configure a picker as inline or as a completely separate screen added to the stack, and the presentation parts are abstracted away from the developer.)&lt;/p&gt;
-
-&lt;p&gt;As I get more comfortable with TCA, I’ll probably go back and move some of the navigation primitives into the TCA world.&lt;/p&gt;
-
-&lt;h4 id=&quot;scoping-stores&quot;&gt;Scoping stores&lt;/h4&gt;
-
-&lt;p&gt;When implementing store scoping within the view layer, I found myself struggling a bit to craft the correct syntax to express the relationship between the parent and child features.&lt;/p&gt;
-
-&lt;p&gt;When going by-the-book, the store scoping feels like boilerplate (there’s not a lot to think about). But when I did want to play outside the sandbox a bit, I realized I was in over my head and couldn’t even get the scoping statement to compile.&lt;/p&gt;
-
-&lt;p&gt;The frustrating part was that I knew I either had to:&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;look at a lot more store scoping examples as the raw syntax&lt;/li&gt;
-  &lt;li&gt;go back and rewatch the pointfree episodes about the theory behind store scoping&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;Or perhaps both? At this point, I can definitely tell I’m missing a key piece of my understanding of the &lt;em&gt;composable&lt;/em&gt; part of TCA, but I’m not sure yet how to fill in that missing piece. Or at least what the most efficient way to do so is.&lt;/p&gt;
-
-&lt;p&gt;In the end, I mostly avoided the issue entirely by either going more by-the-book with the structure of my features or completely eschewing TCA navigation as discussed in the previous section.&lt;/p&gt;
-
-&lt;h3 id=&quot;dependencies&quot;&gt;Dependencies&lt;/h3&gt;
-
-&lt;p&gt;I consider TCA to have 4 interdependent domains of complexity:&lt;/p&gt;
-
-&lt;ol&gt;
-  &lt;li&gt;Reducers - composing the app logic by defining &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;State&lt;/code&gt; and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Action&lt;/code&gt;, and modifying state and kicking off side-effects on each action.&lt;/li&gt;
-  &lt;li&gt;View-layer integration - using &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ViewStore&lt;/code&gt; and scoping &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Store&lt;/code&gt;.&lt;/li&gt;
-  &lt;li&gt;Dependencies - the distinct layer of world state and side-effects.&lt;/li&gt;
-  &lt;li&gt;Testing Reducers - exploiting the malleability of the dependency protocol in order to isolate the reducer layer from the dependency layer, and exploiting the one-way dependency of the view layer on the reducer layer to ignore the view layer.&lt;/li&gt;
-&lt;/ol&gt;
-
-&lt;p&gt;The TCA philosophy is to divide responsibilities amongst the reducer, view, and dependency layers to enable maximum testing ability of the reducer layer, in both unit and integration tests (for some definition of “unit” and “integration”). UI testing is reasonable but discouraged. Dependency testing is rarely mentioned, but is of course possible depending on how you the developer choose to design your dependencies.&lt;/p&gt;
-
-&lt;h4 id=&quot;writing-dependencies-in-the-pointfreeco-style&quot;&gt;Writing dependencies in the pointfreeco-style&lt;/h4&gt;
-
-&lt;p&gt;The pointfreeco-style of dependency design is unique (in my experience). And there are three distinct attributes:&lt;/p&gt;
-
-&lt;ol&gt;
-  &lt;li&gt;The dependency interface as a struct containing one or more variables of functions.&lt;/li&gt;
-  &lt;li&gt;Writing the dependency implementation as a class/actor in a way that you can create an instance of it within a static initializer of the dependency interface. When wrapping a system class as a dependency, often the system class is &lt;a href=&quot;https://github.com/pointfreeco/isowords/blob/40d59a899bbe54810bb0d7af0f3b72379c56bafb/Sources/FeedbackGeneratorClient/LiveKey.swift#L5-L11&quot;&gt;used directly&lt;/a&gt; in the static initializer.&lt;/li&gt;
-  &lt;li&gt;Treating this dependency interface as a singleton throughout your application, including being initialized independently at app startup and having the same lifetime as the app.&lt;/li&gt;
-&lt;/ol&gt;
-
-&lt;p&gt;My impression is that none of the above three attributes are &lt;em&gt;absolute requirements&lt;/em&gt; to use TCA or the &lt;a href=&quot;https://github.com/pointfreeco/swift-dependencies&quot;&gt;swift-dependencies&lt;/a&gt; library. However, most of the official examples contain the three attributes. (One notable exception is &lt;a href=&quot;https://github.com/tgrapperon/swift-dependencies-additions&quot;&gt;swift-dependencies-additions&lt;/a&gt;, which has its own internal system of &lt;a href=&quot;https://github.com/tgrapperon/swift-dependencies-additions/blob/main/Sources/DependenciesAdditionsBasics/Proxies.swift&quot;&gt;proxies&lt;/a&gt; to enable a more convenient interface for simple getters and setters).&lt;/p&gt;
-
-&lt;p&gt;For reference from the TCA case studies, an example of (1), the dependency interface as a struct &lt;a href=&quot;https://github.com/pointfreeco/swift-composable-architecture/blob/9b0f600253f467f61cbd53f60ccc243cc4ff27cd/Examples/SyncUps/SyncUps/Dependencies/SpeechRecognizer.swift#L4-L11&quot;&gt;(SpeechClient)&lt;/a&gt;:&lt;/p&gt;
-
-&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;SpeechClient&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-  &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;authorizationStatus&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;@Sendable&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;SFSpeechRecognizerAuthorizationStatus&lt;/span&gt;
-  &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;requestAuthorization&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;@Sendable&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;as&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ync&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;SFSpeechRecognizerAuthorizationStatus&lt;/span&gt;
-  &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;startTask&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;@Sendable&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;SFSpeechAudioBufferRecognitionRequest&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;as&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ync&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;AsyncThrowingStream&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;SpeechRecognitionResult&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Error&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;And an example of (2), creating an actor and then using it in a static initializer:&lt;/p&gt;
-
-&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;private&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;actor&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Speech&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-  &lt;span class=&quot;kd&quot;&gt;private&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;audioEngine&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;AVAudioEngine&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;nil&lt;/span&gt;
-  &lt;span class=&quot;kd&quot;&gt;private&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;recognitionTask&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;SFSpeechRecognitionTask&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;nil&lt;/span&gt;
-  &lt;span class=&quot;kd&quot;&gt;private&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;recognitionContinuation&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
-    &lt;span class=&quot;kt&quot;&gt;AsyncThrowingStream&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;SpeechRecognitionResult&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Error&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Continuation&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;
-
-  &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;startTask&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
-    &lt;span class=&quot;nv&quot;&gt;request&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;SFSpeechAudioBufferRecognitionRequest&lt;/span&gt;
-  &lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;AsyncThrowingStream&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;SpeechRecognitionResult&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Error&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-      &lt;span class=&quot;c1&quot;&gt;// ...&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-  &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-
-&lt;span class=&quot;kd&quot;&gt;extension&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;SpeechClient&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;DependencyKey&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-  &lt;span class=&quot;kd&quot;&gt;static&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;liveValue&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;SpeechClient&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;speech&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Speech&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;SpeechClient&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
-      &lt;span class=&quot;nv&quot;&gt;authorizationStatus&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;SFSpeechRecognizer&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;authorizationStatus&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;},&lt;/span&gt;
-      &lt;span class=&quot;nv&quot;&gt;requestAuthorization&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;cm&quot;&gt;/* ... */&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;},&lt;/span&gt;
-      &lt;span class=&quot;nv&quot;&gt;startTask&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;request&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;await&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;speech&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;startTask&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;request&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;request&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-  &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;Regarding (3), the “global-ness” of dependencies, in theory, the store-scoping initializers allow you to override dependencies all the way down a reducer hierarchy. For example:&lt;/p&gt;
-
-&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kt&quot;&gt;Store&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;initialState&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;SettingsFeature&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;State&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;())&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;kt&quot;&gt;SettingsFeature&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;withDependencies&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;deps&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt;
-    &lt;span class=&quot;c1&quot;&gt;// TODO: Does this create a new instance each time an action is sent to the reducer?&lt;/span&gt;
-    &lt;span class=&quot;n&quot;&gt;deps&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;speechSynthesisClient&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;init&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; 
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;Or at the reducer-level:&lt;/p&gt;
-
-&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;// TODO: Does this create a new instance each time an action is sent to the reducer?&lt;/span&gt;
-&lt;span class=&quot;kt&quot;&gt;Reduce&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;state&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;action&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt;
-    &lt;span class=&quot;c1&quot;&gt;// ...&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;dependency&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;\&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;speechSynthesisClient&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;init&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;())&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;However, the feasibility of initializing a fresh dependency with data from the system is unclear to me. Especially since it seems like the above code would initialize a fresh instance of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;speechSynthesisClient&lt;/code&gt; each time a reducer is run (thousands of times per app run!).&lt;/p&gt;
-
-&lt;p&gt;There are a few other topics on the discussion boards that mention the global lifetime of dependencies:&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;&lt;a href=&quot;https://github.com/pointfreeco/swift-composable-architecture/discussions/1287&quot;&gt;Dynamic dependencies · pointfreeco/swift-composable-architecture · Discussion #1287&lt;/a&gt;&lt;/li&gt;
-  &lt;li&gt;&lt;a href=&quot;https://github.com/pointfreeco/swift-dependencies/discussions/42&quot;&gt;How to handle session-based dependencies? · pointfreeco/swift-dependencies · Discussion #42&lt;/a&gt;&lt;/li&gt;
-  &lt;li&gt;&lt;a href=&quot;https://github.com/pointfreeco/swift-composable-architecture/discussions/1775&quot;&gt;Dependencies that depend on dynamic values · pointfreeco/swift-composable-architecture · Discussion #1775&lt;/a&gt;&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;For more complex applications than my own, I consider this limitation to be something to be carefully considered and architected around.&lt;/p&gt;
-
-&lt;p&gt;The related problem of doing some sort of one-time dependency initialization and setting up relationships between dependencies at app startup is also unclear to me. I &lt;a href=&quot;https://github.com/pointfreeco/swift-composable-architecture/discussions/1713#discussioncomment-6681618&quot;&gt;asked about it&lt;/a&gt; on the TCA discussions board, and &lt;a href=&quot;https://github.com/pointfreeco/swift-composable-architecture/discussions/1287&quot;&gt;discussion #1287&lt;/a&gt; touches on it briefly, but due to a change in my app requirements, I no longer needed to follow up on it.&lt;/p&gt;
-
-&lt;p&gt;There is certainly a wealth of information in the discussion boards I’ve yet to fully digest in the context of a more complex app. (Just a reminder that I’m writing this blog post for myself too as a way to process my thoughts and understanding on these inter-related concerns.)&lt;/p&gt;
-
-&lt;h4 id=&quot;heisenbugs-encountered-while-overriding-dependencies&quot;&gt;Heisenbugs encountered while overriding dependencies&lt;/h4&gt;
-
-&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;withDependencies&lt;/code&gt; is most often used as a developer tool – for testing, SwiftUI previews, or temporary debugging.&lt;/p&gt;
-
-&lt;p&gt;There were a few times where I ran into heisenbugs where my overridden dependencies at the app root or in previews weren’t getting overridden. Or they were getting overridden in a parent reducer but not a child. These situations felt nearly impossible to debug without doing a full code-review of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;swift-dependencies&lt;/code&gt; and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;TaskLocal&lt;/code&gt;s.&lt;/p&gt;
-
-&lt;h4 id=&quot;overriding-dependencies-for-use-with-swiftui-previews&quot;&gt;Overriding dependencies for use with SwiftUI Previews&lt;/h4&gt;
-
-&lt;p&gt;A key piece of the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ListeningQuiz&lt;/code&gt; screen is the text-to-speech playback for each question. &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;AVSpeechSynthesizer&lt;/code&gt; does not work on SwiftUI Previews or even the iOS simulator. TCA allowed me to easily mock out this dependency on just Previews and the simulator so it didn’t become a blocker for quick UI development. I could spend as much time as I normally would developing off-device when I wasn’t doing TTS-related tasks.&lt;/p&gt;
-
-&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;extension&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;SpeechSynthesisClient&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;TestDependencyKey&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;kd&quot;&gt;static&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;previewValue&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;Self&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-        &lt;span class=&quot;kd&quot;&gt;@Dependency(\.continuousClock)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;clock&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
-            &lt;span class=&quot;nv&quot;&gt;availableVoices&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;mock1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;mock2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;},&lt;/span&gt;
-            &lt;span class=&quot;n&quot;&gt;defaultVoice&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;mock1&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;},&lt;/span&gt;
-            &lt;span class=&quot;nv&quot;&gt;speak&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;_&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt;
-                &lt;span class=&quot;c1&quot;&gt;// Simulate 2 seconds of speech time&lt;/span&gt;
-                &lt;span class=&quot;k&quot;&gt;try&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;await&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;clock&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;sleep&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;for&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;seconds&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;
-            &lt;span class=&quot;p&quot;&gt;},&lt;/span&gt;
-            &lt;span class=&quot;nv&quot;&gt;speechRateAttributes&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-                &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;init&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;minimumRate&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mf&quot;&gt;0.0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;maximumRate&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mf&quot;&gt;1.0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;defaultRate&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mf&quot;&gt;0.5&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-            &lt;span class=&quot;p&quot;&gt;},&lt;/span&gt;
-            &lt;span class=&quot;nv&quot;&gt;pitchMultiplierAttributes&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-                &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;init&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;minimumPitch&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mf&quot;&gt;0.5&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;maximumPitch&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mf&quot;&gt;2.0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;defaultPitch&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mf&quot;&gt;1.0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-            &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-        &lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;h4 id=&quot;the-use-of-dependencies-in-count-biki&quot;&gt;The use of dependencies in Count Biki&lt;/h4&gt;
-
-&lt;p&gt;After all that foreword, I can talk at least a little bit about how I used dependencies in CountBiki.&lt;/p&gt;
-
-&lt;h5 id=&quot;stateless-clients&quot;&gt;Stateless clients&lt;/h5&gt;
-
-&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;SpeechSynthesisClient&lt;/code&gt; is responsible for wrapping &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;AVSpeechSynthesizer&lt;/code&gt;, Apple’s top-level API for text-to-speech.&lt;/p&gt;
-
-&lt;p&gt;My tendency for designing clients is to separate configuration and side-effects. In other words, clients should be stateless by default. For example, most &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;NetworkClient&lt;/code&gt; APIs are designed like:&lt;/p&gt;
-
-&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;// Set configuration on app init or when current user is updated&lt;/span&gt;
-&lt;span class=&quot;kt&quot;&gt;NetworkClient&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;shared&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;setSessionToken&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;123abc&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;span class=&quot;kt&quot;&gt;NetworkClient&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;shared&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;setCacheSize&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mf&quot;&gt;1024*10*&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;10&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-
-&lt;span class=&quot;c1&quot;&gt;// Make an authenticated network request in some other part of the app&lt;/span&gt;
-&lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;users&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;try&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;await&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;NetworkClient&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;shared&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;fetchFriends&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;In the above example, the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;NetworkClient&lt;/code&gt; is both a source-of-truth for network-related state &lt;em&gt;and&lt;/em&gt; a way to perform side-effects.&lt;/p&gt;
-
-&lt;p&gt;For most use cases, this style of API is very reasonable. The benefit is that the caller of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;fetchFriends&lt;/code&gt; needs zero knowledge of the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;NetworkClient&lt;/code&gt; configuration details.&lt;/p&gt;
-
-&lt;p&gt;I prefer to have &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;NetworkClient&lt;/code&gt; be stateless. At the callsite, the above example would look like this instead:&lt;/p&gt;
-
-&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;// `networkConfiguration` is passed around a subsystem via dependency injection or generated from existing state&lt;/span&gt;
-&lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;networkConfiguration&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;NetworkClient&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Configuration&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;...&lt;/span&gt;
-&lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;users&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;try&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;await&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;NetworkClient&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;fetchFriends&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;networkConfiguration&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;One benefit of stateless clients is that it’s trivial (or at least more-so) to add multi-account support and use the same &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;NetworkClient&lt;/code&gt; instance.&lt;/p&gt;
-
-&lt;p&gt;Another benefit is that it avoids the dependency initialization catch-22 we discussed earlier. A &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;NetworkClient&lt;/code&gt; initialized at app startup and with the same lifetime as the app has no initialization race condition for needing its configuration set to a valid state before making calls.&lt;/p&gt;
-
-&lt;p&gt;The &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;NetworkClient&lt;/code&gt; example is probably a bad one though. The underlying &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;URLSession&lt;/code&gt; is stateful by design. It maintains its own cache, so wrapping it with a stateless interface could actually increase the chance of bugs, or completely break caching functionality. Another downside is that functions that could be encapsulated within the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;NetworkClient&lt;/code&gt; such as seamlessly renewing expired session tokens.&lt;/p&gt;
-
-&lt;p&gt;All of that is to say I used the stateless client pattern for &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;SpeechSynthesisClient&lt;/code&gt;.&lt;/p&gt;
-
-&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;SpeechSynthesisSettings&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Equatable&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Codable&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;voiceIdentifier&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;pitchMultiplier&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Float&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;volume&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Float&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;rate&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Float&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;preUtteranceDelay&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;TimeInterval&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;postUtteranceDelay&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;TimeInterval&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-
-&lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;SpeechSynthesisUtterance&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;speechString&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;settings&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;SpeechSynthesisSettings&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-
-&lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;SpeechSynthesisClient&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;speak&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;@Sendable&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;SpeechSynthesisUtterance&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;as&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ync&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;throws&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Void&lt;/span&gt;
-    &lt;span class=&quot;c1&quot;&gt;// ...&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;SpeechSynthesisSettings&lt;/code&gt; are persisted using their own client &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;SpeechSynthesisSettingsClient&lt;/code&gt;. The top-level feature is responsible for fetching the settings and configuring an utterance to provide to the stateless &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;SpeechSynthesisClient&lt;/code&gt;.&lt;/p&gt;
-
-&lt;p&gt;The implementation of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;SpeechSynthesisClient&lt;/code&gt; is admittedly weak. I should be using an actor.&lt;/p&gt;
-
-&lt;h5 id=&quot;separating-settings&quot;&gt;Separating settings&lt;/h5&gt;
-
-&lt;p&gt;I erred on the side of splitting persisted settings into separate clients, even though they all use the same underlying storage. Specifically: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;SpeechSynthesisSettingsClient&lt;/code&gt; and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;TierPurchaseHistoryClient&lt;/code&gt;. There’s some unnecessary indirection at this point.&lt;/p&gt;
-
-&lt;h5 id=&quot;wrapping-storekit&quot;&gt;Wrapping StoreKit&lt;/h5&gt;
-
-&lt;p&gt;Implementing StoreKit for a consumables tip jar was a bit of a headache.&lt;/p&gt;
-
-&lt;p&gt;Consumables act differently than subscriptions, so there were a few misunderstanding before I landed on an API for the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;TierProductsClient&lt;/code&gt; dependency.&lt;/p&gt;
-
-&lt;p&gt;The API I wanted for consumers of the dependency was similar to the read/write/observe API I mentioned previously. However, several of the mutations happen within the dependency itself while it’s observing internals of StoreKit.&lt;/p&gt;
-
-&lt;p&gt;I wanted to use Combine’s &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CurrentValueSubject&lt;/code&gt;. Swift Concurrency does not have a built-in replacement for &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CurrentValueSubject&lt;/code&gt;, and using &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CurrentValueSubject&lt;/code&gt; safely within the confines of Swift Concurrency is not a fully endorsed activity (especially with compiler warnings set to maximum). I didn’t want to add another package dependency, however &lt;a href=&quot;https://github.com/sideeffect-io/AsyncExtensions&quot;&gt;AsyncExtensions&lt;/a&gt; seemed to provide exactly the tool I needed.&lt;/p&gt;
-
-&lt;h5 id=&quot;topics&quot;&gt;Topics&lt;/h5&gt;
-
-&lt;p&gt;I somewhat regret my &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Topic&lt;/code&gt; interface. A &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Topic&lt;/code&gt; is a wrapper for generating question/answer pairs. I thought my interface would be generic enough for all kinds of topics.&lt;/p&gt;
-
-&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Topic&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Identifiable&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Equatable&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;kd&quot;&gt;enum&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Skill&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;listening&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;reading&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-
-    &lt;span class=&quot;kd&quot;&gt;enum&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Category&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;number&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;money&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;duration&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;dateTime&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;counter&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-
-    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;id&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;UUID&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;skill&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Skill&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;category&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Category&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;title&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;description&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;A &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Topic&lt;/code&gt; itself is only a bag of data attributes. However, I create a wrapper struct internally called &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;TopicGenerator&lt;/code&gt; when defining each &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Topic&lt;/code&gt; that also provides a question generator function. This allows me to expose &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Topic&lt;/code&gt; to the rest of the app as behaviorless and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Equatable&lt;/code&gt;, but still behavior associated with each &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Topic&lt;/code&gt; and defined inline with it.&lt;/p&gt;
-
-&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;private&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;TopicGenerator&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Identifiable&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;id&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;UUID&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;topic&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;id&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;topic&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Topic&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;generateQuestion&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;@Sendable&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;WithRandomNumberGenerator&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;throws&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Question&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;The &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;WithRandomNumberGenerator&lt;/code&gt; part turned out to be pretty useless. I thought it might be useful for testing or otherwise seeding and keeping some control over values generated, but in the end it was just another field I had to work around.&lt;/p&gt;
-
-&lt;p&gt;An example of a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;TopicGenerator&lt;/code&gt; definition within the code:&lt;/p&gt;
-
-&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kt&quot;&gt;TopicGenerator&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
-    &lt;span class=&quot;nv&quot;&gt;topic&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Topic&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
-        &lt;span class=&quot;nv&quot;&gt;id&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Topic&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;id&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;for&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;201&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt;
-        &lt;span class=&quot;nv&quot;&gt;skill&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;listening&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
-        &lt;span class=&quot;nv&quot;&gt;category&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;duration&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
-        &lt;span class=&quot;nv&quot;&gt;title&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;Hours&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
-        &lt;span class=&quot;nv&quot;&gt;description&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;1-48時間&quot;&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;),&lt;/span&gt;
-    &lt;span class=&quot;nv&quot;&gt;generateQuestion&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;rng&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;answer&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;rng&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Int&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;random&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;in&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;...&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;48&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;using&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;postfix&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;時間&quot;&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;displayText&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;answer&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;)\(&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;postfix&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;acceptedAnswer&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;answer&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Question&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
-            &lt;span class=&quot;nv&quot;&gt;topicID&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Topic&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;id&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;for&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;201&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt;
-            &lt;span class=&quot;nv&quot;&gt;displayText&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;displayText&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
-            &lt;span class=&quot;nv&quot;&gt;spokenText&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;displayText&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
-            &lt;span class=&quot;nv&quot;&gt;answerPrefix&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;nil&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
-            &lt;span class=&quot;nv&quot;&gt;answerPostfix&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;postfix&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
-            &lt;span class=&quot;nv&quot;&gt;acceptedAnswer&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;acceptedAnswer&lt;/span&gt;
-        &lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;I’m defining a static ID for each &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Topic&lt;/code&gt; for a future where user answers are persisted and need to be associated back to a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Topic&lt;/code&gt; internally.&lt;/p&gt;
-
-&lt;p&gt;Another part of the interface I went back and forth on was whether I should keep the generated question and user answer as &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Int&lt;/code&gt; or whether all answers should converge to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;String&lt;/code&gt;. I kept the latter method (&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;String&lt;/code&gt;) but realized during development that allowing access to the numerical values would give more flexibility in comparing and reformatting values.&lt;/p&gt;
-
-&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;TopicClient&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;allTopics&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;@Sendable&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;IdentifiedArrayOf&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Topic&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;generateQuestion&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;@Sendable&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;UUID&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;throws&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Question&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;The &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;TopicClient&lt;/code&gt; itself simply abstracts away looking up a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Topic&lt;/code&gt; by its ID and generating a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Question&lt;/code&gt; for it.&lt;/p&gt;
-
-&lt;p&gt;A downside to this stateless design is that all &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;TopicGenerator&lt;/code&gt;s must have the input signature (they can’t take distinct parameters). Additionally, I can’t guarantee within the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;TopicClient&lt;/code&gt; that subsequently generated questions aren’t the same.&lt;/p&gt;
-
-&lt;h4 id=&quot;bikianimation&quot;&gt;BikiAnimation&lt;/h4&gt;
-
-&lt;p&gt;There’s a unique friction point we sometimes encounter with SwiftUI being a declarative system but needing to interface with imperative events.&lt;/p&gt;
-
-&lt;p&gt;One of these friction points is animations.&lt;/p&gt;
-
-&lt;p&gt;For my Count Biki SceneKit model, I have 1 idle animation and 2 brief animations that play for a second or two each. One animation is triggered when the user gets a question right. One animation is played when the user gets a question wrong.&lt;/p&gt;
-
-&lt;p&gt;What’s the right way to model this in SwiftUI?&lt;/p&gt;
-
-&lt;p&gt;This problem is easier to solve for something like the confetti animation that plays when the user gets a question right. We can model this as an integer that counts up by one each time the animation should play. The SwiftUI view will playback the animation any time that value changes (whether it be by 1 or 100).&lt;/p&gt;
-
-&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;State&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Equatable&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;confettiAnimation&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Int&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;
-    &lt;span class=&quot;c1&quot;&gt;// ...&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-
-&lt;span class=&quot;c1&quot;&gt;// Change `confettiAnimation` when a correct answer is submitted&lt;/span&gt;
-&lt;span class=&quot;kt&quot;&gt;Reduce&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;state&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;action&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;switch&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;action&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;answerSubmitButtonTapped&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
-        &lt;span class=&quot;c1&quot;&gt;// ...&lt;/span&gt;
-        &lt;span class=&quot;n&quot;&gt;state&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;confettiAnimation&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;
-    &lt;span class=&quot;c1&quot;&gt;// ...&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-
-&lt;span class=&quot;c1&quot;&gt;// `ConfettiCannon` will observe changes to this value&lt;/span&gt;
-&lt;span class=&quot;kt&quot;&gt;VStack&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;cm&quot;&gt;/* ... */&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-    &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;confettiCannon&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;counter&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;viewStore&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;confettiAnimation&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-
-&lt;span class=&quot;c1&quot;&gt;// Or we can use `.animation` with any `Equatable` value&lt;/span&gt;
-&lt;span class=&quot;kt&quot;&gt;VStack&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;cm&quot;&gt;/* ... */&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-    &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;animation&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;default&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;value&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;viewStore&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;confettiAnimation&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;But for 2 different types of animation, how can we model it? Well we could just have 2 different counter variables and keep increasing the number of variables and the number of change observers. But this doesn’t scale well.&lt;/p&gt;
-
-&lt;p&gt;Another way to model this is with a UUID wrapper:&lt;/p&gt;
-
-&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;BikiAnimation&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Equatable&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;kd&quot;&gt;enum&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Kind&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;correct&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;incorrect&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-
-    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;id&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;UUID&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;kind&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Kind&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-
-&lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;State&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Equatable&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;bikiAnimation&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;BikiAnimation&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;
-    &lt;span class=&quot;c1&quot;&gt;// ...&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-
-&lt;span class=&quot;kt&quot;&gt;Reduce&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;state&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;action&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;switch&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;action&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;answerSubmitButtonTapped&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
-        &lt;span class=&quot;c1&quot;&gt;// ...&lt;/span&gt;
-        &lt;span class=&quot;n&quot;&gt;state&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;bikiAnimation&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;init&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;id&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;UUID&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(),&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;kind&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;correct&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-    &lt;span class=&quot;c1&quot;&gt;// ...&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-
-&lt;span class=&quot;kt&quot;&gt;SceneView&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;cm&quot;&gt;/* ... */&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-    &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;onChange&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;of&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;bikiAnimation&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;newValue&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;switch&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;newValue&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;kind&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;correct&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
-            &lt;span class=&quot;n&quot;&gt;sceneState&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;playCorrect&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;incorrect&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
-            &lt;span class=&quot;n&quot;&gt;sceneState&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;playIncorrect&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;nil&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
-            &lt;span class=&quot;k&quot;&gt;break&lt;/span&gt;
-        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;h3 id=&quot;testing&quot;&gt;Testing&lt;/h3&gt;
-
-&lt;p&gt;One of TCA’s biggest wins is ease of testing. I dabbled in testing, but as of the 1.1 release I’ve only written 1 test. My reasons for this lack of tests are the usual excuses: it’s an MVP; I wanted to ship and get user feedback ASAP; the view-layer and dependency-layers were actually more error prone than the reducer-layer logic; the structure of the app was constantly in flux during initial development.&lt;/p&gt;
-
-&lt;p&gt;Regardless of these excuses, I appreciate the testability facilitated by TCA and I’ll certainly be adding more, not fewer, tests over time to the project.&lt;/p&gt;
-
-&lt;h2 id=&quot;swiftui&quot;&gt;SwiftUI&lt;/h2&gt;
-
-&lt;p&gt;Although the focus of this post has been its architecture and relationship to TCA, I do want to mention a few parts of the view layer that stand out in some way.&lt;/p&gt;
-
-&lt;h3 id=&quot;bikiview&quot;&gt;BikiView&lt;/h3&gt;
-
-&lt;p&gt;&lt;a href=&quot;https://github.com/twocentstudios/count-biki/blob/8195c7fde3703166d5b3a41743c8a19486448a14/count/View/CountBikiView.swift&quot;&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;BikiView&lt;/code&gt;&lt;/a&gt; is the wrapper for the Count Biki character avatar derived from a SceneKit .scn file.&lt;/p&gt;
-
-&lt;p&gt;Wrapping stateful view architecture like SceneKit or UIKit in SwiftUI can sometime be tricky.&lt;/p&gt;
-
-&lt;p&gt;The &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;SceneState&lt;/code&gt; struct holds onto the loaded &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;SCNScene&lt;/code&gt; containing Biki, and also handles loading and playing back the animations on demand from the separate .dae files.&lt;/p&gt;
-
-&lt;p&gt;Note that adding this view to a hierarchy non-trivially increases CPU usage and energy usage for the device. For now, I think this is an okay trade off, but SceneKit’s relative resource intensiveness is something to be aware of.&lt;/p&gt;
-
-&lt;h3 id=&quot;styling-with-base-ios-classes&quot;&gt;Styling with base iOS classes&lt;/h3&gt;
-
-&lt;p&gt;Apple’s human interface guidelines define &lt;a href=&quot;https://developer.apple.com/design/human-interface-guidelines/color&quot;&gt;system colors&lt;/a&gt; and &lt;a href=&quot;https://developer.apple.com/design/human-interface-guidelines/typography&quot;&gt;system typography&lt;/a&gt;.&lt;/p&gt;
-
-&lt;p&gt;When I’m not working closely with a designer, it’s much easier to rely on the Apple-provided design system than create my own one-off design system. It takes a lot of the burden off of me as an individual to ensure proper accessibility, support dark mode, ensure a base-level of visual quality, and spend time designing my own controls.&lt;/p&gt;
-
-&lt;p&gt;The tradeoff is that the visual style is a lot less &lt;em&gt;fun&lt;/em&gt; and &lt;em&gt;unique&lt;/em&gt; than it could/should be.&lt;/p&gt;
-
-&lt;p&gt;For now, I feel okay about this compromise. After ensuring a base level of functionality, I feel more comfortable spending time exploring visual style adjustments.&lt;/p&gt;
-
-&lt;p&gt;Even after 5 versions, I still feel using the Apple design system primitives can be unintuitive. For example, many of the system colors are still defined only in &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;UIKit.UIColor&lt;/code&gt; and not &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;SwiftUI.Color&lt;/code&gt; – for example &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;UIColor.secondarySystemBackground&lt;/code&gt;. &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;SwiftUI.Color&lt;/code&gt; has the limited &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;primary&lt;/code&gt; and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;secondary&lt;/code&gt; variants.&lt;/p&gt;
-
-&lt;p&gt;The meaning of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;tint&lt;/code&gt; and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;accentColor&lt;/code&gt; is subtly different, as are their SwiftUI modifiers (&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.accentColor()&lt;/code&gt; was deprecated and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.tintColor()&lt;/code&gt; added in iOS 15).&lt;/p&gt;
-
-&lt;p&gt;Semantic/Dynamic Type font styles like &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Font.title&lt;/code&gt; and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Font.body&lt;/code&gt; don’t always map well to app styles, and there’s never been much guidance from Apple on how to do so.&lt;/p&gt;
-
-&lt;p&gt;Aside: I’ve never worked with a designer who understood or considered these semantic font styles or Dynamic Type. The most Apple advertises Dynamic Type to designers is these three sentences from the &lt;a href=&quot;https://developer.apple.com/design/human-interface-guidelines/typography&quot;&gt;HIG&lt;/a&gt;:&lt;/p&gt;
-
-&lt;blockquote&gt;
-  &lt;p&gt;Consider using the built-in text styles. The system-defined text styles give you a convenient and consistent way to convey your information hierarchy through font size and weight. Using text styles with the system fonts also supports Dynamic Type and the larger accessibility type sizes (where available), which let people choose the text size that works for them.&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;h3 id=&quot;laying-out-the-quiz-screen-without-a-scroll-view&quot;&gt;Laying out the quiz screen without a scroll view&lt;/h3&gt;
-
-&lt;p&gt;It’s arguably &lt;a href=&quot;https://lickability.com/blog/every-screen-in-your-app-should-be-a-scrolling-view/&quot;&gt;best practice&lt;/a&gt; to use a scroll view for every screen in your app by default.&lt;/p&gt;
-
-&lt;p&gt;The quiz screen is designed to be rapid fire, and wouldn’t really make sense to force the user to scroll up and down constantly while they are trying to power through questions.&lt;/p&gt;
-
-&lt;p&gt;However, I was of course going against the laws of physics trying to fit in all the UI elements I wanted while still supporting all small screen sizes and accessibility Dynamic Type sizes. This was not an easy problem to solve, and for the version 1.1 release I had to cheat a bit by limiting the accessibility Dynamic Type size to the second level. I feel shame doing so, but at the moment it’s better to artificially enforce a limit rather than have a broken layout.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/count-biki-v1-listening-quiz-accessibility.png&quot; width=&quot;&quot; height=&quot;600&quot; alt=&quot;The listening quiz screen at maximum supported accessibility size&quot; title=&quot;The listening quiz screen at maximum supported accessibility size&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The listening quiz screen at maximum supported accessibility size&lt;/div&gt;&lt;/div&gt;
-
-&lt;h3 id=&quot;adding-commas-dynamically-to-the-textfield&quot;&gt;Adding commas dynamically to the TextField&lt;/h3&gt;
-
-&lt;p&gt;Text input is way more difficult than it seems. There’s a ton of complexity wrapped around the simple SwiftUI interface of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;TextField($text)&lt;/code&gt;.&lt;/p&gt;
-
-&lt;p&gt;Answering a quiz question with only numbers is much simpler than all the functionality needed for a multi-lingual, editable text field. However, since &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;TextField&lt;/code&gt; already exists, I preferred to use it with as few customizations as possible before implementing my own text input system from scratch.&lt;/p&gt;
-
-&lt;p&gt;However, my beta users ran into problems when answering questions with long numbers like &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;125400000&lt;/code&gt;. Without comma separators, it quickly becomes impossible to know exactly which number you’ve entered.&lt;/p&gt;
-
-&lt;p&gt;Although it’s certainly possible, I felt uncomfortable modifying the TextField’s string while the user is typing to add separators, thinking that there’d be edge cases (especially with moving the cursor) I didn’t have time to thoroughly test. As a pragmatic (and hopefully temporary) solution, I instead added formatted text that mirrors the input string right above the TextField.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/count-biki-v1-listening-quiz-formatted-text.png&quot; width=&quot;&quot; height=&quot;200&quot; alt=&quot;A temporary solution for formatting the input string without interrupting the default TextField handling&quot; title=&quot;A temporary solution for formatting the input string without interrupting the default TextField handling&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;A temporary solution for formatting the input string without interrupting the default TextField handling&lt;/div&gt;&lt;/div&gt;
-
-&lt;h2 id=&quot;conclusion&quot;&gt;Conclusion&lt;/h2&gt;
-
-&lt;p&gt;These were the various concerns running through my head while developing this simple app.&lt;/p&gt;
-
-&lt;p&gt;Usually when working in a team I write these kind of explanations in pull request descriptions. But in this case I’ve saved everything until the first release.&lt;/p&gt;
-
-&lt;p&gt;I don’t like to share “solutions” to problems before I’m completely sure they’re robust enough to survive the long term. That’s why the slant of the above text is more “here was X problem and how I solved it” than “here’s exactly how to solve X problem”.&lt;/p&gt;
-
-&lt;p&gt;I also share some of these thoughts day-to-day on &lt;a href=&quot;https://hachyderm.io/@twocentstudios&quot;&gt;Mastodon&lt;/a&gt;, so feel free to follow me there. And if you want to dig into the codebase, here’s &lt;a href=&quot;https://github.com/twocentstudios/count-biki&quot;&gt;one more link&lt;/a&gt;.&lt;/p&gt;
-
-&lt;p&gt;Thanks for reading this post or the whole series.&lt;/p&gt;
-</description>
-        <pubDate>Tue, 31 Oct 2023 14:16:28 -0500</pubDate>
-        <link>https://twocentstudios.com/2023/10/31/count-biki-developing-the-app-for-ios/</link>
-        <guid isPermaLink="true">https://twocentstudios.com/2023/10/31/count-biki-developing-the-app-for-ios/</guid>
-        
-        <category>apple</category>
-        
-        <category>ios</category>
-        
-        <category>countbiki</category>
         
         <category>tca</category>
         
