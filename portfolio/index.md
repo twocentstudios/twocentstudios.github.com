@@ -7,9 +7,13 @@ permalink: /portfolio/
 
 ## Independent Apps
 
-#### Eki Bright - [appstore](https://apps.apple.com/app/%E9%A7%85%E3%83%96%E3%83%A9%E3%82%A4%E3%83%88/id6504702463) | [post](/2024/07/27/eki-bright-tokyo-area-train-timetables/)
+#### Eki Bright - [appstore](https://apps.apple.com/app/%E9%A7%85%E3%83%96%E3%83%A9%E3%82%A4%E3%83%88/id6504702463) | [post](/2024/07/27/eki-bright-tokyo-area-train-timetables/) | [tag](https://twocentstudios.com/blog/tags/ekibright)
 
 An iOS app for viewing Tokyo-area station and train timetables.
+
+#### 8-bit Nails - [appstore](https://apps.apple.com/us/app/8-bit-nails/id6737764793) | [post](https://twocentstudios.com/2025/02/17/8-bit-nails-pixel-art-nail-diary/) | [tag](https://twocentstudios.com/blog/tags/8bitnails)
+
+An iOS app diary for pixel art nails.
 
 #### Count Biki - [appstore](https://apps.apple.com/us/app/count-biki/id6463796779) | [source](https://github.com/twocentstudios/count-biki) | [post](/2023/10/29/count-biki-japanese-numbers/)
 
