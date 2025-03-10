@@ -16,7 +16,7 @@ If you already have an pixel art image you'd like to display in `Image` (`UIImag
 struct NativeImageView: View {
     var body: some View {
         Image("color-image-10-10") // 10x10 PNG in Assets.xcassets
-            .interpolation(.none)
+            .interpolation(.none) // <-- important
             .resizable()
             .scaledToFit()
     }
@@ -92,7 +92,7 @@ There are two ways to render the bitmap: `Image` and `Canvas`.
 
 ### Rendering as `Image`
 
-`BitmapView` will render the bitmap. It works by using the [`Image(size:label:opaque:colorMode:renderer:)`](https://developer.apple.com/documentation/swiftui/image/init(size:label:opaque:colormode:renderer:)) initializer for `Image` that allows writing directly to the image via a SwiftUI `GraphicsContext` instance.
+`BitmapImageView` will render the bitmap. It works by using the [`Image(size:label:opaque:colorMode:renderer:)`](https://developer.apple.com/documentation/swiftui/image/init(size:label:opaque:colormode:renderer:)) initializer for `Image` that allows writing directly to the image via a SwiftUI `GraphicsContext` instance.
 
 ```swift
 struct BitmapImageView: View {
@@ -288,4 +288,17 @@ I've implemented `lineWidthRatio` as a percentage of the cell width. It will sca
 
 Note: this does not draw the outer border intentionally. If you need the outer border, it's better to draw it using SwiftUI modifiers because inside the `GraphicsContext` callback, borders are drawn with half their width on each side of the path. This means that only half the outer borders will be visible if the `Canvas` is clipping.
 
-May also be reasonable to draw the dividers into a separate `Canvas` instance (with `opaque: false`) and overlay it using the standard SwiftUI tools. However, it will be slower, albeit imperceptibly for most use cases.
+{% caption_img /images/pixel-art-title.png h350 Adding dividers and a border to the bitmap rendering %}
+
+```swift
+#Preview("BitmapDividersViewWithBorder", traits: .sizeThatFitsLayout) {
+    BitmapDividersView(bitmap: .mockRowColors(rows: 10, columns: 10))
+        .frame(width: 400)
+        .padding(2)
+        .border(.white, width: 2)
+        .padding()
+        .background(Color.black.opacity(0.8))
+}
+```
+
+It's also reasonable to draw the dividers into a separate `Canvas` instance (with `opaque: false`) and overlay it using the standard SwiftUI tools. However, it will be slower (albeit imperceptibly so for most use cases) since SwiftUI will have to do the compositing again.
