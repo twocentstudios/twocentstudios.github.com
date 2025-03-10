@@ -260,7 +260,7 @@
 <div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">NativeImageView</span><span class="p">:</span> <span class="kt">View</span> <span class="p">{</span>
     <span class="k">var</span> <span class="nv">body</span><span class="p">:</span> <span class="n">some</span> <span class="kt">View</span> <span class="p">{</span>
         <span class="kt">Image</span><span class="p">(</span><span class="s">"color-image-10-10"</span><span class="p">)</span> <span class="c1">// 10x10 PNG in Assets.xcassets</span>
-            <span class="o">.</span><span class="nf">interpolation</span><span class="p">(</span><span class="o">.</span><span class="k">none</span><span class="p">)</span>
+            <span class="o">.</span><span class="nf">interpolation</span><span class="p">(</span><span class="o">.</span><span class="k">none</span><span class="p">)</span> <span class="c1">// &lt;-- important</span>
             <span class="o">.</span><span class="nf">resizable</span><span class="p">()</span>
             <span class="o">.</span><span class="nf">scaledToFit</span><span class="p">()</span>
     <span class="p">}</span>
@@ -339,7 +339,7 @@
 
 <h3 id="rendering-as-image">Rendering as <code class="language-plaintext highlighter-rouge">Image</code></h3>
 
-<p><code class="language-plaintext highlighter-rouge">BitmapView</code> will render the bitmap. It works by using the <a href="https://developer.apple.com/documentation/swiftui/image/init(size:label:opaque:colormode:renderer:)"><code class="language-plaintext highlighter-rouge">Image(size:label:opaque:colorMode:renderer:)</code></a> initializer for <code class="language-plaintext highlighter-rouge">Image</code> that allows writing directly to the image via a SwiftUI <code class="language-plaintext highlighter-rouge">GraphicsContext</code> instance.</p>
+<p><code class="language-plaintext highlighter-rouge">BitmapImageView</code> will render the bitmap. It works by using the <a href="https://developer.apple.com/documentation/swiftui/image/init(size:label:opaque:colormode:renderer:)"><code class="language-plaintext highlighter-rouge">Image(size:label:opaque:colorMode:renderer:)</code></a> initializer for <code class="language-plaintext highlighter-rouge">Image</code> that allows writing directly to the image via a SwiftUI <code class="language-plaintext highlighter-rouge">GraphicsContext</code> instance.</p>
 
 <div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">BitmapImageView</span><span class="p">:</span> <span class="kt">View</span> <span class="p">{</span>
     <span class="k">let</span> <span class="nv">bitmap</span><span class="p">:</span> <span class="kt">Bitmap</span>
@@ -535,7 +535,20 @@
 
 <p>Note: this does not draw the outer border intentionally. If you need the outer border, it’s better to draw it using SwiftUI modifiers because inside the <code class="language-plaintext highlighter-rouge">GraphicsContext</code> callback, borders are drawn with half their width on each side of the path. This means that only half the outer borders will be visible if the <code class="language-plaintext highlighter-rouge">Canvas</code> is clipping.</p>
 
-<p>May also be reasonable to draw the dividers into a separate <code class="language-plaintext highlighter-rouge">Canvas</code> instance (with <code class="language-plaintext highlighter-rouge">opaque: false</code>) and overlay it using the standard SwiftUI tools. However, it will be slower, albeit imperceptibly for most use cases.</p>
+<div class="caption-wrapper"><img class="caption" src="/images/pixel-art-title.png" width="" height="350" alt="Adding dividers and a border to the bitmap rendering" title="Adding dividers and a border to the bitmap rendering" /><div class="caption-text">Adding dividers and a border to the bitmap rendering</div></div>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="cp">#Preview("BitmapDividersViewWithBorder", traits: .sizeThatFitsLayout) {</span>
+    <span class="kt">BitmapDividersView</span><span class="p">(</span><span class="nv">bitmap</span><span class="p">:</span> <span class="o">.</span><span class="nf">mockRowColors</span><span class="p">(</span><span class="nv">rows</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span> <span class="nv">columns</span><span class="p">:</span> <span class="mi">10</span><span class="p">))</span>
+        <span class="o">.</span><span class="nf">frame</span><span class="p">(</span><span class="nv">width</span><span class="p">:</span> <span class="mi">400</span><span class="p">)</span>
+        <span class="o">.</span><span class="nf">padding</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+        <span class="o">.</span><span class="nf">border</span><span class="p">(</span><span class="o">.</span><span class="n">white</span><span class="p">,</span> <span class="nv">width</span><span class="p">:</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="o">.</span><span class="nf">padding</span><span class="p">()</span>
+        <span class="o">.</span><span class="nf">background</span><span class="p">(</span><span class="kt">Color</span><span class="o">.</span><span class="n">black</span><span class="o">.</span><span class="nf">opacity</span><span class="p">(</span><span class="mf">0.8</span><span class="p">))</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p>It’s also reasonable to draw the dividers into a separate <code class="language-plaintext highlighter-rouge">Canvas</code> instance (with <code class="language-plaintext highlighter-rouge">opaque: false</code>) and overlay it using the standard SwiftUI tools. However, it will be slower (albeit imperceptibly so for most use cases) since SwiftUI will have to do the compositing again.</p>
 
   </article>
 
