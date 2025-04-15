@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>Train Tracker Devlog</title>
+
+  <meta property="og:type" content="article" />
+  <meta property="og:title" content="Train Tracker Devlog" />
+  <meta property="og:url" content="https://twocentstudios.com/2025/04/15/train-tracker-checkpoint-devlog/" />
+  
+    <meta property="og:article:published_time" content="2025-04-15T12:06:00-05:00" />
+  
+  
+    <meta property="og:image" content="https://twocentstudios.com/images/train-tracker-debug-dashboard.jpg" />
+  
+  
+  <link href='https://fonts.googleapis.com/css2?family=Work+Sans:wght@300;350;400;600' rel='stylesheet' type='text/css'>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="canonical" href="https://twocentstudios.com/2025/04/15/train-tracker-checkpoint-devlog/">
+  <link rel="alternate" type="application/rss+xml" title="twocentstudios" href="https://twocentstudios.com/feed.xml" />
+</head>
+
+  <!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-NE82N02W8S"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-NE82N02W8S');
+</script>
+
+  <body>
+
+    <header class="site-header">
+
+  <div class="wrapper">
+
+    <a class="site-title" href="/">twocentstudios</a>
+
+    <nav class="site-nav">
+      <a href="#" class="menu-icon">
+        <svg viewBox="0 0 18 15">
+          <path fill="#424242" d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.031C17.335,0,18,0.665,18,1.484L18,1.484z"/>
+          <path fill="#424242" d="M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0c0-0.82,0.665-1.484,1.484-1.484 h15.031C17.335,6.031,18,6.696,18,7.516L18,7.516z"/>
+          <path fill="#424242" d="M18,13.516C18,14.335,17.335,15,16.516,15H1.484C0.665,15,0,14.335,0,13.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.031C17.335,12.031,18,12.696,18,13.516L18,13.516z"/>
+        </svg>
+      </a>
+
+      <div class="trigger">
+        
+          
+          <a class="page-link" href="/about/">About</a>
+          
+        
+          
+          <a class="page-link" href="/blog/">Blog</a>
+          
+        
+          
+        
+          
+        
+          
+          <a class="page-link" href="/portfolio/">Portfolio</a>
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      </div>
+    </nav>
+
+  </div>
+
+</header>
+
+
+    <div class="page-content">
+      <div class="wrapper">
+        <div class="post">
+
+  <header class="post-header">
+    <h1 class="post-title">Train Tracker Devlog</h1>
+    <p class="post-meta">Apr 15, 2025</p>
+  </header>
+
+  <article class="post-content">
+    <p>Last month, I took a step back from development of my train timetables <a href="/2024/07/27/eki-bright-tokyo-area-train-timetables">iOS app Eki Bright</a> to think about the app in a broader context. I’ve iterated on Version 1 on and off for nearly a year, with use cases emerging out of a basic feature set and evolving with my own daily usage of the app.</p>
+
+<div class="caption-wrapper"><img class="caption" src="/images/eki-bright-v1-7-marketing.png" width="" height="250" alt="Marketing screenshots for Eki Bright v1.7" title="Marketing screenshots for Eki Bright v1.7" /><div class="caption-text">Marketing screenshots for Eki Bright v1.7</div></div>
+
+<p>As a solo developer, it’s difficult to maintain a clear perspective about any given project as it grows. It’s a balance of having a strong vision but carefully allowing reality to gently guide that vision.</p>
+
+<p>All this is to say I spent some time thinking hard about what version 2 of Eki Bright would look like if I started over today. How could I optimize the app for the way I use it now? How can I entice potential users and provide value to new users immediately?</p>
+
+<p>If I stopped with version 1, as a user, I’d be relatively satisfied. I know how to navigate the app and work around the various UX speed bumps and oil slicks to achieve my goal of riding the train system here in Tokyo. I can overlook the problems in the app in ways a random iPhone user wouldn’t. I knowingly stopped short of perfection on a few feature implementations in favor of getting them shipped.</p>
+
+<p>I started to see a vision for how the app could work in a <em>progressive enhancement</em> sort of way for the various use cases I’ve uncovered. I started to see how important it was to do as much heavy lifting in the app as possible. There’s always going to be tension between a “semi-pro” app that gives the user full control while also doing work on their behalf without asking.</p>
+
+<p>A key part of the vision for version 2 that emerged was that Eki Bright can be a lot smarter about understanding the user’s context. With location services, it should be possible to understand whether the user is walking to a train station and wants to know if they should run to get the next train, or whether they’re riding a train and want to know when they’ll arrive at their destination.</p>
+
+<p>I started by segmenting out users into part of an app usage lifecycle:</p>
+
+<ul>
+  <li>What would make a iPhone user want to download the app in the first place? Why (if at all) are Tokyo residents unsatisfied with their current navigation apps?</li>
+  <li>For a first time user, what feature could act as an immediate hook/wedge to provide value with zero setup or explanation and remind them to come back again the next day?</li>
+  <li>For users who have seen consistent results, what motivation would they have to want to dig deeper and trade some customization effort to get significantly more value out of the app?</li>
+  <li>For users who have used the app consistently for some time, what features can be enhanced automatically based on usage history?</li>
+</ul>
+
+<p>The features that make up this theoretical system are quite complicated! An interface that adapts to the kind of user, the user’s usage history, and the user’s current context was somewhat of a overwhelming task for me to take on all at once.</p>
+
+<div class="caption-wrapper"><img class="caption" src="/images/eki-bright-v2-feature-list.jpg" width="" height="400" alt="Sketching out the lattice of features that could make up Eki Bright v2" title="Sketching out the lattice of features that could make up Eki Bright v2" /><div class="caption-text">Sketching out the lattice of features that could make up Eki Bright v2</div></div>
+
+<p>So after doing some brainstorming and pencil mockups, I decided to start prototyping a “hook” feature to capture that first segment of users: those who have not downloaded the app and first time users. A feature that is buzzy and attractive to prospective users, and is low touch and requires nearly zero configuration for first time users.</p>
+
+<p>That feature was a <em>train finder</em>.</p>
+
+<p>With the timetable data embedded in the app combined with live location data from the user’s device, I reasoned it should be possible to find the exact train a user was riding if they opened Eki Bright while enroute. If the app could do this, it’d cut down on the work necessary to unlock downstream benefits for the user like:</p>
+
+<ul>
+  <li>Checking what time the train will arrive at a destination station</li>
+  <li>Setting an alarm for the destination station</li>
+  <li>Checking what other stations are stops along the way</li>
+  <li>Setting up a <a href="/2025/01/24/eki-bright-the-case-for-diy-routing/">DIY route</a> to more thoroughly track a transfer</li>
+  <li>Sharing a route and arrival time to a friend</li>
+</ul>
+
+<p>At this point, I still intended the train finder feature to be part of Eki Bright. I imagined the user opening up the Eki Bright app along their journey, the app quickly booting up location services and narrowing down the possible railways and trains within a few seconds, and the user being able to quickly take some related actions from there.</p>
+
+<p>My friend David asked “why not have it run in the background so you don’t need to open the app?” I initially balked, not wanting to add background location tracking to Eki Bright due to its potential to be heavy on the device battery. I also couldn’t see how background tracking could streamline the experience beyond reducing that 1-2 second train calculation time with the tradeoff that all this work would waste battery in the cases the user never opened the app. The background activity idea stayed in the back of my mind though.</p>
+
+<p>I started prototyping the algorithm for turning a time-series of GPS coordinates into a railway, a direction on that railway, and ultimately a train.</p>
+
+<div class="caption-wrapper"><img class="caption" src="/images/train-tracker-first-algorithm.jpg" width="" height="400" alt="Thinking through an train tracking algorithm. This particular algorithm turned out to be a dud." title="Thinking through an train tracking algorithm. This particular algorithm turned out to be a dud." /><div class="caption-text">Thinking through an train tracking algorithm. This particular algorithm turned out to be a dud.</div></div>
+
+<p>After my first day working on the algorithm, I realized that it was going to require a lot iteration on real data from inside the various trains running all over Tokyo. It wasn’t reasonable to think I could ride a train all day with my iPhone and MacBook debugging the algorithm on live data.</p>
+
+<p>I therefore spent a day creating an app for collecting sessions of GPS coordinates. This has turned out to be a huge boon for development efficiency.</p>
+
+<div class="caption-wrapper"><img class="caption" src="/images/gps-collector-screens.jpg" width="" height="300" alt="GPS collector app I created and used to get batches of real data from the field" title="GPS collector app I created and used to get batches of real data from the field" /><div class="caption-text">GPS collector app I created and used to get batches of real data from the field</div></div>
+
+<p>This personal-use GPS Collector app allows me to collect raw data from Core Location in the background and annotate it while riding the various routes I take around the Tokyo area. I divide each trip up into a <em>session</em>, then manually annotate the session with the railway, direction, departure station, and arrival station to serve as ground truth annotations. I allow exporting in GPX format (for usage within Xcode) and as JSON I can import into and decode with other apps.</p>
+
+<p>Seeing the raw data revealed a litany of edge cases my algorithm would need to handle. First off, any train that goes underground is a non-starter for a GPS-reliant system; I’d have to make peace with that fact for now. Core Location data includes speed and heading, which is useful, but is itself a derived value and can be gleaned from other sources. GPS accuracy will sometimes plummet temporarily inside the boundaries of a station and sometimes randomly inside dense city limits. Waypoints are usually returned one-per-second, but sometimes will cut out for seconds or minutes. Some trains go from underground to above ground at least once along their designated route.</p>
+
+<p>I spent a week or so collecting GPS data while working on other apps. I returned to Eki Bright to finish up a first draft of an algorithm that took an entire time-series of GPS data and returned a ranked list of candidates: a railway, the direction on that railway, and the previous and next station.</p>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">RidingTrainFinderCandidate</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">railway</span><span class="p">:</span> <span class="kt">Railway</span>
+    <span class="k">let</span> <span class="nv">direction</span><span class="p">:</span> <span class="kt">RailDirection</span>
+    <span class="k">let</span> <span class="nv">previousStation</span><span class="p">:</span> <span class="kt">Station</span>
+    <span class="k">let</span> <span class="nv">nextStation</span><span class="p">:</span> <span class="kt">Station</span>
+    <span class="c1">// let train: TrainTimetable -- TODO: determine which train</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p>I added a debug viewer to visualize how my algorithm was responding to test data as it was played back. It was mostly working! It was also kind of fun to watch the playback. Being able to throw together a view like this for the sole purpose of debugging an algorithm is a huge win for SwiftUI.</p>
+
+<video src="/images/train-tracker-debug-view-01.mp4" controls="" poster="/images/train-tracker-debug-view-01.png" preload="none" height="400"></video>
+
+<p>I’d hit a development checkpoint, and as cool as my little debug tracker view was, I was still far from a shippable feature that solved a real problem. My next step was extending the algorithm to guess which train the user was on (not exactly a straightforward algorithm to write based on the shape of my train timetable data).</p>
+
+<p>However, I thought back to my friend David’s remark about an app that works in the background. I thought, if I freed myself from the artificial constraints of Eki Bright as it currently existed, how could this algorithm still be useful?</p>
+
+<p>A new vision emerged of an app that solved a much shallower problem:</p>
+
+<ul>
+  <li>Sometimes when I’m on a crowded train and I’ve got my headphones in, it’s hard to tell what station I’m approaching. I can’t see the display above the train car door or out the window.</li>
+  <li>What if I had a Live Activity in my Dynamic Island that updated live as I stopped at or passed each station along a railway?</li>
+  <li>And what if I didn’t have to manually select what railway I was on and what direction I was going?</li>
+  <li>Better yet, what if I <em>didn’t even have to open the app</em> and the Live Activity would automatically appear when I was riding a train and disappear when I got off?</li>
+</ul>
+
+<p>If I could pull it off, this feature would be supplemental to any other navigation app. It also has a bit of “cool technology” vibe to it that could entice a download and serve as a conversation piece.</p>
+
+<p>Realizing this new vision came with its own new implementation challenges.</p>
+
+<ul>
+  <li>Monitor significant location changes in the background to save battery life, then switch to live location monitoring when moving at train speeds.</li>
+  <li>Detect the railway and railway direction.</li>
+  <li>Continuously update which stations have been visited and passed, and which station is next on the railway, even if it’s far away.</li>
+  <li>Start a Live Activity in the background when confidence in the current railway is high enough.</li>
+  <li>Update the Live Activity as the user approaches, arrives at, and departs a station.</li>
+  <li>End the Live Activity and switch back to monitoring significant location changes once the user has alighted their train.</li>
+</ul>
+
+<p>I knew that significant location changes, app background activity, and the way each of these system features interacts with the relatively new (iOS 16+) Live Activities API was going to pose as the biggest risk to executing the seamless zero-touch app experience I envisioned.</p>
+
+<p>I started by creating a new app project and creating a GRDB-backed event logging system. Next, I configured the app to request background location permission. I then created the bones of a location tracking algorithm that preserved battery life. I logged app lifecycle events and events for my location tracking algorithm to ensure I could quickly debug why the app was or wasn’t “waking up” or “sleeping” when I expected it to while out in the field.</p>
+
+<div class="caption-wrapper"><img class="caption" src="/images/train-tracker-app-events.jpg" width="" height="400" alt="Log of app events so I can verify background behavior" title="Log of app events so I can verify background behavior" /><div class="caption-text">Log of app events so I can verify background behavior</div></div>
+
+<p>The next big task was reimagining my existing railway-finding algorithm for a different system lifecycle. This also meant I needed to pare down my very large train timetable static database for this new use case. I only needed the list of railways and stations. I followed a similar development flow as last time; I created a couple new debug views to view the live GPS waypoints and follow these waypoints on a map alongside the train tracking algorithm outputs.</p>
+
+<div class="caption-wrapper"><img class="caption" src="/images/train-tracker-waypoints-view.jpg" width="" height="400" alt="Raw waypoints view to allow confirmation of incoming data" title="Raw waypoints view to allow confirmation of incoming data" /><div class="caption-text">Raw waypoints view to allow confirmation of incoming data</div></div>
+
+<p>I started with a version that played back existing GPS data. A dashboard view showed just the user-facing data: the detected railway and “focus” station.</p>
+
+<div class="caption-wrapper"><img class="caption" src="/images/train-tracker-debug-dashboard.jpg" width="" height="400" alt="A debug view that plays back previously captured GPS data at variable speed and shows user-facing data" title="A debug view that plays back previously captured GPS data at variable speed and shows user-facing data" /><div class="caption-text">A debug view that plays back previously captured GPS data at variable speed and shows user-facing data</div></div>
+
+<p>There was also a list view showing the scores assigned by the algorithm and used to determine the ultimate result shown to the user.</p>
+
+<div class="caption-wrapper"><img class="caption" src="/images/train-tracker-debug-list.jpg" width="" height="400" alt="The derived scores used by the algorithm to determine what railway and focus station is shown to the user" title="The derived scores used by the algorithm to determine what railway and focus station is shown to the user" /><div class="caption-text">The derived scores used by the algorithm to determine what railway and focus station is shown to the user</div></div>
+
+<p>Then, once I was satisfied with the algorithm accuracy on the snapshot data, I migrated this view to use only live device data.</p>
+
+<p>Watching the algorithm run live was exciting. I felt like I’d hit another checkpoint as the device would wake up and start gathering GPS data in the background, then start showing me which railway I was on and which station was next as soon as I opened it.</p>
+
+<div class="caption-wrapper"><img class="caption" src="/images/train-tracker-debug-live-tracking.jpg" width="" height="400" alt="Same as above but using live GPS data" title="Same as above but using live GPS data" /><div class="caption-text">Same as above but using live GPS data</div></div>
+
+<p>With a basic (but admittedly incomplete) tracking algorithm proven, the last piece of the puzzle I needed to de-risk was starting the Live Activity automatically in the background. Unfortunately this is where I hit a frustrating roadblock.</p>
+
+<p>In a careful scan of the lengthy <a href="https://developer.apple.com/documentation/activitykit/displaying-live-data-with-live-activities#Review-Live-Activity-presentations">Live Activities documentation</a>, I found the line:</p>
+
+<blockquote>
+  <p>Your app can only start Live Activities while it’s in the foreground. However, you can update or end a Live Activity from your app while it runs in the background.</p>
+</blockquote>
+
+<p>I confirmed this artificial limitation by attempting it and logging errors in my event tracking database.</p>
+
+<blockquote>
+  <p>LiveActivities Error: The operation couldn’t be completed. Target is not foreground</p>
+</blockquote>
+
+<p>I felt like requiring the user to open the app each time they wanted the live activity to run – even if it was as simple as opening and immediately closing the app – would be too tedious an ask as a prerequisite for daily usage.</p>
+
+<p>Before I neutered my vision or gave up on the idea entirely, I had one card left up my sleeve. From the documentation:</p>
+
+<blockquote>
+  <p>Starting with iOS 17.2 and iPadOS 17.2, you can also start Live Activities with ActivityKit push notifications.</p>
+</blockquote>
+
+<p>So a push notification from a server can start a Live Activity without being initiated by a user (as I’d personally experienced with the Apple Sports app), but for some reason it can’t be started by the device itself? Strange, but since my app is already running in the background, I could technically fire off a network request to my own server with the data I wanted to start the Live Activity with and use my server as a pseudo-proxy to start a Live Activity. It feels like a loophole, but perhaps it’s simply a case of an Apple product manager not re-evaluating an initial safeguard after changing a related feature.</p>
+
+<p>Setting up push notifications is <em>involved</em>. I really did not want to be on the hook for maintaining another set of dependencies, but it was the only option left on the table.</p>
+
+<blockquote>
+  <p>Aside: is it possible to send a push notification directly from a device instead of through an intermediary server controlled by the developer? In other words, could the device send a request to the APNS server directly that would send a push notification right back to it? In theory it seems possible, with the big security downside that the p8 key would need to be included in plain text within the app bundle.</p>
+</blockquote>
+
+<p>I’ll leave the long debug story of how I got push notifications working for another time, but after a couple days of development, I confirmed that I could indeed start a Live Activity from the background using an intermediary server.</p>
+
+<p>Whether or not the App Store app review team considers this to be a permitted workaround is still a huge risk. I’m not sure how I can determine their stance without finishing up version 1 of the app and submitting it for review. Even an unfinished version going through Test Flight review isn’t a guarantee App Store review will also approve.</p>
+
+<p>So this is my current checkpoint: a new app binary with lot of debug screens that starts and updates Live Activities from the background as the user rides a railway in Tokyo.</p>
+
+<div class="caption-wrapper"><img class="caption" src="/images/train-tracker-proto-live-activity.jpg" width="" height="400" alt="Prototype version of the working train tracker Live Activity on the lock screen" title="Prototype version of the working train tracker Live Activity on the lock screen" /><div class="caption-text">Prototype version of the working train tracker Live Activity on the lock screen</div></div>
+
+<div class="caption-wrapper"><img class="caption" src="/images/train-tracker-proto-dynamic-island.jpg" width="" height="400" alt="Prototype version of the working train tracker Live Activity in the Dynamic Island" title="Prototype version of the working train tracker Live Activity in the Dynamic Island" /><div class="caption-text">Prototype version of the working train tracker Live Activity in the Dynamic Island</div></div>
+
+<p>My plan is to release this app standalone. How it fits into the existing and future Eki Bright vision isn’t yet determined. Perhaps the train tracker app is a free marketing driver for Eki Bright. Perhaps the train tracker app evolves separately from Eki Bright and eventually obsoletes Eki Bright. I’m not sure, but my instinct is to test it in the market in isolation first.</p>
+
+<p>What do I need to finish up in order to ship?</p>
+
+<ul>
+  <li>Improve the algorithm to determine the correct railway faster, handle transfers, and off-board seamlessly.</li>
+  <li>Improve the design of the Live Activity.</li>
+  <li>Remove the debug screens and rework the in-app UI for onboarding, settings, and simple monitoring.</li>
+  <li>Create branding and add all the required info for the App Store.</li>
+</ul>
+
+<p>I’m getting faster at getting through this part of the process, but it still takes time. However, I do feel some accomplishment in having semi-efficiently prototyped enough to de-risk this project.</p>
+
+<p>I’m planning to write a few technical posts that detail the caveats of Live Activities once I’m more confident in the robustness of my implementation. Until then.</p>
+
+  </article>
+
+</div>
+
+      </div>
+    </div>
+
+    <footer class="site-footer">
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">twocentstudios</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col  footer-col-1">
+        <ul class="contact-list">
+          <li><a href="mailto:chris@twocentstudios.com">chris@twocentstudios.com</a></li>
+          
+          <li>
+            <a href="https://github.com/twocentstudios">
+              <span class="icon  icon--github">
+                <svg viewBox="0 0 16 16">
+                  <path fill="#828282" d="M7.999,0.431c-4.285,0-7.76,3.474-7.76,7.761 c0,3.428,2.223,6.337,5.307,7.363c0.388,0.071,0.53-0.168,0.53-0.374c0-0.184-0.007-0.672-0.01-1.32 c-2.159,0.469-2.614-1.04-2.614-1.04c-0.353-0.896-0.862-1.135-0.862-1.135c-0.705-0.481,0.053-0.472,0.053-0.472 c0.779,0.055,1.189,0.8,1.189,0.8c0.692,1.186,1.816,0.843,2.258,0.645c0.071-0.502,0.271-0.843,0.493-1.037 C4.86,11.425,3.049,10.76,3.049,7.786c0-0.847,0.302-1.54,0.799-2.082C3.768,5.507,3.501,4.718,3.924,3.65 c0,0,0.652-0.209,2.134,0.796C6.677,4.273,7.34,4.187,8,4.184c0.659,0.003,1.323,0.089,1.943,0.261 c1.482-1.004,2.132-0.796,2.132-0.796c0.423,1.068,0.157,1.857,0.077,2.054c0.497,0.542,0.798,1.235,0.798,2.082 c0,2.981-1.814,3.637-3.543,3.829c0.279,0.24,0.527,0.713,0.527,1.437c0,1.037-0.01,1.874-0.01,2.129 c0,0.208,0.14,0.449,0.534,0.373c3.081-1.028,5.302-3.935,5.302-7.362C15.76,3.906,12.285,0.431,7.999,0.431z"/>
+                </svg>
+              </span>
+
+              <span class="username">twocentstudios</span>
+            </a>
+          </li>
+          
+
+          <li>
+            <a href="https://hackyderm.io/@twocentstudios">
+              <span class="icon">
+                <svg viewBox="0 0 24 24">
+                  <path fill="#828282" d="M21.327 8.566c0-4.339-2.843-5.61-2.843-5.61-1.433-.658-3.894-.935-6.451-.956h-.063c-2.557.021-5.016.298-6.45.956 0 0-2.843 1.272-2.843 5.61 0 .993-.019 2.181.012 3.441.103 4.243.778 8.425 4.701 9.463 1.809.479 3.362.579 4.612.51 2.268-.126 3.541-.809 3.541-.809l-.075-1.646s-1.621.511-3.441.449c-1.804-.062-3.707-.194-3.999-2.409a4.523 4.523 0 0 1-.04-.621s1.77.433 4.014.536c1.372.063 2.658-.08 3.965-.236 2.506-.299 4.688-1.843 4.962-3.254.434-2.223.398-5.424.398-5.424zm-3.353 5.59h-2.081V9.057c0-1.075-.452-1.62-1.357-1.62-1 0-1.501.647-1.501 1.927v2.791h-2.069V9.364c0-1.28-.501-1.927-1.502-1.927-.905 0-1.357.546-1.357 1.62v5.099H6.026V8.903c0-1.074.273-1.927.823-2.558.566-.631 1.307-.955 2.228-.955 1.065 0 1.872.409 2.405 1.228l.518.869.519-.869c.533-.819 1.34-1.228 2.405-1.228.92 0 1.662.324 2.228.955.549.631.822 1.484.822 2.558v5.253z"/>
+                </svg>
+              </span>
+
+              <span class="username">twocentstudios</span>
+            </a>
+          </li>
+
+          
+          <li>
+            <a href="https://twitter.com/twocentstudios">
+              <span class="icon  icon--twitter">
+                <svg viewBox="0 0 16 16">
+                  <path fill="#828282" d="M15.969,3.058c-0.586,0.26-1.217,0.436-1.878,0.515c0.675-0.405,1.194-1.045,1.438-1.809
+                  c-0.632,0.375-1.332,0.647-2.076,0.793c-0.596-0.636-1.446-1.033-2.387-1.033c-1.806,0-3.27,1.464-3.27,3.27 c0,0.256,0.029,0.506,0.085,0.745C5.163,5.404,2.753,4.102,1.14,2.124C0.859,2.607,0.698,3.168,0.698,3.767 c0,1.134,0.577,2.135,1.455,2.722C1.616,6.472,1.112,6.325,0.671,6.08c0,0.014,0,0.027,0,0.041c0,1.584,1.127,2.906,2.623,3.206 C3.02,9.402,2.731,9.442,2.433,9.442c-0.211,0-0.416-0.021-0.615-0.059c0.416,1.299,1.624,2.245,3.055,2.271 c-1.119,0.877-2.529,1.4-4.061,1.4c-0.264,0-0.524-0.015-0.78-0.046c1.447,0.928,3.166,1.469,5.013,1.469 c6.015,0,9.304-4.983,9.304-9.304c0-0.142-0.003-0.283-0.009-0.423C14.976,4.29,15.531,3.714,15.969,3.058z"/>
+                </svg>
+              </span>
+
+              <span class="username">twocentstudios</span>
+            </a>
+          </li>
+          
+        </ul>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+
+
+  </body>
+
+</html>

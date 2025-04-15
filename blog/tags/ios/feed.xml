@@ -5,9 +5,202 @@
     <description>A coding blog covering iOS, Swift, and other programming topics.</description>
     <link>https://twocentstudios.com/blog/tags/ios/index.html</link>
     <atom:link href="https://twocentstudios.com/blog/tags/ios/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Wed, 12 Mar 2025 09:03:29 -0500</pubDate>
-    <lastBuildDate>Wed, 12 Mar 2025 09:03:29 -0500</lastBuildDate>
+    <pubDate>Tue, 15 Apr 2025 03:26:33 -0500</pubDate>
+    <lastBuildDate>Tue, 15 Apr 2025 03:26:33 -0500</lastBuildDate>
     <generator>Jekyll v3.9.3</generator>
+    
+      <item>
+        <title>Train Tracker Devlog</title>
+        <description>&lt;p&gt;Last month, I took a step back from development of my train timetables &lt;a href=&quot;/2024/07/27/eki-bright-tokyo-area-train-timetables&quot;&gt;iOS app Eki Bright&lt;/a&gt; to think about the app in a broader context. I’ve iterated on Version 1 on and off for nearly a year, with use cases emerging out of a basic feature set and evolving with my own daily usage of the app.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/eki-bright-v1-7-marketing.png&quot; width=&quot;&quot; height=&quot;250&quot; alt=&quot;Marketing screenshots for Eki Bright v1.7&quot; title=&quot;Marketing screenshots for Eki Bright v1.7&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Marketing screenshots for Eki Bright v1.7&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;As a solo developer, it’s difficult to maintain a clear perspective about any given project as it grows. It’s a balance of having a strong vision but carefully allowing reality to gently guide that vision.&lt;/p&gt;
+
+&lt;p&gt;All this is to say I spent some time thinking hard about what version 2 of Eki Bright would look like if I started over today. How could I optimize the app for the way I use it now? How can I entice potential users and provide value to new users immediately?&lt;/p&gt;
+
+&lt;p&gt;If I stopped with version 1, as a user, I’d be relatively satisfied. I know how to navigate the app and work around the various UX speed bumps and oil slicks to achieve my goal of riding the train system here in Tokyo. I can overlook the problems in the app in ways a random iPhone user wouldn’t. I knowingly stopped short of perfection on a few feature implementations in favor of getting them shipped.&lt;/p&gt;
+
+&lt;p&gt;I started to see a vision for how the app could work in a &lt;em&gt;progressive enhancement&lt;/em&gt; sort of way for the various use cases I’ve uncovered. I started to see how important it was to do as much heavy lifting in the app as possible. There’s always going to be tension between a “semi-pro” app that gives the user full control while also doing work on their behalf without asking.&lt;/p&gt;
+
+&lt;p&gt;A key part of the vision for version 2 that emerged was that Eki Bright can be a lot smarter about understanding the user’s context. With location services, it should be possible to understand whether the user is walking to a train station and wants to know if they should run to get the next train, or whether they’re riding a train and want to know when they’ll arrive at their destination.&lt;/p&gt;
+
+&lt;p&gt;I started by segmenting out users into part of an app usage lifecycle:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;What would make a iPhone user want to download the app in the first place? Why (if at all) are Tokyo residents unsatisfied with their current navigation apps?&lt;/li&gt;
+  &lt;li&gt;For a first time user, what feature could act as an immediate hook/wedge to provide value with zero setup or explanation and remind them to come back again the next day?&lt;/li&gt;
+  &lt;li&gt;For users who have seen consistent results, what motivation would they have to want to dig deeper and trade some customization effort to get significantly more value out of the app?&lt;/li&gt;
+  &lt;li&gt;For users who have used the app consistently for some time, what features can be enhanced automatically based on usage history?&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;The features that make up this theoretical system are quite complicated! An interface that adapts to the kind of user, the user’s usage history, and the user’s current context was somewhat of a overwhelming task for me to take on all at once.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/eki-bright-v2-feature-list.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Sketching out the lattice of features that could make up Eki Bright v2&quot; title=&quot;Sketching out the lattice of features that could make up Eki Bright v2&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Sketching out the lattice of features that could make up Eki Bright v2&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;So after doing some brainstorming and pencil mockups, I decided to start prototyping a “hook” feature to capture that first segment of users: those who have not downloaded the app and first time users. A feature that is buzzy and attractive to prospective users, and is low touch and requires nearly zero configuration for first time users.&lt;/p&gt;
+
+&lt;p&gt;That feature was a &lt;em&gt;train finder&lt;/em&gt;.&lt;/p&gt;
+
+&lt;p&gt;With the timetable data embedded in the app combined with live location data from the user’s device, I reasoned it should be possible to find the exact train a user was riding if they opened Eki Bright while enroute. If the app could do this, it’d cut down on the work necessary to unlock downstream benefits for the user like:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Checking what time the train will arrive at a destination station&lt;/li&gt;
+  &lt;li&gt;Setting an alarm for the destination station&lt;/li&gt;
+  &lt;li&gt;Checking what other stations are stops along the way&lt;/li&gt;
+  &lt;li&gt;Setting up a &lt;a href=&quot;/2025/01/24/eki-bright-the-case-for-diy-routing/&quot;&gt;DIY route&lt;/a&gt; to more thoroughly track a transfer&lt;/li&gt;
+  &lt;li&gt;Sharing a route and arrival time to a friend&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;At this point, I still intended the train finder feature to be part of Eki Bright. I imagined the user opening up the Eki Bright app along their journey, the app quickly booting up location services and narrowing down the possible railways and trains within a few seconds, and the user being able to quickly take some related actions from there.&lt;/p&gt;
+
+&lt;p&gt;My friend David asked “why not have it run in the background so you don’t need to open the app?” I initially balked, not wanting to add background location tracking to Eki Bright due to its potential to be heavy on the device battery. I also couldn’t see how background tracking could streamline the experience beyond reducing that 1-2 second train calculation time with the tradeoff that all this work would waste battery in the cases the user never opened the app. The background activity idea stayed in the back of my mind though.&lt;/p&gt;
+
+&lt;p&gt;I started prototyping the algorithm for turning a time-series of GPS coordinates into a railway, a direction on that railway, and ultimately a train.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/train-tracker-first-algorithm.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Thinking through an train tracking algorithm. This particular algorithm turned out to be a dud.&quot; title=&quot;Thinking through an train tracking algorithm. This particular algorithm turned out to be a dud.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Thinking through an train tracking algorithm. This particular algorithm turned out to be a dud.&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;After my first day working on the algorithm, I realized that it was going to require a lot iteration on real data from inside the various trains running all over Tokyo. It wasn’t reasonable to think I could ride a train all day with my iPhone and MacBook debugging the algorithm on live data.&lt;/p&gt;
+
+&lt;p&gt;I therefore spent a day creating an app for collecting sessions of GPS coordinates. This has turned out to be a huge boon for development efficiency.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/gps-collector-screens.jpg&quot; width=&quot;&quot; height=&quot;300&quot; alt=&quot;GPS collector app I created and used to get batches of real data from the field&quot; title=&quot;GPS collector app I created and used to get batches of real data from the field&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;GPS collector app I created and used to get batches of real data from the field&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;This personal-use GPS Collector app allows me to collect raw data from Core Location in the background and annotate it while riding the various routes I take around the Tokyo area. I divide each trip up into a &lt;em&gt;session&lt;/em&gt;, then manually annotate the session with the railway, direction, departure station, and arrival station to serve as ground truth annotations. I allow exporting in GPX format (for usage within Xcode) and as JSON I can import into and decode with other apps.&lt;/p&gt;
+
+&lt;p&gt;Seeing the raw data revealed a litany of edge cases my algorithm would need to handle. First off, any train that goes underground is a non-starter for a GPS-reliant system; I’d have to make peace with that fact for now. Core Location data includes speed and heading, which is useful, but is itself a derived value and can be gleaned from other sources. GPS accuracy will sometimes plummet temporarily inside the boundaries of a station and sometimes randomly inside dense city limits. Waypoints are usually returned one-per-second, but sometimes will cut out for seconds or minutes. Some trains go from underground to above ground at least once along their designated route.&lt;/p&gt;
+
+&lt;p&gt;I spent a week or so collecting GPS data while working on other apps. I returned to Eki Bright to finish up a first draft of an algorithm that took an entire time-series of GPS data and returned a ranked list of candidates: a railway, the direction on that railway, and the previous and next station.&lt;/p&gt;
+
+&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;RidingTrainFinderCandidate&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;railway&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Railway&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;direction&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;RailDirection&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;previousStation&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Station&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;nextStation&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Station&lt;/span&gt;
+    &lt;span class=&quot;c1&quot;&gt;// let train: TrainTimetable -- TODO: determine which train&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;I added a debug viewer to visualize how my algorithm was responding to test data as it was played back. It was mostly working! It was also kind of fun to watch the playback. Being able to throw together a view like this for the sole purpose of debugging an algorithm is a huge win for SwiftUI.&lt;/p&gt;
+
+&lt;video src=&quot;/images/train-tracker-debug-view-01.mp4&quot; controls=&quot;&quot; poster=&quot;/images/train-tracker-debug-view-01.png&quot; preload=&quot;none&quot; height=&quot;400&quot;&gt;&lt;/video&gt;
+
+&lt;p&gt;I’d hit a development checkpoint, and as cool as my little debug tracker view was, I was still far from a shippable feature that solved a real problem. My next step was extending the algorithm to guess which train the user was on (not exactly a straightforward algorithm to write based on the shape of my train timetable data).&lt;/p&gt;
+
+&lt;p&gt;However, I thought back to my friend David’s remark about an app that works in the background. I thought, if I freed myself from the artificial constraints of Eki Bright as it currently existed, how could this algorithm still be useful?&lt;/p&gt;
+
+&lt;p&gt;A new vision emerged of an app that solved a much shallower problem:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Sometimes when I’m on a crowded train and I’ve got my headphones in, it’s hard to tell what station I’m approaching. I can’t see the display above the train car door or out the window.&lt;/li&gt;
+  &lt;li&gt;What if I had a Live Activity in my Dynamic Island that updated live as I stopped at or passed each station along a railway?&lt;/li&gt;
+  &lt;li&gt;And what if I didn’t have to manually select what railway I was on and what direction I was going?&lt;/li&gt;
+  &lt;li&gt;Better yet, what if I &lt;em&gt;didn’t even have to open the app&lt;/em&gt; and the Live Activity would automatically appear when I was riding a train and disappear when I got off?&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;If I could pull it off, this feature would be supplemental to any other navigation app. It also has a bit of “cool technology” vibe to it that could entice a download and serve as a conversation piece.&lt;/p&gt;
+
+&lt;p&gt;Realizing this new vision came with its own new implementation challenges.&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Monitor significant location changes in the background to save battery life, then switch to live location monitoring when moving at train speeds.&lt;/li&gt;
+  &lt;li&gt;Detect the railway and railway direction.&lt;/li&gt;
+  &lt;li&gt;Continuously update which stations have been visited and passed, and which station is next on the railway, even if it’s far away.&lt;/li&gt;
+  &lt;li&gt;Start a Live Activity in the background when confidence in the current railway is high enough.&lt;/li&gt;
+  &lt;li&gt;Update the Live Activity as the user approaches, arrives at, and departs a station.&lt;/li&gt;
+  &lt;li&gt;End the Live Activity and switch back to monitoring significant location changes once the user has alighted their train.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;I knew that significant location changes, app background activity, and the way each of these system features interacts with the relatively new (iOS 16+) Live Activities API was going to pose as the biggest risk to executing the seamless zero-touch app experience I envisioned.&lt;/p&gt;
+
+&lt;p&gt;I started by creating a new app project and creating a GRDB-backed event logging system. Next, I configured the app to request background location permission. I then created the bones of a location tracking algorithm that preserved battery life. I logged app lifecycle events and events for my location tracking algorithm to ensure I could quickly debug why the app was or wasn’t “waking up” or “sleeping” when I expected it to while out in the field.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/train-tracker-app-events.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Log of app events so I can verify background behavior&quot; title=&quot;Log of app events so I can verify background behavior&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Log of app events so I can verify background behavior&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;The next big task was reimagining my existing railway-finding algorithm for a different system lifecycle. This also meant I needed to pare down my very large train timetable static database for this new use case. I only needed the list of railways and stations. I followed a similar development flow as last time; I created a couple new debug views to view the live GPS waypoints and follow these waypoints on a map alongside the train tracking algorithm outputs.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/train-tracker-waypoints-view.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Raw waypoints view to allow confirmation of incoming data&quot; title=&quot;Raw waypoints view to allow confirmation of incoming data&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Raw waypoints view to allow confirmation of incoming data&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;I started with a version that played back existing GPS data. A dashboard view showed just the user-facing data: the detected railway and “focus” station.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/train-tracker-debug-dashboard.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;A debug view that plays back previously captured GPS data at variable speed and shows user-facing data&quot; title=&quot;A debug view that plays back previously captured GPS data at variable speed and shows user-facing data&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;A debug view that plays back previously captured GPS data at variable speed and shows user-facing data&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;There was also a list view showing the scores assigned by the algorithm and used to determine the ultimate result shown to the user.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/train-tracker-debug-list.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;The derived scores used by the algorithm to determine what railway and focus station is shown to the user&quot; title=&quot;The derived scores used by the algorithm to determine what railway and focus station is shown to the user&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The derived scores used by the algorithm to determine what railway and focus station is shown to the user&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Then, once I was satisfied with the algorithm accuracy on the snapshot data, I migrated this view to use only live device data.&lt;/p&gt;
+
+&lt;p&gt;Watching the algorithm run live was exciting. I felt like I’d hit another checkpoint as the device would wake up and start gathering GPS data in the background, then start showing me which railway I was on and which station was next as soon as I opened it.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/train-tracker-debug-live-tracking.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Same as above but using live GPS data&quot; title=&quot;Same as above but using live GPS data&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Same as above but using live GPS data&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;With a basic (but admittedly incomplete) tracking algorithm proven, the last piece of the puzzle I needed to de-risk was starting the Live Activity automatically in the background. Unfortunately this is where I hit a frustrating roadblock.&lt;/p&gt;
+
+&lt;p&gt;In a careful scan of the lengthy &lt;a href=&quot;https://developer.apple.com/documentation/activitykit/displaying-live-data-with-live-activities#Review-Live-Activity-presentations&quot;&gt;Live Activities documentation&lt;/a&gt;, I found the line:&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;Your app can only start Live Activities while it’s in the foreground. However, you can update or end a Live Activity from your app while it runs in the background.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;I confirmed this artificial limitation by attempting it and logging errors in my event tracking database.&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;LiveActivities Error: The operation couldn’t be completed. Target is not foreground&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;I felt like requiring the user to open the app each time they wanted the live activity to run – even if it was as simple as opening and immediately closing the app – would be too tedious an ask as a prerequisite for daily usage.&lt;/p&gt;
+
+&lt;p&gt;Before I neutered my vision or gave up on the idea entirely, I had one card left up my sleeve. From the documentation:&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;Starting with iOS 17.2 and iPadOS 17.2, you can also start Live Activities with ActivityKit push notifications.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;So a push notification from a server can start a Live Activity without being initiated by a user (as I’d personally experienced with the Apple Sports app), but for some reason it can’t be started by the device itself? Strange, but since my app is already running in the background, I could technically fire off a network request to my own server with the data I wanted to start the Live Activity with and use my server as a pseudo-proxy to start a Live Activity. It feels like a loophole, but perhaps it’s simply a case of an Apple product manager not re-evaluating an initial safeguard after changing a related feature.&lt;/p&gt;
+
+&lt;p&gt;Setting up push notifications is &lt;em&gt;involved&lt;/em&gt;. I really did not want to be on the hook for maintaining another set of dependencies, but it was the only option left on the table.&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;Aside: is it possible to send a push notification directly from a device instead of through an intermediary server controlled by the developer? In other words, could the device send a request to the APNS server directly that would send a push notification right back to it? In theory it seems possible, with the big security downside that the p8 key would need to be included in plain text within the app bundle.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;I’ll leave the long debug story of how I got push notifications working for another time, but after a couple days of development, I confirmed that I could indeed start a Live Activity from the background using an intermediary server.&lt;/p&gt;
+
+&lt;p&gt;Whether or not the App Store app review team considers this to be a permitted workaround is still a huge risk. I’m not sure how I can determine their stance without finishing up version 1 of the app and submitting it for review. Even an unfinished version going through Test Flight review isn’t a guarantee App Store review will also approve.&lt;/p&gt;
+
+&lt;p&gt;So this is my current checkpoint: a new app binary with lot of debug screens that starts and updates Live Activities from the background as the user rides a railway in Tokyo.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/train-tracker-proto-live-activity.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Prototype version of the working train tracker Live Activity on the lock screen&quot; title=&quot;Prototype version of the working train tracker Live Activity on the lock screen&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Prototype version of the working train tracker Live Activity on the lock screen&lt;/div&gt;&lt;/div&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/train-tracker-proto-dynamic-island.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Prototype version of the working train tracker Live Activity in the Dynamic Island&quot; title=&quot;Prototype version of the working train tracker Live Activity in the Dynamic Island&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Prototype version of the working train tracker Live Activity in the Dynamic Island&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;My plan is to release this app standalone. How it fits into the existing and future Eki Bright vision isn’t yet determined. Perhaps the train tracker app is a free marketing driver for Eki Bright. Perhaps the train tracker app evolves separately from Eki Bright and eventually obsoletes Eki Bright. I’m not sure, but my instinct is to test it in the market in isolation first.&lt;/p&gt;
+
+&lt;p&gt;What do I need to finish up in order to ship?&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Improve the algorithm to determine the correct railway faster, handle transfers, and off-board seamlessly.&lt;/li&gt;
+  &lt;li&gt;Improve the design of the Live Activity.&lt;/li&gt;
+  &lt;li&gt;Remove the debug screens and rework the in-app UI for onboarding, settings, and simple monitoring.&lt;/li&gt;
+  &lt;li&gt;Create branding and add all the required info for the App Store.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;I’m getting faster at getting through this part of the process, but it still takes time. However, I do feel some accomplishment in having semi-efficiently prototyped enough to de-risk this project.&lt;/p&gt;
+
+&lt;p&gt;I’m planning to write a few technical posts that detail the caveats of Live Activities once I’m more confident in the robustness of my implementation. Until then.&lt;/p&gt;
+</description>
+        <pubDate>Tue, 15 Apr 2025 12:06:00 -0500</pubDate>
+        <link>https://twocentstudios.com/2025/04/15/train-tracker-checkpoint-devlog/</link>
+        <guid isPermaLink="true">https://twocentstudios.com/2025/04/15/train-tracker-checkpoint-devlog/</guid>
+        
+        <category>ekibright</category>
+        
+        <category>ios</category>
+        
+        
+      </item>
     
       <item>
         <title>8-bit Nails Plus</title>
@@ -2729,233 +2922,6 @@ kMDItemKind                        &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt
         <category>ios</category>
         
         <category>ekibright</category>
-        
-        
-      </item>
-    
-      <item>
-        <title>Investigating a Bug in the Tsurukame macOS App</title>
-        <description>&lt;p&gt;I procrastinated on doing my kanji reviews over the weekend by &lt;a href=&quot;https://github.com/davidsansome/tsurukame/pull/709&quot;&gt;fixing a bug&lt;/a&gt; in the open source &lt;a href=&quot;https://github.com/davidsansome/tsurukame/&quot;&gt;Tsurukame for Wanikani app&lt;/a&gt;. This is a quick write-up about how I went about diagnosing and fixing the bug from fork to pull request.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/tsurukame-bug-01.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Tsurukame is an native iOS interface to the Wanikani flashcard system for Japanese kanji and vocabulary, developed and maintained by David Sansome.&quot; title=&quot;Tsurukame is an native iOS interface to the Wanikani flashcard system for Japanese kanji and vocabulary, developed and maintained by David Sansome.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Tsurukame is an native iOS interface to the Wanikani flashcard system for Japanese kanji and vocabulary, developed and maintained by David Sansome.&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;&lt;a href=&quot;https://github.com/davidsansome/tsurukame/issues/706&quot;&gt;Issue #706 - MacOS: Text input gets highlighted during reviews&lt;/a&gt; was reported by another app user a few weeks ago:&lt;/p&gt;
-
-&lt;blockquote&gt;
-  &lt;p&gt;After maybe the first half a second or so of a review being open, whatever text you have typed gets highlighted. If you are continuing to type that initial input gets deleted.&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;video src=&quot;/images/tsurukame-bug-02.mp4&quot; loop=&quot;&quot; controls=&quot;&quot; preload=&quot;&quot; width=&quot;500&quot;&gt;&lt;/video&gt;
-
-&lt;p&gt;In the above video, after getting the meaning “bombing” correct, as I’m typing the reading the ぼう suddenly gets selected and is therefore deleted when I continue typing.&lt;/p&gt;
-
-&lt;p&gt;I noticed this bug as well and it was honestly causing enough friction in my reviews that I finally decided to investigate the bug in earnest.&lt;/p&gt;
-
-&lt;h3 id=&quot;setting-up-project-and-building&quot;&gt;Setting up project and building&lt;/h3&gt;
-
-&lt;p&gt;I fork the repo, then clone my fork to my local machine. I follow the instructions on the README to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;pod install&lt;/code&gt;, open the xcworkspace in Xcode 15.3, change the signing identifiers, and run the signing identifiers helper script.&lt;/p&gt;
-
-&lt;p&gt;Since on the App Store the app is listed under “iPhone &amp;amp; iPad Apps” section, I choose the “My Mac (Designed for iPad)” build destination.&lt;/p&gt;
-
-&lt;p&gt;When trying to build, Xcode complains about not having the WatchOS SDK, so I simply delete the two WatchOS targets and try to build again. It builds without any problems.&lt;/p&gt;
-
-&lt;p&gt;I set up the simulator app with my API key and verify I can reproduce the bug.&lt;/p&gt;
-
-&lt;h3 id=&quot;finding-the-relevant-view-controller&quot;&gt;Finding the relevant view controller&lt;/h3&gt;
-
-&lt;p&gt;I start by figuring out the name of the view controller.&lt;/p&gt;
-
-&lt;h4 id=&quot;strategy-1-view-debugger&quot;&gt;Strategy 1: View Debugger&lt;/h4&gt;
-
-&lt;p&gt;The easiest way to do this is to navigate to the screen in the simulator and then use the view debugger. The view controller is called &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ReviewViewController&lt;/code&gt;. The upside to this strategy is that I also get the name of the text field (&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;AnswerTextField&lt;/code&gt;).&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/tsurukame-bug-03.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Using the view debugger is often the easiest way to discover class names.&quot; title=&quot;Using the view debugger is often the easiest way to discover class names.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Using the view debugger is often the easiest way to discover class names.&lt;/div&gt;&lt;/div&gt;
-
-&lt;h4 id=&quot;strategy-2-searching-for-label-text&quot;&gt;Strategy 2: Searching for label text&lt;/h4&gt;
-
-&lt;p&gt;Another way to find the view controller is search the project for the label text “Reviews”. This leads me to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;MainViewController.swift&lt;/code&gt;:&lt;/p&gt;
-
-&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;reviewsItem&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;BasicModelItem&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;style&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;value1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
-                                &lt;span class=&quot;nv&quot;&gt;title&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;Reviews&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
-                                &lt;span class=&quot;nv&quot;&gt;subtitle&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
-                                &lt;span class=&quot;nv&quot;&gt;accessoryType&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;disclosureIndicator&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
-                                &lt;span class=&quot;nv&quot;&gt;target&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
-                                &lt;span class=&quot;nv&quot;&gt;action&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;#&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;selector&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;startReviews&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;I search for the selector &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;startReviews&lt;/code&gt; which leads me to the segue and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ReviewContainerViewController&lt;/code&gt;:&lt;/p&gt;
-
-&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;startReviews&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
-    &lt;span class=&quot;c1&quot;&gt;// ,..&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;vc&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;segue&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;destination&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;as!&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ReviewContainerViewController&lt;/span&gt;
-    &lt;span class=&quot;n&quot;&gt;vc&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;setup&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;services&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;services&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;items&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;items&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ReviewContainerViewController&lt;/code&gt; has two options, the more obvious one being &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ReviewViewController&lt;/code&gt;:&lt;/p&gt;
-
-&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;n&quot;&gt;reviewVC&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;storyboard&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;!&lt;/span&gt;
-    &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;instantiateViewController&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;withIdentifier&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;reviewViewController&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;as!&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ReviewViewController&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;span class=&quot;n&quot;&gt;reviewVC&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;setup&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;services&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;services&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;items&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;items&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;showMenuButton&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;true&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;showSubjectHistory&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;true&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
-                &lt;span class=&quot;nv&quot;&gt;delegate&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;isPracticeSession&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;isPracticeSession&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-
-&lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;menuVC&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;storyboard&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;!&lt;/span&gt;
-    &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;instantiateViewController&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;withIdentifier&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;reviewMenuViewController&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;as!&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ReviewMenuViewController&lt;/span&gt;
-&lt;span class=&quot;n&quot;&gt;menuVC&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;delegate&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;h3 id=&quot;finding-the-relevant-code&quot;&gt;Finding the relevant code&lt;/h3&gt;
-
-&lt;p&gt;I previously found the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;UITextField&lt;/code&gt; is named &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;answerTextField&lt;/code&gt;. It’s actually a subclass of type &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;AnswerTextField&lt;/code&gt;. Just to double check, there’s not much functionality in the subclass implementation, so I can try to ignore it for now and assume the offending code is in the view controller.&lt;/p&gt;
-
-&lt;p&gt;Searching for uses of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;answerTextField&lt;/code&gt;, I find a section of the view controller that implements the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;UITextFieldDelegate&lt;/code&gt; protocol. My instinct tells me this is a good place to start putting breakpoints. I put a breakpoint in:&lt;/p&gt;
-
-&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;textField&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;UITextField&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;shouldChangeCharactersIn&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;NSRange&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;replacementString&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Bool&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;Looking at the backtrace, it turns out that the delegate is actually delegated through another class called &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;TKMKanaInput&lt;/code&gt;. I can confirm this by seeing that the expression in &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ReviewViewController&lt;/code&gt; sets the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;UITextFieldDelegate&lt;/code&gt; to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;kanaInput&lt;/code&gt;:&lt;/p&gt;
-
-&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;n&quot;&gt;answerField&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;delegate&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;kanaInput&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;And &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;kanaInput&lt;/code&gt; sets its delegate to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;self&lt;/code&gt; which is &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ReviewViewController&lt;/code&gt;.&lt;/p&gt;
-
-&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;n&quot;&gt;kanaInput&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;TKMKanaInput&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;delegate&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;The effective delegate chain is &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;UITextField&lt;/code&gt; -&amp;gt; &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;TKMKanaInput&lt;/code&gt; -&amp;gt; &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ReviewViewController&lt;/code&gt;.&lt;/p&gt;
-
-&lt;p&gt;The bug is happening because the text field contents are getting selected unexpectedly. When I look at the available methods on the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;UITextFieldDelegate&lt;/code&gt; protocol, I notice one related to selection that could be useful:&lt;/p&gt;
-
-&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;@available(iOS 13.0, *)&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;optional&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;textFieldDidChangeSelection&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;_&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;textField&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;UITextField&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;This API is only available on iOS 13 and the deployment target for Tsurukame is iOS 12. I temporarily update the deployment target to iOS 13 so I can use this API for debugging.&lt;/p&gt;
-
-&lt;p&gt;I add the delegate conformance to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;TKMKanaInput&lt;/code&gt;. &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;TKMKanaInput&lt;/code&gt; is written in Objective-C so we need to add that version instead of the Swift signature:&lt;/p&gt;
-
-&lt;div class=&quot;language-objc highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;textFieldDidChangeSelection&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;UITextField&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;textField&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-  &lt;span class=&quot;nb&quot;&gt;NULL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// &amp;lt;-- breakpoint here
-&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;I add a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;NULL&lt;/code&gt; so I can set a breakpoint.&lt;/p&gt;
-
-&lt;p&gt;With the breakpoint added, this method gets called too often to be useful. Basically on any change. I want it to get called only when the selection length is non-zero.&lt;/p&gt;
-
-&lt;p&gt;Checking the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;UITextField&lt;/code&gt; API, I can check the value of this range with the following line in LLDB:&lt;/p&gt;
-
-&lt;div class=&quot;language-objc highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;n&quot;&gt;po&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;BOOL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;textField&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;selectedTextRange&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;isEmpty&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;It’s false only when the bug occurs (or when I manually select some text, but I can avoid doing that).&lt;/p&gt;
-
-&lt;p&gt;I change the breakpoint condition to be:&lt;/p&gt;
-
-&lt;div class=&quot;language-objc highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;BOOL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;textField&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;selectedTextRange&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;isEmpty&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;NO&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/tsurukame-bug-05.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Using Xcode&apos;s conditional breakpoint functionality to ignore the many irrelevant calls to this method.&quot; title=&quot;Using Xcode&apos;s conditional breakpoint functionality to ignore the many irrelevant calls to this method.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Using Xcode&apos;s conditional breakpoint functionality to ignore the many irrelevant calls to this method.&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;Note: when I used &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;false&lt;/code&gt; instead of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;NO&lt;/code&gt; the breakpoint would always catch no matter what.&lt;/p&gt;
-
-&lt;p&gt;I build and run the app, submit a reading answer, then immediately start typing. The breakpoint triggers!&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/tsurukame-bug-04.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Our breakpoint triggers at the exact time the text field&apos;s contents are selected.&quot; title=&quot;Our breakpoint triggers at the exact time the text field&apos;s contents are selected.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Our breakpoint triggers at the exact time the text field&apos;s contents are selected.&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;Ascending the stack trace, I see a hit in app code within &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ReviewViewController&lt;/code&gt;.&lt;/p&gt;
-
-&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;@objc&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;animationDidStop&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;animationID&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;NSString&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;finished&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;NSNumber&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;context&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;UnsafeMutableRawPointer&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-  &lt;span class=&quot;c1&quot;&gt;// ...&lt;/span&gt;
-  &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ctx&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;subjectDetailsViewShown&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;c1&quot;&gt;// ...&lt;/span&gt;
-  &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;else&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;c1&quot;&gt;// ...&lt;/span&gt;
-    &lt;span class=&quot;n&quot;&gt;answerField&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;becomeFirstResponder&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// &amp;lt;-- breakpoint triggers here&lt;/span&gt;
-  &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-  &lt;span class=&quot;c1&quot;&gt;// ...&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;This makes sense for a few reasons:&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;The selection bug was occurring ~0.5-1.0 seconds after switching review items; this amount of time is consistent with animations.&lt;/li&gt;
-  &lt;li&gt;The responder chain is one of the few ways to programmatically alter &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;UITextField&lt;/code&gt; and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;UITextView&lt;/code&gt;.&lt;/li&gt;
-  &lt;li&gt;The UIKit internal behavior for text-related tasks especially is opaque and notoriously fickle between even point releases of iOS.&lt;/li&gt;
-  &lt;li&gt;Mapping iOS input behavior to macOS is never 1-to-1, and is a hot-spot for leaky abstractions.&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;I’ve found the offending line of code, so now I can decide how to fix it.&lt;/p&gt;
-
-&lt;h3 id=&quot;why-does-this-code-exist-in-the-first-place&quot;&gt;Why does this code exist in the first place?&lt;/h3&gt;
-
-&lt;p&gt;Before modifying the code in any way, it’s best to try to understand why this code was written.&lt;/p&gt;
-
-&lt;p&gt;I pop open Xcode’s git blame viewer (named “Authors” in the Editor Options). The commit includes a pull request number #186.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/tsurukame-bug-06.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Git blame in Xcode (no blame being thrown from here though).&quot; title=&quot;Git blame in Xcode (no blame being thrown from here though).&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Git blame in Xcode (no blame being thrown from here though).&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;I open &lt;a href=&quot;https://github.com/davidsansome/tsurukame/pull/186&quot;&gt;this PR in GitHub&lt;/a&gt;.&lt;/p&gt;
-
-&lt;p&gt;The line of code was added by itself in this PR, and it was added specifically for macOS support back in 10.15 (it’s now 14.4):&lt;/p&gt;
-
-&lt;blockquote&gt;
-  &lt;p&gt;Without this patch, you have to click the mouse to focus on the text entry box after each animation. With this patch, you can type answers one after another, like on an iPhone or iPad.&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;h3 id=&quot;proposing-and-testing-a-potential-fix&quot;&gt;Proposing and testing a potential fix&lt;/h3&gt;
-
-&lt;p&gt;Now I can remove the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;answerField.becomeFirstResponder()&lt;/code&gt; call and then,&lt;/p&gt;
-
-&lt;ol&gt;
-  &lt;li&gt;Check to see whether the behavior reported in #186 still occurs on macOS&lt;/li&gt;
-  &lt;li&gt;Check to see whether the errant selection behavior (my target bug) still occurs on macOS&lt;/li&gt;
-  &lt;li&gt;Check to see no behavior changes occur on iPhone&lt;/li&gt;
-&lt;/ol&gt;
-
-&lt;p&gt;I remove the line and:&lt;/p&gt;
-
-&lt;ol&gt;
-  &lt;li&gt;The behavior reported in #186 no longer occurs. Presumably it was “fixed” at the iOS/macOS system layer.&lt;/li&gt;
-  &lt;li&gt;The errant selection behavior no longer occurs. Our bug is fixed!&lt;/li&gt;
-  &lt;li&gt;No behavior changes occur on iPhone. No problem there.&lt;/li&gt;
-&lt;/ol&gt;
-
-&lt;h3 id=&quot;committing-submitting-and-documenting-the-fix&quot;&gt;Committing, submitting, and documenting the fix&lt;/h3&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;I make a new local branch.&lt;/li&gt;
-  &lt;li&gt;I commit the code with a decent commit title and description.&lt;/li&gt;
-  &lt;li&gt;I push to my remote fork on GitHub.&lt;/li&gt;
-  &lt;li&gt;I &lt;a href=&quot;https://github.com/davidsansome/tsurukame/pull/709&quot;&gt;open a PR #709&lt;/a&gt; on the canonical repo.&lt;/li&gt;
-  &lt;li&gt;I write up a succinct PR description linking the bug report issue and the old PR.&lt;/li&gt;
-  &lt;li&gt;I submit the PR for review by the maintainer.&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h2 id=&quot;epilogue&quot;&gt;Epilogue&lt;/h2&gt;
-
-&lt;p&gt;The maintainer approved and merged the PR almost immediately. CI ran and produced a new TestFlight build, but unfortunately, the TestFlight build is not runnable on macOS, so I’ll have to use my debug build for day-to-day reviews until the next version is ready for the App Store.&lt;/p&gt;
-
-&lt;p&gt;I’m happy that this bug will no longer slow me down during reviews! Open source is great.&lt;/p&gt;
-</description>
-        <pubDate>Wed, 08 May 2024 09:45:00 -0500</pubDate>
-        <link>https://twocentstudios.com/2024/05/08/investigating-tsurukame-macos-bug/</link>
-        <guid isPermaLink="true">https://twocentstudios.com/2024/05/08/investigating-tsurukame-macos-bug/</guid>
-        
-        <category>apple</category>
-        
-        <category>ios</category>
         
         
       </item>
