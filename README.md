@@ -34,9 +34,35 @@ Use `page` for a page that includes the header and footer.
 
 HTML pages can be processed, have a layout, and include front matter and templating. See `blog.html`.
 
+### Tags
+
+Used to make categories list and xml. Can be added at will. Multiple per post is fine. Should have no spaces.
+
+Included in front matter like:
+
+`tags: apple ios ekibright`
+
+#### Notable tags list
+
+- `apple` - includes the post in [iOS Dev Directory](https://iosdevdirectory.com/)
+- `commentary` - hot takes
+- `blog` - meta-info about this blog
+- `debugging` - stories
+- `ios` `macOS` - platform specific
+- `retro` - retrospectives about employment, etc.
+- {appname} - tag the app name
+
 ## Post formatting
 
-Images go in the `images` folder. Raw references are like `![An image](/images/some-image.jpg)`. Captioned variant uses a plugin and special syntax like `{% caption_img /images/photophono-screens.png w200 h200 Walkthrough %}`.
+Images go in the `images` folder. 
+
+The preferred captioned variant uses a plugin and special syntax: 
+
+`{% caption_img /images/photophono-screens.png w200 h200 Walkthrough %}`.
+
+Raw references are valid but discouraged:
+
+`![An image](/images/some-image.jpg)`. 
 
 Video links look like this and should also include a poster image:
 
