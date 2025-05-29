@@ -23,7 +23,7 @@ I did indeed finish ~all of~ most of these TODOs, but like usual it took a lot l
 
 ### Home UI
 
-The UI for Eki Live is nowhere near as expansive as humble Eki Bright, which has a screen for each resource like station, timetable, railway, bookmarks, nearby station, search, etc. Eki Live is really just one screen, and in the ethos of the app, most users will rarely see it; the app is intended to function as an automatically appearing and disappearing Live Activity.
+The UI for Eki Live is nowhere near as expansive as humble [Eki Bright](https://twocentstudios.com/2024/07/27/eki-bright-tokyo-area-train-timetables/), which has a screen for each resource like station, timetable, railway, bookmarks, nearby station, search, etc. Eki Live is really just one screen, and in the ethos of the app, most users will rarely see it; the app is intended to function as an automatically appearing and disappearing Live Activity.
 
 {% caption_img /images/eki-live-v1-home-en.jpg h450 Eki Live's home screen, en route to Jiyugaoka station %}
 
