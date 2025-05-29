@@ -3,7 +3,7 @@ layout: post
 title: "Train Tracker Devlog"
 date: 2025-04-15 17:06:00
 image: /images/train-tracker-debug-dashboard.jpg
-tags: ekibright ios
+tags: ekibright ekilive ios
 ---
 
 Last month, I took a step back from development of my train timetables [iOS app Eki Bright](/2024/07/27/eki-bright-tokyo-area-train-timetables) to think about the app in a broader context. I've iterated on Version 1 on and off for nearly a year, with use cases emerging out of a basic feature set and evolving with my own daily usage of the app.
