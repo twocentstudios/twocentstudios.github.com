@@ -58,11 +58,11 @@ Images go in the `images` folder.
 
 The preferred captioned variant uses a plugin and special syntax: 
 
-`{% caption_img /images/photophono-screens.png w200 h200 Walkthrough %}`.
+`{% caption_img /images/photophono-screens.png w200 h200 Walkthrough %}`
 
 Raw references are valid but discouraged:
 
-`![An image](/images/some-image.jpg)`. 
+`![An image](/images/some-image.jpg)`
 
 Video links look like this and should also include a poster image:
 
