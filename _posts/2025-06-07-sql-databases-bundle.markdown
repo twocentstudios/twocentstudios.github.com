@@ -18,7 +18,6 @@ My workflow involves:
 // Opening an sqlite database from the bundle using the venerable GRDB library
 guard let databasePath = Bundle.main.path(forResource: "db", ofType: "sqlite") else { fatalError("Database not found in bundle") }
 var configuration = Configuration()
-configuration.foreignKeysEnabled = true
 configuration.readonly = true
 let database = try DatabaseQueue(path: databasePath, configuration: configuration)
 ```
@@ -61,7 +60,6 @@ func exportDatabase(_ sourceDatabase: any DatabaseReader) throws -> URL {
     let url = URL.temporaryDirectory.appending(component: fileName).appendingPathExtension("sqlite")
 
     var configuration = Configuration()
-    configuration.foreignKeysEnabled = true
     let targetDatabase = try DatabaseQueue(path: url.path, configuration: configuration)
 
     // Note: `backup` changes the journal mode of `targetDatabase`
