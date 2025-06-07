@@ -3,7 +3,7 @@ layout: post
 title: "Caveats Using Read-only SQLite Databases from the App Bundle"
 date: 2025-06-07 14:27:00
 image: /images/sqlite-journal-mode.png
-tags: ekilive ios debugging
+tags: ekilive apple ios debugging
 ---
 
 In my iOS apps [Eki Live](/2025/06/03/eki-live-announcement/) and [Eki Bright](https://twocentstudios.com/2024/07/27/eki-bright-tokyo-area-train-timetables/) I've been using read-only SQLite databases shipped in the app bundle. It's mostly worked fine so far (disregarding the [App Group Containers](https://ryanashcraft.com/sqlite-databases-in-app-group-containers/) problem).
