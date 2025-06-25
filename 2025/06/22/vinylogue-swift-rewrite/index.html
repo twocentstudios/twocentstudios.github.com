@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>Rewriting a 12 Year Old Objective-C iOS App with Claude Code</title>
+
+  <meta property="og:type" content="article" />
+  <meta property="og:title" content="Rewriting a 12 Year Old Objective-C iOS App with Claude Code" />
+  <meta property="og:url" content="https://twocentstudios.com/2025/06/22/vinylogue-swift-rewrite/" />
+  
+    <meta property="og:article:published_time" content="2025-06-22T12:56:00-05:00" />
+  
+  
+    <meta property="og:image" content="https://twocentstudios.com/images/vinylogue-v2-main-screens.jpg" />
+  
+  
+  <link href='https://fonts.googleapis.com/css2?family=Work+Sans:wght@300;350;400;600' rel='stylesheet' type='text/css'>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="canonical" href="https://twocentstudios.com/2025/06/22/vinylogue-swift-rewrite/">
+  <link rel="alternate" type="application/rss+xml" title="twocentstudios" href="https://twocentstudios.com/feed.xml" />
+</head>
+
+  <!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-NE82N02W8S"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-NE82N02W8S');
+</script>
+
+  <body>
+
+    <header class="site-header">
+
+  <div class="wrapper">
+
+    <a class="site-title" href="/">twocentstudios</a>
+
+    <nav class="site-nav">
+      <a href="#" class="menu-icon">
+        <svg viewBox="0 0 18 15">
+          <path fill="#424242" d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.031C17.335,0,18,0.665,18,1.484L18,1.484z"/>
+          <path fill="#424242" d="M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0c0-0.82,0.665-1.484,1.484-1.484 h15.031C17.335,6.031,18,6.696,18,7.516L18,7.516z"/>
+          <path fill="#424242" d="M18,13.516C18,14.335,17.335,15,16.516,15H1.484C0.665,15,0,14.335,0,13.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.031C17.335,12.031,18,12.696,18,13.516L18,13.516z"/>
+        </svg>
+      </a>
+
+      <div class="trigger">
+        
+          
+          <a class="page-link" href="/about/">About</a>
+          
+        
+          
+          <a class="page-link" href="/blog/">Blog</a>
+          
+        
+          
+        
+          
+        
+          
+          <a class="page-link" href="/portfolio/">Portfolio</a>
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      </div>
+    </nav>
+
+  </div>
+
+</header>
+
+
+    <div class="page-content">
+      <div class="wrapper">
+        <div class="post">
+
+  <header class="post-header">
+    <h1 class="post-title">Rewriting a 12 Year Old Objective-C iOS App with Claude Code</h1>
+    <p class="post-meta">Jun 22, 2025</p>
+  </header>
+
+  <article class="post-content">
+    <p>Last week, I rewrote my iOS app <a href="(https://itunes.apple.com/us/app/vinylogue-for-last.fm/id617471119?ls=1&amp;mt=8)">Vinylogue</a> to Swift and SwiftUI with the help of <a href="https://www.anthropic.com/claude-code">Claude Code</a>. I originally created Vinylogue <a href="http://twocentstudios.com/blog/2013/04/03/the-making-of-vinylogue/">back in 2013</a> targeting iOS 6. Recently, I’ve been wanting to try out Claude Code, and I decided updating Vinylogue would be a good test project for it.</p>
+
+<p>TL;DR: Using Claude Code made this rewrite super fun and productive and was absolutely worth the $20, even considering the time I spent learning the limitations of the tool and how it’s still relatively unoptimized for Apple platforms development.</p>
+
+<h2 id="table-of-contents">Table of Contents</h2>
+
+<ul>
+  <li>Overview</li>
+  <li>The goal of the rewrite</li>
+  <li>A walkthrough of my daily accomplishments and phases of the rewrite</li>
+  <li>Specifics of working with Claude Code including:
+    <ul>
+      <li>Lessons learned</li>
+      <li>Genres of tasks I used it for</li>
+      <li>What I want to try next time</li>
+      <li>Lots of stray observations</li>
+    </ul>
+  </li>
+</ul>
+
+<h2 id="overview">Overview</h2>
+
+<p>Vinylogue is an app that shows you and your friends’ last.fm album listening history for “this week in history”; i.e. if it’s the first week in June 2025, it shows the first week in June 2024, 2023, etc.</p>
+
+<p>It has three main screens: a users list, the weekly albums list, and an album detail view. There’s also various screens for settings, onboarding, user list editing, etc.</p>
+
+<div class="caption-wrapper"><img class="caption" src="/images/vinylogue-v2-main-screens.jpg" width="" height="500" alt="Vinylogue v2.0 main screens: Users List, Weekly Albums, and Album Detail" title="Vinylogue v2.0 main screens: Users List, Weekly Albums, and Album Detail" /><div class="caption-text">Vinylogue v2.0 main screens: Users List, Weekly Albums, and Album Detail</div></div>
+
+<p>If you happen to be an active <a href="https://last.fm">Last.fm</a> user, give the app a spin by <a href="https://itunes.apple.com/us/app/vinylogue-for-last.fm/id617471119?ls=1&amp;mt=8">downloading it from the App Store</a>. And it’s been <a href="https://github.com/twocentstudios/vinylogue">open source on GitHub since v1.0</a>.</p>
+
+<p>Overall, the experience of rewriting the app was a lot of fun with Claude Code. Even with the learning curve and my non-optimal device environment, the amount of progress I made was exponentially higher than I could have alone. As much as I’ve considered rewriting the app in Swift over the years, I could never justify it; the app still worked well enough, has very few active users, and makes no money.</p>
+
+<p>Using Claude Code to automate a lot of tedious work of porting the data models, dominant color algorithm, and data migration code left me with an unusual abundance of time and energy to focus on the parts I was interested in: ensuring the visual design matched exactly; improving caching and pre-caching behavior, improving the friend management UX, and reworking the chart year navigation.</p>
+
+<video src="/images/vinylogue-v2-dominant-color-demo.mp4" controls="" preload="none" poster="/images/vinylogue-v2-dominant-color-demo-poster.jpg" height="720"></video>
+
+<video src="/images/vinylogue-v2-chart-year-navigation.mp4" controls="" preload="none" poster="/images/vinylogue-v2-chart-year-navigation-poster.jpg" height="720"></video>
+
+<p>I could have probably stopped at day 3 and had pretty close feature parity, but I was having so much fun challenging Claude that I started experimenting with more robust architectures. I migrated the entire codebase to the <a href="https://www.pointfree.co">Point-Free co.</a> Modern Swift-UI architecture using <a href="https://github.com/pointfreeco/swift-dependencies">swift-dependencies</a> and <a href="https://github.com/pointfreeco/swift-sharing">swift-sharing</a> using their open source <a href="https://github.com/pointfreeco/syncups">SyncUps</a> codebase as a template.</p>
+
+<p>The SyncUps architecture unlocked the ability to have Claude follow a <a href="https://blog.winsmith.de/english/ios/2020/04/14/xcuitest-screenshots.html">blog post</a> I found about using UITests to automatically generate screenshots for the App Store. A few years ago, App Store review started clamping down on use of copyrighted images in App Store screenshots, and I’d have to manually add a pixelation filter to each image before uploading. It was easier to work with Claude to incorporate the pixelation filter as an option in the app code than to do that work manually.</p>
+
+<div class="caption-wrapper"><img class="caption" src="/images/vinylogue-v2-pixelated-weekly-chart.jpg" width="" height="400" alt="Pixelated version of the weekly album chart view showing privacy-protected album covers" title="Pixelated version of the weekly album chart view showing privacy-protected album covers" /><div class="caption-text">Pixelated version of the weekly album chart view showing privacy-protected album covers</div></div>
+
+<p>I got so carried away that I did plenty more refactorings to have Claude look for duplicate SwiftUI View code that could be extracted and reused across multiple screen-level Views. I had it make a few proposals for how it’d be best to reorganize the project’s folder structure. I never had to get into the weeds refactoring and burn brain cycles, so I almost always felt fresh to use my mental energy on the higher-level planning.</p>
+
+<p>In the end, I’m actually much more proud of the cleanliness of the Vinylogue codebase than my other codebases I’ve worked on this year. It’s not that I couldn’t spend a few days pushing files around in those other codebases, but since I’m an indie dev, I’m not getting paid for that and it’s hard to justify doing that work when I could be doing marketing.</p>
+
+<p>Over the past few months, I’ve been using the ChatGPT app with its less intrusive Xcode integration to do some selective coding work using o3 and o4-mini. Although Claude Sonnet is seemingly not as “smart” as several other frontier models, Claude Code unlocked a new level of usefulness for me due to:</p>
+
+<ul>
+  <li>Its ability to view the xcodebuild output and fix its own syntax errors.</li>
+  <li>Its ability to plan, create its own TODO lists, and methodically execute on its plan.</li>
+  <li>Its ability to quickly navigate around my codebase with various amounts of guidance by me.</li>
+  <li>Its ability to incorporate documentation and other context.</li>
+</ul>
+
+<p>The above abilities increased the scope of net-positive productive use cases for LLM-assisted coding. The amount, accuracy, and complexity of code that an LLM writes needs to be surprisingly high to justify me copying and pasting code from a chat interface or manually applying (often broken) diffs. When the time and effort cost for me, the developer, goes to zero for making changes, suddenly both 1-line changes and multi-file refactors with ample opportunity for syntax errors are both productive use-cases.</p>
+
+<p>Those are my overall thoughts about the experience. Before I dig into the meat of this post, here are some quick stats about the rewrite:</p>
+
+<ul>
+  <li><strong>$353</strong> - theoretical spend on Claude Code if I had used the API</li>
+  <li><strong>$20</strong> - actual spend on Anthropic Pro subscription</li>
+  <li><strong>+11,275 −8,249</strong> - total lines changed in the <a href="https://github.com/twocentstudios/vinylogue/pull/5">v2.0 pull request</a></li>
+  <li><strong>5,609</strong> - lines of Swift code (excluding tests)</li>
+  <li><strong>52</strong> - Swift files (excluding tests)</li>
+  <li><strong>7</strong> - calendar days of work from first commit to App Store submission</li>
+</ul>
+
+<div class="caption-wrapper"><img class="caption" src="/images/vinylogue-v2-vibemeter-spend.png" width="" height="300" alt="Theoretical spend calculated via VibeMeter app" title="Theoretical spend calculated via VibeMeter app" /><div class="caption-text">Theoretical spend calculated via VibeMeter app</div></div>
+
+<p><strong>As a quick disclaimer</strong>, LLMs and the developer tools space is moving so fast that a lot of these observations will be immediately dated. For reference, the app/tool versions I used in this post:</p>
+
+<ul>
+  <li>Claude Code v1.0.31</li>
+  <li>Sonnet 4</li>
+  <li>Xcode 16.5</li>
+  <li>iOS 18.5</li>
+</ul>
+
+<h2 id="goal-of-the-rewrite">Goal of the Rewrite</h2>
+
+<p>In early 2013, I was in another period of indie dev between full-time jobs. I was churning through a few app ideas, learning a lot but biting off more than I could chew and not releasing anything. I got some inspiration after I started using an app called <a href="https://timehop.com">Timehop</a>, the first service of its kind that aggregated your past social media activity in what Facebook would later popularize as “This Day in History”. I was an avid Last.fm user, and by time Last.fm had already become a niche service, so I decided it would be fun to make a Timehop-for-Last.fm. I developed the “feature-complete” v1.1 app in 5 weeks.</p>
+
+<p>I wrote a <a href="http://twocentstudios.com/blog/2013/04/03/the-making-of-vinylogue/">very detailed blog post</a> about the design and development of the app. The Timehop team found that post and hired me as an iOS contractor for a few months before I moved from Chicago to New York to join the team full-time.</p>
+
+<div class="caption-wrapper"><img class="caption" src="/images/vinylogue-v1-main-screens.jpg" width="" height="500" alt="Vinylogue v1.1 main screens: Users List, Weekly Albums, and Album Detail" title="Vinylogue v1.1 main screens: Users List, Weekly Albums, and Album Detail" /><div class="caption-text">Vinylogue v1.1 main screens: Users List, Weekly Albums, and Album Detail</div></div>
+
+<p>The fact that this app got me my first <em>real</em> iOS developer role makes Vinylogue significant and nostalgic for me.</p>
+
+<p>I’ve done my best to make the few changes required over the years to ensure the app still works in modern iOS versions on modern devices. But the fact that’s it’s Objective-C with a very opinionated reactive architecture made it so the cost of developing new features was always too high.</p>
+
+<p>Regardless, I’ve continued to check the app weekly and use it as a nice reminder to listen back to albums I haven’t revisited in a while.</p>
+
+<p>Based on glowing reviews around the internet, I’ve been wanting to try Claude Code, but hesitated because:</p>
+
+<ul>
+  <li>The pay-per-token model felt unideal to me; I didn’t want to pay an unbounded amount to get burned learning a tool that in the end didn’t make me any more productive</li>
+  <li>My current projects were not ideal for intensive LLM-assisted coding - I figured I probably wouldn’t learn how to use Claude Code effectively without a more greenfield project</li>
+</ul>
+
+<p>Vinylogue popped into my head as a great test project: it was greenfield, but had a complete product spec, design spec, and reference codebase to draw from. There was no deadline, no external code-quality bar to hit, and if it wasn’t working out, I could give up any time and still have the same tried-and-true codebase around for the foreseeable future.</p>
+
+<p>So <strong>the goal starting out</strong> was:</p>
+
+<ul>
+  <li>learn Claude Code as a tool</li>
+  <li>determine what kinds of tasks and projects Claude Code could be useful for</li>
+  <li>update Vinylogue to modern Swift and SwiftUI while making a few small improvements</li>
+  <li>leave the door open for new feature work in the future</li>
+</ul>
+
+<h2 id="project-daily-summary">Project daily summary</h2>
+
+<p>Below is a graph with the high-level breakdown of code changes over the week.</p>
+
+<div class="caption-wrapper"><img class="caption" src="/images/vinylogue-v2-swift-lines-graph.png" width="" height="400" alt="Lines of Swift code added and removed during the rewrite, grouped by 5-hour time blocks" title="Lines of Swift code added and removed during the rewrite, grouped by 5-hour time blocks" /><div class="caption-text">Lines of Swift code added and removed during the rewrite, grouped by 5-hour time blocks</div></div>
+
+<h3 id="day-1-scaffolding">Day 1: Scaffolding</h3>
+
+<p><a href="https://github.com/twocentstudios/vinylogue/commit/2c4843b">End of day 1 - commit 2c4843b</a></p>
+
+<div class="caption-wrapper"><img class="caption" src="/images/vinylogue-v2-day1-progress.jpg" width="" height="500" alt="Screenshots of the app after day 1: basic scaffolding and initial SwiftUI implementation" title="Screenshots of the app after day 1: basic scaffolding and initial SwiftUI implementation" /><div class="caption-text">Screenshots of the app after day 1: basic scaffolding and initial SwiftUI implementation</div></div>
+
+<p>As you can see from the above graph, Claude Code cranked out the foundation of the project on the first day. Due to the usage limitations of the Anthropic Pro subscription, I could only use it for about 1 hour every 5 hours. So even though the first day represented the most code written, it was only about 4 hours of usage total. I was doing work on other projects and eating and doing chores in the downtime.</p>
+
+<p>My goal for the first day was simply to get a feel for Claude Code and see what it was capable of. I wanted to see what its tendencies were when it had little direction. I gave Claude Code a spec that OpenAI’s o3 had written based on the Objective-C codebase and screenshots of the current version, but Claude basically threw that out and wrote its own spec before starting to crank through the 8 sprints worth of TODOs. I was intentionally not providing any input on design or architecture. After it worked through a sprint, I’d give the code a once over, but mostly commit it to the working branch.</p>
+
+<p>It felt very productive, but this was essentially just a more advanced version of scaffolding (something my friend Jens compared to Ruby on Rails’ scaffold command). Over the course of the week, this version of the code would be the clay I’d be molding and detailing to get to the final form.</p>
+
+<p>Claude Code had defaulted to what I’d consider an iOS 16 SwiftUI architecture. It used a mix of <code class="language-plaintext highlighter-rouge">@Environment</code> and singletons for services, <code class="language-plaintext highlighter-rouge">@StateObject</code> with <code class="language-plaintext highlighter-rouge">@ObservableObject</code> and <code class="language-plaintext highlighter-rouge">@Published</code> properties for ViewModel-ish objects. It had strewn about <code class="language-plaintext highlighter-rouge">UserDefaults</code> calls and wasn’t particularly consistent about any other architecture decision. It ignored all my instructions about styling and tried to support dark mode, dynamic type, random accessibility attributes.</p>
+
+<p>But it mostly worked! Especially convenient for me was the reams of <code class="language-plaintext highlighter-rouge">Codable</code> objects, parsing, and API client code required to do the <code class="language-plaintext highlighter-rouge">weekly chart list -&gt; weekly chart -&gt; list of albums</code> data transformation from the Last.fm API. All that worked out of the box, even if I did spend some time later in the week optimizing the caching and pre-caching.</p>
+
+<p>I learned a lot on this first day. And having so much of the foundational code out of the way without much mental energy expended increased my appetite for the scope of the rewrite.</p>
+
+<h3 id="day-2-styling--core-ux">Day 2: Styling &amp; Core UX</h3>
+
+<p><a href="https://github.com/twocentstudios/vinylogue/commit/03d763a">End of day 2 - commit 03d763a</a></p>
+
+<div class="caption-wrapper"><img class="caption" src="/images/vinylogue-v2-day2-progress.jpg" width="" height="500" alt="Screenshots of the app after day 2: improved styling and core UX implementation" title="Screenshots of the app after day 2: improved styling and core UX implementation" /><div class="caption-text">Screenshots of the app after day 2: improved styling and core UX implementation</div></div>
+
+<p>The second day was mostly about styling and cleanup and small bug fixes. After a couple tries, I gave up on having Claude Code try to faithfully recreate the styling 1-to-1. Without a feedback loop in place for it to view the visual results of its code, I suspect it was a fool’s errand. Instead, I spent a little time creating color and font helpers, then using them in the <code class="language-plaintext highlighter-rouge">UsersListView</code> to lay it out exactly as I wanted.</p>
+
+<p>From there, Claude was mostly capable of using that view’s styling to get the auxiliary views like the settings view and edit friends view to 98% correct and using all the standardized helper functions.</p>
+
+<p>The edit friends view in particular was more complicated than it used to be in v1.3.1, so I spent some time fixing some of Claude’s scaffolding bugs and deciding exactly how the UX should be.</p>
+
+<p>I also had Claude Code do a Swift Concurrency audit and I helped it migrate the codebase to strict Swift 6 mode.</p>
+
+<h3 id="day-3-ui--ux-focus">Day 3: UI &amp; UX focus</h3>
+
+<p>Day 3 I continued hand-polishing the UI for the most important screens. I implemented the overscroll year-navigation mechanism in a SwiftUI Preview, then had Claude Code help me copy it into the View and wire it up.</p>
+
+<p>I was also finding new excuses to push the scope. I integrated <a href="https://github.com/pointfreeco/swift-dependencies">swift-dependencies</a>, double-checked the loading and error states, and added haptic feedback.</p>
+
+<p>This is the day that I <em>could</em> have buckled in and focused on finishing up the v2 rewrite to be functionally equivalent to v1, including its warts. I could have left the code quality in a somewhat embarrassing state. But at this point I still had lots of energy and motivation. Stopping here would have felt like leaving too much low hanging fruit.</p>
+
+<h3 id="day-4-circling-back">Day 4: Circling back</h3>
+
+<p>I finally got around to matching the visual style of the v1 <code class="language-plaintext highlighter-rouge">AlbumDetailView</code>. This includes porting the <a href="https://github.com/twocentstudios/vinylogue/blob/906c1ce86c8bdb926db6dcb0eada664b80fb8743/Vinylogue/Core/Infrastructure/ColorExtraction.swift">custom dominant color algorithm</a> from <a href="https://github.com/twocentstudios/vinylogue/blob/5409d38a061770c0f84325ca7e0e7dccbe8d587f/vinylogue/UIImage%2BTCSImageRepresentativeColors.m">v1</a>. At first, Claude Code took a shortcut and used the average color CIFilter. I forced it to convert my Objective-C code line-by-line, and it did a great job besides using an erroneous color space value that took about 5-10 minutes to track down.</p>
+
+<p>V1 did not have any sort of precaching system, so album images always appeared to load very slowly (mostly due to a limitation in the Last.fm API). On day 4 I added data and image precaching so that navigating between years would be seamless.</p>
+
+<p>I finally tested the important v1 data migration code (for the current user and friends), and it turns out Claude had failed miserably. To be fair, the NSCoding implementation is not as straightforward as Codable, so it took some guidance from me, along with a test plist file, in order to get it working.</p>
+
+<h3 id="day-5-architecture-and-screenshot-automation">Day 5: Architecture and screenshot automation</h3>
+
+<p>Being an indie dev responsible for releasing apps and updates means lots of overhead in creating App Store screenshots and marketing info. I wanted to experiment with using UITests to generate screenshots, but a big blocker to this was ensuring I could inject mock data so that screenshots wouldn’t change each time I ran the process. This led to me finding my swift-dependencies implementation was unideal (read: working, but incorrect).</p>
+
+<p>So I took on another side-quest of refactoring the app architecture, inspired by the <a href="https://github.com/pointfreeco/syncups">Point-Free co. SyncUps app</a>. Feeding this codebase to Claude Code and having it make the first pass got me to about 80% refactored. Formalizing the rules and having it take another pass got it to 90%. Doing the final audit for the last few problem classes got it to 100%. It was kind of amazing to be able to stay at a high level of abstraction and see what a given architecture looks like for your codebase. I could have thrown this refactor out with no harm done, but it accomplished my goals and felt like it made the codebase more maintainable. Spending a little extra time formalizing my adapted architecture rules on a relatively simple codebase opens up the possibility of using this codebase as a template for refactoring my other, more messy codebases.</p>
+
+<p>With the architecture refactoring complete, it was now possible to have Claude Code finish up the automated App Store screenshotting code. I used Perplexity to research all the prior art, found <a href="https://blog.winsmith.de/english/ios/2020/04/14/xcuitest-screenshots.html">this blog post</a>, fed the blog post to Claude, and had it follow the blog post step-by-step to create a custom bash script, UITest, and modifications to my top-level <code class="language-plaintext highlighter-rouge">App</code>.</p>
+
+<p>I’d already considered automated screenshotting a stretch goal, but I wanted to push even further. I added a toggle-able pixelate filter to all the album images so I’d have a set of screenshots available for App Store use and external advertising, all without me needing to open Pixelamator. This was quick and straightforward now that the new architecture was in place and because NukeUI has a great image processing pipeline feature that can run CIFilters.</p>
+
+<div class="caption-wrapper"><img class="caption" src="/images/vinylogue-v2-pixelated-comparison.jpg" width="" height="500" alt="Comparison of non-pixelated and pixelated versions of the weekly album charts for App Store compliance" title="Comparison of non-pixelated and pixelated versions of the weekly album charts for App Store compliance" /><div class="caption-text">Comparison of non-pixelated and pixelated versions of the weekly album charts for App Store compliance</div></div>
+
+<h3 id="days-6--7-prepare-for-app-store">Days 6 &amp; 7: Prepare for App Store</h3>
+
+<p>By day 6, the app was feeling super polished. I was a little worried about the migration from v1.0 still since you only get one shot at that, so I spent some more time manually testing it.</p>
+
+<p>Since this app is open source, I cleaned up the project folder, rewrote the README, and prepared the marketing images.</p>
+
+<p>Uploading to the App Store, I found that a few of the v1 xcodeproj settings had not been properly migrated to the xcodegen project.yml file. I needed to disable iPad support and force portrait orientation and add the non-exempt encryption plist setting. Claude Code could do all that with loose prompting; I never needed to look up the key names or dig into the xcodegen docs.</p>
+
+<p>At the last minute, I found an issue with image caching that I’d missed (I thought I had disabled both data and image precaching for <code class="language-plaintext highlighter-rouge">DEBUG</code> builds only, but in fact the image cache had been misconfigured the whole time).</p>
+
+<p>Finally, I uploaded a build to the App Store, submitted it, and it was approved and released the next morning.</p>
+
+<p>Claude Code helped me create a Release on GitHub by uploading images. It even looked through my old versions’ screenshots and created a Release for those versions too.</p>
+
+<h2 id="most-interesting-parts-of-v20">Most interesting parts of v2.0</h2>
+
+<p>The v2 Swift rewrite is intentionally nearly identical to the Objective-C v1. However, there are a few user-facing and under-the-hood parts I’d like to highlight.</p>
+
+<h3 id="overscroll-year-navigation-paradigm">Overscroll year navigation paradigm</h3>
+
+<p>The weekly album chart view in v1 had a unique left/right button/slider paradigm for navigating between years. Honestly, it was kind of strange, but I always liked how it gave the app some extra personality.</p>
+
+<video src="/images/vinylogue-v1-year-navigation.mp4" controls="" preload="none" poster="/images/vinylogue-v1-year-navigation-poster.jpg" height="720"></video>
+
+<p>In my original <a href="http://twocentstudios.com/blog/2013/04/03/the-making-of-vinylogue/">blog post</a>, I actually mentioned how my first sketches planned for year navigation to be at the top and bottom edges.</p>
+
+<div class="caption-wrapper"><img class="caption" src="/images/vinylogue-wireframe.jpg" width="" height="400" alt="Original notebook sketch showing the planned top/bottom year navigation design from 2013" title="Original notebook sketch showing the planned top/bottom year navigation design from 2013" /><div class="caption-text">Original notebook sketch showing the planned top/bottom year navigation design from 2013</div></div>
+
+<p>At the time, I gave up on the top/bottom paradigm because it felt strange as section header/footer for years with few albums, and there was no concept of safe areas yet.</p>
+
+<p>I decided to cash out some of my excess mental energy for v2 to try to update the year navigation paradigm, actually forgetting that the top and bottom buttons were what I’d originally planned over a decade ago.</p>
+
+<video src="/images/vinylogue-v2-chart-year-navigation.mp4" controls="" preload="none" poster="/images/vinylogue-v2-chart-year-navigation-poster.jpg" height="720"></video>
+
+<p>I think it turned out alright! It’s non-standard UX, but I feel like it’s unique in the same way the v1 implementation was.</p>
+
+<p>I’ll note the standard Apple refresh control triggers the refresh immediately once you hit the overscroll threshold, but mine requires you to release above the threshold in order to trigger the navigation.</p>
+
+<h3 id="dominant-color-album-detail-animation">Dominant color album detail animation</h3>
+
+<p>I remember during v1 development that the album detail view animation was a happy accident due to the dominant color and album image loading being unoptimized.</p>
+
+<p>I made sure to faithfully port the dominant color algorithm and set up the SwiftUI View so that the animation always triggers consistently, even though the more robust image precaching means that the image is pre-loaded 99% of the time.</p>
+
+<video src="/images/vinylogue-v2-dominant-color-demo.mp4" controls="" preload="none" poster="/images/vinylogue-v2-dominant-color-demo-poster.jpg" height="720"></video>
+
+<p>The last small piece was ensuring that the back button (missing in v1, but returning in v2) also changed its tint color to match the rest of the text on the screen. I accomplished this with a custom <code class="language-plaintext highlighter-rouge">PreferenceKey</code>.</p>
+
+<h3 id="caching-and-pre-caching">Caching and pre-caching</h3>
+
+<p>As mentioned before, I never got around to optimizing the caching and pre-caching behavior of data and images in v1. The Last.fm API is unchanged in the last decade, but average internet speeds and disk sizes means that I don’t feel as hesitant to pre-cache data to ensure browsing your listening history is seamless.</p>
+
+<h3 id="legacy-data-migration">Legacy data migration</h3>
+
+<p>I hate when companies release an app major version update and put the icing on the cake by force logging you out. I know I don’t have many users, but I still feel obligated to treat them with respect and migrate the small amount of unique local data they’ve entrusted with the app.</p>
+
+<p>Honestly, this data migration was one of the biggest discouraging factors in me not taking on this rewriting project in the past. I knew unraveling the NSCoding implementation would be a tedious, thankless task. Although Claude Code could not one-shot it, working with it made this task bearable, and I’m glad I did it.</p>
+
+<h3 id="vinyl-loading-spinner">Vinyl loading spinner</h3>
+
+<p>The vinyl loading spinner is a small flourish, and honestly not even that present anymore now that there’s much more precaching, but I’m still happy to have it scattered around the app.</p>
+
+<div class="caption-wrapper"><img class="caption" src="/images/vinylogue-v2-vinyl-loading-spinner.gif" width="" height="400" alt="Vinyl loading spinner animation showing the rotating record effect" title="Vinyl loading spinner animation showing the rotating record effect" /><div class="caption-text">Vinyl loading spinner animation showing the rotating record effect</div></div>
+
+<h3 id="automated-app-store-screenshots">Automated App Store screenshots</h3>
+
+<p>Automating App Store screenshots was arguably unnecessary for an app with only 3 screens and no localization. But as a test for Claude Code, it was a resounding success. I’ll absolutely be referencing this implementation for my other apps in the near future.</p>
+
+<h3 id="under-the-hood">Under the hood</h3>
+
+<p>Finally, I got a chance to shore up my skills in implementing modern Swift concurrency, swift-sharing, and swift-dependencies in a low-stakes environment. I see this as a mirror to implementing ReactiveCocoa in v1 all those years ago, and then using that knowledge in production on the Timehop app.</p>
+
+<h2 id="working-with-claude-code">Working with Claude Code</h2>
+
+<p>I want to devote a section to braindumping all my impressions of Claude Code, both for readers and for future me. I imagine looking back on this in even a year will be nostalgic.</p>
+
+<h3 id="lessons-learned">Lessons learned</h3>
+
+<p>Note: most of these are general and some are specific to iOS and Apple Platforms development</p>
+
+<h4 id="ignore-all-lessons">Ignore all lessons</h4>
+
+<p>The first lesson is to ignore all lessons. Obviously this is tongue-in-cheek, but what I mean is that I’m glad I didn’t try to optimize my usage of Claude Code out of the gate. It was much better to use it with its defaults, push it hard to find its limits, then incorporate tips &amp; tricks I’d found through osmosis <em>after</em> I’d felt the pain those tips were meant to address.</p>
+
+<p>Keep the below lessons in mind, but if you’re just getting started with Claude Code, don’t try to follow them all at once.</p>
+
+<h4 id="add-the---quiet-flag-to-xcodebuild-with-building-and-testing">Add the <code class="language-plaintext highlighter-rouge">--quiet</code> flag to xcodebuild with building and testing</h4>
+
+<p>Claude Code already knows about xcodebuild and most of its options. But if you let xcodebuild run without <code class="language-plaintext highlighter-rouge">--quiet</code>, Claude Code will read all the useless output, quickly overflowing its context window, especially when the build fails.</p>
+
+<h4 id="compact-context-before-you-need-to">Compact context before you need to</h4>
+
+<p>Claude Code will show you in the bottom UI how close it is to filling up its context window. Once it hits that limit, it’ll automatically run <code class="language-plaintext highlighter-rouge">/compact</code> for you regardless of where it’s at executing your latest instructions. This is fine when you’re getting started and learning. But it’s better to keep an eye on the context window usage and proactively either <code class="language-plaintext highlighter-rouge">/compact</code> with additional instructions on what it should focus on during the compact, or even <code class="language-plaintext highlighter-rouge">/clear</code> to start a new session with a known set of context (i.e. <code class="language-plaintext highlighter-rouge">CLAUDE.md</code>).</p>
+
+<p>Early in development, I was strategically compacting a lot. But once the project was more mature, I used <code class="language-plaintext highlighter-rouge">/clear</code> much more liberally since I was hopping around the codebase and working on lots of different, smaller concerns.</p>
+
+<h4 id="use-the-project-root-claudemd-for-important-workflow-instructions">Use the project root CLAUDE.md for important workflow instructions</h4>
+
+<p>Since these instructions will get read in each time you <code class="language-plaintext highlighter-rouge">/compact</code> or <code class="language-plaintext highlighter-rouge">/clear</code> its good to have the most important instructions about your workflow in here. For me, this included which simulator and os version to use in <code class="language-plaintext highlighter-rouge">xcodebuild</code>, always using the <code class="language-plaintext highlighter-rouge">--quiet</code> flag, always running <code class="language-plaintext highlighter-rouge">xcodegen</code> if files were added, always building and testing before returning control back to me, etc.</p>
+
+<p>In my code source root one folder down, I put another <code class="language-plaintext highlighter-rouge">CLAUDE.md</code> that was more focused on the codebase itself. Later on, within each subfolder of the source, I had Claude Code generate its own short <code class="language-plaintext highlighter-rouge">CLAUDE.md</code> files summarizing the important parts of the code that existed in those folders. For example, the <a href="https://github.com/twocentstudios/vinylogue/blob/master/Vinylogue/Features/CLAUDE.md"><code class="language-plaintext highlighter-rouge">/Features</code></a> directory contains architecture rules about creating new Views and Stores that are only relevant when working in that parent folder.</p>
+
+<h4 id="use--to-point-claude-code-directly-to-files-youre-working-with">Use <code class="language-plaintext highlighter-rouge">@</code> to point Claude Code directly to files you’re working with</h4>
+
+<p>This is a bit of a tradeoff, but if you already know the exact file you need Claude to work on, then just use <code class="language-plaintext highlighter-rouge">@</code> to reference it. In the Claude Code UI, you’ll see the fuzzy file picker pop up. Of course, Claude Code can use bash tools to find any symbol references, but this takes it a couple extra steps and uses up a little bit of extra context. Hard to say whether the tradeoff is worth it, so experiment and see what works best for you.</p>
+
+<p>Optionally, depending on the scope of your request, you can also ask Claude Code to spin up a subagent to find all the required files and symbol references and pass them back to the main agent. That keeps the main agent context’s clean while also unburdening you to need to do all the context gathering yourself.</p>
+
+<h4 id="learn-the-proper-usage-of-plan-mode">Learn the proper usage of <code class="language-plaintext highlighter-rouge">plan</code> mode</h4>
+
+<p>Shift+Tab toggles <code class="language-plaintext highlighter-rouge">plan</code> mode (you’ll see it in the bottom UI). Although Claude Code defaults to doing a least a little planning for every request by creating a little TODO list before it dives into code, by entering <code class="language-plaintext highlighter-rouge">plan</code> mode you can ensure it spends more time thinking and writing, then waiting for your approval before making <em>any</em> code changes.</p>
+
+<p>You’ll need to experiment yourself of when this extra step feels warranted. Maybe try overusing it at first until you start to instinctually understand when it feels like overkill.</p>
+
+<p>I didn’t start using <code class="language-plaintext highlighter-rouge">plan</code> mode until later in the development of v2. I found it useful, but mostly because I also understood the kinds of requests (both the inherent scope of the task <em>and</em> the amount of context and explanation I gave for the task) that caused Claude Code to fail when it immediately jumped into coding.</p>
+
+<h4 id="warp-was-not-a-convenient-terminal-to-use-with-claude-code">Warp was not a convenient terminal to use with Claude Code</h4>
+
+<p>I started using <a href="https://www.warp.dev">Warp</a> a few years back as my daily driver. I never really used its built in LLM features that much, but I liked its overall setup and usability for my limited purposes.</p>
+
+<p>However, Warp was not particularly well suited as a driver for Claude Code. There were a lot of scrolling bugs and overall it just felt like the two were fighting each other. (Note: Warp just released their own coding agent as Warp v2.0).</p>
+
+<p>I started using <a href="https://ghostty.org">Ghostty</a> towards the end of development and its simplicity has worked well with Claude Code so far.</p>
+
+<h4 id="the-anthropic-pro-plans-limits-are-fine-for-starting-out">The Anthropic Pro plan’s limits are fine for starting out</h4>
+
+<p>As mentioned earlier, at the beginning of development, Claude Code was cranking so hard that I was burning through my 5-hour usage limits in 60-90 minutes.</p>
+
+<p>This meant a lot of waiting at first, but overall, I don’t think this was a bad thing. Getting feedback on how hard I was pushing it gave me natural feedback about how to manage its context window (e.g. how <code class="language-plaintext highlighter-rouge">xcodebuild</code> without <code class="language-plaintext highlighter-rouge">--quiet</code> was overflowing the context window).</p>
+
+<p>After the 2nd day, I either stopped hitting the usage limits or would only hit them near the end of a 5-hour window. Partially because I was working more on my own, partially because there was just less code for it to write or the scope of changes was smaller.</p>
+
+<p>Eventually I may upgrade to Max, if only to test out the Opus model. But for now, I recommend the Pro tier as fine for beginners to learn the tool.</p>
+
+<h4 id="be-proactive-in-creating-feedback-loops-for-claude-code">Be proactive in creating feedback loops for Claude Code</h4>
+
+<p>One of Claude Code’s biggest strengths is its ability to use feedback loops to turn unsuccessful one-shot prompts into successful many-shot tasks with the help of tools. When Claude Code can make an attempt at solving a problem and see the results, it’s way more likely to be successful in accomplishing the original task without needing a human in the loop.</p>
+
+<p>Claude Code’s ability to use <code class="language-plaintext highlighter-rouge">xcodebuild</code> was a game-changer for me, turning an imperfect model into a workhorse. For multi-file refactors, it could usually get the project building again after 1 or 2 attempts without needing to bother me for its predictable mistakes like misspelling a function name or using some older syntax or forgetting to update a file.</p>
+
+<p>Giving Claude Code (a natively probabilistic tool) the ability to use the Swift compiler (a natively deterministic tool) provides the best of both worlds.</p>
+
+<p>I’ve yet to find a clean way to have Claude Code iterate on UI the way humans do with the iOS simulator and SwiftUI Previews. Automating the App Store screenshots with UITests may have been the first step in accomplishing that (or at least that’s one potential strategy).</p>
+
+<p>The point is that connecting feedback loops for Claude – either on the input side or the output side – is remarkably powerful in leveling up the base model’s capabilities to accomplish your task.</p>
+
+<h4 id="be-proactive-in-finding-ways-to-serve-documentation-to-claude-code">Be proactive in finding ways to serve documentation to Claude Code</h4>
+
+<p>Speaking of the input side, later on in my development I automated a way for Claude Code to look up documentation for the Swift Packages I used by moving my derived data directory to the project folder and pointing it to the checkouts/sources folder of each key dependency I use where it could find the <code class="language-plaintext highlighter-rouge">.docc</code> documentation bundle.</p>
+
+<p>I added the following to the project source level CLAUDE.md:</p>
+
+<div class="language-markdown highlighter-rouge"><pre class="highlight"><code><span class="gu">## Swift Package Dependencies</span>
+<span class="p">
+-</span> <span class="gs">**Nuke**</span>
+<span class="p">  -</span> Advanced image loading and caching framework with powerful performance optimizations
+<span class="p">  -</span> <span class="p">[</span><span class="nv">Documentation</span><span class="p">](</span><span class="sx">DerivedData/Vinylogue/SourcePackages/checkouts/Nuke/Documentation/Nuke.docc/</span><span class="p">)</span>
+<span class="p">-</span> <span class="gs">**NukeUI**</span> (part of Nuke)
+<span class="p">  -</span> SwiftUI components for declarative image loading with LazyImage and FetchImage
+<span class="p">  -</span> <span class="p">[</span><span class="nv">Documentation</span><span class="p">](</span><span class="sx">DerivedData/Vinylogue/SourcePackages/checkouts/Nuke/Documentation/NukeUI.docc/</span><span class="p">)</span>
+<span class="p">-</span> <span class="gs">**Sharing**</span> (Point-Free)
+<span class="p">  -</span> Type-safe shared state management library for global app state persistence
+<span class="p">  -</span> <span class="p">[</span><span class="nv">Documentation</span><span class="p">](</span><span class="sx">DerivedData/Vinylogue/SourcePackages/checkouts/swift-sharing/Sources/Sharing/Documentation.docc/</span><span class="p">)</span>
+<span class="p">-</span> <span class="gs">**Dependencies**</span> (Point-Free)
+<span class="p">  -</span> Dependency injection framework for testable and modular Swift applications
+<span class="p">  -</span> <span class="p">[</span><span class="nv">Documentation</span><span class="p">](</span><span class="sx">DerivedData/Vinylogue/SourcePackages/checkouts/swift-dependencies/Sources/Dependencies/Documentation.docc/</span><span class="p">)</span>
+  
+<span class="gu">## Code Architecture Reference</span>
+<span class="p">
+-</span> Point-Free Co. SyncUps
+<span class="p">    -</span> https://uithub.com/pointfreeco/syncups?accept=text/html&amp;maxTokens=50000&amp;ext=swift
+</code></pre>
+</div>
+
+<p>I’m still trying to find a clever way to give Claude Code native access to the latest Apple Frameworks documentation. One option is <a href="https://steipete.me/posts/llm-codes-transform-developer-docs">llm.codes</a>. I’ve also used the <a href="https://www.diabrowser.com/">Dia</a> to automatically convert a loaded Apple docs page to markdown before copying it into the Claude Code prompt manually.</p>
+
+<h4 id="periodically-ask-claude-code-for-solicited-code-audits">Periodically ask Claude Code for solicited code audits</h4>
+
+<p>Claude Code will not proactively audit your code through any particular lens. It’s good to remember that you can ask it specifically to do a full walkthrough of your (small?) codebase looking for improvements. This could be a security audit, accessibility audit, code re-use audit, dynamic type audit, Swift concurrency audit, etc.</p>
+
+<p>You can also ask it to do several audits in parallel through subagents. Or, have multiple subagents do the <em>same</em> audit type and have the main agent gather the results.</p>
+
+<h4 id="periodically-have-claude-code-run--warn-long-function-bodies-and-fix-warnings">Periodically have Claude Code run <code class="language-plaintext highlighter-rouge">-warn-long-function-bodies</code> and fix warnings</h4>
+
+<p>While developing with Swift, for as long as I can remember, there have been cases where I unintentionally introduce a stray statement that strains the Swift compiler on each build and I only notice it a couple days later when it’s too late.</p>
+
+<p>Keeping the <a href="https://github.com/fastred/Optimizing-Swift-Build-Times/blob/18f7052834d17040c66c848e28dcc9431c9d60fe/README.md#type-checking-of-functions-and-expressions">-warn-long-function-bodies</a> compiler flag on during development is one way to get notified about this early and often, but it can also be annoying due to the non-deterministic nature of build times.</p>
+
+<p>It’s quick and easy to ask Claude Code to add this build flag with ~200ms as the threshold, build the project, check for warnings, and automatically fix them. Then have it clean up and revert the build flag once it’s done.</p>
+
+<h4 id="the-bar-for-automating-things-is-way-lower-with-claude-code">The bar for automating things is way lower with Claude Code</h4>
+
+<p>I consider it a personal failing, but I’ve always had an aversion to learning bash scripting. There’s lots of different rules of thumb about when you as a developer should dedicate time to automating a manual process. For me, that rule was basically never. It always felt like too much a burden to not only write, but to maintain automation when it inevitably breaks.</p>
+
+<p>With Claude Code, my outlook on automation has completely changed. LLMs in general are just way better at writing one-file scripts than they are at writing sprawling applications. It’s simply much faster to ask Claude Code to bang off a script to automate a task. Even for one-off tasks.</p>
+
+<p>The <a href="https://github.com/twocentstudios/vinylogue/blob/906c1ce86c8bdb926db6dcb0eada664b80fb8743/generate-app-store-screenshots.zsh">script</a> Claude Code wrote to automate my App Store screenshots is just one example. I also had it write a one-off script to generate the graphs earlier in this blog post.</p>
+
+<h4 id="continue-using-your-existing-developer-tools-alongside-claude-code">Continue using your existing developer tools alongside Claude Code</h4>
+
+<p>See how well Claude Code works with your existing developer tools and workflow before introducing anything new.</p>
+
+<p>I found keeping GitHub Desktop as my code review tool for Claude Code’s various excursions worked great. I could keep an eye on the git staging area and selectively commit files the same way I do when I’m developing on my own.</p>
+
+<p>I used Perplexity, Google search, and the ChatGPT app to do various research and context gathering outside of Claude Code. Each felt like it covered certain limitations of Claude Code, whether it be the model or the UI.</p>
+
+<p>And of course, using Xcode for my own editing, building, browsing, testing, and simulator running workflows was familiar (and predictably painful).</p>
+
+<p>I’d say keep an awareness of friction points in your workflow and gradually address them one-by-one. I had plenty of time and mental energy to think about my tooling while Claude Code was doing the grunt work of refactoring and pushing files around for me.</p>
+
+<h3 id="the-kinds-of-tasks-i-used-claude-code-for">The kinds of tasks I used Claude Code for</h3>
+
+<h4 id="scaffolding">Scaffolding</h4>
+
+<p>At the start of a new project or feature, you can use Claude Code as a way to get smarter scaffolding for a project. It’s dangerous though if you think of this code as shippable code instead of scaffolding. You really do have to maintain the discipline to continue to build off of the generated code, test it, polish it, iterate on it.</p>
+
+<p>More concretely, Claude Code seems to be pretty great at creating <code class="language-plaintext highlighter-rouge">Codable</code> models, especially if you give it an example json file. Networking clients too since there’s presumably plenty of examples in its training data.</p>
+
+<h4 id="targeted-refactoring">Targeted refactoring</h4>
+
+<p>One example of a <a href="https://github.com/twocentstudios/vinylogue/commit/2de5aa832ad7afdc6c0d9b37bc5380095e586822">targeted refactoring</a> I did was at the very end of the project. I previously had an <code class="language-plaintext highlighter-rouge">Album</code> struct that was using lots of optionals to express different levels of <code class="language-plaintext highlighter-rouge">loaded</code>.</p>
+
+<p>I did my own bit of planning up front to devise exactly how I wanted <code class="language-plaintext highlighter-rouge">Album</code> to be structured to express being partially and fully loaded. Along the way, I realized that <code class="language-plaintext highlighter-rouge">Album</code> was also being mutated with some specialization based on <code class="language-plaintext highlighter-rouge">WeeklyChart</code> it was originally fetched with. So it wasn’t really independent <code class="language-plaintext highlighter-rouge">Album</code> whose information could be shared across years. This could have been a source of subtle bugs, especially with caching.</p>
+
+<p>I gave Claude Code that revised structure, now <code class="language-plaintext highlighter-rouge">UserChartAlbum</code>, and told it to refactor the codebase to use it. Of course, doing this kind of refactor is much safer with static typing and a compiler helping you out as a human, but Claude Code knocked this out in a couple minutes, also using the compiler to help itself.</p>
+
+<h4 id="pushing-code-around">Pushing code around</h4>
+
+<p>Another type of refactoring is pushing variables and functions around between classes that sit at the boundaries of one another. Or extracting a class’s method into a pure static func.</p>
+
+<p>I used this kind of refactor a lot for extracting SwiftUI Views. Also for migrating <code class="language-plaintext highlighter-rouge">@State</code> vars from Views into <code class="language-plaintext highlighter-rouge">@Observable</code> classes. These are particularly error prone to do as a human because the Swift compiler completely gives up on providing useful error messages when you’ve misspelled something in a View body.</p>
+
+<h4 id="deconstructing-swiftui-views-to-satisfy-the-swift-compiler">Deconstructing SwiftUI Views to satisfy the Swift compiler</h4>
+
+<p>There’s a natural tension when writing SwiftUI where <em>writing</em> Views is generally easier when working inside one big View. But this makes both the compiler and the runtime unhappy (performance suffers). When iterating on the presentation and structure of Views, it’s disruptive to have to keep extracting variables and thinking up names for each sub View instance.</p>
+
+<p>Claude Code is really great as a solution to this problem because both extracting and recombining Views is incredibly cheap.</p>
+
+<h4 id="following-architecture-rules">Following architecture rules</h4>
+
+<p>After my big architecture refactor, I <a href="https://github.com/twocentstudios/vinylogue/blob/906c1ce86c8bdb926db6dcb0eada664b80fb8743/Vinylogue/Features/CLAUDE.md#store-creation-and-navigation-rules">created a set of rules</a> in the <code class="language-plaintext highlighter-rouge">CLAUDE.md</code> file in the <code class="language-plaintext highlighter-rouge">Features</code> subdirectory that holds my SwiftUI Views and Stores (<code class="language-plaintext highlighter-rouge">Store</code> being an alias for <code class="language-plaintext highlighter-rouge">ViewModel</code> or <code class="language-plaintext highlighter-rouge">@Observable</code> class). For example, for sheet-based navigation:</p>
+
+<div class="language-markdown highlighter-rouge"><pre class="highlight"><code><span class="gu">### Sheet-Based Navigation</span>
+<span class="gs">**Pattern**</span>: Parent stores create optional child stores for modal presentations
+
+<span class="gs">**Rules**</span>:
+<span class="p">1.</span> <span class="gs">**Parent Store**</span>: Creates optional child store property (<span class="sb">`var childStore: ChildStore?`</span>)
+<span class="p">2.</span> <span class="gs">**Parent Store**</span>: Provides method to create child store (<span class="sb">`func showChild() { childStore = ChildStore() }`</span>)
+<span class="p">3.</span> <span class="gs">**Parent View**</span>: Uses <span class="sb">`sheet(item: $store.childStore)`</span> modifier
+<span class="p">4.</span> <span class="gs">**Child View**</span>: Accepts store as parameter (<span class="sb">`@Bindable var store: ChildStore`</span>)
+<span class="p">5.</span> <span class="gs">**Child Store**</span>: Must conform to <span class="sb">`Identifiable`</span> (class identity-based)
+<span class="p">6.</span> <span class="gs">**Dependency Injection**</span>: Use <span class="sb">`withDependencies(from: self)` only if parent has `@Dependency`</span> vars
+</code></pre>
+</div>
+
+<p>Whenever Claude Code starts work on a new screen in the future, it will read these rules and examples in the <code class="language-plaintext highlighter-rouge">CLAUDE.md</code> and follow them when structuring the new screen.</p>
+
+<h4 id="copying-over-styling">Copying over styling</h4>
+
+<p>My environment isn’t set up yet to give Claude Code all the tools it needs to properly iterate on a visual design. But after I created the exact visual design for a screen in SwiftUI, it had no problem copying over those design elements to other Views.</p>
+
+<h4 id="removing-a-secrets-file-in-git-history">Removing a Secrets file in git history</h4>
+
+<p>When doing a folder structure refactoring near the end of the project, I moved the <code class="language-plaintext highlighter-rouge">Secrets.swift</code> file that has my Last.fm API key in plain text and forgot to update the hardcoded location in <code class="language-plaintext highlighter-rouge">.gitignore</code>, causing it to be committed deep in the history. I noticed this right before pushing to the public GitHub repo. I’d have to use git to extract it from the commit history.</p>
+
+<p>I’ve done this kind of excavation before, but it’s incredibly nerve-wracking and error prone. I asked Claude Code to help and it knocked it out.</p>
+
+<p>Of course, there’s a lesson to be learned here that I should be doing my secrets management better, and I did update the <code class="language-plaintext highlighter-rouge">.gitignore</code> to be more fool-proof, but regardless of that, it still saved me a lot of mental effort.</p>
+
+<h4 id="full-audits-for-reusable-code">Full audits for reusable code</h4>
+
+<p>I asked Claude Code a few times to do full audits of my project to find and extract duplicate code, especially in SwiftUI Views. You can be as hands-on or hands-off as you’d like. For me, I specifically instructed it to consider whether the code was functionally duplicated or not, i.e. whether it was expected that each instance of the duplicate code should be able to evolve independently. So treating Claude Code as a static analysis tool with a little extra smarts.</p>
+
+<p>I’d review its results in GitHub Desktop as usual and commit only the extractions that made sense to me.</p>
+
+<h4 id="transliterating-code-between-programming-languages">Transliterating code between programming languages</h4>
+
+<p>I used Claude Code to port my <a href="https://github.com/twocentstudios/vinylogue/blob/906c1ce86c8bdb926db6dcb0eada664b80fb8743/Vinylogue/Core/Infrastructure/ColorExtraction.swift">dominant color algorithm</a> from Objective-C to Swift line-by-line.</p>
+
+<p>It’s only a couple hundred lines, but it would have been tedious and not particularly fun to do this by hand.</p>
+
+<h4 id="error-message-writing-and-mapping">Error message writing and mapping</h4>
+
+<p>Claude Code wrote a lot of decent error handling code out of the box. Of course, error handling code, both internal and user facing, deserves proper consideration. But having a scaffolding in place made it easier to iterate in the right direction.</p>
+
+<h4 id="organizing-images-in-a-github-release">Organizing images in a GitHub release</h4>
+
+<p>I like documenting my GitHub PRs, Issues, Releases, etc. with screenshots laid out in tables. I’ve done this manually for years, and I’ve never figured out a way to automate it.</p>
+
+<p>When creating <a href="https://github.com/twocentstudios/vinylogue/releases">Releases</a>, I realized Claude Code was very much able to pick the proper screenshots out of my project directory, upload them, and insert links into a properly formatted markdown table. This saved me 10-15 minutes at least of tedious clicking, dragging around, and formatting.</p>
+
+<h3 id="what-i-want-to-try-next-time">What I want to try next time</h3>
+
+<ul>
+  <li>I want to give Claude Code a way to view simulator screenshots and/or video to allow it to iterate on its designs.</li>
+  <li>Or at least experiment with UITests or snapshot tests.</li>
+  <li>I want to get give Claude Code scripts to run for <code class="language-plaintext highlighter-rouge">xcodebuild</code>, etc. so it’s more consistent and wastes less time when it forgets which simulators are available. The only downside is keeping these up to date when I update Xcode versions.</li>
+  <li>I want to be more mindful of the the way it writes unit tests and come up with my own best practices, including which types of files I test.</li>
+  <li>I want to try some version of TDD.</li>
+  <li>I want to ask Claude Code to update some sort of append-only log each time it takes a wrong path and corrects its own mistake. Automating the collection of tips and tricks and ensuring we can incorporate those into long-term memory.</li>
+  <li>I want to automate more App Store release process steps.</li>
+  <li>I want to move my personal workflow stuff to my home directory <code class="language-plaintext highlighter-rouge">CLAUDE.md</code>.</li>
+  <li>I want to find more useful MCPs for iOS dev.</li>
+  <li>I want to find a better way to manage files that aren’t in the xcodeproj e.g. markdown, images, etc.</li>
+  <li>I want to find a source for up-to-date Apple platform docs that can be quickly referenced within Claude Code.</li>
+</ul>
+
+<h3 id="stray-observations-about-working-with-claude-code">Stray observations about working with Claude Code</h3>
+
+<ul>
+  <li>I didn’t have CLAUDE.md file at first and didn’t understand context limit, clearing, or compacting.</li>
+  <li>Pre-planning with a product requirements document didn’t really feel like it helped much. I’m pretty sure there’s a skill to this too and I’ll need to start up a lot of greenfield projects or features to learn what works.</li>
+  <li>For the first day or two, I intentionally didn’t make any code changes or give code-level guidance so I could see what Claude Code’s tendencies were. For my own learning, I think this was useful so that I only give it specific instructions about the things I disagree with the base model on.</li>
+  <li>To that end, my impression of Claude Sonnet 4 is that by default it writes iOS 16 style code.</li>
+  <li>I added <code class="language-plaintext highlighter-rouge">xcodegen</code> very early because editing <code class="language-plaintext highlighter-rouge">xcodeproj</code> directly is error-prone and overall a nightmare.</li>
+  <li>I used <code class="language-plaintext highlighter-rouge">swiftformat</code> with my longstanding config file. Using a linting/formatting tool means you don’t need to fill up the context with notes about code style.</li>
+  <li>However, Claude Code would sometimes trip up when applying diffs because after running swiftformat, the code structure in its context history would no longer match what was properly formatted in the file.</li>
+  <li>My flow was to review Claude Code’s changes in GitHub Desktop, sometimes make my own changes in Xcode, stage files and write commit messages myself. I liked this flow because it enforced some discipline about me being the one responsible for the code I was committing.</li>
+  <li>Out of the box, Claude Code wrote tons of tests. I mostly ignored these but my impression was that most of them were flawed and useless.</li>
+  <li>Claude Code also tried to write UITests while it was still in the scaffolding phase and the UI was very far from being pixel perfect. I had to shut it down and ensure it never wrote UITests again via <code class="language-plaintext highlighter-rouge">CLAUDE.md</code>.</li>
+  <li>Claude Code did pretty well in building the project and fixing its own issues. To me, this is where Claude Code leapfrogs standard chat LLM interfaces in usefulness.</li>
+  <li>Claude Code knew how to use <code class="language-plaintext highlighter-rouge">xcodebuild</code> out of the box. But it was very inconsistent on which build flags, simulators, OS versions, etc. it picked.</li>
+  <li>I slowly added to the project directory CLAUDE.md, mostly very targeted statements about the development flow and not much about the project contents.</li>
+  <li>The Pro plan’s usage limit resets every 5 hours. During scaffolding I ran into this limit after about 60-90 minutes of usage. Later on, I’d run into the limit towards the end of the usage period or never.</li>
+  <li>The Pro plan only allows usage of Sonnet, so I have not experimented with Opus yet.</li>
+  <li>With its initial multi-sprint plan in place, Claude Code knocked out a functional prototype in about 3-4 hours of total compute time on the first day. This was mostly unguided work; I did not contribute much yet.</li>
+  <li>I never gave Claude Code direct access to the iOS simulator. Therefore it was only indirectly useful for visual design work.</li>
+  <li>Claude Code really wanted to implement dark mode, Dynamic Type, and full accessibility support.</li>
+  <li>I enjoyed doing the visual design work so I took responsibility for that part of the work.</li>
+  <li>After I did the visual design work for one screen, Claude Code did a decent job getting the other screens to 90-95% complete.</li>
+  <li>My ambitions grew a lot over the first couple days working on the project as I became more familiar with Claude Code’s capabilities.</li>
+  <li>It was almost overwhelming at times to decide what I wanted to do next.</li>
+  <li>I intentionally didn’t attempt to have Claude Code work on different features in parallel. I was still in-the-loop enough that my manual testing was the blocker, and having multiple instances to review in my environment would have quickly overwhelmed me. As I gain experience, I think my appetite for parallelizing will grow. Also, I think parallel usage would probably necessitate the usage limits of the Max plan.</li>
+  <li>After a couple days, I started using <code class="language-plaintext highlighter-rouge">/compact</code> more intentionally, and with additional instructions so that I was more in control.</li>
+  <li>Towards the end of development, tasks were mostly unrelated, so I was using <code class="language-plaintext highlighter-rouge">/clear</code> more often than <code class="language-plaintext highlighter-rouge">/compact</code>. Especially because my collection of <code class="language-plaintext highlighter-rouge">CLAUDE.md</code> files was much more robust.</li>
+  <li>As I started using more frameworks and becoming more opinionated about the code quality, I started looking for more efficient ways to feed context into Claude Code. I tried <a href="https://uithub.com">uithub</a>, <a href="https://gitingest.com/">gitingest</a>, <a href="https://context7.com/">context7</a>. But context is still so precious that a lot of the time I’d do my own work up front to find the exact markdown file I wanted it to read to understand how the library would solve the current problem we were working on.</li>
+  <li>Moving Xcode’s DerivedData folder into the project directory is a weighty decision with pros and cons, but it certainly helped for giving Claude Code a easily discoverable location for Swift Package documentation and code.</li>
+  <li>Refactoring is one of my favorite use cases for Claude Code. Being able to concretely see what a project-wide refactor looks like in a matter of minutes is incredible as a learning device. For example, if I manually did a big exploratory refactor related to an architecture change and it took a week of work, I’d be much more opposed to throwing away that work, even if it objectively made the codebase worse. Having Claude Code automate that work allows you to keep your objectivity, evaluate the new strategy as an impartial observer, and ruthlessly throw out the work with no hard feelings.</li>
+  <li>Relatedly, the ability to stay at the macro-level of evaluating a codebase for 90% of the time while Claude Code handles the micro-level work feels like such a huge productively multiplier.</li>
+  <li>I was naive at first thinking that Claude Code one-shotted the implementation of the legacy data migrator component. Even spot-checking this code during the refactoring phase would have at least put this work higher on my TODO list.</li>
+  <li>Having a deep catalog of structurally pure, well-documented, and focused open source code to provide as template or reference code to Claude Code will be a huge multiplier going forward.</li>
+  <li>I haven’t tried using <code class="language-plaintext highlighter-rouge">ultrathink</code> or other thinking modifiers in my prompts yet.</li>
+  <li>I found it useful to have Claude Code’s scaffolding in place after the first day and iterate from there, especially since I didn’t start out with a target architecture in mind. But there’s a fine line; you can quickly find yourself drowning in slop before you get it under control.</li>
+  <li>I didn’t use the <code class="language-plaintext highlighter-rouge">--dangerously-skip-permissions</code> mode. Most CLI tools I simply approved for the session as they were proposed since most are safe by nature (<code class="language-plaintext highlighter-rouge">find</code>, <code class="language-plaintext highlighter-rouge">grep</code>, <code class="language-plaintext highlighter-rouge">xcodebuild</code>, etc.).</li>
+  <li>I found it easier to do research using Perplexity or OpenAI o3 for particular tasks rather than mix this kind of work up with the Claude Code context. It was much more efficient to find the exact blog post or API with these GUI tools and then feed Claude Code the exact URL. The right tool for the right job.</li>
+  <li>Claude Code is so adept at using CLI commands that I didn’t regularly end up using many MCPs. I imagine I will start to use more in the future as the ecosystem matures.</li>
+  <li>At some point I had Claude Code audit the entire project and delete all of its useless comments. Now that I know its penchant for over-documenting (at least to my tastes), I can try to devise a succinct rule regarding inline docs to add to <code class="language-plaintext highlighter-rouge">CLAUDE.md</code>.</li>
+</ul>
+
+
+  </article>
+
+</div>
+
+      </div>
+    </div>
+
+    <footer class="site-footer">
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">twocentstudios</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col  footer-col-1">
+        <ul class="contact-list">
+          <li><a href="mailto:chris@twocentstudios.com">chris@twocentstudios.com</a></li>
+          
+          <li>
+            <a href="https://github.com/twocentstudios">
+              <span class="icon  icon--github">
+                <svg viewBox="0 0 16 16">
+                  <path fill="#828282" d="M7.999,0.431c-4.285,0-7.76,3.474-7.76,7.761 c0,3.428,2.223,6.337,5.307,7.363c0.388,0.071,0.53-0.168,0.53-0.374c0-0.184-0.007-0.672-0.01-1.32 c-2.159,0.469-2.614-1.04-2.614-1.04c-0.353-0.896-0.862-1.135-0.862-1.135c-0.705-0.481,0.053-0.472,0.053-0.472 c0.779,0.055,1.189,0.8,1.189,0.8c0.692,1.186,1.816,0.843,2.258,0.645c0.071-0.502,0.271-0.843,0.493-1.037 C4.86,11.425,3.049,10.76,3.049,7.786c0-0.847,0.302-1.54,0.799-2.082C3.768,5.507,3.501,4.718,3.924,3.65 c0,0,0.652-0.209,2.134,0.796C6.677,4.273,7.34,4.187,8,4.184c0.659,0.003,1.323,0.089,1.943,0.261 c1.482-1.004,2.132-0.796,2.132-0.796c0.423,1.068,0.157,1.857,0.077,2.054c0.497,0.542,0.798,1.235,0.798,2.082 c0,2.981-1.814,3.637-3.543,3.829c0.279,0.24,0.527,0.713,0.527,1.437c0,1.037-0.01,1.874-0.01,2.129 c0,0.208,0.14,0.449,0.534,0.373c3.081-1.028,5.302-3.935,5.302-7.362C15.76,3.906,12.285,0.431,7.999,0.431z"/>
+                </svg>
+              </span>
+
+              <span class="username">twocentstudios</span>
+            </a>
+          </li>
+          
+
+          <li>
+            <a href="https://hackyderm.io/@twocentstudios">
+              <span class="icon">
+                <svg viewBox="0 0 24 24">
+                  <path fill="#828282" d="M21.327 8.566c0-4.339-2.843-5.61-2.843-5.61-1.433-.658-3.894-.935-6.451-.956h-.063c-2.557.021-5.016.298-6.45.956 0 0-2.843 1.272-2.843 5.61 0 .993-.019 2.181.012 3.441.103 4.243.778 8.425 4.701 9.463 1.809.479 3.362.579 4.612.51 2.268-.126 3.541-.809 3.541-.809l-.075-1.646s-1.621.511-3.441.449c-1.804-.062-3.707-.194-3.999-2.409a4.523 4.523 0 0 1-.04-.621s1.77.433 4.014.536c1.372.063 2.658-.08 3.965-.236 2.506-.299 4.688-1.843 4.962-3.254.434-2.223.398-5.424.398-5.424zm-3.353 5.59h-2.081V9.057c0-1.075-.452-1.62-1.357-1.62-1 0-1.501.647-1.501 1.927v2.791h-2.069V9.364c0-1.28-.501-1.927-1.502-1.927-.905 0-1.357.546-1.357 1.62v5.099H6.026V8.903c0-1.074.273-1.927.823-2.558.566-.631 1.307-.955 2.228-.955 1.065 0 1.872.409 2.405 1.228l.518.869.519-.869c.533-.819 1.34-1.228 2.405-1.228.92 0 1.662.324 2.228.955.549.631.822 1.484.822 2.558v5.253z"/>
+                </svg>
+              </span>
+
+              <span class="username">twocentstudios</span>
+            </a>
+          </li>
+
+          
+          <li>
+            <a href="https://twitter.com/twocentstudios">
+              <span class="icon  icon--twitter">
+                <svg viewBox="0 0 16 16">
+                  <path fill="#828282" d="M15.969,3.058c-0.586,0.26-1.217,0.436-1.878,0.515c0.675-0.405,1.194-1.045,1.438-1.809
+                  c-0.632,0.375-1.332,0.647-2.076,0.793c-0.596-0.636-1.446-1.033-2.387-1.033c-1.806,0-3.27,1.464-3.27,3.27 c0,0.256,0.029,0.506,0.085,0.745C5.163,5.404,2.753,4.102,1.14,2.124C0.859,2.607,0.698,3.168,0.698,3.767 c0,1.134,0.577,2.135,1.455,2.722C1.616,6.472,1.112,6.325,0.671,6.08c0,0.014,0,0.027,0,0.041c0,1.584,1.127,2.906,2.623,3.206 C3.02,9.402,2.731,9.442,2.433,9.442c-0.211,0-0.416-0.021-0.615-0.059c0.416,1.299,1.624,2.245,3.055,2.271 c-1.119,0.877-2.529,1.4-4.061,1.4c-0.264,0-0.524-0.015-0.78-0.046c1.447,0.928,3.166,1.469,5.013,1.469 c6.015,0,9.304-4.983,9.304-9.304c0-0.142-0.003-0.283-0.009-0.423C14.976,4.29,15.531,3.714,15.969,3.058z"/>
+                </svg>
+              </span>
+
+              <span class="username">twocentstudios</span>
+            </a>
+          </li>
+          
+        </ul>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+
+
+  </body>
+
+</html>
