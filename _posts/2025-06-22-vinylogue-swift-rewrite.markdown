@@ -6,7 +6,7 @@ image: /images/vinylogue-v2-main-screens.jpg
 tags: vinylogue apple ios
 ---
 
-Last week, I rewrote my iOS app [Vinylogue]((https://itunes.apple.com/us/app/vinylogue-for-last.fm/id617471119?ls=1&mt=8)) to Swift and SwiftUI with the help of [Claude Code](https://www.anthropic.com/claude-code). I originally created Vinylogue [back in 2013](http://twocentstudios.com/blog/2013/04/03/the-making-of-vinylogue/) targeting iOS 6. Recently, I've been wanting to try out Claude Code, and I decided updating Vinylogue would be a good test project for it.
+Last week, I rewrote my iOS app [Vinylogue](https://itunes.apple.com/us/app/vinylogue-for-last.fm/id617471119?ls=1&mt=8) to Swift and SwiftUI with the help of [Claude Code](https://www.anthropic.com/claude-code). I originally created Vinylogue [back in 2013](/2013/04/03/the-making-of-vinylogue/) targeting iOS 6. Recently, I've been wanting to try out Claude Code, and I decided updating Vinylogue would be a good test project for it.
 
 TL;DR: Using Claude Code made this rewrite super fun and productive and was absolutely worth the $20, even considering the time I spent learning the limitations of the tool and how it's still relatively unoptimized for Apple platforms development.
 
@@ -80,7 +80,7 @@ Those are my overall thoughts about the experience. Before I dig into the meat o
 
 In early 2013, I was in another period of indie dev between full-time jobs. I was churning through a few app ideas, learning a lot but biting off more than I could chew and not releasing anything. I got some inspiration after I started using an app called [Timehop](https://timehop.com), the first service of its kind that aggregated your past social media activity in what Facebook would later popularize as "This Day in History". I was an avid Last.fm user, and by time Last.fm had already become a niche service, so I decided it would be fun to make a Timehop-for-Last.fm. I developed the "feature-complete" v1.1 app in 5 weeks.
 
-I wrote a [very detailed blog post](http://twocentstudios.com/blog/2013/04/03/the-making-of-vinylogue/) about the design and development of the app. The Timehop team found that post and hired me as an iOS contractor for a few months before I moved from Chicago to New York to join the team full-time. 
+I wrote a [very detailed blog post](/2013/04/03/the-making-of-vinylogue/) about the design and development of the app. The Timehop team found that post and hired me as an iOS contractor for a few months before I moved from Chicago to New York to join the team full-time. 
 
 {% caption_img /images/vinylogue-v1-main-screens.jpg h500 Vinylogue v1.1 main screens: Users List, Weekly Albums, and Album Detail %}
 
@@ -194,7 +194,7 @@ The weekly album chart view in v1 had a unique left/right button/slider paradigm
 
 <video src="/images/vinylogue-v1-year-navigation.mp4" controls preload="none" poster="/images/vinylogue-v1-year-navigation-poster.jpg" height="720"></video>
 
-In my original [blog post](http://twocentstudios.com/blog/2013/04/03/the-making-of-vinylogue/), I actually mentioned how my first sketches planned for year navigation to be at the top and bottom edges. 
+In my original [blog post](/2013/04/03/the-making-of-vinylogue/), I actually mentioned how my first sketches planned for year navigation to be at the top and bottom edges. 
 
 {% caption_img /images/vinylogue-wireframe.jpg h400 Original notebook sketch showing the planned top/bottom year navigation design from 2013 %}
 
