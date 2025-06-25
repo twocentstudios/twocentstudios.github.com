@@ -104,7 +104,7 @@ So **the goal starting out** was:
 - update Vinylogue to modern Swift and SwiftUI while making a few small improvements
 - leave the door open for new feature work in the future
 
-## Daily project summary
+## Project daily summary
 
 Below is a graph with the high-level breakdown of code changes over the week.
 
