@@ -8,7 +8,7 @@ tags: vinylogue apple ios
 
 Last week, I rewrote my iOS app [Vinylogue]((https://itunes.apple.com/us/app/vinylogue-for-last.fm/id617471119?ls=1&mt=8)) to Swift and SwiftUI with the help of [Claude Code](https://www.anthropic.com/claude-code). I originally created Vinylogue [back in 2013](http://twocentstudios.com/blog/2013/04/03/the-making-of-vinylogue/) targeting iOS 6. Recently, I've been wanting to try out Claude Code, and I decided updating Vinylogue would be a good test project for it.
 
-TL;DR: Using Claude Code made this rewrite super fun and productive and was absolutely worth the $20, even considering the time I spent learning the tool and how it's still relatively unoptimized for Apple platforms development.
+TL;DR: Using Claude Code made this rewrite super fun and productive and was absolutely worth the $20, even considering the time I spent learning the limitations of the tool and how it's still relatively unoptimized for Apple platforms development.
 
 ## Table of Contents
 
