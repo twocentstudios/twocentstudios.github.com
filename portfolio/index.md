@@ -23,7 +23,7 @@ An iOS app diary for pixel art nails.
 
 An iOS app for drilling numbers in Japanese.
 
-#### Vinylogue - [landing page](/apps/vinylogue) | [appstore](http://itunes.apple.com/us/app/vinylogue-for-last.fm/id617471119?ls=1&mt=8) | [source](https://github.com/twocentstudios/vinylogue) | [post](/2013/04/03/the-making-of-vinylogue/)
+#### Vinylogue - [landing page](/apps/vinylogue) | [appstore](http://itunes.apple.com/us/app/vinylogue-for-last.fm/id617471119?ls=1&mt=8) | [source](https://github.com/twocentstudios/vinylogue) | [v1 post](/2013/04/03/the-making-of-vinylogue/) | [v2 post](/2025/06/22/vinylogue-swift-rewrite/)
 
 An iOS app for your [last.fm](https://last.fm) listening history.
 
