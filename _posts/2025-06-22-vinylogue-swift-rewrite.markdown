@@ -129,11 +129,11 @@ I learned a lot on this first day. And having so much of the foundational code o
 
 ![screenshots of the app after day 2]()
 
-The second day was mostly about styling and cleanup and small bug fixes. After a couple tries, I gave up on having Claude Code try to faithfully recreate the styling 1-to-1. Without a feedback loop it place for it to view the visual results of its code, I suspect it was a fool's errand. Instead, I spent a little time creating color and font helpers, then using them in the `UsersListView` to lay it out exactly as I wanted.
+The second day was mostly about styling and cleanup and small bug fixes. After a couple tries, I gave up on having Claude Code try to faithfully recreate the styling 1-to-1. Without a feedback loop in place for it to view the visual results of its code, I suspect it was a fool's errand. Instead, I spent a little time creating color and font helpers, then using them in the `UsersListView` to lay it out exactly as I wanted.
 
 From there, Claude was mostly capable of using that view's styling to get the auxiliary views like the settings view and edit friends view to 98% correct and using all the standardized helper functions.
 
-The edit friends view in particular was more complicated than it used to be in v1.3.1, so I spent some time deciding fixing some of Claude's scaffolding bugs and deciding exactly how the UX should be.
+The edit friends view in particular was more complicated than it used to be in v1.3.1, so I spent some time fixing some of Claude's scaffolding bugs and deciding exactly how the UX should be.
 
 I also had Claude Code do a Swift Concurrency audit and I helped it migrate the codebase to strict Swift 6 mode.
 
@@ -141,13 +141,13 @@ I also had Claude Code do a Swift Concurrency audit and I helped it migrate the 
 
 Day 3 I continued hand-polishing the UI for the most important screens. I implemented the overscroll year-navigation mechanism in a SwiftUI Preview, then had Claude Code help me copy it into the View and wire it up.
 
-I was also finding new excuses to push the scope. I integrating [swift-dependencies](https://github.com/pointfreeco/swift-dependencies), double-checked the loading and error states, and added haptic feedback.
+I was also finding new excuses to push the scope. I integrated [swift-dependencies](https://github.com/pointfreeco/swift-dependencies), double-checked the loading and error states, and added haptic feedback.
 
 This is the day that I *could* have buckled in and focused on finishing up the v2 rewrite to be functionally equivalent to v1, including its warts. I could have left the code quality in a somewhat embarrassing state. But at this point I still had lots of energy and motivation. Stopping here would have felt like leaving too much low hanging fruit.
 
 ### Day 4: Circling back
 
-I finally got around to matching the visual style of the v1 `AlbumDetailView`. This includes porting the [custom dominant color algorithm](TODO dominant color algo v2 at tag 2.0) from [v1](TODO dominant color algo v1 link to code at tag 1.3.1). At first, Claude Code took a shortcut and used the average color CIFilter. I forced it convert my Objective-C code line-by-line, and it did a great job besides using an erroneous color space value that took about 5-10 minutes to track down.
+I finally got around to matching the visual style of the v1 `AlbumDetailView`. This includes porting the [custom dominant color algorithm](TODO dominant color algo v2 at tag 2.0) from [v1](TODO dominant color algo v1 link to code at tag 1.3.1). At first, Claude Code took a shortcut and used the average color CIFilter. I forced it to convert my Objective-C code line-by-line, and it did a great job besides using an erroneous color space value that took about 5-10 minutes to track down.
 
 V1 did not have any sort of precaching system, so album images always appeared to load very slowly (mostly due to a limitation in the Last.fm API). On day 4 I added data and image precaching so that navigating between years would be seamless.
 
@@ -155,13 +155,13 @@ I finally tested the important v1 data migration code (for the current user and 
 
 ### Day 5: Architecture and screenshot automation
 
-Being and indie dev responsible for releasing apps and updates means lots of overhead in creating App Store screenshots and marketing info. I wanted to experiment with using UITests to generate screenshots, but a big blocker to this was ensuring I could inject mock data so that screenshots wouldn't change each time I ran the process. This led to me finding my swift-dependencies implementation was unideal (read: working, but incorrect).
+Being an indie dev responsible for releasing apps and updates means lots of overhead in creating App Store screenshots and marketing info. I wanted to experiment with using UITests to generate screenshots, but a big blocker to this was ensuring I could inject mock data so that screenshots wouldn't change each time I ran the process. This led to me finding my swift-dependencies implementation was unideal (read: working, but incorrect).
 
 So I took on another side-quest of refactoring the app architecture, inspired by the [Point-Free co. SyncUps app](https://github.com/pointfreeco/syncups). Feeding this codebase to Claude Code and having it make the first pass got me to about 80% refactored. Formalizing the rules and having it take another pass got it to 90%. Doing the final audit for the last few problem classes got it to 100%. It was kind of amazing to be able to stay at a high level of abstraction and see what a given architecture looks like for your codebase. I could have thrown this refactor out with no harm done, but it accomplished my goals and felt like it made the codebase more maintainable. Spending a little extra time formalizing my adapted architecture rules on a relatively simple codebase opens up the possibility of using this codebase as a template for refactoring my other, more messy codebases.
 
 With the architecture refactoring complete, it was now possible to have Claude Code finish up the automated App Store screenshotting code. I used Perplexity to research all the prior art, found [this blog post](https://blog.winsmith.de/english/ios/2020/04/14/xcuitest-screenshots.html), fed the blog post to Claude, and had it follow the blog post step-by-step to create a custom bash script, UITest, and modifications to my top-level `App`.
 
-I'd already consider automated screenshotting a stretch goal, but I wanted to push even further. I added a toggle-able pixelate filter to all the album images so I'd have a set of screenshots available for App Store use and external advertising, all without me needing to open Pixelamator. This was quick and straightforward now that the new architecture was in place and because NukeUI has a great image processing pipeline feature that can run CIFilters.
+I'd already considered automated screenshotting a stretch goal, but I wanted to push even further. I added a toggle-able pixelate filter to all the album images so I'd have a set of screenshots available for App Store use and external advertising, all without me needing to open Pixelamator. This was quick and straightforward now that the new architecture was in place and because NukeUI has a great image processing pipeline feature that can run CIFilters.
 
 ![TODO: Pixelated and non-pixelated versions of the weekly album charts screnshots]()
 
@@ -171,11 +171,11 @@ By day 6, the app was feeling super polished. I was a little worried about the m
 
 Since this app is open source, I cleaned up the project folder, rewrote the README, and prepared the marketing images.
 
-Uploading to the App Store, I found that a few of the v1 xcodeproj settings had not been properly migrated to the xcodegen project.yml file. I needed to disable iPad support and force portrait orientation and add the non-exempt encryption plist setting. Claude Code could do all that with loose prompting, I never needed to look up the key names or dig into the xcodegen docs.
+Uploading to the App Store, I found that a few of the v1 xcodeproj settings had not been properly migrated to the xcodegen project.yml file. I needed to disable iPad support and force portrait orientation and add the non-exempt encryption plist setting. Claude Code could do all that with loose prompting; I never needed to look up the key names or dig into the xcodegen docs.
 
 At the last minute, I found an issue with image caching that I'd missed (I thought I had disabled both data and image precaching for `DEBUG` builds only, but in fact the image cache had been misconfigured the whole time).
 
-Finally, I uploaded a build to the App Store, submitted it, and it was approve and released the next morning.
+Finally, I uploaded a build to the App Store, submitted it, and it was approved and released the next morning.
 
 Claude Code helped me create a Release on GitHub by uploading images. It even looked through my old versions' screenshots and created a Release for those versions too.
 
@@ -345,7 +345,7 @@ I'm still trying to find a clever way to give Claude Code native access to the l
 
 Claude Code will not proactively audit your code through any particular lens. It's good to remember that you can ask it specifically to do a full walkthrough of your (small?) codebase looking for improvements. This could be a security audit, accessibility audit, code re-use audit, dynamic type audit, Swift concurrency audit, etc.
 
-You can also ask it do several audits in parallel through subagents. Or, have multiple subagents do the *same* audit type and have the main agent gather the results.
+You can also ask it to do several audits in parallel through subagents. Or, have multiple subagents do the *same* audit type and have the main agent gather the results.
 
 #### Periodically have Claude Code run `-warn-long-function-bodies` and fix warnings
 
@@ -353,7 +353,7 @@ While developing with Swift, for as long as I can remember, there have been case
 
 Keeping the [-warn-long-function-bodies](https://github.com/fastred/Optimizing-Swift-Build-Times/blob/18f7052834d17040c66c848e28dcc9431c9d60fe/README.md#type-checking-of-functions-and-expressions) compiler flag on during development is one way to get notified about this early and often, but it can also be annoying due to the non-deterministic nature of build times.
 
-It's quick and easy to ask Claude Code to add this build flag with ~200ms as the threshold, build the project, check for  warnings, and automatically fix them. Then have it clean up and revert the build flag once it's done.
+It's quick and easy to ask Claude Code to add this build flag with ~200ms as the threshold, build the project, check for warnings, and automatically fix them. Then have it clean up and revert the build flag once it's done.
 
 #### The bar for automating things is way lower with Claude Code
 
@@ -369,7 +369,7 @@ See how well Claude Code works with your existing developer tools and workflow b
 
 I found keeping GitHub Desktop as my code review tool for Claude Code's various excursions worked great. I could keep an eye on the git staging area and selectively commit files the same way I do when I'm developing on my own.
 
-I used Perplexity, Google search, and the ChatGPT app to do various research and context gathering outside of Claude Code. Each felt like it covered a certain limitations of Claude Code, whether it be the model or the UI.
+I used Perplexity, Google search, and the ChatGPT app to do various research and context gathering outside of Claude Code. Each felt like it covered certain limitations of Claude Code, whether it be the model or the UI.
 
 And of course, using Xcode for my own editing, building, browsing, testing, and simulator running workflows was familiar (and predictably painful).
 
@@ -379,7 +379,7 @@ I'd say keep an awareness of friction points in your workflow and gradually addr
 
 #### Scaffolding
 
-At the start of a new project or feature, you can use Claude Code as a way to get smarter scaffolding for project. It's dangerous though if you think of this code as shippable code instead of scaffolding though. You really do have to maintain the discipline to continue to build off of the generated code, test it, polish it, iterate on it.
+At the start of a new project or feature, you can use Claude Code as a way to get smarter scaffolding for a project. It's dangerous though if you think of this code as shippable code instead of scaffolding. You really do have to maintain the discipline to continue to build off of the generated code, test it, polish it, iterate on it.
 
 More concretely, Claude Code seems to be pretty great at creating `Codable` models, especially if you give it an example json file. Networking clients too since there's presumably plenty of examples in its training data.
 
@@ -401,7 +401,7 @@ I used this kind of refactor a lot for extracting SwiftUI Views. Also for migrat
 
 There's a natural tension when writing SwiftUI where *writing* Views is generally easier when working inside one big View. But this makes both the compiler and the runtime unhappy (performance suffers). When iterating on the presentation and structure of Views, it's disruptive to have to keep extracting variables and thinking up names for each sub View instance.
 
-Claude Code is really great a solution to this problem because both extracting and recombining Views is incredibly cheap.
+Claude Code is really great as a solution to this problem because both extracting and recombining Views is incredibly cheap.
 
 #### Following architecture rules
 
@@ -432,7 +432,7 @@ When doing a folder structure refactoring near the end of the project, I moved t
 
 I've done this kind of excavation before, but it's incredibly nerve-wracking and error prone. I asked Claude Code to help and it knocked it out.
 
-Of course, there's a lesson to be learned here that I should be doing my secrets management better, and I did update the `.gitignore` to be more fool-proof, but regardless of that, it was still a saved me a lot of mental effort.
+Of course, there's a lesson to be learned here that I should be doing my secrets management better, and I did update the `.gitignore` to be more fool-proof, but regardless of that, it still saved me a lot of mental effort.
 
 #### Full audits for reusable code
 
