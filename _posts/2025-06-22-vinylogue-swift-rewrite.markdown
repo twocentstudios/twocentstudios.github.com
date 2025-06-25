@@ -52,7 +52,7 @@ Those are my overall thoughts about the experience. Before I dig into the meat o
 - **52** - Swift files (excluding tests)
 - **7** - calendar days of work from first commit to App Store submission
 
-{% caption_img /images/vinylogue-v2-vibemeter-spend.png h400 Theoretical spend calculated via VibeMeter app %}
+{% caption_img /images/vinylogue-v2-vibemeter-spend.png h300 Theoretical spend calculated via VibeMeter app %}
 
 The rest of this post will discuss:
 
@@ -77,7 +77,7 @@ In early 2013, I was in another period of indie dev between full-time jobs. I wa
 
 I wrote a [very detailed blog post](http://twocentstudios.com/blog/2013/04/03/the-making-of-vinylogue/) about the design and development of the app. The Timehop team found that post and hired me as an iOS contractor for a few months before I moved from Chicago to New York to join the team full-time. 
 
-![Vinylogue 3 main 4-inch screenshots v1.1]()
+{% caption_img /images/vinylogue-v1-main-screens.jpg h500 Vinylogue v1.1 main screens: Users List, Weekly Albums, and Album Detail %}
 
 The fact that this app got me my first *real* iOS developer role makes Vinylogue significant and nostalgic for me. 
 
@@ -103,13 +103,13 @@ So **the goal starting out** was:
 
 Below is a graph with the high-level breakdown of code changes over the week.
 
-![swift_lines_5hour_blocks_swift_only](../../../Desktop/swift_lines_5hour_blocks_swift_only.png)
+{% caption_img /images/vinylogue-v2-swift-lines-graph.png h400 Lines of Swift code added and removed during the rewrite, grouped by 5-hour time blocks %}
 
 ### Day 1: Scaffolding 
 
-[TODO: end of day commit 2c4843b]()
+[End of day 1 - commit 2c4843b](https://github.com/twocentstudios/vinylogue/commit/2c4843b)
 
-![screenshots of the app after day 1]()
+{% caption_img /images/vinylogue-v2-day1-progress.jpg h500 Screenshots of the app after day 1: basic scaffolding and initial SwiftUI implementation %}
 
 As you can see from the above graph, Claude Code cranked out the foundation of the project on the first day. Due to the usage limitations of the Anthropic Pro subscription, I could only use it for about 1 hour every 5 hours. So even though the first day represented the most code written, it was only about 4 hours of usage total. I was doing work on other projects and eating and doing chores in the downtime.
 
@@ -125,9 +125,9 @@ I learned a lot on this first day. And having so much of the foundational code o
 
 ### Day 2: Styling & Core UX
 
-[TODO: end of day commit 03d763a]()
+[End of day 2 - commit 03d763a](https://github.com/twocentstudios/vinylogue/commit/03d763a)
 
-![screenshots of the app after day 2]()
+{% caption_img /images/vinylogue-v2-day2-progress.jpg h500 Screenshots of the app after day 2: improved styling and core UX implementation %}
 
 The second day was mostly about styling and cleanup and small bug fixes. After a couple tries, I gave up on having Claude Code try to faithfully recreate the styling 1-to-1. Without a feedback loop in place for it to view the visual results of its code, I suspect it was a fool's errand. Instead, I spent a little time creating color and font helpers, then using them in the `UsersListView` to lay it out exactly as I wanted.
 
@@ -163,7 +163,7 @@ With the architecture refactoring complete, it was now possible to have Claude C
 
 I'd already considered automated screenshotting a stretch goal, but I wanted to push even further. I added a toggle-able pixelate filter to all the album images so I'd have a set of screenshots available for App Store use and external advertising, all without me needing to open Pixelamator. This was quick and straightforward now that the new architecture was in place and because NukeUI has a great image processing pipeline feature that can run CIFilters.
 
-![TODO: Pixelated and non-pixelated versions of the weekly album charts screnshots]()
+{% caption_img /images/vinylogue-v2-pixelated-comparison.jpg h500 Comparison of non-pixelated and pixelated versions of the weekly album charts for App Store compliance %}
 
 ### Days 6 & 7: Prepare for App Store
 
@@ -191,7 +191,7 @@ The weekly album chart view in v1 had a unique left/right button/slider paradigm
 
 In my original [blog post](http://twocentstudios.com/blog/2013/04/03/the-making-of-vinylogue/), I actually mentioned how my first sketches planned for year navigation to be at the top and bottom edges. 
 
-![TODO: repost of the notebook sketch of the top/bottom year navigation]()
+![TODO: repost of the notebook sketch of the top/bottom year navigation](/images/vinylogue-wireframe.jpg)
 
 At the time, I gave up on the top/bottom paradigm because it felt strange as section header/footer for years with few albums, and there was no concept of safe areas yet.
 
