@@ -456,6 +456,19 @@ I like documenting my GitHub PRs, Issues, Releases, etc. with screenshots laid o
 
 When creating [Releases](https://github.com/twocentstudios/vinylogue/releases), I realized Claude Code was very much able to pick the proper screenshots out of my project directory, upload them, and insert links into a properly formatted markdown table. This saved me 10-15 minutes at least of tedious clicking, dragging around, and formatting.
 
+### What I want to try next time
+
+- I want to give Claude Code a way to view simulator screenshots and/or video to allow it to iterate on its designs.
+- Or at least experiment with UITests or snapshot tests.
+- I want to get give Claude Code scripts to run for `xcodebuild`, etc. so it's more consistent and wastes less time when it forgets which simulators are available. The only downside is keeping these up to date when I update Xcode versions.
+- I want to be more mindful of the the way it writes unit tests and come up with my own best practices, including which types of files I test.
+- I want to try some version of TDD.
+- I want to ask Claude Code to update some sort of append-only log each time it takes a wrong path and corrects its own mistake. Automating the collection of tips and tricks and ensuring we can incorporate those into long-term memory.
+- I want to automate more App Store release process steps.
+- I want to move my personal workflow stuff to my home directory `CLAUDE.md`.
+- I want to find more useful MCPs for iOS dev.
+- I want to find a better way to manage files that aren't in the xcodeproj e.g. markdown, images, etc.
+- I want to find a source for up-to-date Apple platform docs that can be quickly referenced within Claude Code.
 
 ### Stray observations about working with Claude Code
 
