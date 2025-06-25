@@ -285,7 +285,7 @@ I didn't start using `plan` mode until later in the development of v2. I found i
 
 I started using [Warp](https://www.warp.dev) a few years back as my daily driver. I never really used its built in LLM features that much, but I liked its overall setup and usability for my limited purposes.
 
-However, Warp was not particularly well suited as a driver for Claude Code. There were a lot of scrolling bugs and overall it just felt like the two were fighting each other.
+However, Warp was not particularly well suited as a driver for Claude Code. There were a lot of scrolling bugs and overall it just felt like the two were fighting each other. (Note: Warp just released their own coding agent as Warp v2.0).
 
 I started using [Ghostty](https://ghostty.org) towards the end of development and its simplicity has worked well with Claude Code so far.
 
