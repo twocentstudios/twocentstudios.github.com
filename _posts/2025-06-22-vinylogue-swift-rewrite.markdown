@@ -12,7 +12,7 @@ Vinylogue is an app that shows you and your friends' last.fm album listening his
 
 It has three main screens: a users list, the weekly albums list, and an album detail view. There's also various screens for settings, onboarding, user list editing, etc.
 
-{% caption_img /images/vinylogue-v2-main-screens.jpg 2000 1403 Vinylogue v2.0 main screens: Users List, Weekly Albums, and Album Detail %}
+{% caption_img /images/vinylogue-v2-main-screens.jpg h500 Vinylogue v2.0 main screens: Users List, Weekly Albums, and Album Detail %}
 
 If you happen to be an active [Last.fm](https://last.fm) user, give the app a spin by [downloading it from the App Store](https://itunes.apple.com/us/app/vinylogue-for-last.fm/id617471119?ls=1&mt=8).
 
@@ -20,15 +20,15 @@ Overall, the experience of rewriting the app was a lot of fun with Claude Code. 
 
 Using Claude Code to automate a lot of tedious work of porting the data models, dominant color algorithm, and data migration code left me with an unusual abundance of time and energy to focus on the parts I was interested in: ensuring the visual design matched exactly; improving caching and pre-caching behavior, improving the friend management UX, and reworking the chart year navigation.
 
-![TODO: dominant color album detail gif]()
+<video src="/images/vinylogue-v2-dominant-color-demo.mp4" controls preload="none" poster="/images/vinylogue-v2-dominant-color-demo-poster.jpg" height="720"></video>
 
-![TODO: chart year navigation behavior gif]() 
+<video src="/images/vinylogue-v2-chart-year-navigation.mp4" controls preload="none" poster="/images/vinylogue-v2-chart-year-navigation-poster.jpg" height="720"></video> 
 
 I could have probably stopped at day 3 and had pretty close feature parity, but I was having so much fun challenging Claude that I started experimenting with more robust architectures. I migrated the entire codebase to the [Point-Free co.](https://www.pointfree.co) Modern Swift-UI architecture using [swift-dependencies](https://github.com/pointfreeco/swift-dependencies) and [swift-sharing](https://github.com/pointfreeco/swift-sharing) using their open source [SyncUps](https://github.com/pointfreeco/syncups) codebase as a template.
 
 The SyncUps architecture unlocked the ability to have Claude follow a [blog post](https://blog.winsmith.de/english/ios/2020/04/14/xcuitest-screenshots.html) I found about using UITests to automatically generate screenshots for the App Store. A few years ago, App Store review started clamping down on use of copyrighted images in App Store screenshots, and I'd have to manually add a pixelation filter to each image before uploading. I was easier to work with Claude to incorporate the pixelation filter as an option in the app code than to do that work manually.
 
-![TODO: pixelated version of weekly album chart view]()
+{% caption_img /images/vinylogue-v2-pixelated-weekly-chart.jpg h400 Pixelated version of the weekly album chart view showing privacy-protected album covers %}
 
 I got so carried away that I did plenty more refactorings to have Claude look for duplicate SwiftUI View code that could be extracted and reused across multiple screen-level Views. I had it make a few proposals for how it'd be best to reorganize the project's folder structure. I never had to get into the weeds refactoring and burn brain cycles, so I almost always felt fresh to use my mental energy on the higher-level planning.
 
@@ -52,7 +52,7 @@ Those are my overall thoughts about the experience. Before I dig into the meat o
 - **52** - Swift files (excluding tests)
 - **7** - calendar days of work from first commit to App Store submission
 
-![Theoretical spend calculated via VibeMeter app](../../../Desktop/Screenshot 2025-06-24 at 11.55.01.png)
+{% caption_img /images/vinylogue-v2-vibemeter-spend.png h400 Theoretical spend calculated via VibeMeter app %}
 
 The rest of this post will discuss:
 
