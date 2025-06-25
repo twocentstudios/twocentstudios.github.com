@@ -14,7 +14,7 @@ It has three main screens: a users list, the weekly albums list, and an album de
 
 ![TODO: 3 main screens in one image]()
 
-If you happen to be an active [Last.fm](https://last.fm) user, give the app a spin by [downloading it from the App Store](TODO).
+If you happen to be an active [Last.fm](https://last.fm) user, give the app a spin by [downloading it from the App Store](https://itunes.apple.com/us/app/vinylogue-for-last.fm/id617471119?ls=1&mt=8).
 
 Overall, the experience of rewriting the app was a lot of fun with Claude Code. Even with the learning curve and my non-optimal device environment, the amount of progress I made was exponentially higher than I could have alone. As much as I've considered rewriting the app in Swift over the years, I could never justify it; the app still worked well enough, has very few active users, and makes no money. 
 
@@ -24,9 +24,9 @@ Using Claude Code to automate a lot of tedious work of porting the data models, 
 
 ![TODO: chart year navigation behavior gif]() 
 
-I could have probably stopped at day 3 and had pretty close feature parity, but I was having so much fun challenging Claude that I started experimenting with more robust architectures. I migrated the entire codebase to the [Point-Free co.]() Modern Swift-UI architecture using [swift-dependencies]() and [swift-sharing]() using their open source [SyncUps]() codebase as a template.
+I could have probably stopped at day 3 and had pretty close feature parity, but I was having so much fun challenging Claude that I started experimenting with more robust architectures. I migrated the entire codebase to the [Point-Free co.](https://www.pointfree.co) Modern Swift-UI architecture using [swift-dependencies](https://github.com/pointfreeco/swift-dependencies) and [swift-sharing](https://github.com/pointfreeco/swift-sharing) using their open source [SyncUps](https://github.com/pointfreeco/syncups) codebase as a template.
 
-The SyncUps architecture unlocked the ability to have Claude follow a [blog post]() I found about using UITests to automatically generate screenshots for the App Store. A few years ago, App Store review started clamping down on use of copyrighted images in App Store screenshots, and I'd have to manually add a pixelation filter to each image before uploading. I was easier to work with Claude to incorporate the pixelation filter as an option in the app code than to do that work manually.
+The SyncUps architecture unlocked the ability to have Claude follow a [blog post](https://blog.winsmith.de/english/ios/2020/04/14/xcuitest-screenshots.html) I found about using UITests to automatically generate screenshots for the App Store. A few years ago, App Store review started clamping down on use of copyrighted images in App Store screenshots, and I'd have to manually add a pixelation filter to each image before uploading. I was easier to work with Claude to incorporate the pixelation filter as an option in the app code than to do that work manually.
 
 ![TODO: pixelated version of weekly album chart view]()
 
@@ -47,7 +47,7 @@ Those are my overall thoughts about the experience. Before I dig into the meat o
 
 - **$353** - theoretical spend on Claude Code if I had used the API
 - **$20** - actual spend on Anthropic Pro subscription
-- **+11,275 −8,249** - total lines changed in the [v2.0 pull request](TODO)
+- **+11,275 −8,249** - total lines changed in the [v2.0 pull request](https://github.com/twocentstudios/vinylogue/pull/5)
 - **5,609** - lines of Swift code (excluding tests)
 - **52** - Swift files (excluding tests)
 - **7** - calendar days of work from first commit to App Store submission
@@ -73,9 +73,9 @@ The rest of this post will discuss:
 	
 ## Goal of the Rewrite
 
-In early 2013, I was in another period of indie dev between full-time jobs. I was churning through a few app ideas, learning a lot but biting off more than I could chew and not releasing anything. I got some inspiration after I started using an app called [Timehop](TODO), the first service of its kind that aggregated your past social media activity in what Facebook would later popularize as "This Day in History". I was an avid Last.fm user, and by time Last.fm had already become a niche service, so I decided it would be fun to make a Timehop-for-Last.fm. I developed the "feature-complete" v1.1 app in 5 weeks.
+In early 2013, I was in another period of indie dev between full-time jobs. I was churning through a few app ideas, learning a lot but biting off more than I could chew and not releasing anything. I got some inspiration after I started using an app called [Timehop](https://timehop.com), the first service of its kind that aggregated your past social media activity in what Facebook would later popularize as "This Day in History". I was an avid Last.fm user, and by time Last.fm had already become a niche service, so I decided it would be fun to make a Timehop-for-Last.fm. I developed the "feature-complete" v1.1 app in 5 weeks.
 
-I wrote a [very detailed blog post](TODO) about the design and development of the app. The Timehop team found that post and hired me as an iOS contractor for a few months before I moved from Chicago to New York to join the team full-time. 
+I wrote a [very detailed blog post](http://twocentstudios.com/blog/2013/04/03/the-making-of-vinylogue/) about the design and development of the app. The Timehop team found that post and hired me as an iOS contractor for a few months before I moved from Chicago to New York to join the team full-time. 
 
 ![Vinylogue 3 main 4-inch screenshots v1.1]()
 
@@ -141,7 +141,7 @@ I also had Claude Code do a Swift Concurrency audit and I helped it migrate the 
 
 Day 3 I continued hand-polishing the UI for the most important screens. I implemented the overscroll year-navigation mechanism in a SwiftUI Preview, then had Claude Code help me copy it into the View and wire it up.
 
-I was also finding new excuses to push the scope. I integrating [swift-dependencies](), double-checked the loading and error states, and added haptic feedback.
+I was also finding new excuses to push the scope. I integrating [swift-dependencies](https://github.com/pointfreeco/swift-dependencies), double-checked the loading and error states, and added haptic feedback.
 
 This is the day that I *could* have buckled in and focused on finishing up the v2 rewrite to be functionally equivalent to v1, including its warts. I could have left the code quality in a somewhat embarrassing state. But at this point I still had lots of energy and motivation. Stopping here would have felt like leaving too much low hanging fruit.
 
@@ -157,7 +157,7 @@ I finally tested the important v1 data migration code (for the current user and 
 
 Being and indie dev responsible for releasing apps and updates means lots of overhead in creating App Store screenshots and marketing info. I wanted to experiment with using UITests to generate screenshots, but a big blocker to this was ensuring I could inject mock data so that screenshots wouldn't change each time I ran the process. This led to me finding my swift-dependencies implementation was unideal (read: working, but incorrect).
 
-So I took on another side-quest of refactoring the app architecture, inspired by the [Point-Free co. SyncUps app](TODO link to SyncUps app). Feeding this codebase to Claude Code and having it make the first pass got me to about 80% refactored. Formalizing the rules and having it take another pass got it to 90%. Doing the final audit for the last few problem classes got it to 100%. It was kind of amazing to be able to stay at a high level of abstraction and see what a given architecture looks like for your codebase. I could have thrown this refactor out with no harm done, but it accomplished my goals and felt like it made the codebase more maintainable. Spending a little extra time formalizing my adapted architecture rules on a relatively simple codebase opens up the possibility of using this codebase as a template for refactoring my other, more messy codebases.
+So I took on another side-quest of refactoring the app architecture, inspired by the [Point-Free co. SyncUps app](https://github.com/pointfreeco/syncups). Feeding this codebase to Claude Code and having it make the first pass got me to about 80% refactored. Formalizing the rules and having it take another pass got it to 90%. Doing the final audit for the last few problem classes got it to 100%. It was kind of amazing to be able to stay at a high level of abstraction and see what a given architecture looks like for your codebase. I could have thrown this refactor out with no harm done, but it accomplished my goals and felt like it made the codebase more maintainable. Spending a little extra time formalizing my adapted architecture rules on a relatively simple codebase opens up the possibility of using this codebase as a template for refactoring my other, more messy codebases.
 
 With the architecture refactoring complete, it was now possible to have Claude Code finish up the automated App Store screenshotting code. I used Perplexity to research all the prior art, found [this blog post](https://blog.winsmith.de/english/ios/2020/04/14/xcuitest-screenshots.html), fed the blog post to Claude, and had it follow the blog post step-by-step to create a custom bash script, UITest, and modifications to my top-level `App`.
 
@@ -189,7 +189,7 @@ The weekly album chart view in v1 had a unique left/right button/slider paradigm
 
 ![TODO: gif of v1 year navigation scrolling]()
 
-In my original [blog post](TODO: original vinylogue blog post linking to the section), I actually mentioned how my first sketches planned for year navigation to be at the top and bottom edges. 
+In my original [blog post](http://twocentstudios.com/blog/2013/04/03/the-making-of-vinylogue/), I actually mentioned how my first sketches planned for year navigation to be at the top and bottom edges. 
 
 ![TODO: repost of the notebook sketch of the top/bottom year navigation]()
 
@@ -265,7 +265,7 @@ Early in development, I was strategically compacting a lot. But once the project
 
 Since these instructions will get read in each time you `/compact` or `/clear` its good to have the most important instructions about your workflow in here. For me, this included which simulator and os version to use in `xcodebuild`, always using the `--quiet` flag, always running `xcodegen` if files were added, always building and testing before returning control back to me, etc.
 
-In my code source root one folder down, I put another `CLAUDE.md` that was more focused on the codebase itself. Later on, within each subfolder of the source, I had Claude Code generate its own short `CLAUDE.md` files summarizing the important parts of the code that existed in those folders. For example, the [`/Features`](TODO: github link to v2 /Vinylogue/Features/CLAUDE.md) directory contains architecture rules about creating new Views and Stores that are only relevant when working in that parent folder.
+In my code source root one folder down, I put another `CLAUDE.md` that was more focused on the codebase itself. Later on, within each subfolder of the source, I had Claude Code generate its own short `CLAUDE.md` files summarizing the important parts of the code that existed in those folders. For example, the [`/Features`](https://github.com/twocentstudios/vinylogue/blob/master/Vinylogue/Features/CLAUDE.md) directory contains architecture rules about creating new Views and Stores that are only relevant when working in that parent folder.
 
 #### Use `@` to point Claude Code directly to files you're working with
 
@@ -283,11 +283,11 @@ I didn't start using `plan` mode until later in the development of v2. I found i
 
 #### Warp was not a convenient terminal to use with Claude Code
 
-I started using [Warp](TODO: link to warp terminal website) a few years back as my daily driver. I never really used its built in LLM features that much, but I liked its overall setup and usability for my limited purposes.
+I started using [Warp](https://www.warp.dev) a few years back as my daily driver. I never really used its built in LLM features that much, but I liked its overall setup and usability for my limited purposes.
 
 However, Warp was not particularly well suited as a driver for Claude Code. There were a lot of scrolling bugs and overall it just felt like the two were fighting each other.
 
-I started using Ghostty towards the end of development and its simplicity has worked well with Claude Code so far.
+I started using [Ghostty](https://ghostty.org) towards the end of development and its simplicity has worked well with Claude Code so far.
 
 #### The Anthropic Pro plan's limits are fine for starting out
 
@@ -339,7 +339,7 @@ I added the following to the project source level CLAUDE.md:
     - https://uithub.com/pointfreeco/syncups?accept=text/html&maxTokens=50000&ext=swift
 ```
 
-I'm still trying to find a clever way to give Claude Code native access to the latest Apple Frameworks documentation. One option is [llm.codes](https://steipete.me/posts/llm-codes-transform-developer-docs). I've also used the [Dia](TODO: dia browser link) to automatically convert a loaded Apple docs page to markdown before copying it into the Claude Code prompt manually.
+I'm still trying to find a clever way to give Claude Code native access to the latest Apple Frameworks documentation. One option is [llm.codes](https://steipete.me/posts/llm-codes-transform-developer-docs). I've also used the [Dia](https://www.diabrowser.com/) to automatically convert a loaded Apple docs page to markdown before copying it into the Claude Code prompt manually.
 
 #### Periodically ask Claude Code for solicited code audits
 
@@ -361,7 +361,7 @@ I consider it a personal failing, but I've always had an aversion to learning ba
 
 With Claude Code, my outlook on automation has completely changed. LLMs in general are just way better at writing one-file scripts than they are at writing sprawling applications. It's simply much faster to ask Claude Code to bang off a script to automate a task. Even for one-off tasks.
 
-The [script](TODO: link to github repo generate-app-store-screenshots in root dir) Claude Code wrote to automate my App Store screenshots is just one example. I also had it write a one-off script to generate the graphs earlier in this blog post.
+The [script](https://github.com/twocentstudios/vinylogue/blob/906c1ce86c8bdb926db6dcb0eada664b80fb8743/generate-app-store-screenshots.zsh) Claude Code wrote to automate my App Store screenshots is just one example. I also had it write a one-off script to generate the graphs earlier in this blog post.
 
 #### Continue using your existing developer tools alongside Claude Code
 
@@ -385,7 +385,7 @@ More concretely, Claude Code seems to be pretty great at creating `Codable` mode
 
 #### Targeted refactoring
 
-One example of a [targeting refactoring](https://github.com/twocentstudios/vinylogue/commit/2de5aa832ad7afdc6c0d9b37bc5380095e586822) I did was at the very end of the project. I previously had an `Album` struct that was using lots of optionals to express different levels of `loaded`. 
+One example of a [targeted refactoring](https://github.com/twocentstudios/vinylogue/commit/2de5aa832ad7afdc6c0d9b37bc5380095e586822) I did was at the very end of the project. I previously had an `Album` struct that was using lots of optionals to express different levels of `loaded`. 
 
 I did my own bit of planning up front to devise exactly how I wanted `Album` to be structured to express being partially and fully loaded. Along the way, I realized that `Album` was also being mutated with some specialization based on `WeeklyChart` it was originally fetched with. So it wasn't really independent `Album` whose information could be shared across years. This could have been a source of subtle bugs, especially with caching.
 
