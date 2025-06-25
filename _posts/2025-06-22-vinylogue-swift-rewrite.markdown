@@ -78,7 +78,7 @@ Those are my overall thoughts about the experience. Before I dig into the meat o
 	
 ## Goal of the Rewrite
 
-In early 2013, I was in another period of indie dev between full-time jobs. I was churning through a few app ideas, learning a lot but biting off more than I could chew and not releasing anything. I got some inspiration after I started using an app called [Timehop](https://timehop.com), the first service of its kind that aggregated your past social media activity in what Facebook would later popularize as "This Day in History". I was an avid Last.fm user, and by time Last.fm had already become a niche service, so I decided it would be fun to make a Timehop-for-Last.fm. I developed the "feature-complete" v1.1 app in 5 weeks.
+In early 2013, I was in another period of indie dev between full-time jobs. I was churning through a few app ideas, learning a lot but biting off more than I could chew and not releasing anything. I got some inspiration after I started using an app called [Timehop](https://timehop.com), the first service of its kind that aggregated your past social media activity in what Facebook would later popularize as "This Day in History". I was an avid Last.fm user, and by that time Last.fm had already become a niche service, so I decided it would be fun to make a Timehop-for-Last.fm. I developed the "feature-complete" v1.1 app in 5 weeks.
 
 I wrote a [very detailed blog post](/2013/04/03/the-making-of-vinylogue/) about the design and development of the app. The Timehop team found that post and hired me as an iOS contractor for a few months before I moved from Chicago to New York to join the team full-time. 
 
@@ -112,13 +112,13 @@ Below is a graph with the high-level breakdown of code changes over the week.
 
 ### Day 1: Scaffolding 
 
-[End of day 1 - commit 2c4843b](https://github.com/twocentstudios/vinylogue/commit/2c4843b)
+[End of day 1 - commit 2c4843b](https://github.com/twocentstudios/vinylogue/tree/2c4843b4f8aec49e30f8c6c4230bdcb2cdf6fddc)
 
 {% caption_img /images/vinylogue-v2-day1-progress.jpg h500 Screenshots of the app after day 1: basic scaffolding and initial SwiftUI implementation %}
 
 As you can see from the above graph, Claude Code cranked out the foundation of the project on the first day. Due to the usage limitations of the Anthropic Pro subscription, I could only use it for about 1 hour every 5 hours. So even though the first day represented the most code written, it was only about 4 hours of usage total. I was doing work on other projects and eating and doing chores in the downtime.
 
-My goal for the first day was simply to get a feel for Claude Code and see what it was capable of. I wanted to see what its tendencies were when it had little direction. I gave Claude Code a spec that OpenAI's o3 had written based on the Objective-C codebase and screenshots of the current version, but Claude basically threw that out and wrote its own spec before starting to crank through the 8 sprints worth of TODOs. I was intentionally not providing any input on design or architecture. After it worked through a sprint, I'd give the code a once over, but mostly commit it to the working branch.
+My goal for the first day was simply to get a feel for Claude Code and see what it was capable of. I wanted to see what its tendencies were when it had little direction. I gave Claude Code [a spec that OpenAI's o3 had written](https://github.com/twocentstudios/vinylogue/blob/cb1ad8350870cf2c6643f4f90daeb0148b707ef7/Planning/PRD.md) based on the Objective-C codebase and screenshots of the current version, but Claude basically threw that out and [wrote its own spec](https://github.com/twocentstudios/vinylogue/blob/9902e4f5d313c6ffb5f0fd6191979c78fdac87c4/Planning/PRD.md) before starting to crank through the [8 sprints worth of TODOs](https://github.com/twocentstudios/vinylogue/blob/9902e4f5d313c6ffb5f0fd6191979c78fdac87c4/Planning/sprint-00.md). I was intentionally not providing any input on design or architecture. After it worked through a sprint, I'd give the code a once over, but mostly commit it to the working branch.
 
 It felt very productive, but this was essentially just a more advanced version of scaffolding (something my friend Jens compared to Ruby on Rails' scaffold command). Over the course of the week, this version of the code would be the clay I'd be molding and detailing to get to the final form.
 
@@ -130,7 +130,7 @@ I learned a lot on this first day. And having so much of the foundational code o
 
 ### Day 2: Styling & Core UX
 
-[End of day 2 - commit 03d763a](https://github.com/twocentstudios/vinylogue/commit/03d763a)
+[End of day 2 - commit 03d763a](https://github.com/twocentstudios/vinylogue/tree/03d763a)
 
 {% caption_img /images/vinylogue-v2-day2-progress.jpg h500 Screenshots of the app after day 2: improved styling and core UX implementation %}
 
