@@ -12,7 +12,7 @@ Vinylogue is an app that shows you and your friends' last.fm album listening his
 
 It has three main screens: a users list, the weekly albums list, and an album detail view. There's also various screens for settings, onboarding, user list editing, etc.
 
-![TODO: 3 main screens in one image]()
+{% caption_img /images/vinylogue-v2-main-screens.jpg 2000 1403 Vinylogue v2.0 main screens: Users List, Weekly Albums, and Album Detail %}
 
 If you happen to be an active [Last.fm](https://last.fm) user, give the app a spin by [downloading it from the App Store](https://itunes.apple.com/us/app/vinylogue-for-last.fm/id617471119?ls=1&mt=8).
 
@@ -484,7 +484,7 @@ When creating [Releases](https://github.com/twocentstudios/vinylogue/releases), 
 - I intentionally didn't attempt to have Claude Code work on different features in parallel. I was still in-the-loop enough that my manual testing was the blocker, and having multiple instances to review in my environment would have quickly overwhelmed me. As I gain experience, I think my appetite for parallelizing will grow. Also, I think parallel usage would probably necessitate the usage limits of the Max plan.
 - After a couple days, I started using `/compact` more intentionally, and with additional instructions so that I was more in control.
 - Towards the end of development, tasks were mostly unrelated, so I was using `/clear` more often than `/compact`. Especially because my collection of `CLAUDE.md` files was much more robust.
-- As I started using more frameworks and becoming more opinionated about the code quality, I started looking for more efficient ways to feed context into Claude Code. I tried [uithub](TODO site), [gitingest](TODO: Site), [context7](TODO: site). But context is still so precious that a lot of the time I'd do my own work up front to find the exact markdown file I wanted it to read to understand how the library would solve the current problem we were working on.
+- As I started using more frameworks and becoming more opinionated about the code quality, I started looking for more efficient ways to feed context into Claude Code. I tried [https://uithub.com](TODO site), [gitingest](https://gitingest.com/), [context7](https://context7.com/). But context is still so precious that a lot of the time I'd do my own work up front to find the exact markdown file I wanted it to read to understand how the library would solve the current problem we were working on.
 - Moving Xcode's DerivedData folder into the project directory is a weighty decision with pros and cons, but it certainly helped for giving Claude Code a easily discoverable location for Swift Package documentation and code.
 - Refactoring is one of my favorite use cases for Claude Code. Being able to concretely see what a project-wide refactor looks like in a matter of minutes is incredible as a learning device. For example, if I manually did a big exploratory refactor related to an architecture change and it took a week of work, I'd be much more opposed to throwing away that work, even if it objectively made the codebase worse. Having Claude Code automate that work allows you to keep your objectivity, evaluate the new strategy as an impartial observer, and ruthlessly throw out the work with no hard feelings.
 - Relatedly, the ability to stay at the macro-level of evaluating a codebase for 90% of the time while Claude Code handles the micro-level work feels like such a huge productively multiplier.
