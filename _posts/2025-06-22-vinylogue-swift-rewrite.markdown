@@ -1,12 +1,27 @@
 ---
 layout: post
 title: "Rewriting a 12 Year Old Objective-C iOS App with Claude Code"
-date: 2025-06-22 00:00:00
-image: /images/
+date: 2025-06-22 17:56:00
+image: /images/vinylogue-v2-main-screens.jpg
 tags: vinylogue apple ios
 ---
 
-Last week, I rewrote my iOS app Vinylogue to Swift and SwiftUI with the help of Claude Code. I originally created Vinylogue back in 2013 targeting iOS 6. Recently, I've been wanting to try out Claude Code, and I decided updating Vinylogue would be a good test project for it.
+Last week, I rewrote my iOS app [Vinylogue]((https://itunes.apple.com/us/app/vinylogue-for-last.fm/id617471119?ls=1&mt=8)) to Swift and SwiftUI with the help of [Claude Code](https://www.anthropic.com/claude-code). I originally created Vinylogue [back in 2013](http://twocentstudios.com/blog/2013/04/03/the-making-of-vinylogue/) targeting iOS 6. Recently, I've been wanting to try out Claude Code, and I decided updating Vinylogue would be a good test project for it.
+
+TL;DR: Using Claude Code made this rewrite super fun and productive and was absolutely worth the $20, even considering the time I spent learning the tool and how it's still relatively unoptimized for Apple platforms development.
+
+## Table of Contents
+
+- Overview
+- The goal of the rewrite
+- A walkthrough of my daily accomplishments and phases of the rewrite
+- Specifics of working with Claude Code including:
+	- Lessons learned
+	- Genres of tasks I used it for
+	- What I want to try next time
+	- Lots of stray observations
+
+## Overview
 
 Vinylogue is an app that shows you and your friends' last.fm album listening history for "this week in history"; i.e. if it's the first week in June 2025, it shows the first week in June 2024, 2023, etc.
 
@@ -26,7 +41,7 @@ Using Claude Code to automate a lot of tedious work of porting the data models, 
 
 I could have probably stopped at day 3 and had pretty close feature parity, but I was having so much fun challenging Claude that I started experimenting with more robust architectures. I migrated the entire codebase to the [Point-Free co.](https://www.pointfree.co) Modern Swift-UI architecture using [swift-dependencies](https://github.com/pointfreeco/swift-dependencies) and [swift-sharing](https://github.com/pointfreeco/swift-sharing) using their open source [SyncUps](https://github.com/pointfreeco/syncups) codebase as a template.
 
-The SyncUps architecture unlocked the ability to have Claude follow a [blog post](https://blog.winsmith.de/english/ios/2020/04/14/xcuitest-screenshots.html) I found about using UITests to automatically generate screenshots for the App Store. A few years ago, App Store review started clamping down on use of copyrighted images in App Store screenshots, and I'd have to manually add a pixelation filter to each image before uploading. I was easier to work with Claude to incorporate the pixelation filter as an option in the app code than to do that work manually.
+The SyncUps architecture unlocked the ability to have Claude follow a [blog post](https://blog.winsmith.de/english/ios/2020/04/14/xcuitest-screenshots.html) I found about using UITests to automatically generate screenshots for the App Store. A few years ago, App Store review started clamping down on use of copyrighted images in App Store screenshots, and I'd have to manually add a pixelation filter to each image before uploading. It was easier to work with Claude to incorporate the pixelation filter as an option in the app code than to do that work manually.
 
 {% caption_img /images/vinylogue-v2-pixelated-weekly-chart.jpg h400 Pixelated version of the weekly album chart view showing privacy-protected album covers %}
 
@@ -53,16 +68,6 @@ Those are my overall thoughts about the experience. Before I dig into the meat o
 - **7** - calendar days of work from first commit to App Store submission
 
 {% caption_img /images/vinylogue-v2-vibemeter-spend.png h300 Theoretical spend calculated via VibeMeter app %}
-
-The rest of this post will discuss:
-
-- The goal of the rewrite
-- A walkthrough of my daily accomplishments and phases of the rewrite
-- Specifics of working with Claude Code including:
-	- Lessons learned
-	- Genres of tasks I used it for
-	- What I want to try next time
-	- Lots of stray observations
 	
 **As a quick disclaimer**, LLMs and the developer tools space is moving so fast that a lot of these observations will be immediately dated. For reference, the app/tool versions I used in this post:
 
@@ -81,14 +86,14 @@ I wrote a [very detailed blog post](http://twocentstudios.com/blog/2013/04/03/th
 
 The fact that this app got me my first *real* iOS developer role makes Vinylogue significant and nostalgic for me. 
 
-I've done my best to make the few changes required over the years to ensure the app still works in modern iOS versions on modern devices. But the fact that's Objective-C with a very opinionated reactive architecture made it so the cost of developing new features was always too high.
+I've done my best to make the few changes required over the years to ensure the app still works in modern iOS versions on modern devices. But the fact that's it's Objective-C with a very opinionated reactive architecture made it so the cost of developing new features was always too high.
 
 Regardless, I've continued to check the app weekly and use it as a nice reminder to listen back to albums I haven't revisited in a while.
 
 Based on glowing reviews around the internet, I've been wanting to try Claude Code, but hesitated because:
 
 - The pay-per-token model felt unideal to me; I didn't want to pay an unbounded amount to get burned learning a tool that in the end didn't make me any more productive
-- My current projects were not ideal for intensive LLM-assisted coding - I figured probably wouldn't learn how to use Claude Code effectively without a more greenfield project
+- My current projects were not ideal for intensive LLM-assisted coding - I figured I probably wouldn't learn how to use Claude Code effectively without a more greenfield project
 
 Vinylogue popped into my head as a great test project: it was greenfield, but had a complete product spec, design spec, and reference codebase to draw from. There was no deadline, no external code-quality bar to hit, and if it wasn't working out, I could give up any time and still have the same tried-and-true codebase around for the foreseeable future.
 
@@ -113,7 +118,7 @@ Below is a graph with the high-level breakdown of code changes over the week.
 
 As you can see from the above graph, Claude Code cranked out the foundation of the project on the first day. Due to the usage limitations of the Anthropic Pro subscription, I could only use it for about 1 hour every 5 hours. So even though the first day represented the most code written, it was only about 4 hours of usage total. I was doing work on other projects and eating and doing chores in the downtime.
 
-My goal for the first day was simply to get a feel for Claude Code and see what it was capable of. I wanted to see what its tendencies were when it had little direction. I gave it a spec that OpenAI's o3 had written based on the Objective-C codebase and screenshots of the current version, but Claude basically threw that out and wrote its own spec before starting to crank through the 8 sprints worth of TODOs. I was intentionally not providing any input on design or architecture. After it worked through a sprint, I'd give the code a once over, but mostly commit it to the working branch.
+My goal for the first day was simply to get a feel for Claude Code and see what it was capable of. I wanted to see what its tendencies were when it had little direction. I gave Claude Code a spec that OpenAI's o3 had written based on the Objective-C codebase and screenshots of the current version, but Claude basically threw that out and wrote its own spec before starting to crank through the 8 sprints worth of TODOs. I was intentionally not providing any input on design or architecture. After it worked through a sprint, I'd give the code a once over, but mostly commit it to the working branch.
 
 It felt very productive, but this was essentially just a more advanced version of scaffolding (something my friend Jens compared to Ruby on Rails' scaffold command). Over the course of the week, this version of the code would be the clay I'd be molding and detailing to get to the final form.
 
