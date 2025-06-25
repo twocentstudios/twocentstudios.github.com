@@ -14,7 +14,7 @@ It has three main screens: a users list, the weekly albums list, and an album de
 
 {% caption_img /images/vinylogue-v2-main-screens.jpg h500 Vinylogue v2.0 main screens: Users List, Weekly Albums, and Album Detail %}
 
-If you happen to be an active [Last.fm](https://last.fm) user, give the app a spin by [downloading it from the App Store](https://itunes.apple.com/us/app/vinylogue-for-last.fm/id617471119?ls=1&mt=8).
+If you happen to be an active [Last.fm](https://last.fm) user, give the app a spin by [downloading it from the App Store](https://itunes.apple.com/us/app/vinylogue-for-last.fm/id617471119?ls=1&mt=8). And it's been [open source on GitHub since v1.0](https://github.com/twocentstudios/vinylogue).
 
 Overall, the experience of rewriting the app was a lot of fun with Claude Code. Even with the learning curve and my non-optimal device environment, the amount of progress I made was exponentially higher than I could have alone. As much as I've considered rewriting the app in Swift over the years, I could never justify it; the app still worked well enough, has very few active users, and makes no money. 
 
@@ -147,7 +147,7 @@ This is the day that I *could* have buckled in and focused on finishing up the v
 
 ### Day 4: Circling back
 
-I finally got around to matching the visual style of the v1 `AlbumDetailView`. This includes porting the [custom dominant color algorithm](TODO dominant color algo v2 at tag 2.0) from [v1](TODO dominant color algo v1 link to code at tag 1.3.1). At first, Claude Code took a shortcut and used the average color CIFilter. I forced it to convert my Objective-C code line-by-line, and it did a great job besides using an erroneous color space value that took about 5-10 minutes to track down.
+I finally got around to matching the visual style of the v1 `AlbumDetailView`. This includes porting the [custom dominant color algorithm](https://github.com/twocentstudios/vinylogue/blob/906c1ce86c8bdb926db6dcb0eada664b80fb8743/Vinylogue/Core/Infrastructure/ColorExtraction.swift) from [v1](https://github.com/twocentstudios/vinylogue/blob/5409d38a061770c0f84325ca7e0e7dccbe8d587f/vinylogue/UIImage%2BTCSImageRepresentativeColors.m). At first, Claude Code took a shortcut and used the average color CIFilter. I forced it to convert my Objective-C code line-by-line, and it did a great job besides using an erroneous color space value that took about 5-10 minutes to track down.
 
 V1 did not have any sort of precaching system, so album images always appeared to load very slowly (mostly due to a limitation in the Last.fm API). On day 4 I added data and image precaching so that navigating between years would be seamless.
 
@@ -187,17 +187,17 @@ The v2 Swift rewrite is intentionally nearly identical to the Objective-C v1. Ho
 
 The weekly album chart view in v1 had a unique left/right button/slider paradigm for navigating between years. Honestly, it was kind of strange, but I always liked how it gave the app some extra personality.
 
-![TODO: gif of v1 year navigation scrolling]()
+<video src="/images/vinylogue-v1-year-navigation.mp4" controls preload="none" poster="/images/vinylogue-v1-year-navigation-poster.jpg" height="720"></video>
 
 In my original [blog post](http://twocentstudios.com/blog/2013/04/03/the-making-of-vinylogue/), I actually mentioned how my first sketches planned for year navigation to be at the top and bottom edges. 
 
-![TODO: repost of the notebook sketch of the top/bottom year navigation](/images/vinylogue-wireframe.jpg)
+{% caption_img /images/vinylogue-wireframe.jpg h400 Original notebook sketch showing the planned top/bottom year navigation design from 2013 %}
 
 At the time, I gave up on the top/bottom paradigm because it felt strange as section header/footer for years with few albums, and there was no concept of safe areas yet.
 
 I decided to cash out some of my excess mental energy for v2 to try to update the year navigation paradigm, actually forgetting that the top and bottom buttons were what I'd originally planned over a decade ago.
 
-![TODO: gif of top bottom button paradigm in v2]()
+<video src="/images/vinylogue-v2-chart-year-navigation.mp4" controls preload="none" poster="/images/vinylogue-v2-chart-year-navigation-poster.jpg" height="720"></video> 
 
 I think it turned out alright! It's non-standard UX, but I feel like it's unique in the same way the v1 implementation was.
 
@@ -209,7 +209,7 @@ I remember during v1 development that the album detail view animation was a happ
 
 I made sure to faithfully port the dominant color algorithm and set up the SwiftUI View so that the animation always triggers consistently, even though the more robust image precaching means that the image is pre-loaded 99% of the time.
 
-![]()
+<video src="/images/vinylogue-v2-dominant-color-demo.mp4" controls preload="none" poster="/images/vinylogue-v2-dominant-color-demo-poster.jpg" height="720"></video>
 
 The last small piece was ensuring that the back button (missing in v1, but returning in v2) also changed its tint color to match the rest of the text on the screen. I accomplished this with a custom `PreferenceKey`.
 
@@ -227,7 +227,7 @@ Honestly, this data migration was one of the biggest discouraging factors in me 
 
 The vinyl loading spinner is a small flourish, and honestly not even that present anymore now that there's much more precaching, but I'm still happy to have it scattered around the app.
 
-![TODO: vinyl loading spinner in isolation]()
+{% caption_img /images/vinylogue-v2-vinyl-loading-spinner.gif h400 Vinyl loading spinner animation showing the rotating record effect %}
 
 ### Automated App Store screenshots
 
@@ -273,7 +273,7 @@ This is a bit of a tradeoff, but if you already know the exact file you need Cla
 
 Optionally, depending on the scope of your request, you can also ask Claude Code to spin up a subagent to find all the required files and symbol references and pass them back to the main agent. That keeps the main agent context's clean while also unburdening you to need to do all the context gathering yourself.
 
-### Learn the proper usage of `plan` mode
+#### Learn the proper usage of `plan` mode
 
 Shift+Tab toggles `plan` mode (you'll see it in the bottom UI). Although Claude Code defaults to doing a least a little planning for every request by creating a little TODO list before it dives into code, by entering `plan` mode you can ensure it spends more time thinking and writing, then waiting for your approval before making *any* code changes.
 
@@ -484,7 +484,7 @@ When creating [Releases](https://github.com/twocentstudios/vinylogue/releases), 
 - I intentionally didn't attempt to have Claude Code work on different features in parallel. I was still in-the-loop enough that my manual testing was the blocker, and having multiple instances to review in my environment would have quickly overwhelmed me. As I gain experience, I think my appetite for parallelizing will grow. Also, I think parallel usage would probably necessitate the usage limits of the Max plan.
 - After a couple days, I started using `/compact` more intentionally, and with additional instructions so that I was more in control.
 - Towards the end of development, tasks were mostly unrelated, so I was using `/clear` more often than `/compact`. Especially because my collection of `CLAUDE.md` files was much more robust.
-- As I started using more frameworks and becoming more opinionated about the code quality, I started looking for more efficient ways to feed context into Claude Code. I tried [https://uithub.com](TODO site), [gitingest](https://gitingest.com/), [context7](https://context7.com/). But context is still so precious that a lot of the time I'd do my own work up front to find the exact markdown file I wanted it to read to understand how the library would solve the current problem we were working on.
+- As I started using more frameworks and becoming more opinionated about the code quality, I started looking for more efficient ways to feed context into Claude Code. I tried [uithub](https://uithub.com), [gitingest](https://gitingest.com/), [context7](https://context7.com/). But context is still so precious that a lot of the time I'd do my own work up front to find the exact markdown file I wanted it to read to understand how the library would solve the current problem we were working on.
 - Moving Xcode's DerivedData folder into the project directory is a weighty decision with pros and cons, but it certainly helped for giving Claude Code a easily discoverable location for Swift Package documentation and code.
 - Refactoring is one of my favorite use cases for Claude Code. Being able to concretely see what a project-wide refactor looks like in a matter of minutes is incredible as a learning device. For example, if I manually did a big exploratory refactor related to an architecture change and it took a week of work, I'd be much more opposed to throwing away that work, even if it objectively made the codebase worse. Having Claude Code automate that work allows you to keep your objectivity, evaluate the new strategy as an impartial observer, and ruthlessly throw out the work with no hard feelings.
 - Relatedly, the ability to stay at the macro-level of evaluating a codebase for 90% of the time while Claude Code handles the micro-level work feels like such a huge productively multiplier.
