@@ -654,13 +654,22 @@
 
 <h4 id="scaffolding">Scaffolding</h4>
 
+<ul>
+  <li><a href="https://github.com/twocentstudios/vinylogue/commit/bffa00c">bffa00c - “lastfm client and tests”</a></li>
+  <li><a href="https://github.com/twocentstudios/vinylogue/commit/88bbc1e">88bbc1e - “onboarding and migration”</a></li>
+</ul>
+
 <p>At the start of a new project or feature, you can use Claude Code as a way to get smarter scaffolding for a project. It’s dangerous though if you think of this code as shippable code instead of scaffolding. You really do have to maintain the discipline to continue to build off of the generated code, test it, polish it, iterate on it.</p>
 
 <p>More concretely, Claude Code seems to be pretty great at creating <code class="language-plaintext highlighter-rouge">Codable</code> models, especially if you give it an example json file. Networking clients too since there’s presumably plenty of examples in its training data.</p>
 
 <h4 id="targeted-refactoring">Targeted refactoring</h4>
 
-<p>One example of a <a href="https://github.com/twocentstudios/vinylogue/commit/2de5aa832ad7afdc6c0d9b37bc5380095e586822">targeted refactoring</a> I did was at the very end of the project. I previously had an <code class="language-plaintext highlighter-rouge">Album</code> struct that was using lots of optionals to express different levels of <code class="language-plaintext highlighter-rouge">loaded</code>.</p>
+<ul>
+  <li><a href="https://github.com/twocentstudios/vinylogue/commit/2de5aa8">2de5aa8 - “Refactor Album to UserChartAlbum”</a></li>
+</ul>
+
+<p>One example of a targeted refactoring I did was at the very end of the project. I previously had an <code class="language-plaintext highlighter-rouge">Album</code> struct that was using lots of optionals to express different levels of <code class="language-plaintext highlighter-rouge">loaded</code>.</p>
 
 <p>I did my own bit of planning up front to devise exactly how I wanted <code class="language-plaintext highlighter-rouge">Album</code> to be structured to express being partially and fully loaded. Along the way, I realized that <code class="language-plaintext highlighter-rouge">Album</code> was also being mutated with some specialization based on <code class="language-plaintext highlighter-rouge">WeeklyChart</code> it was originally fetched with. So it wasn’t really independent <code class="language-plaintext highlighter-rouge">Album</code> whose information could be shared across years. This could have been a source of subtle bugs, especially with caching.</p>
 
@@ -668,17 +677,30 @@
 
 <h4 id="pushing-code-around">Pushing code around</h4>
 
+<ul>
+  <li><a href="https://github.com/twocentstudios/vinylogue/commit/32aef1b">32aef1b - “don’t pass whole model”</a></li>
+</ul>
+
 <p>Another type of refactoring is pushing variables and functions around between classes that sit at the boundaries of one another. Or extracting a class’s method into a pure static func.</p>
 
 <p>I used this kind of refactor a lot for extracting SwiftUI Views. Also for migrating <code class="language-plaintext highlighter-rouge">@State</code> vars from Views into <code class="language-plaintext highlighter-rouge">@Observable</code> classes. These are particularly error prone to do as a human because the Swift compiler completely gives up on providing useful error messages when you’ve misspelled something in a View body.</p>
 
 <h4 id="deconstructing-swiftui-views-to-satisfy-the-swift-compiler">Deconstructing SwiftUI Views to satisfy the Swift compiler</h4>
 
+<ul>
+  <li><a href="https://github.com/twocentstudios/vinylogue/commit/809625f">809625f - “refactor WeeklyAlbumsView for compilation times”</a></li>
+</ul>
+
 <p>There’s a natural tension when writing SwiftUI where <em>writing</em> Views is generally easier when working inside one big View. But this makes both the compiler and the runtime unhappy (performance suffers). When iterating on the presentation and structure of Views, it’s disruptive to have to keep extracting variables and thinking up names for each sub View instance.</p>
 
 <p>Claude Code is really great as a solution to this problem because both extracting and recombining Views is incredibly cheap.</p>
 
 <h4 id="following-architecture-rules">Following architecture rules</h4>
+
+<ul>
+  <li><a href="https://github.com/twocentstudios/vinylogue/commit/2bf6da1">2bf6da1 - “Migrate to point-free style”</a></li>
+  <li><a href="https://github.com/twocentstudios/vinylogue/commit/bc3aa42">bc3aa42 - “Migrate onboarding, settings, weekly albums, album detail”</a></li>
+</ul>
 
 <p>After my big architecture refactor, I <a href="https://github.com/twocentstudios/vinylogue/blob/906c1ce86c8bdb926db6dcb0eada664b80fb8743/Vinylogue/Features/CLAUDE.md#store-creation-and-navigation-rules">created a set of rules</a> in the <code class="language-plaintext highlighter-rouge">CLAUDE.md</code> file in the <code class="language-plaintext highlighter-rouge">Features</code> subdirectory that holds my SwiftUI Views and Stores (<code class="language-plaintext highlighter-rouge">Store</code> being an alias for <code class="language-plaintext highlighter-rouge">ViewModel</code> or <code class="language-plaintext highlighter-rouge">@Observable</code> class). For example, for sheet-based navigation:</p>
 
@@ -716,6 +738,10 @@
 <p>I’d review its results in GitHub Desktop as usual and commit only the extractions that made sense to me.</p>
 
 <h4 id="transliterating-code-between-programming-languages">Transliterating code between programming languages</h4>
+
+<ul>
+  <li><a href="https://github.com/twocentstudios/vinylogue/commit/f4d9402">f4d9402 - “use old color extraction algorithm”</a></li>
+</ul>
 
 <p>I used Claude Code to port my <a href="https://github.com/twocentstudios/vinylogue/blob/906c1ce86c8bdb926db6dcb0eada664b80fb8743/Vinylogue/Core/Infrastructure/ColorExtraction.swift">dominant color algorithm</a> from Objective-C to Swift line-by-line.</p>
 
