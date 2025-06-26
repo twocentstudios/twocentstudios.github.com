@@ -384,13 +384,18 @@ I'd say keep an awareness of friction points in your workflow and gradually addr
 
 #### Scaffolding
 
+- [bffa00c - "lastfm client and tests"](https://github.com/twocentstudios/vinylogue/commit/bffa00c)
+- [88bbc1e - "onboarding and migration"](https://github.com/twocentstudios/vinylogue/commit/88bbc1e)
+
 At the start of a new project or feature, you can use Claude Code as a way to get smarter scaffolding for a project. It's dangerous though if you think of this code as shippable code instead of scaffolding. You really do have to maintain the discipline to continue to build off of the generated code, test it, polish it, iterate on it.
 
 More concretely, Claude Code seems to be pretty great at creating `Codable` models, especially if you give it an example json file. Networking clients too since there's presumably plenty of examples in its training data.
 
 #### Targeted refactoring
 
-One example of a [targeted refactoring](https://github.com/twocentstudios/vinylogue/commit/2de5aa832ad7afdc6c0d9b37bc5380095e586822) I did was at the very end of the project. I previously had an `Album` struct that was using lots of optionals to express different levels of `loaded`. 
+- [2de5aa8 - "Refactor Album to UserChartAlbum"](https://github.com/twocentstudios/vinylogue/commit/2de5aa8)
+
+One example of a targeted refactoring I did was at the very end of the project. I previously had an `Album` struct that was using lots of optionals to express different levels of `loaded`. 
 
 I did my own bit of planning up front to devise exactly how I wanted `Album` to be structured to express being partially and fully loaded. Along the way, I realized that `Album` was also being mutated with some specialization based on `WeeklyChart` it was originally fetched with. So it wasn't really independent `Album` whose information could be shared across years. This could have been a source of subtle bugs, especially with caching.
 
@@ -398,17 +403,24 @@ I gave Claude Code that revised structure, now `UserChartAlbum`, and told it to 
 
 #### Pushing code around
 
+- [32aef1b - "don't pass whole model"](https://github.com/twocentstudios/vinylogue/commit/32aef1b)
+
 Another type of refactoring is pushing variables and functions around between classes that sit at the boundaries of one another. Or extracting a class's method into a pure static func.
 
 I used this kind of refactor a lot for extracting SwiftUI Views. Also for migrating `@State` vars from Views into `@Observable` classes. These are particularly error prone to do as a human because the Swift compiler completely gives up on providing useful error messages when you've misspelled something in a View body.
 
 #### Deconstructing SwiftUI Views to satisfy the Swift compiler
 
+- [809625f - "refactor WeeklyAlbumsView for compilation times"](https://github.com/twocentstudios/vinylogue/commit/809625f)
+
 There's a natural tension when writing SwiftUI where *writing* Views is generally easier when working inside one big View. But this makes both the compiler and the runtime unhappy (performance suffers). When iterating on the presentation and structure of Views, it's disruptive to have to keep extracting variables and thinking up names for each sub View instance.
 
 Claude Code is really great as a solution to this problem because both extracting and recombining Views is incredibly cheap.
 
 #### Following architecture rules
+
+- [2bf6da1 - "Migrate to point-free style"](https://github.com/twocentstudios/vinylogue/commit/2bf6da1)
+- [bc3aa42 - "Migrate onboarding, settings, weekly albums, album detail"](https://github.com/twocentstudios/vinylogue/commit/bc3aa42)
 
 After my big architecture refactor, I [created a set of rules](https://github.com/twocentstudios/vinylogue/blob/906c1ce86c8bdb926db6dcb0eada664b80fb8743/Vinylogue/Features/CLAUDE.md#store-creation-and-navigation-rules) in the `CLAUDE.md` file in the `Features` subdirectory that holds my SwiftUI Views and Stores (`Store` being an alias for `ViewModel` or `@Observable` class). For example, for sheet-based navigation:
 
@@ -446,6 +458,8 @@ I asked Claude Code a few times to do full audits of my project to find and extr
 I'd review its results in GitHub Desktop as usual and commit only the extractions that made sense to me.
 
 #### Transliterating code between programming languages
+
+- [f4d9402 - "use old color extraction algorithm"](https://github.com/twocentstudios/vinylogue/commit/f4d9402)
 
 I used Claude Code to port my [dominant color algorithm](https://github.com/twocentstudios/vinylogue/blob/906c1ce86c8bdb926db6dcb0eada664b80fb8743/Vinylogue/Core/Infrastructure/ColorExtraction.swift) from Objective-C to Swift line-by-line.
 
