@@ -3,25 +3,36 @@ layout: post
 title: "Configuring Swift Vapor on Fly.io with SQLite"
 date: 2025-07-02 14:00:00
 image: /images/
-tags: vapor sqlite flyio apple
+tags: vapor sqlite hosting flyio apple
 ---
 
-Deploying a Swift Vapor app with SQLite on Fly.io is simpler than using PostgreSQL, but there are several specific configuration steps that aren't immediately obvious. This guide walks through the complete setup for Swift developers who are new to server deployment.
+This post is a guide for getting a [Swift Vapor](TODO) server-side app up and running on [Fly.io](TODO) with SQLite as the database provider. The target audience is Swift developers who are inexperienced with servers and deployment.
 
-## Why SQLite on Fly.io?
+I'm assuming you've already chosen Vapor, Fly.io, and SQL as your tools of choice and will not discuss any of their tradeoffs.
 
-For many apps, SQLite offers significant advantages:
-- **No external database service** to manage or pay for
-- **Single-file database** that's easy to backup and inspect
-- **Excellent performance** for read-heavy workloads
-- **Simplified deployment** with fewer moving parts
+The below setup using SQLite avoids the operational complexity of maintaining a full Postgres server. Especially as a beginner that does not need the full breadth of functionality Postgres offers beyond SQLite. This is a worthwhile tradeoff for:
+
+- Toy apps that still need 24/7 network access
+- Prototypes and proof-of-concepts intended for a limited audience
+- Bespoke apps for you and your friends
+
+Fly.io's [pricing](https://fly.io/docs/about/pricing) is pay-as-you-go so it's hard predict exactly how much you, the reader, will be on the hook for. As of this writing, provisioning a system described in this post _that is stopped, serving zero requests_ would be $0.30 USD per month ($0.15/GB for the Machine and $0.15/GB for the Volume). You should monitor your usage closely. Going along with the intended use cases, this post will assume you want the absolute cheapest of everything.
+
+If you're looking for a more robust database solution in the same vein, my [previous post](TODO) discusses [Fly.io Managed Postgres Service](TODO) but is not as thorough a walkthrough as this post.
+
+Strategies for automated backups, automatic failovers, high availability, or basically anything you need for a production deployment are mentioned briefly at the end of the post. Note also that the particular setup described in this post specifically disallows multiple machines; you are locked into one machine running in one region (great for limiting complexity, awful for production-quality customer service).
+
+On successful deployment, you'll have an app accessible via the public interface at `myapp.fly.dev`.
 
 ## Prerequisites
 
 This guide assumes you have:
+
 - A working Vapor app (we'll use "myapp" as an example)
-- Basic familiarity with the `fly` CLI
-- Your app already builds and runs locally
+- Basic familiarity with the [`fly` CLI](TODO)
+- Your app already builds and runs locally with or without an existing Postgres integration
+
+We will not cover any sort of data migration.
 
 ## Step 1: Project Structure
 
@@ -37,13 +48,11 @@ myapp/
 │       ├── configure.swift
 │       ├── routes.swift
 │       └── ...
-├── Tests/
-└── Public/
 ```
 
 ## Step 2: Configure Package Dependencies
 
-First, update your `Package.swift` to use SQLite instead of PostgreSQL:
+First, update your `Package.swift` to use SQLite (instead of PostgreSQL):
 
 ```swift
 // Package.swift
@@ -55,14 +64,14 @@ let package = Package(
     dependencies: [
         .package(url: "https://github.com/vapor/vapor.git", from: "4.0.0"),
         .package(url: "https://github.com/vapor/fluent.git", from: "4.0.0"),
-        .package(url: "https://github.com/vapor/fluent-sqlite-driver.git", from: "4.0.0"), // ← SQLite driver
+        .package(url: "https://github.com/vapor/fluent-sqlite-driver.git", from: "4.0.0"), // <- SQLite driver
     ],
     targets: [
         .target(
             name: "App",
             dependencies: [
                 .product(name: "Fluent", package: "fluent"),
-                .product(name: "FluentSQLiteDriver", package: "fluent-sqlite-driver"), // ← SQLite driver
+                .product(name: "FluentSQLiteDriver", package: "fluent-sqlite-driver"), // <- SQLite driver
                 .product(name: "Vapor", package: "vapor"),
             ]
         ),
@@ -108,37 +117,10 @@ public func configure(_ app: Application) throws {
 
 ## Step 4: Update Dockerfile
 
-Your Dockerfile needs to include SQLite3 client tools and create the data directory:
+If you do not know what you're doing, you should use the latest [Vapor Dockerfile template](https://github.com/vapor/template/blob/0330dd9f4d1314ea122c90f3f3db3a24a2d97761/Dockerfile). Then make the following modifications to include SQLite3 client tools and create the data directory:
 
 ```dockerfile
-# Dockerfile
-FROM swift:5.10-jammy as build
-
-# Install OS updates
-RUN export DEBIAN_FRONTEND=noninteractive DEBCONF_NONINTERACTIVE_SEEN=true \
-    && apt-get -q update \
-    && apt-get -q dist-upgrade -y \
-    && rm -rf /var/lib/apt/lists/*
-
-# Set up a build area
-WORKDIR /build
-
-# Copy package files and resolve dependencies
-COPY ./Package.* ./
-RUN swift package resolve
-
-# Copy source code and build
-COPY . .
-RUN swift build -c release --static-swift-stdlib
-
-# Switch to staging area and copy executable
-WORKDIR /staging
-RUN cp "$(swift build -c release --show-bin-path)/Run" ./
-
-# ================================
-# Runtime image
-# ================================
-FROM ubuntu:jammy
+# ...
 
 # Install system packages including sqlite3 for database access
 RUN export DEBIAN_FRONTEND=noninteractive DEBCONF_NONINTERACTIVE_SEEN=true && \
@@ -146,62 +128,56 @@ RUN export DEBIAN_FRONTEND=noninteractive DEBCONF_NONINTERACTIVE_SEEN=true && \
     apt-get -q install -y ca-certificates tzdata sqlite3 && \
     rm -r /var/lib/apt/lists/*
 
-# Create vapor user and app directory
-RUN useradd --user-group --create-home --system --skel /dev/null --home-dir /app vapor
-
-WORKDIR /app
+# ...
 
 # Copy built executable
-COPY --from=build --chown=vapor:vapor /staging /app
+# ...
 
 # Create data directory for SQLite database with proper ownership
 RUN mkdir -p /data && chown -R vapor:vapor /data
 
-USER vapor:vapor
-
-EXPOSE 8080
-
-ENTRYPOINT ["./Run"]
+# Start the Vapor service when the image is run, default to listening on 8080 in production environment
+ENTRYPOINT ["./{{name}}"]
 CMD ["serve", "--auto-migrate", "--env", "production", "--hostname", "0.0.0.0", "--port", "8080"]
 ```
 
 **SQLite-specific additions:**
-- `sqlite3` package for database inspection tools
+- `sqlite3` (optional) inspect your db via the remote server console
 - `/data` directory creation with proper ownership
 - `--auto-migrate` flag runs database migrations on startup
 
 ## Step 5: Configure fly.toml
 
-Create or update your `fly.toml` configuration:
+Create (via `fly launch`) or update your `fly.toml` configuration selectively:
 
 ```toml
 # fly.toml
 app = "myapp"
-primary_region = "ord"
+primary_region = "ord"  # <- Choose a single region close to your users
 kill_signal = "SIGINT"
 kill_timeout = "5s"
 
 [[vm]]
-  memory = "256mb"
+  memory = "256mb"  # <- Lowest available memory & cpus
   cpus = 1
 
 [build]
 
 [deploy]
-  release_command = "migrate --auto-migrate --env production"  # ← Runs migrations before deployment
+  release_command = "migrate --auto-migrate --env production"  # <- Runs migrations before deployment
 
 [env]
 
-[mounts]  # ← Volume configuration for persistent SQLite storage
-  source = "myapp_db"
-  destination = "/data"
+[mounts]  # <- Volume configuration for persistent SQLite storage
+  source = "myapp_db"  # <- Matches the volume name you create next
+  destination = "/data"  # <- Matches the directory you created in Dockerfile
 
 [http_service]
   internal_port = 8080
   force_https = true
-  auto_stop_machines = "stop"   # ← Automatically stops machines when idle
-  auto_start_machines = true    # ← Automatically starts machines on first request
-  min_machines_running = 0      # ← Allow zero running machines when idle
+  auto_stop_machines = "stop"   # <- Automatically stops machines when idle
+  auto_start_machines = true    # <- Automatically starts machines on first request
+  min_machines_running = 0      # <- Allow zero running machines when idle
 
   [http_service.concurrency]
     type = "requests"
@@ -217,16 +193,17 @@ kill_timeout = "5s"
     protocol = "http"
 ```
 
-**Key Fly.io concepts:**
-- **App**: Your deployed application instance
-- **VM**: Virtual machine specifications (RAM, CPU)
-- **Volume**: Persistent disk storage that survives deployments
-- **Machine**: The actual running instance of your app
-- **Auto-scaling**: Automatically stops/starts machines based on traffic
+### Fly.io concepts
+
+- **App**: Holistic settings describing your application. If you had a production and staging, you'd have two Apps total with similar `Dockerfile`/`fly.toml` files. In our setup, one **App** will _always_ contain one **Machine** and one **Volume**.
+- **VM**: Virtual machine specifications (RAM, CPU).
+- **Machine**: The actual running instance of your app. Pairs 1-to-1 with a **Volume**. Is recreated fresh on each deploy.
+- **Volume**: Persistent disk storage that survives deployments. This is where you can keep your `sqlite.db` file.
+- **Auto-scaling**: Automatically stops/starts machines based on traffic. We set `auto_stop_machines = "stop"` to save money assuming that our app has significant idle periods. `auto_start_machines = true` automatically boots a machine when a request comes in. It takes about ~2s.
 
 ## Step 6: Create Fly.io App
 
-Initialize your Fly.io app:
+Initialize your Fly.io app. Do it from the web interface or the CLI instructions below:
 
 ```bash
 # Create new Fly.io app
@@ -250,9 +227,10 @@ fly volume create myapp_db --region ord --size 1 -a myapp -y
 ```
 
 **Volume concepts:**
-- **Persistent storage**: Data survives app deployments and restarts  
-- **Region-specific**: Must be in same region as your machines
-- **Size**: Start small (1GB) - you can expand later if needed
+
+- **Persistent storage**: Data survives app deployments and restarts.
+- **Region-specific**: Must be in same region as your machines.
+- **Size**: Start small with 1GB (you can expand later if needed).
 
 {% caption_img TODO "Fly.io Volumes dashboard showing the newly created volume" %}
 
@@ -278,14 +256,18 @@ fly deploy . -a myapp
 ```
 
 This will:
+
 1. Build your Docker image
 2. Create a **release command machine** to run migrations
 3. Create/update your **app machine** with the new image
 4. Mount the volume to `/data`
 
+For a small app, the whole process can take about 5 minutes. If you're redeploying with no code changes, it's less than 30 seconds.
+
 {% caption_img TODO "Fly.io deployment logs showing successful SQLite migration" %}
 
-During deployment, watch for these key log messages:
+During deployment, watch for these log messages:
+
 - `Running myapp release_command: migrate --auto-migrate --env production`
 - `Starting prepare [database-id: sqlite, migration: ...]`
 - `Machine ... update succeeded`
@@ -308,6 +290,7 @@ fly logs -a myapp
 {% caption_img TODO "Fly.io app status showing running machine with mounted volume" %}
 
 The status should show:
+
 - **State**: `started`
 - **Health Checks**: Passing
 - **Volume**: Attached to your machine
@@ -349,23 +332,11 @@ swift run Run serve --hostname 0.0.0.0 --port 8080
 sqlite3 db.sqlite
 ```
 
-## Backup Strategy
-
-**Important**: Unlike managed databases, you're responsible for SQLite backups.
-
-**Quick manual backup:**
-```bash
-# Download production database
-curl https://myapp.fly.dev/  # wake machine
-fly ssh sftp get /data/db.sqlite ./backup-$(date +%Y%m%d).sqlite -a myapp
-```
-
-**Fly.io volume snapshots:**
-Fly.io automatically creates volume snapshots with 5-day retention, but these aren't easily accessible for restore.
 
 ## Troubleshooting
 
-**Machine won't start:**
+#### Machine won't start
+
 ```bash
 # Check machine status
 fly machine list -a myapp
@@ -374,22 +345,64 @@ fly machine list -a myapp
 fly logs -a myapp
 ```
 
-**Database connection errors:**
+#### Database connection errors
+
 - Verify volume is mounted: `fly ssh console -a myapp` then `ls -la /data/`
 - Check file permissions: SQLite file should be owned by `vapor:vapor`
 
-**Volume not attaching:**
-- Ensure volume and machine are in the same region
-- Volume names in `fly.toml` must match created volume name exactly
+#### Volume not attaching
+
+- Ensure volume and machine are in the same region: `fly volumes list` and `fly machine list`.
+- Volume names in `fly.toml` must match created volume name exactly.
+
+## Backups, and where to go from here
+
+**Important**: Unlike managed databases, you're responsible for SQLite backups. 
+
+Fly.io automatically creates Volume snapshots with 5-day retention, but these aren't easily accessible for restore.
+
+In approximate order of complexity/reliability:
+
+#### Irregular manual backup
+
+The most low tech backup solution: copy the database from the server to your local machine whenever you remember to do so.
+
+```bash
+# Download production database
+curl https://myapp.fly.dev/  # wake machine
+fly ssh sftp get /data/db.sqlite ./backup-$(date +%Y%m%d).sqlite -a myapp
+```
+
+#### Regular manual backup
+
+Set a repeating calendar entry or reminder to remind you to run the `sftp` command.
+
+#### Automated manual backup
+
+Use a `cron` job or `launchd` on macOS to automatically run the `sftp` command,
+
+#### S3 object storage backup
+
+Set up an AWS S3 account (or equivalent) with a dedicated bucket to store `sqlite` backups. Then add a `cron` job to a GitHub Action to perform the backup from Fly.io to the S3 bucket.
+
+#### Add Litestream for SQLite backups
+
+See [litestream.io](https://litestream.io/).
+
+#### Add LiteFS to replicate SQLite to multiple machines
+
+See [this docs page](https://fly.io/docs/litefs/).
+
+#### Use Postgres
+
+Congratulations, your app is successful enough to need Postgres.
 
 ## Summary
 
-This setup gives you:
-- ✅ **SQLite database** with persistent storage
-- ✅ **Auto-scaling** machines that stop when idle
-- ✅ **Automatic migrations** on deployment  
-- ✅ **Database access tools** for debugging
-- ✅ **Simple architecture** with fewer dependencies
+This SQLite setup is intended for beginners and hobby projects and gives you:
 
-The key insight is that SQLite on Fly.io requires a **Volume** for persistence and careful **environment-based configuration** to work both locally and in production. Once configured, it's significantly simpler to manage than external database services.
+- **SQLite database** with persistent storage
+- **Auto-scaling** machines that stop when idle
+- **Automatic migrations** on deployment  
+- **Database access tools** for debugging
 
