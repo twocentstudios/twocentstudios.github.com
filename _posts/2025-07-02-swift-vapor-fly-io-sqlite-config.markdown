@@ -6,7 +6,7 @@ image: /images/
 tags: vapor sqlite hosting flyio apple
 ---
 
-This post is a guide for getting a [Swift Vapor](TODO) server-side app up and running on [Fly.io](TODO) with SQLite as the database provider. The target audience is Swift developers who are inexperienced with servers and deployment.
+This post is a guide for getting a [Swift Vapor](https://vapor.codes/) server-side app up and running on [Fly.io](https://fly.io/) with SQLite as the database provider. The target audience is Swift developers who are inexperienced with servers and deployment.
 
 I'm assuming you've already chosen Vapor, Fly.io, and SQL as your tools of choice and will not discuss any of their tradeoffs.
 
@@ -18,7 +18,7 @@ The below setup using SQLite avoids the operational complexity of maintaining a 
 
 Fly.io's [pricing](https://fly.io/docs/about/pricing) is pay-as-you-go so it's hard predict exactly how much you, the reader, will be on the hook for. As of this writing, provisioning a system described in this post _that is stopped, serving zero requests_ would be $0.30 USD per month ($0.15/GB for the Machine and $0.15/GB for the Volume). You should monitor your usage closely. Going along with the intended use cases, this post will assume you want the absolute cheapest of everything.
 
-If you're looking for a more robust database solution in the same vein, my [previous post](TODO) discusses [Fly.io Managed Postgres Service](TODO) but is not as thorough a walkthrough as this post.
+If you're looking for a more robust database solution in the same vein, my [previous post](/2025/06/30/swift-vapor-fly-managed-postgres/) discusses [Fly.io Managed Postgres Service](https://fly.io/docs/mpg/overview/) but is not as thorough a walkthrough as this post. Note: there's _another_ Fly.io Postgres-related service called [Fly Postgres](https://fly.io/docs/postgres/) which is more like Postgres configured into a separate Fly.io App instance (make sure not to get tripped up when reading the docs and forum posts).
 
 Strategies for automated backups, automatic failovers, high availability, or basically anything you need for a production deployment are mentioned briefly at the end of the post. Note also that the particular setup described in this post specifically disallows multiple machines; you are locked into one machine running in one region (great for limiting complexity, awful for production-quality customer service).
 
@@ -29,7 +29,7 @@ On successful deployment, you'll have an app accessible via the public interface
 This guide assumes you have:
 
 - A working Vapor app (we'll use "myapp" as an example)
-- Basic familiarity with the [`fly` CLI](TODO)
+- Basic familiarity with the [`fly` CLI](https://fly.io/docs/flyctl/)
 - Your app already builds and runs locally with or without an existing Postgres integration
 
 We will not cover any sort of data migration.
