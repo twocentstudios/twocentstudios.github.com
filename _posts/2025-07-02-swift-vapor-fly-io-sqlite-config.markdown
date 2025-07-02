@@ -399,10 +399,5 @@ Congratulations, your app is successful enough to need Postgres.
 
 ## Summary
 
-This SQLite setup is intended for beginners and hobby projects and gives you:
-
-- **SQLite database** with persistent storage
-- **Auto-scaling** machines that stop when idle
-- **Automatic migrations** on deployment  
-- **Database access tools** for debugging
+Although I've tried to cover the most important SQLite bits in the post, each project is unique. Be sure to consult all the latest docs from Fly.io, Vapor, and SQLite.
 
