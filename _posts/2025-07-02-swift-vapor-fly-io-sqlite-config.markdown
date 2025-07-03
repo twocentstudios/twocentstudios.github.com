@@ -8,7 +8,7 @@ tags: vapor sqlite hosting flyio apple
 
 This post is a guide for getting a [Swift Vapor](https://vapor.codes/) server-side app up and running on [Fly.io](https://fly.io/) with SQLite as the database provider. The target audience is Swift developers who are inexperienced with servers and deployment.
 
-I'm assuming you've already chosen Vapor, Fly.io, and SQL as your tools of choice and therefore will not discuss any of their tradeoffs.
+I'm assuming you've already chosen **Vapor**, **SQL**, and **Fly.io** as your tools of choice and therefore will not discuss any of their tradeoffs.
 
 The below setup using SQLite avoids the operational complexity of maintaining a full Postgres server. Especially as a beginner that does not need the full breadth of functionality Postgres offers beyond SQLite. This is a worthwhile tradeoff for:
 
