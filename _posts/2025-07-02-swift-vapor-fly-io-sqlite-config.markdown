@@ -2,7 +2,7 @@
 layout: post
 title: "Configuring Swift Vapor on Fly.io with SQLite"
 date: 2025-07-02 14:00:00
-image: /images/
+image: /images/fly-io-app-status.png
 tags: vapor sqlite hosting flyio apple
 ---
 
