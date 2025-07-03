@@ -5,9 +5,445 @@
     <description>A coding blog covering iOS, Swift, and other programming topics.</description>
     <link>https://twocentstudios.com/blog/tags/hosting/index.html</link>
     <atom:link href="https://twocentstudios.com/blog/tags/hosting/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Mon, 30 Jun 2025 06:16:56 -0500</pubDate>
-    <lastBuildDate>Mon, 30 Jun 2025 06:16:56 -0500</lastBuildDate>
+    <pubDate>Thu, 03 Jul 2025 04:32:22 -0500</pubDate>
+    <lastBuildDate>Thu, 03 Jul 2025 04:32:22 -0500</lastBuildDate>
     <generator>Jekyll v3.9.3</generator>
+    
+      <item>
+        <title>Configuring Swift Vapor on Fly.io with SQLite</title>
+        <description>&lt;p&gt;This post is a guide for getting a &lt;a href=&quot;https://vapor.codes/&quot;&gt;Swift Vapor&lt;/a&gt; server-side app up and running on &lt;a href=&quot;https://fly.io/&quot;&gt;Fly.io&lt;/a&gt; with SQLite as the database provider. The target audience is Swift developers who are inexperienced with servers and deployment.&lt;/p&gt;
+
+&lt;p&gt;I’m assuming you’ve already chosen &lt;strong&gt;Vapor&lt;/strong&gt;, &lt;strong&gt;SQL&lt;/strong&gt;, and &lt;strong&gt;Fly.io&lt;/strong&gt; as your tools of choice and therefore will not discuss any of their tradeoffs.&lt;/p&gt;
+
+&lt;p&gt;The below setup using SQLite avoids the operational complexity of maintaining a full Postgres server. Especially as a beginner that does not need the full breadth of functionality Postgres offers beyond SQLite. This is a worthwhile tradeoff for:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Toy apps that still need 24/7 network access&lt;/li&gt;
+  &lt;li&gt;Prototypes and proof-of-concepts intended for a limited audience&lt;/li&gt;
+  &lt;li&gt;Bespoke apps for you and your friends&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;However, the primary constraint of using SQLite (in the strategy described in this post) is that you must only have one server instance (since that server will be hosting both the app and the database). When just starting out this is arguably for the best; your server app implementation can also be simplified by assuming no parallelization.&lt;/p&gt;
+
+&lt;p&gt;Fly.io’s &lt;a href=&quot;https://fly.io/docs/about/pricing&quot;&gt;pricing&lt;/a&gt; is pay-as-you-go so it’s hard predict exactly how much you, the reader, will be on the hook for. As of this writing, provisioning a system described in this post &lt;em&gt;that is stopped, serving zero requests&lt;/em&gt; would be $0.30 USD per month ($0.15/GB for the Machine and $0.15/GB for the Volume). Then you will pay usage based on how long your machine is awake for and how much bandwidth you use. You should monitor your usage closely. Going along with the intended use cases, this post will assume &lt;strong&gt;you want the absolute cheapest of everything&lt;/strong&gt;.&lt;/p&gt;
+
+&lt;p&gt;If you’re looking for a more robust database solution in the same vein, my &lt;a href=&quot;/2025/06/30/swift-vapor-fly-managed-postgres/&quot;&gt;previous post&lt;/a&gt; discusses &lt;a href=&quot;https://fly.io/docs/mpg/overview/&quot;&gt;Fly.io Managed Postgres Service&lt;/a&gt; but is not as thorough a walkthrough as this post. Note: there’s &lt;em&gt;another&lt;/em&gt; Fly.io Postgres-related service called &lt;a href=&quot;https://fly.io/docs/postgres/&quot;&gt;Fly Postgres&lt;/a&gt; which is more like Postgres configured into a separate Fly.io App instance (make sure not to get tripped up when reading the docs and forum posts).&lt;/p&gt;
+
+&lt;p&gt;Strategies for automated backups, automatic failovers, high availability, or basically anything you need for a production deployment are mentioned briefly at the end of the post. Note also that the particular setup described in this post specifically disallows multiple machines; you are locked into one machine running in one region (great for limiting complexity, awful for production-quality customer service).&lt;/p&gt;
+
+&lt;p&gt;On successful deployment, you’ll have an app accessible via the public interface at &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;myapp.fly.dev&lt;/code&gt;.&lt;/p&gt;
+
+&lt;h2 id=&quot;prerequisites&quot;&gt;Prerequisites&lt;/h2&gt;
+
+&lt;p&gt;This guide assumes you have:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;A working Vapor app (we’ll use “myapp” as an example)&lt;/li&gt;
+  &lt;li&gt;Basic familiarity with the &lt;a href=&quot;https://fly.io/docs/flyctl/&quot;&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;fly&lt;/code&gt; CLI&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;Your app already builds and runs locally with or without an existing Postgres integration&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;We will not cover any sort of data migration.&lt;/p&gt;
+
+&lt;h2 id=&quot;step-1-project-structure&quot;&gt;Step 1: Project Structure&lt;/h2&gt;
+
+&lt;p&gt;Your Vapor project should look like this:&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;myapp/
+├── Package.swift
+├── Dockerfile
+├── fly.toml
+├── Sources/
+│   └── App/
+│       ├── configure.swift
+│       ├── routes.swift
+│       └── ...
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;h2 id=&quot;step-2-configure-package-dependencies&quot;&gt;Step 2: Configure Package Dependencies&lt;/h2&gt;
+
+&lt;p&gt;First, update your &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Package.swift&lt;/code&gt; to use SQLite (instead of PostgreSQL):&lt;/p&gt;
+
+&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;// Package.swift&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;package&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Package&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
+    &lt;span class=&quot;nv&quot;&gt;name&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;myapp&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+    &lt;span class=&quot;nv&quot;&gt;platforms&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;
+        &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;macOS&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;v12&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;],&lt;/span&gt;
+    &lt;span class=&quot;nv&quot;&gt;dependencies&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;
+        &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;package&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;url&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;https://github.com/vapor/vapor.git&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;from&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;4.0.0&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt;
+        &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;package&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;url&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;https://github.com/vapor/fluent.git&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;from&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;4.0.0&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt;
+        &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;package&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;url&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;https://github.com/vapor/fluent-sqlite-driver.git&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;from&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;4.0.0&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// &amp;lt;- SQLite driver&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;],&lt;/span&gt;
+    &lt;span class=&quot;nv&quot;&gt;targets&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;
+        &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;target&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
+            &lt;span class=&quot;nv&quot;&gt;name&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;App&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+            &lt;span class=&quot;nv&quot;&gt;dependencies&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;
+                &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;product&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;name&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;Fluent&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;package&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;fluent&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt;
+                &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;product&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;name&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;FluentSQLiteDriver&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;package&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;fluent-sqlite-driver&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// &amp;lt;- SQLite driver&lt;/span&gt;
+                &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;product&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;name&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;Vapor&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;package&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;vapor&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt;
+            &lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;),&lt;/span&gt;
+        &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;executableTarget&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;name&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;Run&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;dependencies&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;target&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;name&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;App&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)]),&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;h2 id=&quot;step-3-configure-database-in-vapor&quot;&gt;Step 3: Configure Database in Vapor&lt;/h2&gt;
+
+&lt;p&gt;Update your &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;configure.swift&lt;/code&gt; to use environment-based database paths:&lt;/p&gt;
+
+&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;// Sources/App/configure.swift&lt;/span&gt;
+&lt;span class=&quot;kd&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Fluent&lt;/span&gt;
+&lt;span class=&quot;kd&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;FluentSQLiteDriver&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// ← Import SQLite driver&lt;/span&gt;
+&lt;span class=&quot;kd&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Vapor&lt;/span&gt;
+
+&lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;configure&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;_&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;app&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Application&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;throws&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;c1&quot;&gt;// Configure SQLite database with environment-based paths&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;databasePath&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;app&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;environment&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;production&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;c1&quot;&gt;// Production: Use volume-mounted path&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;databasePath&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;/data/db.sqlite&quot;&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;else&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;c1&quot;&gt;// Local development: Use project root&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;databasePath&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;./db.sqlite&quot;&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    
+    &lt;span class=&quot;n&quot;&gt;app&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;databases&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;use&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;sqlite&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;file&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;databasePath&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)),&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;as&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;sqlite&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    
+    &lt;span class=&quot;c1&quot;&gt;// Add your migrations here&lt;/span&gt;
+    &lt;span class=&quot;c1&quot;&gt;// app.migrations.add(CreateMyAppModels())&lt;/span&gt;
+    
+    &lt;span class=&quot;k&quot;&gt;try&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;routes&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;app&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;&lt;strong&gt;configure.swift concepts:&lt;/strong&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;strong&gt;Environment detection&lt;/strong&gt;: Vapor sets &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;app.environment&lt;/code&gt; based on the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;--env production&lt;/code&gt; flag we pass to the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;serve&lt;/code&gt; and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;migrate&lt;/code&gt; commands&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Volume mount&lt;/strong&gt;: Production SQLite file lives on persistent storage at &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;/data/&lt;/code&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Local development&lt;/strong&gt;: Local/Test SQLite file is created in your project directory&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&quot;step-4-update-dockerfile&quot;&gt;Step 4: Update Dockerfile&lt;/h2&gt;
+
+&lt;p&gt;If you do not know what you’re doing, you should use the latest &lt;a href=&quot;https://github.com/vapor/template/blob/0330dd9f4d1314ea122c90f3f3db3a24a2d97761/Dockerfile&quot;&gt;Vapor Dockerfile template&lt;/a&gt;. Then make the following modifications to include SQLite3 client tools and create the data directory:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&quot;language-dockerfile&quot;&gt;# ...
+
+# Install system packages including sqlite3 for database access
+RUN export DEBIAN_FRONTEND=noninteractive DEBCONF_NONINTERACTIVE_SEEN=true &amp;amp;&amp;amp; \
+    apt-get -q update &amp;amp;&amp;amp; apt-get -q dist-upgrade -y &amp;amp;&amp;amp; \
+    apt-get -q install -y ca-certificates tzdata sqlite3 &amp;amp;&amp;amp; \
+    rm -r /var/lib/apt/lists/*
+
+# ...
+
+# Copy built executable
+# ...
+
+# Create data directory for SQLite database with proper ownership
+RUN mkdir -p /data &amp;amp;&amp;amp; chown -R vapor:vapor /data
+
+# ...
+
+# Start the Vapor service when the image is run, running db migrations if necessary, and default to listening on 8080 in production environment
+ENTRYPOINT [&quot;./&quot;]
+CMD [&quot;serve&quot;, &quot;--auto-migrate&quot;, &quot;--env&quot;, &quot;production&quot;, &quot;--hostname&quot;, &quot;0.0.0.0&quot;, &quot;--port&quot;, &quot;8080&quot;]
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;&lt;strong&gt;SQLite-specific additions:&lt;/strong&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;sqlite3&lt;/code&gt; (optional) inspect your db via the remote server console&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;/data&lt;/code&gt; directory creation with proper ownership&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;--auto-migrate&lt;/code&gt; flag runs database migrations on startup&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&quot;step-5-configure-flytoml&quot;&gt;Step 5: Configure fly.toml&lt;/h2&gt;
+
+&lt;p&gt;Create (via &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;fly launch&lt;/code&gt;) or update your &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;fly.toml&lt;/code&gt; configuration selectively:&lt;/p&gt;
+
+&lt;div class=&quot;language-toml highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;# fly.toml&lt;/span&gt;
+&lt;span class=&quot;py&quot;&gt;app&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;myapp&quot;&lt;/span&gt;
+&lt;span class=&quot;py&quot;&gt;primary_region&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;ord&quot;&lt;/span&gt;  &lt;span class=&quot;c&quot;&gt;# &amp;lt;- Choose a single region close to your users&lt;/span&gt;
+&lt;span class=&quot;py&quot;&gt;kill_signal&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;SIGINT&quot;&lt;/span&gt;
+&lt;span class=&quot;py&quot;&gt;kill_timeout&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;5s&quot;&lt;/span&gt;
+
+&lt;span class=&quot;nn&quot;&gt;[[vm]]&lt;/span&gt;
+  &lt;span class=&quot;py&quot;&gt;memory&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;256mb&quot;&lt;/span&gt;  &lt;span class=&quot;c&quot;&gt;# &amp;lt;- Lowest available memory &amp;amp; cpus&lt;/span&gt;
+  &lt;span class=&quot;py&quot;&gt;cpus&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;
+
+&lt;span class=&quot;nn&quot;&gt;[mounts]&lt;/span&gt;  &lt;span class=&quot;c&quot;&gt;# &amp;lt;- Volume configuration for persistent SQLite storage&lt;/span&gt;
+  &lt;span class=&quot;py&quot;&gt;source&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;myapp_db&quot;&lt;/span&gt;  &lt;span class=&quot;c&quot;&gt;# &amp;lt;- Matches the volume name you create next&lt;/span&gt;
+  &lt;span class=&quot;py&quot;&gt;destination&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;/data&quot;&lt;/span&gt;  &lt;span class=&quot;c&quot;&gt;# &amp;lt;- Matches the directory you created in Dockerfile&lt;/span&gt;
+
+&lt;span class=&quot;nn&quot;&gt;[http_service]&lt;/span&gt;
+  &lt;span class=&quot;py&quot;&gt;internal_port&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;8080&lt;/span&gt;
+  &lt;span class=&quot;py&quot;&gt;force_https&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;true&lt;/span&gt;
+  &lt;span class=&quot;py&quot;&gt;auto_stop_machines&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;stop&quot;&lt;/span&gt;   &lt;span class=&quot;c&quot;&gt;# &amp;lt;- Automatically stops machines when idle (save $$$)&lt;/span&gt;
+  &lt;span class=&quot;py&quot;&gt;auto_start_machines&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;true&lt;/span&gt;    &lt;span class=&quot;c&quot;&gt;# &amp;lt;- Automatically starts machines on first request&lt;/span&gt;
+  &lt;span class=&quot;py&quot;&gt;min_machines_running&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;      &lt;span class=&quot;c&quot;&gt;# &amp;lt;- Allow zero running machines when idle&lt;/span&gt;
+
+  &lt;span class=&quot;nn&quot;&gt;[http_service.concurrency]&lt;/span&gt;
+    &lt;span class=&quot;py&quot;&gt;type&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;requests&quot;&lt;/span&gt;
+    &lt;span class=&quot;py&quot;&gt;hard_limit&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;200&lt;/span&gt;
+    &lt;span class=&quot;py&quot;&gt;soft_limit&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;100&lt;/span&gt;
+
+  &lt;span class=&quot;nn&quot;&gt;[[http_service.checks]]&lt;/span&gt;
+    &lt;span class=&quot;py&quot;&gt;interval&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;10s&quot;&lt;/span&gt;
+    &lt;span class=&quot;py&quot;&gt;timeout&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;2s&quot;&lt;/span&gt;
+    &lt;span class=&quot;py&quot;&gt;grace_period&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;5s&quot;&lt;/span&gt;
+    &lt;span class=&quot;py&quot;&gt;method&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;get&quot;&lt;/span&gt;
+    &lt;span class=&quot;py&quot;&gt;path&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;/&quot;&lt;/span&gt;
+    &lt;span class=&quot;py&quot;&gt;protocol&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;http&quot;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;&lt;strong&gt;Fly.io/fly.toml concepts:&lt;/strong&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;strong&gt;App&lt;/strong&gt;: Holistic settings describing your application. If you had a production and staging, you’d have two Apps total with similar &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Dockerfile&lt;/code&gt;/&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;fly.toml&lt;/code&gt; files. In our setup, one &lt;strong&gt;App&lt;/strong&gt; will &lt;em&gt;always&lt;/em&gt; contain one &lt;strong&gt;Machine&lt;/strong&gt; and one &lt;strong&gt;Volume&lt;/strong&gt;.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;VM&lt;/strong&gt;: Virtual machine specifications (RAM, CPU).&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Machine&lt;/strong&gt;: The actual running instance of your app. Pairs 1-to-1 with a &lt;strong&gt;Volume&lt;/strong&gt;. Is recreated fresh on each deploy.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Volume&lt;/strong&gt;: Persistent disk storage that survives deployments. This is where you can keep your &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;sqlite.db&lt;/code&gt; file.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Auto-scaling&lt;/strong&gt;: Automatically stops/starts machines based on traffic. We set &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;auto_stop_machines = &quot;stop&quot;&lt;/code&gt; to save money assuming that our app has significant idle periods. &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;auto_start_machines = true&lt;/code&gt; automatically boots a machine when a request comes in. Startup takes about ~2s, so the compromise is that some user requests will be slower than if we kept the server cooking 24/7.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&quot;step-6-create-flyio-app&quot;&gt;Step 6: Create Fly.io App&lt;/h2&gt;
+
+&lt;p&gt;Initialize your Fly.io app. Do it from the web interface or using the CLI commands below:&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;# Create new Fly.io app&lt;/span&gt;
+fly apps create myapp
+
+&lt;span class=&quot;c&quot;&gt;# Or if app already exists, verify it&lt;/span&gt;
+fly status -a myapp
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/fly-io-apps-dashboard.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Fly.io Apps dashboard showing your newly created app&quot; title=&quot;Fly.io Apps dashboard showing your newly created app&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Fly.io Apps dashboard showing your newly created app&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;The Fly.io dashboard will show your app in the “Apps” section with a status indicator.&lt;/p&gt;
+
+&lt;h2 id=&quot;step-7-create-storage-volume&quot;&gt;Step 7: Create Storage Volume&lt;/h2&gt;
+
+&lt;p&gt;SQLite needs persistent storage that survives deployments.&lt;/p&gt;
+
+&lt;p&gt;Create a &lt;strong&gt;Volume&lt;/strong&gt; via the web interface or the CLI command below:&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;# Create 1GB volume for SQLite database&lt;/span&gt;
+fly volume create myapp_db --region ord --size 1 -a myapp
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;&lt;strong&gt;Volume concepts:&lt;/strong&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;strong&gt;Persistent storage&lt;/strong&gt;: Data survives app deployments and restarts.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Region-specific&lt;/strong&gt;: Must be in same region as your machine.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Size&lt;/strong&gt;: Start small with 1GB (you can expand later if needed).&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/fly-io-volumes-dashboard.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Fly.io Volumes dashboard showing the newly created volume&quot; title=&quot;Fly.io Volumes dashboard showing the newly created volume&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Fly.io Volumes dashboard showing the newly created volume&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Verify the volume was created:&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;fly volumes list -a myapp
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;You should see output like:&lt;/p&gt;
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;ID                      STATE   NAME     SIZE REGION ZONE ENCRYPTED ATTACHED VM CREATED AT     
+vol_abc123xyz           created myapp_db 1GB  ord    df19 true                  2 minutes ago
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;h2 id=&quot;step-8-deploy-to-flyio&quot;&gt;Step 8: Deploy to Fly.io&lt;/h2&gt;
+
+&lt;p&gt;Deploy your app:&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;# Deploy from your project root directory&lt;/span&gt;
+fly deploy . -a myapp
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;This will:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Build your Docker image (including compiling the Swift binary)&lt;/li&gt;
+  &lt;li&gt;Create/update the app’s machine with the new image&lt;/li&gt;
+  &lt;li&gt;Mount the volume to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;/data&lt;/code&gt; on the app machine&lt;/li&gt;
+  &lt;li&gt;Run migrations automatically when the app starts (via &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;--auto-migrate&lt;/code&gt; flag)&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;For a small app, the whole deployment process will take about 5 minutes. If you’re redeploying with no code changes, it’s less than 30 seconds (if the previous docker image can be reused).&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/fly-io-deployment-logs.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Fly.io deployment logs showing successful deployment&quot; title=&quot;Fly.io deployment logs showing successful deployment&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Fly.io deployment logs showing successful deployment&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;During deployment, watch for these log messages:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Machine ... update succeeded&lt;/code&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Starting prepare [database-id: sqlite, migration: ...]&lt;/code&gt; (during app startup)&lt;/li&gt;
+  &lt;li&gt;Server startup logs indicating successful migration and binding to port 8080&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&quot;step-9-verify-deployment&quot;&gt;Step 9: Verify Deployment&lt;/h2&gt;
+
+&lt;p&gt;Check that everything is working:&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;# Check app status&lt;/span&gt;
+fly status -a myapp
+
+&lt;span class=&quot;c&quot;&gt;# Test your app&lt;/span&gt;
+curl https://myapp.fly.dev/
+
+&lt;span class=&quot;c&quot;&gt;# View recent logs&lt;/span&gt;
+fly logs -a myapp
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;The status should show:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;strong&gt;State&lt;/strong&gt;: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;started&lt;/code&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Health Checks&lt;/strong&gt;: Passing&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Volume&lt;/strong&gt;: Attached to your machine&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/fly-io-app-status.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Fly.io app status showing running machine with mounted 1GB volume&quot; title=&quot;Fly.io app status showing running machine with mounted 1GB volume&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Fly.io app status showing running machine with mounted 1GB volume&lt;/div&gt;&lt;/div&gt;
+
+&lt;h2 id=&quot;step-10-access-your-database&quot;&gt;Step 10: Access Your Database&lt;/h2&gt;
+
+&lt;p&gt;To inspect your SQLite database in production:&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;# Wake up your machine (if auto-stopped)&lt;/span&gt;
+curl https://myapp.fly.dev/
+
+&lt;span class=&quot;c&quot;&gt;# SSH into the machine&lt;/span&gt;
+fly ssh console -a myapp
+
+&lt;span class=&quot;c&quot;&gt;# Access SQLite database (sqlite3 is pre-installed)&lt;/span&gt;
+sqlite3 /data/db.sqlite
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Inside SQLite:&lt;/p&gt;
+&lt;div class=&quot;language-sql highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tables&lt;/span&gt;          &lt;span class=&quot;c1&quot;&gt;-- List all tables
+&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;schema&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;users&lt;/span&gt;    &lt;span class=&quot;c1&quot;&gt;-- Show table structure  
+&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;SELECT&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;FROM&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;users&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;LIMIT&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;5&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;  &lt;span class=&quot;c1&quot;&gt;-- Query your data
+&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;quit&lt;/span&gt;            &lt;span class=&quot;c1&quot;&gt;-- Exit
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/fly-io-sqlite-terminal.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Terminal showing SQLite3 session inside Fly.io machine&quot; title=&quot;Terminal showing SQLite3 session inside Fly.io machine&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Terminal showing SQLite3 session inside Fly.io machine&lt;/div&gt;&lt;/div&gt;
+
+&lt;h2 id=&quot;local-development&quot;&gt;Local Development&lt;/h2&gt;
+
+&lt;p&gt;For local development, your SQLite database will be created as &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;./db.sqlite&lt;/code&gt; in your project root:&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;# Run locally&lt;/span&gt;
+swift run Run serve --hostname 0.0.0.0 --port 8080
+
+&lt;span class=&quot;c&quot;&gt;# Access local database&lt;/span&gt;
+sqlite3 db.sqlite
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;h2 id=&quot;troubleshooting&quot;&gt;Troubleshooting&lt;/h2&gt;
+
+&lt;h4 id=&quot;machine-wont-start&quot;&gt;Machine won’t start&lt;/h4&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;# Check machine status&lt;/span&gt;
+fly machine list -a myapp
+
+&lt;span class=&quot;c&quot;&gt;# View detailed logs&lt;/span&gt;
+fly logs -a myapp
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;h4 id=&quot;database-connection-errors&quot;&gt;Database connection errors&lt;/h4&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Verify volume is mounted: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;fly ssh console -a myapp&lt;/code&gt; then &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ls -la /data/&lt;/code&gt;&lt;/li&gt;
+  &lt;li&gt;Check file permissions: SQLite file should be owned by &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;vapor:vapor&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h4 id=&quot;volume-not-attaching&quot;&gt;Volume not attaching&lt;/h4&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Ensure volume and machine are in the same region: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;fly volumes list&lt;/code&gt; and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;fly machine list&lt;/code&gt;.&lt;/li&gt;
+  &lt;li&gt;Volume names in &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;fly.toml&lt;/code&gt; must match created volume name exactly.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&quot;backups-and-where-to-go-from-here&quot;&gt;Backups, and where to go from here&lt;/h2&gt;
+
+&lt;p&gt;&lt;strong&gt;Important&lt;/strong&gt;: Unlike managed databases, you’re responsible for SQLite backups.&lt;/p&gt;
+
+&lt;p&gt;Fly.io automatically creates Volume snapshots with 5-day retention, but these aren’t easily accessible for restore.&lt;/p&gt;
+
+&lt;p&gt;Below are some strategies for improving the robustness of your system in approximate order of complexity/reliability:&lt;/p&gt;
+
+&lt;h4 id=&quot;irregular-manual-backup&quot;&gt;Irregular manual backup&lt;/h4&gt;
+
+&lt;p&gt;The most low tech backup solution: copy the database from the server to your local machine whenever you remember to do so.&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;# Download production database&lt;/span&gt;
+curl https://myapp.fly.dev/  &lt;span class=&quot;c&quot;&gt;# wake machine&lt;/span&gt;
+fly ssh sftp get /data/db.sqlite ./backup-&lt;span class=&quot;k&quot;&gt;$(&lt;/span&gt;date +%Y%m%d&lt;span class=&quot;k&quot;&gt;)&lt;/span&gt;.sqlite -a myapp
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;h4 id=&quot;regular-manual-backup&quot;&gt;Regular manual backup&lt;/h4&gt;
+
+&lt;p&gt;Set a repeating calendar entry or reminder to remind you to run the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;sftp&lt;/code&gt; command.&lt;/p&gt;
+
+&lt;h4 id=&quot;automated-manual-backup&quot;&gt;Automated manual backup&lt;/h4&gt;
+
+&lt;p&gt;Use a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;cron&lt;/code&gt; job or &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;launchd&lt;/code&gt; on macOS to automatically run the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;sftp&lt;/code&gt; command,&lt;/p&gt;
+
+&lt;h4 id=&quot;s3-object-storage-backup&quot;&gt;S3 object storage backup&lt;/h4&gt;
+
+&lt;p&gt;Set up an AWS S3 account (or equivalent) with a dedicated bucket to store &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;sqlite&lt;/code&gt; backups. Then add a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;cron&lt;/code&gt; job to a GitHub Action to perform the backup from Fly.io to the S3 bucket.&lt;/p&gt;
+
+&lt;h4 id=&quot;add-litestream-for-sqlite-backups&quot;&gt;Add Litestream for SQLite backups&lt;/h4&gt;
+
+&lt;p&gt;See &lt;a href=&quot;https://litestream.io/&quot;&gt;litestream.io&lt;/a&gt;.&lt;/p&gt;
+
+&lt;h4 id=&quot;add-litefs-to-replicate-sqlite-to-multiple-machines&quot;&gt;Add LiteFS to replicate SQLite to multiple machines&lt;/h4&gt;
+
+&lt;p&gt;See &lt;a href=&quot;https://fly.io/docs/litefs/&quot;&gt;this docs page&lt;/a&gt;.&lt;/p&gt;
+
+&lt;h4 id=&quot;use-postgres&quot;&gt;Use Postgres&lt;/h4&gt;
+
+&lt;p&gt;Congratulations, your app is successful enough to need Postgres.&lt;/p&gt;
+
+&lt;h2 id=&quot;summary&quot;&gt;Summary&lt;/h2&gt;
+
+&lt;p&gt;Although I’ve tried to cover the most important SQLite bits in the post, each project is unique. Be sure to consult all the latest docs from Fly.io, Vapor, and SQLite.&lt;/p&gt;
+
+</description>
+        <pubDate>Wed, 02 Jul 2025 09:00:00 -0500</pubDate>
+        <link>https://twocentstudios.com/2025/07/02/swift-vapor-fly-io-sqlite-config/</link>
+        <guid isPermaLink="true">https://twocentstudios.com/2025/07/02/swift-vapor-fly-io-sqlite-config/</guid>
+        
+        <category>vapor</category>
+        
+        <category>sqlite</category>
+        
+        <category>hosting</category>
+        
+        <category>flyio</category>
+        
+        <category>apple</category>
+        
+        
+      </item>
     
       <item>
         <title>Hosting</title>
