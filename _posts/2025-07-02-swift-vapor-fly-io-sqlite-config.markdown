@@ -401,3 +401,34 @@ Congratulations, your app is successful enough to need Postgres.
 
 Although I've tried to cover the most important SQLite bits in the post, each project is unique. Be sure to consult all the latest docs from Fly.io, Vapor, and SQLite.
 
+## Appendix
+
+### More explanation about horizontal and vertical scaling for beginners
+
+Your app and data living on one server is the simplest setup. Of course, how long you can stay with this setup depends on your use case and the level of service you're guaranteeing your users.
+
+It's possible to scale your app **vertically** by _increasing the specs of the server hardware_ itself. Scaling vertically increases the server's ability to serve more requests: by serving each request faster (single CPU), by increasing the number of concurrent requests (number of CPUs), by increasing the number of open connections (memory), or by allowing more data to be cached and therefore fetched faster (memory).
+
+However, scaling vertically does nothing to decrease the chances of downtime or data loss if the server hardware crashes. Nor does it allow you speed up requests by putting a server close to your users all across the world. When you have the motivation to solve these problems, you can begin scaling **horizontally**.
+
+A back-end-as-a-service like Fly.io is designed to make scaling horizontally much easier than it is provisioning servers manually. However, scaling horizontally is still _way way more complex_ than scaling vertically.
+
+There are a few strategies for scaling a server application horizontally, all depending on the use case.
+
+The most conceptually simple implementation of scaling horizontally is by sharding the entire application. Imagine we run a social network on a single server in the United States that only serves users living in the US. Then, we decide scale our app to Canada by creating a completely separate instance of the app on server in Canada that only serves users living in Canada. A Canadian user could not interact with a US user because the data for each of them lives on a separate server with no connection.
+
+Another implementation of horizontal scaling is to separate a (single) database server from your (multiple) application servers. That way, you can increase the number of application servers and put them in different regions. But the downside is that each application server must now make network requests to get any data from the database, perhaps in a region across the globe.
+
+The next step would be to scale horizontally to multiple database servers so that most application servers could be close to a database server. But that means you now need top-level orchestration so that:
+
+- One database server still acts as the primary and handles all writes
+- All other database servers serve data as read-only secondaries
+- The primary replicates its reads to all the secondaries
+- Application servers write data to the primary and read from the closest secondary
+
+When considering all the possible failures when syncing data between your databases, consistency between databases will now be a huge (and ongoing) concern.
+
+It's also possible to do sharding at the database level, instead for for entire system like we did in our earlier naive example.
+
+Thus concludes this mini-appendix on horizontal and vertical scaling for beginners. Hopefully this puts the decision to rely on a single application server from this post into context. For a well-accepted theoretical primer on this problem, I recommend reading [Designing Data Intensive Applications](https://www.oreilly.com/library/view/designing-data-intensive-applications/9781491903063/).
+
