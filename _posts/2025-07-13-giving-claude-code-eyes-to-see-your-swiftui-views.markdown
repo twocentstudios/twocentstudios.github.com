@@ -21,7 +21,7 @@ This is not a full tutorial, so here are some other walkthroughs to get you star
 
 I created a separate target `ViewSnapshotTests` to isolate these kinds of tests and disabled it from running with Cmd+U alongside my main iOS target.
 
-![TODO](xcode-scheme-test-panel.png)
+{% caption_img /images/cc-eyes-xcode-scheme-test-panel.png w600 h400 Xcode scheme test panel configuration ignoring ViewSnapshotTests %}
 
 Our goal with this setup is to give CC a way to visually reference its work, *not* create long-lived snapshot tests that will be maintained.
 
@@ -53,7 +53,7 @@ struct ViewVerificationTests {
 
 Then we can try exercising this template:
 
-```
+```swift
 /// HelloWorldView.swift
 struct HelloWorldView: View {
     var message: String = "Hello, World!"
@@ -89,9 +89,9 @@ func viewVerification() {
 
 If you run the suite manually, the test will (as expected) fail, and a new folder and image will be created in the test directory:
 
-![TODO](snapshots-file-hierarchy.png)
+{% caption_img /images/cc-eyes-snapshots-file-hierarchy.png w400 h300 Snapshot testing file hierarchy %}
 
-![TODO](viewVerification.1.png)
+{% caption_img /images/cc-eyes-view-verification-output.png w200 h150 ViewVerification test output %}
 
 ## Instructions for Claude Code's iteration loop
 
@@ -117,13 +117,14 @@ The instruction is heavy handed, but will give us a baseline requirements to rel
 7. Implement the changes in the plan.
 8. Run the command in (4) to replace the snapshot image.
 9. Repeat steps (5) to (9) as many times as specified in previous instructions.
+10. Once I have approved, please reset the test files and image to their original state.
 ```
 
 You'll need to heavily modify that prompt to fit with your ideal workflow and use the proper command line commands for your project. For example, if you're going off a written spec with no particular design in mind, you could to add "make the View more beautiful" after each iteration.
 
-The View Modification Workflow would be subset of the View Creation Workflow.
+It's important to note that `xcodebuild test` can **only** target _suites_ via `-only-testing`, **not** individual tests like `swift test` can.
 
-In that prompt, we tell CC to reference another section for image analysis. Below are some ImageMagick commands that could be useful.
+The View Modification Workflow would be subset of the View Creation Workflow. In that prompt, we tell CC to reference another section for image analysis. Below are some ImageMagick commands that could be useful.
 
 ```bash
 # Extract exact RGB values from specific coordinates
@@ -152,17 +153,25 @@ magick compare reference.png snapshot.png diff_output.png
 
 I gave CC a challenge as a way to develop the above setup and strategies. I gave it the simple users list screen from my recently re-released app [Vinylogue](/2025/06/22/vinylogue-swift-rewrite/), captured directly from the simulator. 
 
-![](TODO reference.png)
+{% caption_img /images/cc-eyes-vinylogue-reference.png w300 h600 Reference image of Vinylogue users list directly from the simulator %}
 
-Alongside the reference image, I gave a variant of the above instructions flow. I gave it some upfront hints: the font is AvenirNext; please ignore the dynamic island. Then had it run unguided for 5 iterations before stepping in and giving it more hints to see how close it could get to pixel perfect.
+Alongside the reference image, I gave a variant of the above instructions flow. I gave it some upfront hints: the font is AvenirNext; please ignore the dynamic island. Then had it run unguided for 5 iterations before stepping in and giving it more hints and tools to see how close it could get to pixel perfect.
 
-![](TODO 9 result images appended)
+{% caption_img /images/cc-eyes-swiftui-evolution.png w800 h400 Evolution of SwiftUI view across 9 iterations (please view full) %}
 
-In the later steps I even had it shell out to Gemini CLI for a couple rounds of critique.
+{% caption_img /images/cc-eyes-comparison-1.png w600 h400 Iteration 1: First blind attempt %}
+
+{% caption_img /images/cc-eyes-comparison-4.png w600 h400 Iteration 4: Improved spacing but worse background color %}
+
+{% caption_img /images/cc-eyes-comparison-6.png w600 h400 Iteration 6: Font weights are still wrong %}
+
+{% caption_img /images/cc-eyes-comparison-9.png w600 h400 Iteration 9: After asking Gemini's help, for some reason the titles are now uppercased %}
 
 ## Challenge Results Analysis
 
-With CC's current image analysis capabilities, using snapshot testing isn't a useful strategy for getting to a pixel perfect result. If your development flow involves reproducing mocks from Figma, it'd be better to provide the mock and generated web code and colors and fonts directly to Claude. If your development flow involves giving CC general vibe reference shots, snapshot testing may give it a few more shots at getting it right.
+Without direct prompting, even with a reference image, CC will default to system fonts and colors (to be fair, this is usually the best route if you have no specific design spec). I had to give it pretty specific instructions to "notice" things about the image like the colors not being black and white, or the font weights being incorrect. Even using the ImageMagick techniques, CC got confused more often than not. I felt like CC had limited ability to see either absolute or relative differences in padding or sizing. After almost every step, CC thought the output was close enough and it praised itself and wanted to stop.
+
+With CC's current image analysis capabilities, using snapshot testing isn't a useful strategy for getting to a pixel perfect result. If your development flow involves reproducing mocks from Figma, it'd be better to provide the mock and generated web code and colors and fonts directly to CC. If your development flow involves giving CC general vibe reference shots, snapshot testing may give it a few more shots at getting it right.
 
 This technique is in research phase for me. Without putting it through its full paces, I'm guessing it doesn't make sense at the moment to give it more than 3 iterations before putting a human in the loop.
 
