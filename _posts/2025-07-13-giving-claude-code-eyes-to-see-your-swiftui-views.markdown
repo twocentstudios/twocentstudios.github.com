@@ -2,7 +2,7 @@
 layout: post
 title: "Giving Claude Code Eyes to See Your SwiftUI Views"
 date: 2025-07-13 10:30:00
-image: /images/
+image: /images/cc-eyes-comparison-6.png
 tags: claudecode swiftui apple ios
 ---
 
