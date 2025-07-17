@@ -1,0 +1,234 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>twocentstudios</title>
+    <description>A coding blog covering iOS, Swift, and other programming topics.</description>
+    <link>https://twocentstudios.com/blog/tags/swiftui/index.html</link>
+    <atom:link href="https://twocentstudios.com/blog/tags/swiftui/feed.xml" rel="self" type="application/rss+xml"/>
+    <pubDate>Thu, 17 Jul 2025 02:12:18 -0500</pubDate>
+    <lastBuildDate>Thu, 17 Jul 2025 02:12:18 -0500</lastBuildDate>
+    <generator>Jekyll v3.9.3</generator>
+    
+      <item>
+        <title>Giving Claude Code Eyes to See Your SwiftUI Views</title>
+        <description>&lt;p&gt;&lt;a href=&quot;https://claude.ai/claude-code&quot;&gt;Claude Code&lt;/a&gt; works best as a multi-shot agent, iterating on a task by making changes and checking whether its attempts match the target.&lt;/p&gt;
+
+&lt;p&gt;Let’s explore one way of giving Claude Code (henceforth “CC”) a way to use its multimodal capabilities to view the results of the SwiftUI code: &lt;a href=&quot;https://github.com/pointfreeco/swift-snapshot-testing&quot;&gt;Swift Snapshot Testing&lt;/a&gt;. We’ll look into ways to enhance its image analysis capabilities with tool calling. And finally we’ll see how well it does with the challenge of recreating a SwiftUI View from a reference image.&lt;/p&gt;
+
+&lt;p&gt;The strategy in this post is optimized for “unit testing” SwiftUI Views in isolation (i.e. without the status bar, with flexible dimensions, etc.). We’ll briefly review other visualization strategies at the end of this post.&lt;/p&gt;
+
+&lt;h2 id=&quot;setting-up-swift-snapshot-testing&quot;&gt;Setting up Swift Snapshot Testing&lt;/h2&gt;
+
+&lt;p&gt;This is not a full tutorial, so here are some other walkthroughs to get you started:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;a href=&quot;https://www.delasign.com/blog/how-to-setup-swift-testing-in-swift-or-swiftui-project-in-xcode/&quot;&gt;How to setup Swift Testing in a Swift or SwiftUI project in Xcode&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://github.com/pointfreeco/swift-snapshot-testing?tab=readme-ov-file#installation&quot;&gt;pointfreeco/swift-snapshot-testing: Installation&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;I created a separate target &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ViewSnapshotTests&lt;/code&gt; to isolate these kinds of tests and disabled it from running with Cmd+U alongside my main iOS target.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/cc-eyes-xcode-scheme-test-panel.png&quot; width=&quot;600&quot; height=&quot;&quot; alt=&quot;Xcode scheme test panel configuration ignoring ViewSnapshotTests&quot; title=&quot;Xcode scheme test panel configuration ignoring ViewSnapshotTests&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Xcode scheme test panel configuration ignoring ViewSnapshotTests&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Our goal with this setup is to give CC a way to visually reference its work, &lt;em&gt;not&lt;/em&gt; create long-lived snapshot tests that will be maintained.&lt;/p&gt;
+
+&lt;p&gt;Let’s add a file we’ll have CC use a template. We’ll instruct it to modify this test, run it, then reset it once the verification is complete.&lt;/p&gt;
+
+&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;/// ViewVerificationTests.swift&lt;/span&gt;
+&lt;span class=&quot;kd&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;SnapshotTesting&lt;/span&gt;
+&lt;span class=&quot;kd&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;SwiftUI&lt;/span&gt;
+&lt;span class=&quot;kd&quot;&gt;@testable&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;mytarget&lt;/span&gt;
+&lt;span class=&quot;kd&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Testing&lt;/span&gt;
+
+&lt;span class=&quot;kd&quot;&gt;@Suite(&quot;ViewVerificationTests&quot;)&lt;/span&gt;
+&lt;span class=&quot;kd&quot;&gt;@MainActor&lt;/span&gt;
+&lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ViewVerificationTests&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;@Test(&quot;ViewVerificationTest&quot;)&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;viewVerification&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    	&lt;span class=&quot;c1&quot;&gt;// Replace with the view under test&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;view&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;EmptyView&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+
+        &lt;span class=&quot;nf&quot;&gt;assertSnapshot&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
+            &lt;span class=&quot;nv&quot;&gt;of&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;view&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;as&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;image&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;layout&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;fixed&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;width&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;height&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)),&lt;/span&gt;
+            &lt;span class=&quot;nv&quot;&gt;record&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;true&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Then we can try exercising this template:&lt;/p&gt;
+
+&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;/// HelloWorldView.swift&lt;/span&gt;
+&lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;HelloWorldView&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;View&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;message&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;Hello, World!&quot;&lt;/span&gt;
+
+    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;body&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;some&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;View&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;kt&quot;&gt;VStack&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;spacing&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;20&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;kt&quot;&gt;Text&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;message&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+                &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;font&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;title&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+
+            &lt;span class=&quot;kt&quot;&gt;Rectangle&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+                &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;fill&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Color&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;blue&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+                &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;frame&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;width&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;100&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;height&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;50&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+                &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;cornerRadius&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;8&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+        &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;padding&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+        &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;background&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;background&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;secondary&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;// Modify the template test&lt;/span&gt;
+&lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;viewVerification&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;view&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;HelloWorldView&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+
+    &lt;span class=&quot;nf&quot;&gt;assertSnapshot&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
+        &lt;span class=&quot;nv&quot;&gt;of&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;view&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;as&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;image&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;layout&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;fixed&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;width&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;200&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;height&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;150&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)),&lt;/span&gt;
+        &lt;span class=&quot;nv&quot;&gt;record&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;true&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;If you run the suite manually, the test will (as expected) fail, and a new folder and image will be created in the test directory:&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/cc-eyes-snapshots-file-hierarchy.png&quot; width=&quot;400&quot; height=&quot;&quot; alt=&quot;Snapshot testing file hierarchy&quot; title=&quot;Snapshot testing file hierarchy&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Snapshot testing file hierarchy&lt;/div&gt;&lt;/div&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/cc-eyes-view-verification-output.png&quot; width=&quot;200&quot; height=&quot;&quot; alt=&quot;ViewVerification test output&quot; title=&quot;ViewVerification test output&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;ViewVerification test output&lt;/div&gt;&lt;/div&gt;
+
+&lt;h2 id=&quot;instructions-for-claude-codes-iteration-loop&quot;&gt;Instructions for Claude Code’s iteration loop&lt;/h2&gt;
+
+&lt;p&gt;Exactly &lt;em&gt;when&lt;/em&gt; you, the developer, decide to use Claude’s visualization depends highly on your design -&amp;gt; code workflow.&lt;/p&gt;
+
+&lt;p&gt;For the sake of argument, let’s start by adding this instruction to CLAUDE.md:&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;Any time you create or modify a SwiftUI View, use the workflow defined in the &lt;strong&gt;SwiftUI View Verification Workflow&lt;/strong&gt; section below to check your work. Iterate &lt;strong&gt;at least 2 times&lt;/strong&gt; and &lt;strong&gt;up to 5 times&lt;/strong&gt; before considering your SwiftUI code complete.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;The instruction is heavy handed, but will give us a baseline requirements to relax. Now let’s describe the ideal workflow to CC in detail:&lt;/p&gt;
+
+&lt;div class=&quot;language-markdown highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;gu&quot;&gt;## SwiftUI View Verification Workflow&lt;/span&gt;
+
+&lt;span class=&quot;gu&quot;&gt;### View Creation Workflow&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;
+1.&lt;/span&gt; Create a SwiftUI View based on the developer-provided written specifications or reference image.
+&lt;span class=&quot;p&quot;&gt;2.&lt;/span&gt; Run xcodegen to add the &lt;span class=&quot;sb&quot;&gt;`.swift` file to the `.xcodeproj`&lt;/span&gt;.
+&lt;span class=&quot;p&quot;&gt;3.&lt;/span&gt; Modify the &lt;span class=&quot;sb&quot;&gt;`viewVerification` test in `ViewVerificationTests.swift`&lt;/span&gt; to use the new View and set the expected layout.
+&lt;span class=&quot;p&quot;&gt;4.&lt;/span&gt; Run &lt;span class=&quot;sb&quot;&gt;`xcodebuild test -only-testing:&quot;ViewSnapshotTests/ViewVerificationTests&quot; -quiet`&lt;/span&gt; and ignore the expected test failure.
+&lt;span class=&quot;p&quot;&gt;5.&lt;/span&gt; Read the output image &lt;span class=&quot;sb&quot;&gt;`ViewSnapshotTests/__Snapshots__/ViewVerificationTests/viewVerification.1.png`&lt;/span&gt; and compare it to the written specifications or reference image. Use any image analysis tools or techniques listed in the &quot;Image Analysis Strategies&quot; section.
+&lt;span class=&quot;p&quot;&gt;6.&lt;/span&gt; Plan a list of changes to the SwiftUI View code that will bring &lt;span class=&quot;sb&quot;&gt;`viewVerification.1.png`&lt;/span&gt; closer to the written spec or reference image.
+&lt;span class=&quot;p&quot;&gt;7.&lt;/span&gt; Implement the changes in the plan.
+&lt;span class=&quot;p&quot;&gt;8.&lt;/span&gt; Run the command in (4) to replace the snapshot image.
+&lt;span class=&quot;p&quot;&gt;9.&lt;/span&gt; Repeat steps (5) to (9) as many times as specified in previous instructions.
+&lt;span class=&quot;p&quot;&gt;10.&lt;/span&gt; Once I have approved, please reset the test files and image to their original state.
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;You’ll need to heavily modify that prompt to fit with your ideal workflow and use the proper command line commands for your project. For example, if you’re going off a written spec with no particular design in mind, you could to add “make the View more beautiful” after each iteration.&lt;/p&gt;
+
+&lt;p&gt;It’s important to note that &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;xcodebuild test&lt;/code&gt; can &lt;strong&gt;only&lt;/strong&gt; target &lt;em&gt;suites&lt;/em&gt; via &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;-only-testing&lt;/code&gt;, &lt;strong&gt;not&lt;/strong&gt; individual tests like &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;swift test&lt;/code&gt; can.&lt;/p&gt;
+
+&lt;p&gt;The View Modification Workflow would be subset of the View Creation Workflow. In that prompt, we tell CC to reference another section for image analysis. Below are some ImageMagick commands that could be useful.&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;# Extract exact RGB values from specific coordinates&lt;/span&gt;
+magick image.png -crop 1x1+200+300 txt:
+&lt;span class=&quot;c&quot;&gt;# Output: (240,240,240,255) #F0F0F0FF grey94&lt;/span&gt;
+
+&lt;span class=&quot;c&quot;&gt;# Check image dimensions and properties&lt;/span&gt;
+magick identify image.png
+&lt;span class=&quot;c&quot;&gt;# Output: image.png PNG 1206x2622 1206x2622+0+0 8-bit sRGB&lt;/span&gt;
+
+&lt;span class=&quot;c&quot;&gt;# Get Root Mean Square Error between images&lt;/span&gt;
+magick compare -verbose -metric RMSE reference.png snapshot.png null:
+&lt;span class=&quot;c&quot;&gt;# Provides per-channel distortion percentages&lt;/span&gt;
+
+&lt;span class=&quot;c&quot;&gt;# Generate visual difference overlay&lt;/span&gt;
+magick compare reference.png snapshot.png diff_output.png
+&lt;span class=&quot;c&quot;&gt;# Red areas show differences, black areas show matches&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;h2 id=&quot;weak-points-of-snapshot-testing&quot;&gt;Weak points of snapshot testing&lt;/h2&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;As far as I can tell, it’s not possible to get the full system UI wrapper with snapshot testing (e.g. the status bar).&lt;/li&gt;
+  &lt;li&gt;There are built in device sizes, but they aren’t frequently updated to include new devices.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&quot;challenge-create-a-swiftui-view-from-a-reference-image&quot;&gt;Challenge: create a SwiftUI View from a reference image&lt;/h2&gt;
+
+&lt;p&gt;I gave CC a challenge as a way to develop the above setup and strategies. I gave it the simple users list screen from my recently re-released app &lt;a href=&quot;/2025/06/22/vinylogue-swift-rewrite/&quot;&gt;Vinylogue&lt;/a&gt;, captured directly from the simulator.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/cc-eyes-vinylogue-reference.png&quot; width=&quot;300&quot; height=&quot;&quot; alt=&quot;Reference image of Vinylogue users list directly from the simulator&quot; title=&quot;Reference image of Vinylogue users list directly from the simulator&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Reference image of Vinylogue users list directly from the simulator&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Alongside the reference image, I gave a variant of the above instructions flow. I gave it some upfront hints: the font is AvenirNext; please ignore the dynamic island. Then had it run unguided for 5 iterations before stepping in and giving it more hints and tools to see how close it could get to pixel perfect.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/cc-eyes-swiftui-evolution.png&quot; width=&quot;800&quot; height=&quot;&quot; alt=&quot;Evolution of SwiftUI view across 9 iterations (please view full)&quot; title=&quot;Evolution of SwiftUI view across 9 iterations (please view full)&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Evolution of SwiftUI view across 9 iterations (please view full)&lt;/div&gt;&lt;/div&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/cc-eyes-comparison-1.png&quot; width=&quot;600&quot; height=&quot;&quot; alt=&quot;Iteration 1: First blind attempt&quot; title=&quot;Iteration 1: First blind attempt&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Iteration 1: First blind attempt&lt;/div&gt;&lt;/div&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/cc-eyes-comparison-4.png&quot; width=&quot;600&quot; height=&quot;&quot; alt=&quot;Iteration 4: Improved spacing but worse background color&quot; title=&quot;Iteration 4: Improved spacing but worse background color&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Iteration 4: Improved spacing but worse background color&lt;/div&gt;&lt;/div&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/cc-eyes-comparison-6.png&quot; width=&quot;600&quot; height=&quot;&quot; alt=&quot;Iteration 6: Font weights are still wrong&quot; title=&quot;Iteration 6: Font weights are still wrong&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Iteration 6: Font weights are still wrong&lt;/div&gt;&lt;/div&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/cc-eyes-comparison-9.png&quot; width=&quot;600&quot; height=&quot;&quot; alt=&quot;Iteration 9: After asking Gemini&apos;s help, for some reason the titles are now uppercased&quot; title=&quot;Iteration 9: After asking Gemini&apos;s help, for some reason the titles are now uppercased&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Iteration 9: After asking Gemini&apos;s help, for some reason the titles are now uppercased&lt;/div&gt;&lt;/div&gt;
+
+&lt;h2 id=&quot;challenge-results-analysis&quot;&gt;Challenge Results Analysis&lt;/h2&gt;
+
+&lt;p&gt;Without direct prompting, even with a reference image, CC will default to system fonts and colors (to be fair, this is usually the best route if you have no specific design spec). I had to give it pretty specific instructions to “notice” things about the image like the colors not being black and white, or the font weights being incorrect. Even using the ImageMagick techniques, CC got confused more often than not. I felt like CC had limited ability to see either absolute or relative differences in padding or sizing. After almost every step, CC thought the output was close enough and it praised itself and wanted to stop.&lt;/p&gt;
+
+&lt;p&gt;With CC’s current image analysis capabilities, using snapshot testing isn’t a useful strategy for getting to a pixel perfect result. If your development flow involves reproducing mocks from Figma, it’d be better to provide the mock and generated web code and colors and fonts directly to CC. If your development flow involves giving CC general vibe reference shots, snapshot testing may give it a few more shots at getting it right.&lt;/p&gt;
+
+&lt;p&gt;This technique is in research phase for me. Without putting it through its full paces, I’m guessing it doesn’t make sense at the moment to give it more than 3 iterations before putting a human in the loop.&lt;/p&gt;
+
+&lt;h2 id=&quot;other-ways-to-give-claude-code-eyes&quot;&gt;Other ways to give Claude Code eyes&lt;/h2&gt;
+
+&lt;p&gt;Below are a few other techniques, although I have not tried any of them enough to say how well they work for any particular workflow.&lt;/p&gt;
+
+&lt;h3 id=&quot;full-xctest-uiautomation&quot;&gt;Full XCTest UIAutomation&lt;/h3&gt;
+
+&lt;p&gt;It’s possible to get the full simulator output with XCTest, but more complicated to get access to the raw image. You can also simulate taps and perform navigation. But the tradeoff is that you have to set up the whole app environment even if you just want to see one view in isolation.&lt;/p&gt;
+
+&lt;h3 id=&quot;simulator-via-xcodebuildmcp&quot;&gt;Simulator via XcodeBuildMCP&lt;/h3&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://github.com/cameroncooke/XcodeBuildMCP&quot;&gt;XcodeBuildMCP&lt;/a&gt; advertises simulator automation features:&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;ul&gt;
+    &lt;li&gt;UI Automation: Interact with simulator UI elements&lt;/li&gt;
+    &lt;li&gt;Screenshot: Capture screenshots from a simulator&lt;/li&gt;
+  &lt;/ul&gt;
+&lt;/blockquote&gt;
+
+&lt;h3 id=&quot;macos-system-viewing-with-peekaboomcp&quot;&gt;macOS system viewing with PeekabooMCP&lt;/h3&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://peekaboo.dev/&quot;&gt;PeekabooMCP&lt;/a&gt; is a macOS system-wide tool for accessing screen contents. This is more useful for developing macOS apps.&lt;/p&gt;
+
+&lt;h2 id=&quot;conclusion&quot;&gt;Conclusion&lt;/h2&gt;
+
+&lt;p&gt;For anyone looking to take the next steps in CC automation in the realm of the view layer, I hope this was somewhat helpful in understanding the current landscape an capabilities.&lt;/p&gt;
+
+&lt;p&gt;The expected shelf-life of this post is short. This post references Claude Code v1.0.51, Xcode 16.4, Swift Snapshot Testing 1.18.4.&lt;/p&gt;
+</description>
+        <pubDate>Sun, 13 Jul 2025 05:30:00 -0500</pubDate>
+        <link>https://twocentstudios.com/2025/07/13/giving-claude-code-eyes-to-see-your-swiftui-views/</link>
+        <guid isPermaLink="true">https://twocentstudios.com/2025/07/13/giving-claude-code-eyes-to-see-your-swiftui-views/</guid>
+        
+        <category>claudecode</category>
+        
+        <category>swiftui</category>
+        
+        <category>apple</category>
+        
+        <category>ios</category>
+        
+        
+      </item>
+    
+  </channel>
+</rss>
