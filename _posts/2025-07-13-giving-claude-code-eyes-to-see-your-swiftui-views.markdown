@@ -8,7 +8,7 @@ tags: claudecode swiftui apple ios
 
 [Claude Code](https://claude.ai/claude-code) works best as a multi-shot agent, iterating on a task by making changes and checking whether its attempts match the target.
 
-Let's explore one way of giving Claude Code (henceforth "CC") a way to use its multimodal capabilities to view the results of the SwiftUI code: [Swift Snapshot Testing](https://github.com/pointfreeco/swift-snapshot-testing). We'll look into ways to enhance its image analysis capabilities with tool calling. And finally we'll see how well it does with the challenge of recreating a SwiftUI View from a reference image. 
+Let's explore one way of giving Claude Code (henceforth "CC") a way to use its multimodal capabilities to view the results of the SwiftUI code: [Swift Snapshot Testing](https://github.com/pointfreeco/swift-snapshot-testing). We'll look into ways to enhance its image analysis capabilities with tool calling. And finally we'll see how well it does with the challenge of recreating a SwiftUI View from a reference image.
 
 The strategy in this post is optimized for "unit testing" SwiftUI Views in isolation (i.e. without the status bar, with flexible dimensions, etc.). We'll briefly review other visualization strategies at the end of this post.
 
@@ -122,7 +122,7 @@ The instruction is heavy handed, but will give us a baseline requirements to rel
 
 You'll need to heavily modify that prompt to fit with your ideal workflow and use the proper command line commands for your project. For example, if you're going off a written spec with no particular design in mind, you could to add "make the View more beautiful" after each iteration.
 
-It's important to note that `xcodebuild test` can **only** target _suites_ via `-only-testing`, **not** individual tests like `swift test` can.
+It's important to note that, when using Swift Testing instead of XCTest, `xcodebuild test` can **only** target _suites_ via `-only-testing`, **not** individual tests like `swift test` can. For the root cause and workarounds, see [this post](https://trinhngocthuyen.com/posts/tech/swift-testing-and-xcodebuild/).
 
 The View Modification Workflow would be subset of the View Creation Workflow. In that prompt, we tell CC to reference another section for image analysis. Below are some ImageMagick commands that could be useful.
 
