@@ -27,6 +27,10 @@ An iOS app for drilling numbers in Japanese.
 
 An iOS app for your [last.fm](https://last.fm) listening history.
 
+#### TechnicolorTV - [post](/2025/07/25/reintroducing-technicolor-binge-watch-with-friends-over-space-and-time/)
+
+An iOS/macOS chat app and web service for watching TV shows with friends asynchronously. Currently in private beta.
+
 #### Goalie - [releases](https://github.com/twocentstudios/goalie/releases) | [source](https://github.com/twocentstudios/goalie) | [post](/2023/10/20/goalie-time-tracking-macos/)
 
 A bespoke macOS app for time tracking.
