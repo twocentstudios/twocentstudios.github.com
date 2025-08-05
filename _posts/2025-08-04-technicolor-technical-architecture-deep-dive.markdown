@@ -2,7 +2,7 @@
 layout: post
 title: "Technicolor Technical Architecture: Full Stack Swift"
 date: 2025-08-04 12:04:00
-image: /images/TODO
+image: /images/technicolor-xcode-full-stack-development.png
 tags: apple ios swiftui vapor technicolor
 ---
 
@@ -25,7 +25,30 @@ This post explores the front-end and back-end architectures of Technicolor. The 
 
 ## Architecture overview
 
-![TODO draw architecture diagram of 3 parts]()
+```
+  ┌─────────────────────┐       ┌──────────────────────────┐
+  │  Server (tv-vapor)  │       │  Client (Technicolor)    │
+  │                     │       │       iOS/macOS          │
+  ├─────────────────────┤       ├──────────────────────────┤
+  │ • Swift Vapor       │       │ • SwiftUI + Observation  │
+  │ • SQLite + Fluent   │       │ • iOS 17+ / macOS 14+    │
+  │ • TMDB API Client   │       │ • Mac Catalyst Support   │
+  │ • Push Notifications│       │                          │
+  │ • Deployed on Fly.io│       │                          │
+  └─────────────────────┘       └──────────────────────────┘
+                  │                           │
+                  └─────────────┬─────────────┘
+                                │
+                                ▼
+                  ┌─────────────────────────────┐
+                  │    Shared API Layer         │
+                  │       tv-models             │
+                  ├─────────────────────────────┤
+                  │ • 164 Codable Structures    │
+                  │ • Type-Safe Client/Server   │
+                  │ • Input/Output DTOs         │
+                  └─────────────────────────────┘
+```
 
 Technicolor has a client-server architecture. The server vends `json` data via HTTP requests to clients authenticated with a bearer token.
 
@@ -41,9 +64,9 @@ I'll explore the development experience, shared API layer, server-side, and clie
 
 ## Development experience
 
-The blessing and curse of using Swift everywhere is that I can use Xcode for everything. The cons of course are that Xcode can be bloated and buggy. But the pros are that I can explore the entire codebase in one IDE.
+The blessing and curse of using full stack Swift is that I can use Xcode for everything. The cons of course are that Xcode can be bloated and buggy. But the pros are that I can explore the entire codebase in one IDE.
 
-![TODO: Xcode showing 3 parts in file browser, debugger running]()
+{% caption_img /images/technicolor-xcode-full-stack-development.png w1000 h600 Xcode workspace showing server-side Swift code alongside iOS client with live console output from both server and client debugging %}
 
 The specific setup within Xcode is a single `xcworkspace` file that contains:
 
@@ -53,9 +76,9 @@ The specific setup within Xcode is a single `xcworkspace` file that contains:
 
 Overall, the `xcworkspace`-based setup worked okay. There were a few times where Swift Package caching needed manual fixing (several wasted hours I won't be getting back). I've also wrestled with an issue where Swift Packages can force-create schemes in the workspace that [cannot be ignored](https://www.jessesquires.com/blog/2025/03/10/swiftpm-schemes-in-xcode/).
 
-I have separate schemes for running the server, iOS client, and macOS client. Both the server and client are debuggable with all of Xcode's integrated LLDB support including breakpoints. The console shows logs from server and client.
+I have separate schemes for running the server and client, using separate destinations for running the iOS and macOS clients. Both the server and client are debuggable with all of Xcode's integrated LLDB support including breakpoints. The console shows logs from server and client.
 
-![TODO: client and server targets in the console]()
+{% caption_img /images/technicolor-server-console-output.png w1000 h300 Server console output showing Vapor web server startup logs and HTTP request handling with live debugging information %}
 
 It's certainly powerful to be able to set a breakpoint in a server endpoint handler and the client view model and step through the request and response cycle from both sides.
 
@@ -326,7 +349,7 @@ I have a db migration that sets up a very minimal set of test users with hard co
 
 In the early stages of the project, I maintained a Paw file (now [RapidAPI](https://paw.cloud/)) to facilitate manual testing of server endpoints.
 
-In this latest sprint, I've developed a full Swift Testing test suite. with a ~150 tests. Especially when endpoints only depend on the local database, the request/response cycle is a lot more straightforward to write automated tests for than what I'm used to on the iOS side.
+In this latest sprint, I've developed a full Swift Testing test suite with a ~150 tests. Especially when endpoints only depend on the local database, the request/response cycle is a lot more straightforward to write automated tests for than what I'm used to on the iOS side.
 
 The addition of the external TMDB client and caching has made some endpoints a little tricker to test, but overall I feel confident that my test suite is providing value.
 
@@ -380,7 +403,7 @@ I wrote a [detailed post](https://twocentstudios.com/2025/07/02/swift-vapor-fly-
 
 Although a default Dockerfile is included in the Vapor new project generation, it can be inscrutable to devops novices like myself. I had particular trouble with ensuring the `tv-vapor` shared models source directory was available as a _sibling_ directory in the development repo, but as a _subfolder_ in the Docker image. It was a lot of slow trial and error.
 
-As great as the Dockerfile is as a generic recipe for deployment, there are always going to be specifics you need to learn about your actual deployment destination. For me, I've kept using Fly.io for whatever reason, but I think any PaaS or VPS is going to have the same learning curve. Fly.io had the same kind of configuration churn I experienced with Swift and Vapor for a side project I'd take years-long breaks.
+As great as the Dockerfile is as a generic recipe for deployment, there are always going to be specifics you need to learn about your actual deployment destination. For me, I've kept using Fly.io for whatever reason, but I think any PaaS or VPS is going to have the same learning curve. Fly.io had the same kind of configuration churn I experienced with Swift and Vapor for a side project with years-long breaks in the development cycle.
 
 One particular gotcha I ran into a few times is accidentally using Swift APIs that are unavailable on Linux. The open source [Foundation](https://github.com/swiftlang/swift-foundation) has mostly hit feature parity, but there are some sibling frameworks like [CryptoKit](https://developer.apple.com/documentation/cryptokit) that require using an [open source variant](https://github.com/apple/swift-crypto). These were cases that I would unfortunately discover when deploying a new build to Fly.io and it failing with some cryptic error message.
 
@@ -390,9 +413,9 @@ At the moment I'm YOLO-deploying to the production server after developing on lo
 
 ### Supported platforms
 
-When I first started working on the client side apps a few years ago, the promise of SwiftUI's initial pitch of *learn-once, apply anywhere* was still optimistic. I built out the initial structure of the apps under the presumption of high SwiftUI compatibility across iPhone, iPad, and macOS.
+When I first started working on the client side apps several ago, the promise of SwiftUI's initial pitch of *learn-once, apply anywhere* was still optimistic. I built out the initial structure of the apps under the presumption of high SwiftUI compatibility across iPhone, iPad, and macOS. There were lots of SwiftUI modifier shims, and I made sure to aggressively modularize Views so they could be composed uniquely between platforms.
 
-Unfortunately, after the first couple sprints, I found myself bogged down in a lot of missing and broken APIs, especially on the macOS side. I eventually gave up on native macOS support and switched over to Mac Catalyst. In my most recent sprints, I realized that Designed for iPad actually looks and functions better than Mac Catalyst, while also requiring nearly zero API conditionals between the two platforms. One of my friends is running Technicolor on a macOS virtual machine without ARM64 support, so I can't drop Mac Catalyst support yet.
+Unfortunately, after the first couple sprints I found myself bogged down in a lot of missing and broken APIs, especially on the macOS side. I eventually gave up on native macOS support and switched over to Mac Catalyst. In my most recent sprints, I realized that Designed for iPad actually looks and functions better than Mac Catalyst, while also requiring nearly zero API conditionals between the two platforms. One of my friends is running Technicolor on a macOS virtual machine without ARM64 support, so I can't drop Mac Catalyst support yet.
 
 Writing a truly native Mac app and a web client are both on my roadmap, but since this is a side project I'll probably continue polishing the rough edges of the iOS app during the beta period.
 
@@ -718,9 +741,6 @@ struct State: Equatable {
     var updateWatchedState: FallibleMutationState
     var leaveRoomState: FallibleMutationState
     var deleteRoomState: FallibleMutationState
-
-    var editingCommentID: UUID?
-
     var isShowingLeaveRoomConfirmation: Bool
     var isShowingDeleteRoomConfirmation: Bool
     
@@ -728,7 +748,7 @@ struct State: Equatable {
 }
 ```
 
-The available mutations and confirmations start to add up quickly.
+The available mutations and confirmations start to add up quickly. For this particular View, it might actually be worth it to abstract the current mutation state into its own `Enum` so that I can more simply enforce only one mutation is happening at a time.
 
 ### Dashboard
 
@@ -747,7 +767,7 @@ By default, Rooms that are unwatched by at least one member will be included on 
 
 Each scenario has its own archive screen so you can always access past Rooms. There's also a comprehensive archive screen that ensures you can even find groups that have been archived.
 
-![TODO screenshot that includes the All TV Shows, All Movies, links]()
+{% caption_img /images/technicolor-dashboard-archive-navigation.png w600 h800 Dashboard bottom section showing Archive navigation options for All TV Shows, All Movies, and All Custom content categories %}
 
 ### Timestamp control
 
@@ -765,7 +785,7 @@ One of the reasons I was excited to make native clients for Technicolor was push
 
 Once a Room member finishes watching an episode, they tap "Mark as Watched". This not only updates the Room status for the Dashboard, but it also sends a push notification to the other Room members. If the other members have already watched, this push will be a trigger for the user to check out the new comments. If the other members haven't watched yet, this push is a good reminder they should watch the episode soon.
 
-![TODO screenshot of push notifications]()
+{% caption_img /images/technicolor-push-notifications.jpg w600 h400 iOS push notifications showing friend request acceptance, episode watch completion alerts, and social interaction updates %}
 
 There are also quality-of-life pushes for when a user accepts your invite and joins Technicolor, when you receive a new friend request, and when a user accepts your friend request.
 
@@ -789,13 +809,23 @@ It took a very long day of debugging certificate and provisioning profile issues
 
 ## Lessons learned
 
+#### Complexity of social networks
+
 There's a lot of essential complexity in social networks and chat apps. As a mobile dev that usually works on the client side, it was great experience learning how to manage things like authentication, schema design for social network relationships, and server deployment.
+
+#### Standardized architecture
 
 Especially for CRUD apps, it's incredibly important to find an architecture that makes each feature as templated and boring as possible. Predictable and well-documented features enable coding agents to accelerate development of the features that are necessary but forgettable by users and allow you to focus on the features that make your app unique.
 
+#### Choice of web framework
+
 It's hard for me to recommend Swift on the server as a pragmatic choice for a production web service. All of its strengths don't really make up for how far behind it is in the broader web framework ecosystem. Maybe in another several years if the Swift language has stabilized and the Swift community outside app development grows.
 
+#### Long-running side projects using volatile technology stacks
+
 I'm glad I finally found 3-4 interrupted weeks that I could use to get this project modernized and in a shippable state. As a side project, having a weekend available here and there usually meant that I could only tackle one small feature at a time. Too much effort was burned rewriting due to language and framework churn. However, having this project did serve as a useful test bed for experimenting with and immersing myself in new ideas before introducing them into production projects at my day job.
+
+#### QA as the development bottleneck
 
 In this recent sprint, I found QA to be the bottleneck for feature development. Coding agents have significantly compressed the overall time and effort required for the system design and code writing parts, but to _actually verify your feature does what it's supposed to_ still means setting up an environment to experience the feature exactly as the user will experience it. That means a feature that only requires booting up the simulator and tapping a button to verify correctness will take 10 or 50 or 100 times less time to validate than installing a build on multiple devices, logging in with different test users, tapping through several screens in a specific order, and verifying the delivery and contents of a push notification. When estimating scope for a feature I want, I now consider the QA burden much more seriously than the one-shot implementation time.
 
