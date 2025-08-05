@@ -8,11 +8,13 @@ tags: technicolor app
 
 Although it's still in beta, I think it's a good time to reintroduce my web app side project called Technicolor.
 
+{% caption_img /images/technicolor-beta-icon.png h400 Technicolor beta app icon %}
+
 Technicolor is a chat app tailored for watching TV shows with friends asynchronously. I've found it to be a great way to stay in touch with friends in other cities/states/countries.
 
 The current version of Technicolor is a native SwiftUI app available on iOS 17.4+ devices and macOS.
 
-{% caption_img /images/technicolor-beta-overview.png w800 h600 Technicolor app overview showing Dashboard, Room interface, and episode detail screens %}
+{% caption_img /images/technicolor-beta-overview.png w800 h600 Technicolor app overview showing dashboard, room interface (redacted), and media inspector screens %}
 
 ## How it works
 
