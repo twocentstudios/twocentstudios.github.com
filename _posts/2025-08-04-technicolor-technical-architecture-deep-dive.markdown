@@ -12,7 +12,7 @@ Technicolor is a side-project I've been iterating on for over a decade (I've onl
 
 This post explores the front-end and back-end architectures of Technicolor. The project is not yet open source, but I will share code snippets throughout to illustrate parts of the architecture in context.
 
-![TODO add same image from last post showing the 3 main screens]()
+{% caption_img /images/technicolor-beta-overview.png w800 h600 Technicolor architecture showing the three main components: dashboard for navigation, room interface for timestamped chat, and media inspector for episode details %}
 
 ## Table of contents
 
@@ -648,7 +648,7 @@ The authenticated vs. unauthenticated domains of the app are fully isolated.
 
 ### Room View
 
-![TODO screenshot of the room view]()
+{% caption_img /images/technicolor-beta-room-interface.png w600 h800 Room interface showing timestamped comments grouped by video timeline position %}
 
 The `RoomView` – the async chat room for a TV show episode or movie – is the most complex screen in the app.
 
@@ -736,7 +736,7 @@ In my initial designs of Technicolor, the dashboard was a simple list of all Roo
 
 In this latest iteration of Technicolor, I used some additional state like "Mark as Watched" and some complex SQL queries to make watchlists easier to manage, especially for power users (like me) who are watching several shows with several groups of friends over potentially multiple weeks.
 
-![TODO screenshot of dashboard]()
+{% caption_img /images/technicolor-beta-dashboard.png w600 h800 Dashboard screen organizing active rooms by TV show and member groups %}
 
 The dashboard now groups sections with the following rules:
 
@@ -757,7 +757,7 @@ The goal of the control is to make it easier to adjust the timestamp (e.g. `15:3
 
 The custom timestamp control works by tapping and dragging up and down. During a drag, moving your touch to the right adjusts the fine-tune to get better accuracy.
 
-![TODO demo screencast of using the timestamp control]()
+<video src="/images/technicolor-beta-timestamp-control.mov" controls preload="none" poster="/images/technicolor-beta-timestamp-control-poster.png" height="600"></video>
 
 ### Push notification support
 
