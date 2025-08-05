@@ -10,17 +10,18 @@ In my [previous post about Technicolor](/2025/07/25/reintroducing-technicolor-bi
 
 Technicolor is a side-project I've been iterating on for over a decade (I've only used it with small groups of friends). It started its life as a Ruby on Rails app with browser-only support and has now been reborn as a full stack Swift-on-server web service and native Apple platforms client app.
 
-This post explores the front-end and back-end architectures of Technicolor. The project is not yet open source, but I will share code snippets throughout illustrate parts of the architecture in context.
+This post explores the front-end and back-end architectures of Technicolor. The project is not yet open source, but I will share code snippets throughout to illustrate parts of the architecture in context.
 
 ![TODO add same image from last post showing the 3 main screens]()
 
 ## Table of contents
 
-- [Architecture overview](TODO # fragment internal link)
-- [Development experience](TODO internal link)
-- [Shared API layer](TODO internal link)
-- [Client-side](TODO internal link)
-- [Lessons learned](TODO internal link)
+- [Architecture overview](#architecture-overview)
+- [Development experience](#development-experience)
+- [Shared API layer](#shared-api-layer)
+- [Server-side](#server-side)
+- [Client-side](#client-side)
+- [Lessons learned](#lessons-learned)
 
 ## Architecture overview
 
@@ -28,7 +29,7 @@ This post explores the front-end and back-end architectures of Technicolor. The 
 
 Technicolor has a client-server architecture. The server vends `json` data via HTTP requests to clients authenticated with a bearer token.
 
-The server is written in Swift using the [Vapor](TODO) web framework. The primary database is SQLite via the [Fluent](TODO) sub-framework. It fetches metadata about TV shows and movies from the [TMDB](TODO) API and caches the data in SQLite. It's deployed to a single Machine on PaaS [Fly.io](TODO).
+The server is written in Swift using the [Vapor](https://vapor.codes) web framework. The primary database is SQLite via the [Fluent](https://docs.vapor.codes/fluent/overview/) sub-framework. It fetches metadata about TV shows and movies from the [TMDB](https://www.themoviedb.org) API and caches the data in SQLite. It's deployed to a single Machine on PaaS [Fly.io](https://fly.io).
 
 The client is written in Swift and SwiftUI and supports iOS and macOS (via Mac Catalyst) with one codebase and two targets. 
 
@@ -46,7 +47,7 @@ The blessing and curse of using Swift everywhere is that I can use Xcode for eve
 
 The specific setup within Xcode is a single `xcworkspace` file that contains:
 
-- An [xcodegen](TODO) generated `xcodeproj` file for the iOS/macOS project and targets.
+- An [xcodegen](https://github.com/yonaskolb/XcodeGen) generated `xcodeproj` file for the iOS/macOS project and targets.
 - A Swift package for the tv-models shared DTO models.
 - A Swift package for the server-side Vapor project.
 
@@ -62,7 +63,7 @@ Xcode only pre-builds the active target. For example, if I make a change to the 
 
 It's still possible to build and run and test the server from outside Xcode, and I did often during this most recent development cycle with Claude Code. Adding coding agents made the all-in-one Xcode integration experience less impactful than it was a couple years ago.
 
-I use a [SwiftFormat](TODO) and a `.swiftformat` rules file in the project directory to maintain formatting across all Swift source files.
+I use [SwiftFormat](https://github.com/nicklockwood/SwiftFormat) and a `.swiftformat` rules file in the project directory to maintain formatting across all Swift source files.
 
 My overall takeaway is that the many of the benefits of server-client development inside Xcode don't outweigh the demerits of the server-side Swift ecosystem's relative immaturity. It's a lonely experience using Xcode as the IDE of choice for server-side development, even if the backend is Swift.
 
@@ -164,7 +165,7 @@ extension TV.Comment.Full {
 
 Although the model definitions are shared and type-safe, the endpoint URLs themselves are duplicated across client and server. There is probably a way I could share these as well, but at the moment I haven't found this to be enough of a maintenance burden or source of bugs that I need to spend time trying to harmonize it.
 
-My takeaway is that this setup is definitely convenient, but the more popular web frameworks have solved this problem in other ways like using [OpenAPI](TODO) and its code generators. Technicolor has some complexity (~100 DTO definitions), but nowhere near that of a large scale SaaS or social network.
+My takeaway is that this setup is definitely convenient, but the more popular web frameworks have solved this problem in other ways like using [OpenAPI](https://www.openapis.org) and its code generators. Technicolor has some complexity (164 model structures), but nowhere near that of a large scale SaaS or social network.
 
 ## Server-side
 
@@ -403,9 +404,9 @@ I use xcodegen and a `project.yml` file for maintaining the `xcodeproj` file ref
 
 I use the `tv-models` Swift package mentioned earlier.
 
-I use the [KeychainAccess](TODO) package for storing the bearer token securely.
+I use the [KeychainAccess](https://github.com/kishikawakatsumi/KeychainAccess) package for storing the bearer token securely.
 
-I use several Point-Free libraries: [swift-dependencies](TODO) and [swift-navigation](TODO). More on these later.
+I use several Point-Free libraries: [swift-dependencies](https://github.com/pointfreeco/swift-dependencies) and [swift-navigation](https://github.com/pointfreeco/swift-navigation). More on these later.
 
 ### Architecture rules
 
@@ -493,7 +494,7 @@ Parent-child relationships follow these rules:
 
 The API Client is not quite as streamlined as I'd like, but it's simple to add new endpoints as needed.
 
-I use the [swift-dependencies](TODO) format for the definition.
+I use the [swift-dependencies](https://github.com/pointfreeco/swift-dependencies) format for the definition.
 
 ```swift
 @DependencyClient
@@ -780,9 +781,9 @@ This would ensure User B sees the replies from User A, but doesn't need to get a
 
 Working on indie projects by myself, I've generally found it fast enough to do all my deployment to App Store Connect manually (but using a checklist).
 
-However, for Technicolor I need to build and upload both an iOS and macOS version. This was just enough tedium that I decided to vibe code a deployment bash script that handles the minutia of deployment.
+However, for Technicolor I need to build and upload both an iOS and macOS version. This was just enough tedium that I decided to vibe code a deployment bash script that handles the minutiae of deployment.
 
-It took a very long day of debugging certificate and provisioning profile issues, but eventually I got the script working. This has made it marginally easier to ship new builds to my Test Flight beta testers. The 24-48 hour turnaround of App Review is still a bottleneck though.
+It took a very long day of debugging certificate and provisioning profile issues, but eventually I got the script working. This has made it marginally easier to ship new builds to my TestFlight beta testers. The 24-48 hour turnaround of App Review is still a bottleneck though.
 
 ![TODO CLI output of the full deployment script]()
 
@@ -790,7 +791,7 @@ It took a very long day of debugging certificate and provisioning profile issues
 
 There's a lot of essential complexity in social networks and chat apps. As a mobile dev that usually works on the client side, it was great experience learning how to manage things like authentication, schema design for social network relationships, and server deployment.
 
-Especially for CRUD apps, it's incredibly important to find an architecture that makes each feature as templated and boring as possible. Predictable and well documented features enable coding agents to accelerate development of the  features that are necessary but forgettable by users and allow you to focus on the features that make your app unique.
+Especially for CRUD apps, it's incredibly important to find an architecture that makes each feature as templated and boring as possible. Predictable and well-documented features enable coding agents to accelerate development of the features that are necessary but forgettable by users and allow you to focus on the features that make your app unique.
 
 It's hard for me to recommend Swift on the server as a pragmatic choice for a production web service. All of its strengths don't really make up for how far behind it is in the broader web framework ecosystem. Maybe in another several years if the Swift language has stabilized and the Swift community outside app development grows.
 
@@ -802,7 +803,7 @@ In this recent sprint, I found QA to be the bottleneck for feature development. 
 
 Even after over a decade of (very stop and start) development, Technicolor is still in its early stages. I hope this post gave you some insight into what its been like as a solo dev working on a full stack Swift project.
 
-If you're considering or working on something similar, or you want more detail on anything I've written about in this post, feel free to reach out on [Mastodon](TODO) or [Twitter](TODO) or [email](TODO). As of this posting I'm also available for consulting work.
+If you're considering or working on something similar, or you want more detail on anything I've written about in this post, feel free to reach out on [Mastodon](https://hachyderm.io/@twocentstudios) or [Twitter](https://twitter.com/twocentstudios) or [email](mailto:chris@twocentstudios.com). As of this posting I'm also available for consulting work.
 
 
 
