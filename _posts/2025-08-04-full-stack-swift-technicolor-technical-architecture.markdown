@@ -1,18 +1,20 @@
 ---
 layout: post
-title: "Technicolor Technical Architecture: Full Stack Swift"
+title: "Full-Stack Swift: The Technical Architecture of Technicolor"
 date: 2025-08-04 12:04:00
 image: /images/technicolor-xcode-full-stack-development.png
 tags: apple ios swiftui vapor technicolor
 ---
 
-In my [previous post about Technicolor](/2025/07/25/reintroducing-technicolor-binge-watch-with-friends-over-space-and-time/) I gave an overview of Technicolor, a chat-app/social network for watching TV shows with friends asynchronously. 
+In my [previous post about Technicolor](/2025/07/25/reintroducing-technicolor-binge-watch-with-friends-over-space-and-time/) I gave an overview of my hybrid chat app & social network for watching TV shows with friends asynchronously. 
 
-Technicolor is a side-project I've been iterating on for over a decade (I've only used it with small groups of friends). It started its life as a Ruby on Rails app with browser-only support and has now been reborn as a full stack Swift-on-server web service and native Apple platforms client app.
+Technicolor is a side-project I've been iterating on for over a decade (I've only used it with small groups of friends). It started its life as a Ruby on Rails app with browser-only support and has now been reborn as a full-stack Swift-on-server web service and native Apple platforms client app.
 
-This post explores the front-end and back-end architectures of Technicolor. The project is not yet open source, but I will share code snippets throughout to illustrate parts of the architecture in context.
+This post explores the front-end and back-end architectures of Technicolor and some observations about developing its full-stack Swift server and client apps intermittently over several years. The project is not yet open source, but I will share code snippets throughout to illustrate parts of the architecture in context.
 
-{% caption_img /images/technicolor-beta-overview.png w800 h600 Technicolor architecture showing the three main components: dashboard for navigation, room interface for timestamped chat, and media inspector for episode details %}
+**TL;DR**: Any benefits of full-stack Swift do not meaningfully outweigh its demerits or opportunity costs for any use case I can imagine (happy to change my mind though). But existing Apple platforms developers may enjoy the familiarity of Swift in a new setting and the technical challenge of server-side development in an academic sense.
+
+{% caption_img /images/technicolor-architecture-overview.png w1200 h400 Technicolor app showing the three main user-facing screens: dashboard for managing active rooms, room interface for timestamped chat during episodes, and profile management screen %}
 
 ## Table of contents
 
@@ -54,35 +56,37 @@ Technicolor has a client-server architecture. The server vends `json` data via H
 
 The server is written in Swift using the [Vapor](https://vapor.codes) web framework. The primary database is SQLite via the [Fluent](https://docs.vapor.codes/fluent/overview/) sub-framework. It fetches metadata about TV shows and movies from the [TMDB](https://www.themoviedb.org) API and caches the data in SQLite. It's deployed to a single Machine on PaaS [Fly.io](https://fly.io).
 
-The client is written in Swift and SwiftUI and supports iOS and macOS (via Mac Catalyst) with one codebase and two targets. 
+The client is written in Swift and SwiftUI and supports iOS and macOS (via Mac Catalyst or Designed for iPad) with one codebase and two targets. 
 
 There is a Swift package called `tv-models`, imported by both the client and server, that contains the `Codable` models that form the shared API layer. This shared API layer was the primary motivator for using Swift everywhere.
 
-The entire project is contained in a Git mono-repo. The sources for the server side, client side, and shared models live in their own directory within the project directory. Most configuration files like the `Dockerfile` live in the project directory.
+The entire project is contained in a Git mono-repo. The sources for the server side, client side, and shared models live in their own individual directories within the project directory. Most configuration files like the `Dockerfile` live in the project directory.
 
 I'll explore the development experience, shared API layer, server-side, and client-side aspects in more detail.
 
 ## Development experience
 
-The blessing and curse of using full stack Swift is that I can use Xcode for everything. The cons of course are that Xcode can be bloated and buggy. But the pros are that I can explore the entire codebase in one IDE.
+The blessing and curse of using full stack Swift is that I can use Xcode for everything. The cons of course are that Xcode can be bloated and buggy. But the pros are that I can explore, develop, and debug the entire codebase in one IDE that's fine-tuned for Swift.
 
-{% caption_img /images/technicolor-xcode-full-stack-development.png w1000 h600 Xcode workspace showing server-side Swift code alongside iOS client with live console output from both server and client debugging %}
+{% caption_img /images/technicolor-xcode-full-stack-development.png w1000 h600 Xcode workspace and iOS simulator simultaneously running both client and server with live console output from the server %}
 
 The specific setup within Xcode is a single `xcworkspace` file that contains:
 
-- An [xcodegen](https://github.com/yonaskolb/XcodeGen) generated `xcodeproj` file for the iOS/macOS project and targets.
-- A Swift package for the tv-models shared DTO models.
+- An [XcodeGen](https://github.com/yonaskolb/XcodeGen) generated `xcodeproj` file for the iOS/macOS clients.
+- A Swift package for the `tv-models` shared DTO models.
 - A Swift package for the server-side Vapor project.
 
 Overall, the `xcworkspace`-based setup worked okay. There were a few times where Swift Package caching needed manual fixing (several wasted hours I won't be getting back). I've also wrestled with an issue where Swift Packages can force-create schemes in the workspace that [cannot be ignored](https://www.jessesquires.com/blog/2025/03/10/swiftpm-schemes-in-xcode/).
 
 I have separate schemes for running the server and client, using separate destinations for running the iOS and macOS clients. Both the server and client are debuggable with all of Xcode's integrated LLDB support including breakpoints. The console shows logs from server and client.
 
-{% caption_img /images/technicolor-server-console-output.png w1000 h300 Server console output showing Vapor web server startup logs and HTTP request handling with live debugging information %}
+{% caption_img /images/technicolor-server-console-output.png w1000 h300 Server console output showing Vapor web server startup logs and selector to view logs for the client scheme %}
 
 It's certainly powerful to be able to set a breakpoint in a server endpoint handler and the client view model and step through the request and response cycle from both sides.
 
-Xcode only pre-builds the active target. For example, if I make a change to the shared tv-models layer while the client target is active, Xcode won't show me I've introduced a compiler error on the server until I switch to the server target and build it. Similarly, if a server source file is visible in the editor window while the client target is active, Xcode will often show a bunch of false-positive errors inline that you need to remember to ignore.
+Xcode only pre-builds the active target. For example, if I make a change to the shared `tv-models` layer while the client target is active, Xcode won't show me I've introduced a compiler error on the server until I switch to the server target and build it. Similarly, if a server source file is visible in the editor window while the client target is active, Xcode will often show a bunch of false-positive errors inline that you need to remember to ignore.
+
+{% caption_img /images/technicolor-xcode-false-positive-errors.png w800 h500 Xcode is confused when the client scheme is selected but server source is visible in the editor %}
 
 It's still possible to build and run and test the server from outside Xcode, and I did often during this most recent development cycle with Claude Code. Adding coding agents made the all-in-one Xcode integration experience less impactful than it was a couple years ago.
 
@@ -196,7 +200,44 @@ Technicolor began its life back in 2013 as a Ruby on Rails app with a web client
 
 ### Thoughts on the Swift Vapor framework
 
-At first Vapor was still using the `EventLoopFuture` concurrency primitives from [SwiftNIO](https://github.com/apple/swift-nio). `EventLoopFuture` felt similar to a Reactive framework like `Combine` or `RxSwift`. But in comparison to async await, it was really painful. Swift's type inference is awful with the amount of mapping closures required for `EventLoopFuture`. In these early stages, even simple endpoints took hours to write and test.
+When I first began development on the Technicolor rewrite, Vapor was still using the `EventLoopFuture` concurrency primitives from [SwiftNIO](https://github.com/apple/swift-nio). `EventLoopFuture` felt similar to a FRP framework like `Combine` or `RxSwift`. But in comparison to async await, it was really painful. Swift's type inference is awful with the amount of mapping closures required for `EventLoopFuture`. In these early stages, even simple endpoints took hours to write and test. Compare the `EventLoopFuture` version of the `Comment` `create` func here to the async version in the next section:
+
+```swift
+func create(req: Request) throws -> EventLoopFuture<TV.EmptyOutput> {
+    let userID = try req.auth.require(UserToken.self).user.requireID()
+    let input = try req.content.decode(TV.Comment.CreateInput.self)
+    let comment = Comment(content: input.content, seconds: input.seconds, userID: userID, roomID: input.roomID)
+    return RoomUser.query(on: req.db)
+        .filter(\.$room.$id == input.roomID)
+        .filter(\.$user.$id == userID)
+        .first()
+        .unwrap(or: Abort(.unauthorized))
+        .flatMap { _ in comment.create(on: req.db) }
+        .flatMapThrowing { try comment.requireID() }
+        .flatMap { newCommentID in
+            Comment.query(on: req.db)
+                .with(\.$user)
+                .filter(\.$id == newCommentID)
+                .first()
+                .unwrap(or: Abort(.internalServerError))
+        }
+        .flatMapThrowing { newComment -> EventLoopFuture<TV.Comment.Room> in
+            let fullComment = try TV.Comment.Full(newComment)
+            let roomComment = TV.Comment.Room(roomID: input.roomID, comment: fullComment)
+            return RoomUser.query(on: req.db)
+                .with(\.$user)
+                .field(\.$user.$id)
+                .filter(\.$room.$id == input.roomID)
+                .all()
+                .flatMapThrowing { roomUsers -> TV.Comment.Room in
+                    let userIDs = roomUsers.compactMap(\.user.id)
+                    try req.webSocketClient.send(message: .comment(roomComment), to: userIDs)
+                    return roomComment
+                }
+        }
+        .transform(to: TV.EmptyOutput())
+}
+```
 
 As Swift Concurrency matured, the Vapor team finished their early work on supporting `async/await` alongside `EventLoopFuture`. I spent days tediously rewriting the existing `EventLoopFuture` signal chains. The `async` versions looked a lot better, but it was hard won.
 
@@ -236,9 +277,9 @@ This generates 3 POST routes that use middleware to parse out a valid auth token
 /rooms/comments/edit
 ```
 
-My unique convention is to use `POST` for all requests, even read-only CRUD operations like `show` that would usually be GET. The reasoning behind this is that it allows me to use the same JSON-encoded HTTP body plumbing for all requests instead of having to selectively encode and decode either or both from the URL query and the HTTP body.
+My unique convention is to use `POST` for all requests, even read-only CRUD operations like `show` that would usually be `GET`. The reasoning behind this is that it allows me to use the same JSON-encoded HTTP body plumbing for all requests instead of having to selectively encode and decode either or both from the URL query and the HTTP body.
 
-The actual request/response implementation on the server side looks something like this:
+The actual request/response implementation on the server side (modern async version) looks something like this:
 
 ```swift
 // CommentController.swift
@@ -283,7 +324,7 @@ For most CRUD operations, the endpoint implementation is pretty straightforward:
 
 ### Authentication
 
-Early on in the project, I decided to roll my own email-only, bearer token authentication using the primitives provided by [Vapor](https://docs.vapor.codes/security/authentication/). The reasoning was to keep things simple and also get a better understanding as primarily a client-side developer of what goes on behind the scenes. Although I haven't touched this code in years, I still think I have a better understanding of auth frameworks than I did before giving this a go.
+Early on in the project, I decided to roll my own email-identity, bearer token authentication using the primitives provided by [Vapor](https://docs.vapor.codes/security/authentication/). The reasoning was to keep things simple while getting a better understanding of what goes on behind the scenes as (primarily) a client-side developer. Although I haven't touched this code in years, I still think I have a better understanding of auth frameworks than I did before giving it a go.
 
 As a quick summary, all requests to Technicolor use [bearer token](https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Authentication#bearer) authorization with the exception of:
 
@@ -349,11 +390,11 @@ I have a db migration that sets up a very minimal set of test users with hard co
 
 In the early stages of the project, I maintained a Paw file (now [RapidAPI](https://paw.cloud/)) to facilitate manual testing of server endpoints.
 
-In this latest sprint, I've developed a full Swift Testing test suite with a ~150 tests. Especially when endpoints only depend on the local database, the request/response cycle is a lot more straightforward to write automated tests for than what I'm used to on the iOS side.
+In this latest sprint, I've developed a full Swift Testing test suite with ~150 tests. Especially when endpoints only depend on the local database, the request/response cycle is a lot more straightforward to write automated tests for than what I'm used to on the iOS side.
 
 The addition of the external TMDB client and caching has made some endpoints a little tricker to test, but overall I feel confident that my test suite is providing value.
 
-As a quick example, all tests follow this pattern pretty closely. Over time, I've built up a lot of helpers to keep the tests focused, consistent, and easy to read and write.
+As a quick example, all tests follow the below pattern pretty closely. Over time, I've built up a lot of helpers to keep the tests focused, consistent, and easy to read and write.
 
 ```swift
 @Suite("CommentController Tests")
@@ -399,7 +440,7 @@ All 163 tests run in parallel with a separate copy of the migrated test database
 
 ### Deployment
 
-I wrote a [detailed post](https://twocentstudios.com/2025/07/02/swift-vapor-fly-io-sqlite-config/) about my exact deployment setup, but here I'll mention that overall deployment can be tricky. Deployment is something I'd consider setting up from the beginning of Vapor app development and updating periodically as your app grows in complexity.
+I wrote a [detailed post](https://twocentstudios.com/2025/07/02/swift-vapor-fly-io-sqlite-config/) about my exact deployment setup, but here I'll reiterate that I've found deployment to be difficult and often an awful time sink. I'd consider setting deployment up from the beginning of Vapor app development and updating periodically as your app grows in complexity.
 
 Although a default Dockerfile is included in the Vapor new project generation, it can be inscrutable to devops novices like myself. I had particular trouble with ensuring the `tv-vapor` shared models source directory was available as a _sibling_ directory in the development repo, but as a _subfolder_ in the Docker image. It was a lot of slow trial and error.
 
@@ -407,13 +448,13 @@ As great as the Dockerfile is as a generic recipe for deployment, there are alwa
 
 One particular gotcha I ran into a few times is accidentally using Swift APIs that are unavailable on Linux. The open source [Foundation](https://github.com/swiftlang/swift-foundation) has mostly hit feature parity, but there are some sibling frameworks like [CryptoKit](https://developer.apple.com/documentation/cryptokit) that require using an [open source variant](https://github.com/apple/swift-crypto). These were cases that I would unfortunately discover when deploying a new build to Fly.io and it failing with some cryptic error message.
 
-At the moment I'm YOLO-deploying to the production server after developing on localhost. In the future I'll also create a development server.
+At the moment I'm YOLO-deploying to the production server after developing on localhost. Before exiting beta I'll also create a development server.
 
 ## Client-side
 
 ### Supported platforms
 
-When I first started working on the client side apps several ago, the promise of SwiftUI's initial pitch of *learn-once, apply anywhere* was still optimistic. I built out the initial structure of the apps under the presumption of high SwiftUI compatibility across iPhone, iPad, and macOS. There were lots of SwiftUI modifier shims, and I made sure to aggressively modularize Views so they could be composed uniquely between platforms.
+When I first started working on the client side apps several ago, the promise of SwiftUI's initial pitch of *learn-once, apply anywhere* was still optimistic for many of us. I built out the initial structure of the apps under the presumption of high SwiftUI compatibility across iPhone, iPad, and macOS. There were lots of SwiftUI modifier shims, and I made sure to aggressively modularize Views so they could be composed uniquely between platforms.
 
 Unfortunately, after the first couple sprints I found myself bogged down in a lot of missing and broken APIs, especially on the macOS side. I eventually gave up on native macOS support and switched over to Mac Catalyst. In my most recent sprints, I realized that Designed for iPad actually looks and functions better than Mac Catalyst, while also requiring nearly zero API conditionals between the two platforms. One of my friends is running Technicolor on a macOS virtual machine without ARM64 support, so I can't drop Mac Catalyst support yet.
 
@@ -423,7 +464,7 @@ At the moment Technicolor supports iOS 17+ and macOS 14+.
 
 ### Project setup
 
-I use xcodegen and a `project.yml` file for maintaining the `xcodeproj` file referenced by the `xcworkspace` file. When using coding agents xcodegen or similar is essentially mandatory.
+I use XcodeGen and a `project.yml` file for maintaining the `xcodeproj` file referenced by the `xcworkspace` file. When using coding agents XcodeGen or similar is essentially mandatory.
 
 I use the `tv-models` Swift package mentioned earlier.
 
@@ -573,7 +614,7 @@ struct CreateCommentRequest: AuthorizedInputRequest {
 }
 ```
 
-Again, there's still a lot of boiler plate, but I've made my peace with that.
+Again, there's still a lot of boilerplate, but I've made my peace with it.
 
 The specific endpoint can be used as a dependency in the `Store`:
 
@@ -677,7 +718,7 @@ The `RoomView` – the async chat room for a TV show episode or movie – is t
 
 Its usage story is not quite the same as a prototypical chat room. And through my own usage I'm still trying to optimize the micro-decisions in the UX. Should the keyboard dismiss after the user sends a message? When should the main content auto-scroll?
 
-I store the comments in a dictionary and group and sort them live on changes. This makes handling it more straightforward to handle any sort of mutation (the current user adds new comment, other user adds new comment, a comment is edited, a comment is deleted, etc.).
+I store the comments in a dictionary and group and sort them live on changes. This makes handling mutations more straightforward (the current user adds new comment, other user adds new comment, a comment is edited, a comment is deleted, etc.).
 
 ```swift
 struct State: Equatable {
@@ -767,7 +808,7 @@ By default, Rooms that are unwatched by at least one member will be included on 
 
 Each scenario has its own archive screen so you can always access past Rooms. There's also a comprehensive archive screen that ensures you can even find groups that have been archived.
 
-{% caption_img /images/technicolor-dashboard-archive-navigation.png w600 h800 Dashboard bottom section showing Archive navigation options for All TV Shows, All Movies, and All Custom content categories %}
+{% caption_img /images/technicolor-archive-screens-combined.png w1200 h800 Various archive screens so all rooms are discoverable %}
 
 ### Timestamp control
 
@@ -785,7 +826,7 @@ One of the reasons I was excited to make native clients for Technicolor was push
 
 Once a Room member finishes watching an episode, they tap "Mark as Watched". This not only updates the Room status for the Dashboard, but it also sends a push notification to the other Room members. If the other members have already watched, this push will be a trigger for the user to check out the new comments. If the other members haven't watched yet, this push is a good reminder they should watch the episode soon.
 
-{% caption_img /images/technicolor-push-notifications.jpg w600 h400 iOS push notifications showing friend request acceptance, episode watch completion alerts, and social interaction updates %}
+{% caption_img /images/technicolor-push-notifications.jpg w600 h400 Various push notifications %}
 
 There are also quality-of-life pushes for when a user accepts your invite and joins Technicolor, when you receive a new friend request, and when a user accepts your friend request.
 
@@ -803,9 +844,9 @@ Working on indie projects by myself, I've generally found it fast enough to do a
 
 However, for Technicolor I need to build and upload both an iOS and macOS version. This was just enough tedium that I decided to vibe code a deployment bash script that handles the minutiae of deployment.
 
-It took a very long day of debugging certificate and provisioning profile issues, but eventually I got the script working. This has made it marginally easier to ship new builds to my TestFlight beta testers. The 24-48 hour turnaround of App Review is still a bottleneck though.
+It took a very long day of debugging certificate and provisioning profile issues, but eventually I got the script working. This has made it marginally easier to ship new builds to my TestFlight beta testers. The 24-48 hour turnaround of TestFlight App Review is still a drag though.
 
-![TODO CLI output of the full deployment script]()
+{% caption_img /images/technicolor-deployment-script-output.png h800 Release automation script output showing the complete deployment workflow with environment validation, version management, build processes, App Store Connect uploads, and GitHub operations %}
 
 ## Lessons learned
 
@@ -823,7 +864,7 @@ It's hard for me to recommend Swift on the server as a pragmatic choice for a pr
 
 #### Long-running side projects using volatile technology stacks
 
-I'm glad I finally found 3-4 interrupted weeks that I could use to get this project modernized and in a shippable state. As a side project, having a weekend available here and there usually meant that I could only tackle one small feature at a time. Too much effort was burned rewriting due to language and framework churn. However, having this project did serve as a useful test bed for experimenting with and immersing myself in new ideas before introducing them into production projects at my day job.
+I'm glad I finally found 2-3 uninterrupted weeks that I could use to get this project modernized and in a shippable state. As a side project, having a weekend available here and there usually meant that I could only tackle one small feature at a time (I remember spending a coveted 4-day weekend chipping away at getting the first deployment set up). Too much effort was burned rewriting due to language and framework and hosting churn. However, having this project did serve as a useful test bed for experimenting with and immersing myself in new ideas before introducing them into production projects at my day job.
 
 #### QA as the development bottleneck
 
@@ -831,7 +872,7 @@ In this recent sprint, I found QA to be the bottleneck for feature development. 
 
 ## Conclusion
 
-Even after over a decade of (very stop and start) development, Technicolor is still in its early stages. I hope this post gave you some insight into what its been like as a solo dev working on a full stack Swift project.
+Even after over a decade of intermittent development, Technicolor is still in its early stages. I hope this post gave you some insight into what its been like as a solo dev working on a full-stack Swift project.
 
 If you're considering or working on something similar, or you want more detail on anything I've written about in this post, feel free to reach out on [Mastodon](https://hachyderm.io/@twocentstudios) or [Twitter](https://twitter.com/twocentstudios) or [email](mailto:chris@twocentstudios.com). As of this posting I'm also available for consulting work.
 
