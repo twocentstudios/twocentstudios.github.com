@@ -17,6 +17,18 @@ This is a Jekyll-based blog with a unique dual-branch Git setup for GitHub Pages
 ### ImageMagick Commands
 
 #### Create Horizontal Row of Images with Uniform Spacing
+
+**Method 1: Using +smush (Most Precise)**
+```bash
+# Combine images with exact spacing and outer border
+magick image1.png image2.png image3.png +smush 15 -bordercolor "gray20" -border 50 output.png
+
+# Note: +smush for horizontal, -smush for vertical
+# Number specifies exact pixels between images (no doubling)
+# Border values should be proportional to input image size (15px spacing and 50px border work well for iPhone screenshots ~1200px wide)
+```
+
+**Method 2: Using Individual Borders (Traditional)**
 ```bash
 # Add individual borders to each image first (50px horizontal for 100px total spacing)
 magick image1.png -bordercolor "gray20" -border 50x0 temp_01.png
@@ -50,8 +62,11 @@ magick input.png output.jpg
 # Create grid layout (use with caution for spacing)
 magick montage *.png -tile 3x3 -geometry +10+10 -background "gray20" output.png
 
-# Create single row layout (spacing may be uneven)
-magick montage *.png -tile 9x1 -geometry +50+0 -background "gray20" output.png
+# Create single row layout - NOTE: geometry spacing doubles in final result
+magick montage *.png -tile 9x1 -geometry +25+0 -background "gray20" output.png
+# Above creates 50px actual spacing between images (25px × 2)
+
+# For precise control, use +smush method instead of montage
 ```
 
 ### Video Operations

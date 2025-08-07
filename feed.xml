@@ -5,9 +5,911 @@
     <description>A coding blog covering iOS, Swift, and other programming topics.</description>
     <link>https://twocentstudios.com/</link>
     <atom:link href="https://twocentstudios.com/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Sun, 27 Jul 2025 20:46:11 -0500</pubDate>
-    <lastBuildDate>Sun, 27 Jul 2025 20:46:11 -0500</lastBuildDate>
+    <pubDate>Thu, 07 Aug 2025 11:15:29 -0500</pubDate>
+    <lastBuildDate>Thu, 07 Aug 2025 11:15:29 -0500</lastBuildDate>
     <generator>Jekyll v3.9.3</generator>
+    
+      <item>
+        <title>Full-Stack Swift: The Technical Architecture of Technicolor</title>
+        <description>&lt;p&gt;In my &lt;a href=&quot;/2025/07/25/reintroducing-technicolor-binge-watch-with-friends-over-space-and-time/&quot;&gt;previous post about Technicolor&lt;/a&gt; I gave an overview of my hybrid chat app &amp;amp; social network for watching TV shows with friends asynchronously.&lt;/p&gt;
+
+&lt;p&gt;Technicolor is a side-project I’ve been iterating on for over a decade (I’ve only used it with small groups of friends). It started its life as a Ruby on Rails app with browser-only support and has now been reborn as a full-stack Swift-on-server web service and native Apple platforms client app.&lt;/p&gt;
+
+&lt;p&gt;This post explores the front-end and back-end architectures of Technicolor and some observations about developing its full-stack Swift server and client apps intermittently over several years. The project is not yet open source, but I will share code snippets throughout to illustrate parts of the architecture in context.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;TL;DR&lt;/strong&gt;: Any benefits of full-stack Swift do not meaningfully outweigh its demerits or opportunity costs for any use case I can imagine (happy to change my mind though). But existing Apple platforms developers may enjoy the familiarity of Swift in a new setting and the technical challenge of server-side development in an academic sense.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/technicolor-architecture-overview.png&quot; width=&quot;1200&quot; height=&quot;&quot; alt=&quot;Technicolor app showing the three main user-facing screens: dashboard for managing active rooms, room interface for timestamped chat during episodes, and profile management screen&quot; title=&quot;Technicolor app showing the three main user-facing screens: dashboard for managing active rooms, room interface for timestamped chat during episodes, and profile management screen&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Technicolor app showing the three main user-facing screens: dashboard for managing active rooms, room interface for timestamped chat during episodes, and profile management screen&lt;/div&gt;&lt;/div&gt;
+
+&lt;h2 id=&quot;table-of-contents&quot;&gt;Table of contents&lt;/h2&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;a href=&quot;#architecture-overview&quot;&gt;Architecture overview&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;#development-experience&quot;&gt;Development experience&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;#shared-api-layer&quot;&gt;Shared API layer&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;#server-side&quot;&gt;Server-side&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;#client-side&quot;&gt;Client-side&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;#lessons-learned&quot;&gt;Lessons learned&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&quot;architecture-overview&quot;&gt;Architecture overview&lt;/h2&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;  ┌─────────────────────┐       ┌──────────────────────────┐
+  │  Server (tv-vapor)  │       │  Client (Technicolor)    │
+  │                     │       │       iOS/macOS          │
+  ├─────────────────────┤       ├──────────────────────────┤
+  │ • Swift Vapor       │       │ • SwiftUI + Observation  │
+  │ • SQLite + Fluent   │       │ • iOS 17+ / macOS 14+    │
+  │ • TMDB API Client   │       │ • Mac Catalyst Support   │
+  │ • Push Notifications│       │                          │
+  │ • Deployed on Fly.io│       │                          │
+  └─────────────────────┘       └──────────────────────────┘
+                  │                           │
+                  └─────────────┬─────────────┘
+                                │
+                                ▼
+                  ┌─────────────────────────────┐
+                  │    Shared API Layer         │
+                  │       tv-models             │
+                  ├─────────────────────────────┤
+                  │ • 164 Codable Structures    │
+                  │ • Type-Safe Client/Server   │
+                  │ • Input/Output DTOs         │
+                  └─────────────────────────────┘
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Technicolor has a client-server architecture. The server vends &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;json&lt;/code&gt; data via HTTP requests to clients authenticated with a bearer token.&lt;/p&gt;
+
+&lt;p&gt;The server is written in Swift using the &lt;a href=&quot;https://vapor.codes&quot;&gt;Vapor&lt;/a&gt; web framework. The primary database is SQLite via the &lt;a href=&quot;https://docs.vapor.codes/fluent/overview/&quot;&gt;Fluent&lt;/a&gt; sub-framework. It fetches metadata about TV shows and movies from the &lt;a href=&quot;https://www.themoviedb.org&quot;&gt;TMDB&lt;/a&gt; API and caches the data in SQLite. It’s deployed to a single Machine on PaaS &lt;a href=&quot;https://fly.io&quot;&gt;Fly.io&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;The client is written in Swift and SwiftUI and supports iOS and macOS (via Mac Catalyst or Designed for iPad) with one codebase and two targets.&lt;/p&gt;
+
+&lt;p&gt;There is a Swift package called &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;tv-models&lt;/code&gt;, imported by both the client and server, that contains the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Codable&lt;/code&gt; models that form the shared API layer. This shared API layer was the primary motivator for using Swift everywhere.&lt;/p&gt;
+
+&lt;p&gt;The entire project is contained in a Git mono-repo. The sources for the server side, client side, and shared models live in their own individual directories within the project directory. Most configuration files like the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Dockerfile&lt;/code&gt; live in the project directory.&lt;/p&gt;
+
+&lt;p&gt;I’ll explore the development experience, shared API layer, server-side, and client-side aspects in more detail.&lt;/p&gt;
+
+&lt;h2 id=&quot;development-experience&quot;&gt;Development experience&lt;/h2&gt;
+
+&lt;p&gt;The blessing and curse of using full stack Swift is that I can use Xcode for everything. The cons of course are that Xcode can be bloated and buggy. But the pros are that I can explore, develop, and debug the entire codebase in one IDE that’s fine-tuned for Swift.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/technicolor-xcode-full-stack-development.png&quot; width=&quot;1000&quot; height=&quot;&quot; alt=&quot;Xcode workspace and iOS simulator simultaneously running both client and server with live console output from the server&quot; title=&quot;Xcode workspace and iOS simulator simultaneously running both client and server with live console output from the server&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Xcode workspace and iOS simulator simultaneously running both client and server with live console output from the server&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;The specific setup within Xcode is a single &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;xcworkspace&lt;/code&gt; file that contains:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;An &lt;a href=&quot;https://github.com/yonaskolb/XcodeGen&quot;&gt;XcodeGen&lt;/a&gt; generated &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;xcodeproj&lt;/code&gt; file for the iOS/macOS clients.&lt;/li&gt;
+  &lt;li&gt;A Swift package for the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;tv-models&lt;/code&gt; shared DTO models.&lt;/li&gt;
+  &lt;li&gt;A Swift package for the server-side Vapor project.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Overall, the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;xcworkspace&lt;/code&gt;-based setup worked okay. There were a few times where Swift Package caching needed manual fixing (several wasted hours I won’t be getting back). I’ve also wrestled with an issue where Swift Packages can force-create schemes in the workspace that &lt;a href=&quot;https://www.jessesquires.com/blog/2025/03/10/swiftpm-schemes-in-xcode/&quot;&gt;cannot be ignored&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;I have separate schemes for running the server and client, using separate destinations for running the iOS and macOS clients. Both the server and client are debuggable with all of Xcode’s integrated LLDB support including breakpoints. The console shows logs from server and client.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/technicolor-server-console-output.png&quot; width=&quot;1000&quot; height=&quot;&quot; alt=&quot;Server console output showing Vapor web server startup logs and selector to view logs for the client scheme&quot; title=&quot;Server console output showing Vapor web server startup logs and selector to view logs for the client scheme&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Server console output showing Vapor web server startup logs and selector to view logs for the client scheme&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;It’s certainly powerful to be able to set a breakpoint in a server endpoint handler and the client view model and step through the request and response cycle from both sides.&lt;/p&gt;
+
+&lt;p&gt;Xcode only pre-builds the active target. For example, if I make a change to the shared &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;tv-models&lt;/code&gt; layer while the client target is active, Xcode won’t show me I’ve introduced a compiler error on the server until I switch to the server target and build it. Similarly, if a server source file is visible in the editor window while the client target is active, Xcode will often show a bunch of false-positive errors inline that you need to remember to ignore.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/technicolor-xcode-false-positive-errors.png&quot; width=&quot;800&quot; height=&quot;&quot; alt=&quot;Xcode is confused when the client scheme is selected but server source is visible in the editor&quot; title=&quot;Xcode is confused when the client scheme is selected but server source is visible in the editor&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Xcode is confused when the client scheme is selected but server source is visible in the editor&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;It’s still possible to build and run and test the server from outside Xcode, and I did often during this most recent development cycle with Claude Code. Adding coding agents made the all-in-one Xcode integration experience less impactful than it was a couple years ago.&lt;/p&gt;
+
+&lt;p&gt;I use &lt;a href=&quot;https://github.com/nicklockwood/SwiftFormat&quot;&gt;SwiftFormat&lt;/a&gt; and a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.swiftformat&lt;/code&gt; rules file in the project directory to maintain formatting across all Swift source files.&lt;/p&gt;
+
+&lt;p&gt;My overall takeaway is that the many of the benefits of server-client development inside Xcode don’t outweigh the demerits of the server-side Swift ecosystem’s relative immaturity. It’s a lonely experience using Xcode as the IDE of choice for server-side development, even if the backend is Swift.&lt;/p&gt;
+
+&lt;h2 id=&quot;shared-api-layer&quot;&gt;Shared API layer&lt;/h2&gt;
+
+&lt;p&gt;The &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;tv-model&lt;/code&gt; Swift package contains the handful of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Codable&lt;/code&gt; struct definitions used by each &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Controller&lt;/code&gt; on the server side and the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;APIClient&lt;/code&gt; on the client side. These are often referred to as data transfer objects or DTOs.&lt;/p&gt;
+
+&lt;p&gt;This essentially enforces a type-safe client-server API. The caveat of course is that model structs and fields are add-only and higher-level API versioning rules apply.&lt;/p&gt;
+
+&lt;p&gt;An example of some shared &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Comment&lt;/code&gt;-related models from &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;tv-models&lt;/code&gt;:&lt;/p&gt;
+
+&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;enum&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Comment&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;CreateInput&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Equatable&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Codable&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Sendable&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;roomID&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;UUID&lt;/span&gt;
+        &lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;content&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt;
+        &lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;seconds&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Int&lt;/span&gt;
+
+        &lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;init&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;roomID&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;UUID&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;content&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;seconds&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Int&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*/&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;...&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*/&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+    &lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;CreateOutput&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Equatable&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Codable&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Sendable&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;roomID&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;UUID&lt;/span&gt;
+        &lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;comment&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Full&lt;/span&gt;
+
+        &lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;init&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;roomID&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;UUID&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;comment&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Full&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*/&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;...&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*/&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+    &lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Full&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Equatable&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Codable&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Sendable&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;id&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;UUID&lt;/span&gt;
+        &lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;createdAt&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Date&lt;/span&gt;
+        &lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;updatedAt&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Date&lt;/span&gt;
+        &lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;content&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt;
+        &lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;seconds&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Int&lt;/span&gt;
+        &lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;user&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;User&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Stub&lt;/span&gt;
+
+        &lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;init&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;id&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;UUID&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;createdAt&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Date&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;updatedAt&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Date&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;content&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;seconds&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Int&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;user&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;User&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Stub&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*/&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;...&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*/&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;For the API endpoint envelope models, my convention is using &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Create&lt;/code&gt;, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Edit&lt;/code&gt;, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Delete&lt;/code&gt;, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Show&lt;/code&gt;, etc. prefixes and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Input&lt;/code&gt; or &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Output&lt;/code&gt; with respect to the server. In other words, the client creates &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Input&lt;/code&gt; models and receives &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Output&lt;/code&gt; models.&lt;/p&gt;
+
+&lt;p&gt;I use &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Full&lt;/code&gt; for models that contain the majority of the database model’s data. I use &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Stub&lt;/code&gt; for smaller subsets. It’s generally worked out well to keep the amount of model sub-types low while having the flexibility to create new ones when it makes sense. It simplifies the client side, allowing model types to be passed between sub-systems (unlike GraphQL which has unique model-types per request).&lt;/p&gt;
+
+&lt;p&gt;On the client-side, these models are mostly used as-is throughout the codebase, even in the View layer.&lt;/p&gt;
+
+&lt;p&gt;On the server-side, Fluent ORM has its own class-based model definitions that are used to interact with the source-of-truth database data. There is a custom encoding/decoding layer for each DTO.&lt;/p&gt;
+
+&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;/// Fluent ORM model&lt;/span&gt;
+&lt;span class=&quot;kd&quot;&gt;final&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Comment&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Model&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;@unchecked&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Sendable&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;static&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;schema&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;comments&quot;&lt;/span&gt;
+
+    &lt;span class=&quot;kd&quot;&gt;@ID(key: .id)&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;id&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;UUID&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;
+
+    &lt;span class=&quot;kd&quot;&gt;@Timestamp(key: &quot;created_at&quot;, on: .create)&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;createdAt&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Date&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;
+
+    &lt;span class=&quot;kd&quot;&gt;@Timestamp(key: &quot;updated_at&quot;, on: .update)&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;updatedAt&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Date&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;
+
+    &lt;span class=&quot;kd&quot;&gt;@Field(key: &quot;content&quot;)&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;content&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt;
+
+    &lt;span class=&quot;kd&quot;&gt;@Field(key: &quot;seconds&quot;)&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;seconds&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Int&lt;/span&gt;
+
+    &lt;span class=&quot;kd&quot;&gt;@Parent(key: &quot;user_id&quot;)&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;user&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;User&lt;/span&gt;
+
+    &lt;span class=&quot;kd&quot;&gt;@Parent(key: &quot;room_id&quot;)&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;room&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Room&lt;/span&gt;
+
+    &lt;span class=&quot;nf&quot;&gt;init&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;c1&quot;&gt;/// Converting a Fluent model to a DTO&lt;/span&gt;
+&lt;span class=&quot;kd&quot;&gt;extension&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;TV&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Comment&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Full&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;nf&quot;&gt;init&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;_&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;comment&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Comment&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;throws&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;guard&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;createdAt&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;comment&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;createdAt&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+              &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;updatedAt&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;comment&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;updatedAt&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;else&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;throw&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Abort&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;internalServerError&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+        &lt;span class=&quot;k&quot;&gt;try&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;init&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
+            &lt;span class=&quot;nv&quot;&gt;id&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;comment&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;requireID&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(),&lt;/span&gt;
+            &lt;span class=&quot;nv&quot;&gt;createdAt&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;createdAt&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+            &lt;span class=&quot;nv&quot;&gt;updatedAt&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;updatedAt&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+            &lt;span class=&quot;nv&quot;&gt;content&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;comment&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;content&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+            &lt;span class=&quot;nv&quot;&gt;seconds&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;comment&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;seconds&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+            &lt;span class=&quot;nv&quot;&gt;user&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;TV&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;User&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Stub&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;comment&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;user&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Although the model definitions are shared and type-safe, the endpoint URLs themselves are duplicated across client and server. There is probably a way I could share these as well, but at the moment I haven’t found this to be enough of a maintenance burden or source of bugs that I need to spend time trying to harmonize it.&lt;/p&gt;
+
+&lt;p&gt;My takeaway is that this setup is definitely convenient, but the more popular web frameworks have solved this problem in other ways like using &lt;a href=&quot;https://www.openapis.org&quot;&gt;OpenAPI&lt;/a&gt; and its code generators. Technicolor has some complexity (164 model structures), but nowhere near that of a large scale SaaS or social network.&lt;/p&gt;
+
+&lt;h2 id=&quot;server-side&quot;&gt;Server-side&lt;/h2&gt;
+
+&lt;p&gt;Technicolor began its life back in 2013 as a Ruby on Rails app with a web client. In 2017 I made a brief foray into rewriting the backend in the Elixir language with the Phoenix web framework, but quickly abandoned that effort when Swift Vapor began gaining some popularity.&lt;/p&gt;
+
+&lt;h3 id=&quot;thoughts-on-the-swift-vapor-framework&quot;&gt;Thoughts on the Swift Vapor framework&lt;/h3&gt;
+
+&lt;p&gt;When I first began development on the Technicolor rewrite, Vapor was still using the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;EventLoopFuture&lt;/code&gt; concurrency primitives from &lt;a href=&quot;https://github.com/apple/swift-nio&quot;&gt;SwiftNIO&lt;/a&gt;. &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;EventLoopFuture&lt;/code&gt; felt similar to a FRP framework like &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Combine&lt;/code&gt; or &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;RxSwift&lt;/code&gt;. But in comparison to async await, it was really painful. Swift’s type inference is awful with the amount of mapping closures required for &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;EventLoopFuture&lt;/code&gt;. In these early stages, even simple endpoints took hours to write and test. Compare the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;EventLoopFuture&lt;/code&gt; version of the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Comment&lt;/code&gt; &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;create&lt;/code&gt; func here to the async version in the next section:&lt;/p&gt;
+
+&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;create&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;req&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Request&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;throws&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;EventLoopFuture&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;TV&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;EmptyOutput&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;userID&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;try&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;req&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;auth&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;require&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;UserToken&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;user&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;requireID&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;input&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;try&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;req&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;content&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;decode&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;TV&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Comment&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;CreateInput&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;comment&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Comment&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;content&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;input&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;content&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;seconds&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;input&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;seconds&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;userID&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;userID&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;roomID&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;input&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;roomID&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;RoomUser&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;query&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;on&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;req&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;db&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;filter&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;\&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;$&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;room&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;$&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;id&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;input&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;roomID&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;filter&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;\&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;$&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;user&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;$&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;id&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;userID&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;first&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+        &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;unwrap&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;or&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Abort&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;unauthorized&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;
+        &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;flatMap&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;_&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;comment&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;create&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;on&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;req&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;db&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+        &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;flatMapThrowing&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;try&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;comment&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;requireID&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+        &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;flatMap&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;newCommentID&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt;
+            &lt;span class=&quot;kt&quot;&gt;Comment&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;query&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;on&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;req&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;db&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+                &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;with&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;\&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;$&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;user&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+                &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;filter&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;\&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;$&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;id&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;newCommentID&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+                &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;first&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+                &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;unwrap&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;or&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Abort&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;internalServerError&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+        &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;flatMapThrowing&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;newComment&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;EventLoopFuture&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;TV&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Comment&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Room&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;fullComment&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;try&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;TV&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Comment&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Full&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;newComment&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;roomComment&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;TV&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Comment&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Room&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;roomID&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;input&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;roomID&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;comment&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;fullComment&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;RoomUser&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;query&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;on&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;req&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;db&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+                &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;with&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;\&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;$&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;user&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+                &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;field&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;\&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;$&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;user&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;$&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;id&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+                &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;filter&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;\&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;$&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;room&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;$&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;id&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;input&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;roomID&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+                &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;all&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+                &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;flatMapThrowing&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;roomUsers&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;TV&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Comment&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Room&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt;
+                    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;userIDs&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;roomUsers&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;compactMap&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;\&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;user&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;id&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+                    &lt;span class=&quot;k&quot;&gt;try&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;req&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;webSocketClient&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;send&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;message&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;comment&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;roomComment&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;to&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;userIDs&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+                    &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;roomComment&lt;/span&gt;
+                &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+        &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;transform&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;to&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;TV&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;EmptyOutput&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;())&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;As Swift Concurrency matured, the Vapor team finished their early work on supporting &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;async/await&lt;/code&gt; alongside &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;EventLoopFuture&lt;/code&gt;. I spent days tediously rewriting the existing &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;EventLoopFuture&lt;/code&gt; signal chains. The &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;async&lt;/code&gt; versions looked a lot better, but it was hard won.&lt;/p&gt;
+
+&lt;p&gt;Coming back to the project after a couple years, the Vapor team seems to be stalled in finishing up Swift Strict Concurrency support. Fluent models &lt;a href=&quot;https://blog.vapor.codes/posts/fluent-models-and-sendable/&quot;&gt;must still be declared&lt;/a&gt; &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;@unchecked Sendable&lt;/code&gt;. I’m running Swift 6.0 on the deployment, but with Swift 5 language mode.&lt;/p&gt;
+
+&lt;p&gt;I don’t want to discount the laudable work done by the Vapor core team and community. But going up against the mature frameworks from JS, Ruby, Python, PHP, etc., dealing with the low prioritization of Swift on the server from Apple, and with the overall churn of the Swift language, my take is that using Vapor is the wrong choice if your aim is pragmatism.&lt;/p&gt;
+
+&lt;p&gt;However, like I’ve mentioned so far, there are upsides to using Swift on the server. In theory it’s faster than interpreted languages and the type safety makes refactors safer and obviates the need for massive test suites.&lt;/p&gt;
+
+&lt;h3 id=&quot;routes-and-controllers&quot;&gt;Routes and Controllers&lt;/h3&gt;
+
+&lt;p&gt;Here is a taste of what it looks like to define the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Comment&lt;/code&gt;-related routes.&lt;/p&gt;
+
+&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;CommentController&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;RouteCollection&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;boot&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;routes&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;RoutesBuilder&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;throws&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;comments&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;routes&lt;/span&gt;
+            &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;grouped&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;UserToken&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;authenticator&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;())&lt;/span&gt;
+            &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;grouped&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;UserToken&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;guardMiddleware&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;())&lt;/span&gt;
+            &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;grouped&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;rooms&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+            &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;grouped&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;comments&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+
+        &lt;span class=&quot;n&quot;&gt;comments&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;post&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;create&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;use&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;create&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;comments&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;post&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;delete&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;use&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;delete&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;comments&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;post&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;edit&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;use&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;edit&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    
+    &lt;span class=&quot;c1&quot;&gt;// ...&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;This generates 3 POST routes that use middleware to parse out a valid auth token and make it available to the request:&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;/rooms/comments/create
+/rooms/comments/delete
+/rooms/comments/edit
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;My unique convention is to use &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;POST&lt;/code&gt; for all requests, even read-only CRUD operations like &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;show&lt;/code&gt; that would usually be &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;GET&lt;/code&gt;. The reasoning behind this is that it allows me to use the same JSON-encoded HTTP body plumbing for all requests instead of having to selectively encode and decode either or both from the URL query and the HTTP body.&lt;/p&gt;
+
+&lt;p&gt;The actual request/response implementation on the server side (modern async version) looks something like this:&lt;/p&gt;
+
+&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;// CommentController.swift&lt;/span&gt;
+&lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;create&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;req&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Request&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;as&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ync&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;throws&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;TV&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Comment&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;CreateOutput&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;userID&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;try&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;req&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;auth&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;require&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;UserToken&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;user&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;requireID&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;input&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;try&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;req&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;content&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;decode&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;TV&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Comment&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;CreateInput&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+
+    &lt;span class=&quot;c1&quot;&gt;// Ensure the User is allowed to post Comments in this Room    &lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;_&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;try&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;await&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;RoomUser&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;query&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;on&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;req&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;db&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;filter&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;\&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;$&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;room&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;$&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;id&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;input&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;roomID&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;filter&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;\&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;$&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;user&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;$&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;id&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;userID&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;first&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;!&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Abort&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;unauthorized&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+
+    &lt;span class=&quot;c1&quot;&gt;// Prefer using timestamp from content string if it exists&lt;/span&gt;
+    &lt;span class=&quot;nf&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;finalContent&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;finalSeconds&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;):&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Int&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;parsed&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;TimestampParser&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;parseTimestampFromContent&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;input&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;content&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;parsedSeconds&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;parsed&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;seconds&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;finalContent&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;parsed&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;parsedContent&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;finalSeconds&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;parsedSeconds&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;else&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;finalContent&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;input&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;content&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;finalSeconds&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;input&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;seconds&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+    &lt;span class=&quot;c1&quot;&gt;// Create the comment in the database&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;comment&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Comment&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;content&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;finalContent&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;seconds&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;finalSeconds&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;userID&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;userID&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;roomID&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;input&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;roomID&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;try&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;await&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;comment&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;create&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;on&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;req&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;db&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    
+    &lt;span class=&quot;c1&quot;&gt;// Prepare all data needed to populate the DTO&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;newCommentID&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;try&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;comment&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;requireID&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;newComment&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;try&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;await&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Comment&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;query&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;on&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;req&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;db&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;with&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;\&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;$&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;user&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;filter&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;\&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;$&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;id&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;newCommentID&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;first&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;!&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Abort&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;internalServerError&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;fullComment&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;try&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;TV&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Comment&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Full&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;newComment&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;output&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;TV&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Comment&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;CreateOutput&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;roomID&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;input&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;roomID&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;comment&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;fullComment&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;output&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;For most CRUD operations, the endpoint implementation is pretty straightforward: parse inputs, specific model authorization, fetch some data, modify and write some data back to the database, convert data to a DTO and return. So much so that coding agents have a pretty easy time interpreting a specification to add or modify existing endpoints.&lt;/p&gt;
+
+&lt;h3 id=&quot;authentication&quot;&gt;Authentication&lt;/h3&gt;
+
+&lt;p&gt;Early on in the project, I decided to roll my own email-identity, bearer token authentication using the primitives provided by &lt;a href=&quot;https://docs.vapor.codes/security/authentication/&quot;&gt;Vapor&lt;/a&gt;. The reasoning was to keep things simple while getting a better understanding of what goes on behind the scenes as (primarily) a client-side developer. Although I haven’t touched this code in years, I still think I have a better understanding of auth frameworks than I did before giving it a go.&lt;/p&gt;
+
+&lt;p&gt;As a quick summary, all requests to Technicolor use &lt;a href=&quot;https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Authentication#bearer&quot;&gt;bearer token&lt;/a&gt; authorization with the exception of:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Create Account: uses no authentication, but checks against an invite token in the request data to ensure the new user is allowed to create an account.&lt;/li&gt;
+  &lt;li&gt;Log In: uses &lt;a href=&quot;https://developer.mozilla.org/en-US/docs/Web/HTTP/Guides/Authentication#basic_authentication_scheme&quot;&gt;HTTP Basic authentication&lt;/a&gt;.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;services&quot;&gt;Services&lt;/h3&gt;
+
+&lt;p&gt;A critical decision I made early on that affects the architecture of the server codebase: I’m deploying to a single server with direct access to the SQLite database. As I discussed in &lt;a href=&quot;https://twocentstudios.com/2025/07/02/swift-vapor-fly-io-sqlite-config/&quot;&gt;Configuring Swift Vapor on Fly.io with SQLite&lt;/a&gt;, there are several tradeoffs to this decision with the primary benefit being simplicity.&lt;/p&gt;
+
+&lt;p&gt;This decision works in concert with defining and using &lt;a href=&quot;https://docs.vapor.codes/advanced/services/&quot;&gt;services&lt;/a&gt; in Controllers (request handlers). State within services can be shared between requests if necessary (using proper locking for thread safety) without the additional complexity of worrying about sharing that data across parallel app servers.&lt;/p&gt;
+
+&lt;p&gt;For example, this is how I define and use the client that fetches data from TMDB.&lt;/p&gt;
+
+&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;extension&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Application&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;private&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;TMDBClientKey&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;StorageKey&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;kd&quot;&gt;typealias&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Value&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;TMDBClient&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;tmdbClient&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;TMDBClient&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;get&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;n&quot;&gt;storage&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;TMDBClientKey&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;!&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;set&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;n&quot;&gt;storage&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;TMDBClientKey&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;newValue&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;configure&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;_&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;app&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Application&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;as&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ync&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;throws&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;c1&quot;&gt;// ...&lt;/span&gt;
+    
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;tmdbApiKey&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Environment&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;get&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;TMDB_API_KEY&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;??&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;&quot;&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;tmdbClient&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;TMDBClient&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;httpClient&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;app&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;http&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;client&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;shared&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;apiKey&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;tmdbApiKey&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;logger&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;app&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;logger&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;app&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tmdbClient&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;tmdbClient&lt;/span&gt;
+
+    &lt;span class=&quot;k&quot;&gt;try&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;await&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;routes&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;app&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;kd&quot;&gt;final&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;TMDBController&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;RouteCollection&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;c1&quot;&gt;// ...&lt;/span&gt;
+    
+    &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;search&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;req&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Request&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;as&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ync&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;throws&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;TV&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;TMDBPagedResponse&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;TV&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;TMDBMultiSearchResult&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;input&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;try&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;req&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;content&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;decode&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;TV&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;TMDBSearchInput&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+
+        &lt;span class=&quot;k&quot;&gt;guard&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;!&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;input&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;query&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;isEmpty&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;else&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;throw&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Abort&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;badRequest&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;reason&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;Query is required&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;page&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;input&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;page&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;??&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;tmdbClient&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;req&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;application&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tmdbClient&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;mediaTypeEnum&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;input&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;mediaType&lt;/span&gt;
+
+        &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;try&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;await&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;tmdbClient&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;search&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;query&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;input&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;query&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;mediaType&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;mediaTypeEnum&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;page&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;page&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;h3 id=&quot;testing&quot;&gt;Testing&lt;/h3&gt;
+
+&lt;p&gt;I have a db migration that sets up a very minimal set of test users with hard coded token values to make local development easier.&lt;/p&gt;
+
+&lt;p&gt;In the early stages of the project, I maintained a Paw file (now &lt;a href=&quot;https://paw.cloud/&quot;&gt;RapidAPI&lt;/a&gt;) to facilitate manual testing of server endpoints.&lt;/p&gt;
+
+&lt;p&gt;In this latest sprint, I’ve developed a full Swift Testing test suite with ~150 tests. Especially when endpoints only depend on the local database, the request/response cycle is a lot more straightforward to write automated tests for than what I’m used to on the iOS side.&lt;/p&gt;
+
+&lt;p&gt;The addition of the external TMDB client and caching has made some endpoints a little tricker to test, but overall I feel confident that my test suite is providing value.&lt;/p&gt;
+
+&lt;p&gt;As a quick example, all tests follow the below pattern pretty closely. Over time, I’ve built up a lot of helpers to keep the tests focused, consistent, and easy to read and write.&lt;/p&gt;
+
+&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;@Suite(&quot;CommentController Tests&quot;)&lt;/span&gt;
+&lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;CommentControllerTests&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+
+    &lt;span class=&quot;kd&quot;&gt;@Suite(&quot;Comment Creation&quot;)&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;CommentCreationTests&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+
+        &lt;span class=&quot;kd&quot;&gt;@Test(&quot;Create comment with valid input succeeds&quot;)&lt;/span&gt;
+        &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;createCommentSuccess&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;as&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ync&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;throws&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;try&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;await&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;withApp&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;configure&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;configureTestApp&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;app&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt;
+                &lt;span class=&quot;k&quot;&gt;try&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;await&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;withAuthenticatedUser&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;on&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;app&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;user&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;userToken&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt;
+                    &lt;span class=&quot;c1&quot;&gt;// Create a room and add user to it&lt;/span&gt;
+                    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;room&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;try&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;await&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;createTestRoom&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;on&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;app&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;db&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;withUsers&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;user&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;])&lt;/span&gt;
+
+                    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;createInput&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;try&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;TV&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Comment&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;CreateInput&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
+                        &lt;span class=&quot;nv&quot;&gt;roomID&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;room&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;requireID&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(),&lt;/span&gt;
+                        &lt;span class=&quot;nv&quot;&gt;content&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;This is a test comment&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+                        &lt;span class=&quot;nv&quot;&gt;seconds&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;120&lt;/span&gt;
+                    &lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+
+                    &lt;span class=&quot;k&quot;&gt;try&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;await&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;app&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;testing&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;authenticatedRequest&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;POST&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;/rooms/comments/create&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;token&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;userToken&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;beforeRequest&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;req&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt;
+                        &lt;span class=&quot;k&quot;&gt;try&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;req&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;content&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;encode&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;createInput&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+                    &lt;span class=&quot;p&quot;&gt;})&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;res&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;as&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ync&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;throws&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt;
+                        &lt;span class=&quot;cp&quot;&gt;#expect(res.status == .ok)&lt;/span&gt;
+
+                        &lt;span class=&quot;k&quot;&gt;try&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;assertDecodable&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;res&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;as&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;TV&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Comment&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;CreateOutput&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;response&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt;
+                            &lt;span class=&quot;cp&quot;&gt;#expect(response.comment.content == &quot;This is a test comment&quot;)&lt;/span&gt;
+                            &lt;span class=&quot;cp&quot;&gt;#expect(response.comment.seconds == 120)&lt;/span&gt;
+                            &lt;span class=&quot;cp&quot;&gt;#expect(response.comment.user.username == user.username)&lt;/span&gt;
+                            &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;roomID&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;try&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;room&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;requireID&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+                            &lt;span class=&quot;cp&quot;&gt;#expect(response.roomID == roomID)&lt;/span&gt;
+                        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+                    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+                &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+            &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;All 163 tests run in parallel with a separate copy of the migrated test database and complete on my MacBook Pro in about 12 seconds.&lt;/p&gt;
+
+&lt;h3 id=&quot;deployment&quot;&gt;Deployment&lt;/h3&gt;
+
+&lt;p&gt;I wrote a &lt;a href=&quot;https://twocentstudios.com/2025/07/02/swift-vapor-fly-io-sqlite-config/&quot;&gt;detailed post&lt;/a&gt; about my exact deployment setup, but here I’ll reiterate that I’ve found deployment to be difficult and often an awful time sink. I’d consider setting deployment up from the beginning of Vapor app development and updating periodically as your app grows in complexity.&lt;/p&gt;
+
+&lt;p&gt;Although a default Dockerfile is included in the Vapor new project generation, it can be inscrutable to devops novices like myself. I had particular trouble with ensuring the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;tv-vapor&lt;/code&gt; shared models source directory was available as a &lt;em&gt;sibling&lt;/em&gt; directory in the development repo, but as a &lt;em&gt;subfolder&lt;/em&gt; in the Docker image. It was a lot of slow trial and error.&lt;/p&gt;
+
+&lt;p&gt;As great as the Dockerfile is as a generic recipe for deployment, there are always going to be specifics you need to learn about your actual deployment destination. For me, I’ve kept using Fly.io for whatever reason, but I think any PaaS or VPS is going to have the same learning curve. Fly.io had the same kind of configuration churn I experienced with Swift and Vapor for a side project with years-long breaks in the development cycle.&lt;/p&gt;
+
+&lt;p&gt;One particular gotcha I ran into a few times is accidentally using Swift APIs that are unavailable on Linux. The open source &lt;a href=&quot;https://github.com/swiftlang/swift-foundation&quot;&gt;Foundation&lt;/a&gt; has mostly hit feature parity, but there are some sibling frameworks like &lt;a href=&quot;https://developer.apple.com/documentation/cryptokit&quot;&gt;CryptoKit&lt;/a&gt; that require using an &lt;a href=&quot;https://github.com/apple/swift-crypto&quot;&gt;open source variant&lt;/a&gt;. These were cases that I would unfortunately discover when deploying a new build to Fly.io and it failing with some cryptic error message.&lt;/p&gt;
+
+&lt;p&gt;At the moment I’m YOLO-deploying to the production server after developing on localhost. Before exiting beta I’ll also create a development server.&lt;/p&gt;
+
+&lt;h2 id=&quot;client-side&quot;&gt;Client-side&lt;/h2&gt;
+
+&lt;h3 id=&quot;supported-platforms&quot;&gt;Supported platforms&lt;/h3&gt;
+
+&lt;p&gt;When I first started working on the client side apps several ago, the promise of SwiftUI’s initial pitch of &lt;em&gt;learn-once, apply anywhere&lt;/em&gt; was still optimistic for many of us. I built out the initial structure of the apps under the presumption of high SwiftUI compatibility across iPhone, iPad, and macOS. There were lots of SwiftUI modifier shims, and I made sure to aggressively modularize Views so they could be composed uniquely between platforms.&lt;/p&gt;
+
+&lt;p&gt;Unfortunately, after the first couple sprints I found myself bogged down in a lot of missing and broken APIs, especially on the macOS side. I eventually gave up on native macOS support and switched over to Mac Catalyst. In my most recent sprints, I realized that Designed for iPad actually looks and functions better than Mac Catalyst, while also requiring nearly zero API conditionals between the two platforms. One of my friends is running Technicolor on a macOS virtual machine without ARM64 support, so I can’t drop Mac Catalyst support yet.&lt;/p&gt;
+
+&lt;p&gt;Writing a truly native Mac app and a web client are both on my roadmap, but since this is a side project I’ll probably continue polishing the rough edges of the iOS app during the beta period.&lt;/p&gt;
+
+&lt;p&gt;At the moment Technicolor supports iOS 17+ and macOS 14+.&lt;/p&gt;
+
+&lt;h3 id=&quot;project-setup&quot;&gt;Project setup&lt;/h3&gt;
+
+&lt;p&gt;I use XcodeGen and a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;project.yml&lt;/code&gt; file for maintaining the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;xcodeproj&lt;/code&gt; file referenced by the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;xcworkspace&lt;/code&gt; file. When using coding agents XcodeGen or similar is essentially mandatory.&lt;/p&gt;
+
+&lt;p&gt;I use the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;tv-models&lt;/code&gt; Swift package mentioned earlier.&lt;/p&gt;
+
+&lt;p&gt;I use the &lt;a href=&quot;https://github.com/kishikawakatsumi/KeychainAccess&quot;&gt;KeychainAccess&lt;/a&gt; package for storing the bearer token securely.&lt;/p&gt;
+
+&lt;p&gt;I use several Point-Free libraries: &lt;a href=&quot;https://github.com/pointfreeco/swift-dependencies&quot;&gt;swift-dependencies&lt;/a&gt; and &lt;a href=&quot;https://github.com/pointfreeco/swift-navigation&quot;&gt;swift-navigation&lt;/a&gt;. More on these later.&lt;/p&gt;
+
+&lt;h3 id=&quot;architecture-rules&quot;&gt;Architecture rules&lt;/h3&gt;
+
+&lt;p&gt;My client architecture is relatively templated and consistent across features. This helps me, but also helps coding agents write idiomatic code on the first attempt.&lt;/p&gt;
+
+&lt;p&gt;I use &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;@Observable&lt;/code&gt; Store objects paired with top level SwiftUI &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;View&lt;/code&gt;s for each logical screen.&lt;/p&gt;
+
+&lt;p&gt;All &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Store&lt;/code&gt;s follow this template:&lt;/p&gt;
+
+&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;@MainActor&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;@Observable&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;final&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ExampleStore&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;State&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Equatable&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;c1&quot;&gt;// Local feature state&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    
+    &lt;span class=&quot;kd&quot;&gt;@CasePathable&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;enum&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Destination&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;c1&quot;&gt;// Navigation destinations with associated stores&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;detail&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;DetailStore&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;settings&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;SettingsStore&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    
+    &lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Actions&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;c1&quot;&gt;// Callback functions for parent communication&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;completion&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(()&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Void&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;unimplemented&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    
+    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;state&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;State&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;destination&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Destination&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;actions&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Actions&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+    
+    &lt;span class=&quot;kd&quot;&gt;@ObservationIgnored&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;@Dependency(\.service)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;service&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;private&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;token&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Token&lt;/span&gt;  &lt;span class=&quot;c1&quot;&gt;// Immutable data&lt;/span&gt;
+    
+    &lt;span class=&quot;nf&quot;&gt;init&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;parameters&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;c1&quot;&gt;// Initialize state and private properties&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    
+    &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;task&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;as&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ync&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;c1&quot;&gt;// Startup or reappear   &lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    
+    &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;showDetailButtonTapped&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;as&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ync&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;c1&quot;&gt;// User actions from the view layer e.g. pushing a new view&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;destination&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;withDependencies&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;from&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;detail&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;DetailStore&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;())&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    
+    &lt;span class=&quot;kd&quot;&gt;private&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;helperMethod&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;All &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;View&lt;/code&gt;s follow this template:&lt;/p&gt;
+
+&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ExampleView&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;View&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;@Bindable&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;store&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ExampleStore&lt;/span&gt;
+
+    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;body&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;some&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;View&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;kt&quot;&gt;VStack&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;o&quot;&gt;...&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+        &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;task&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;await&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;store&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;task&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+        &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;navigationDestination&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;item&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;$&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;store&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;destination&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;detail&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;$&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;detailStore&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt;
+            &lt;span class=&quot;kt&quot;&gt;DetailView&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;store&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;detailStore&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+        &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;sheet&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;item&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;$&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;store&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;destination&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;settings&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;$&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;settingsStore&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt;
+            &lt;span class=&quot;kt&quot;&gt;SettingsView&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;store&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;settingsStore&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Parent-child relationships follow these rules:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;&lt;strong&gt;Parent Store&lt;/strong&gt;: Creates optional destination property (&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;var destination: Destination?&lt;/code&gt;)&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Parent Store&lt;/strong&gt;: Provides method to create child store (&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;func showChild() { destination = .child(ChildStore()) }&lt;/code&gt;)&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Parent View&lt;/strong&gt;: Uses &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;sheet(item: $store.destination.child)&lt;/code&gt; modifier&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Child View&lt;/strong&gt;: Accepts store as parameter (&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;@Bindable var store: ChildStore&lt;/code&gt; or &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;let store: ChildStore&lt;/code&gt;)&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Child Store&lt;/strong&gt;: Must conform to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Identifiable&lt;/code&gt; (class identity-based)&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Dependency Injection&lt;/strong&gt;: Use &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;withDependencies(from: self)&lt;/code&gt; only if parent has &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;@Dependency&lt;/code&gt; vars&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;h3 id=&quot;api-client&quot;&gt;API Client&lt;/h3&gt;
+
+&lt;p&gt;The API Client is not quite as streamlined as I’d like, but it’s simple to add new endpoints as needed.&lt;/p&gt;
+
+&lt;p&gt;I use the &lt;a href=&quot;https://github.com/pointfreeco/swift-dependencies&quot;&gt;swift-dependencies&lt;/a&gt; format for the definition.&lt;/p&gt;
+
+&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;@DependencyClient&lt;/span&gt;
+&lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;AppClient&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Sendable&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;createComment&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;@Sendable&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;_&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;input&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Comment&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;CreateInput&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;_&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;token&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Token&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;as&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ync&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Result&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Comment&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;CreateOutput&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Error&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;_&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;failure&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;AppClient&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Error&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;unknown&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;c1&quot;&gt;// ... one var for each endpoint&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;A notable difference from many projects is that AppClient is stateless – it does not hold onto the user’s bearer token or server environment (i.e. localhost or the server URL). Each &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Store&lt;/code&gt; is responsible for accepting the token as a dependency.&lt;/p&gt;
+
+&lt;p&gt;The live client is set up like this, with the static &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;fetch&lt;/code&gt; function doing the heavy lifting of making the properly configured request and serializing the response.&lt;/p&gt;
+
+&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;extension&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;AppClient&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;static&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;live&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;Self&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;kt&quot;&gt;Self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
+            &lt;span class=&quot;nv&quot;&gt;createComment&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;input&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;token&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;as&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ync&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Result&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Comment&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;CreateOutput&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Error&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt;
+                &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;request&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;CreateCommentRequest&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;input&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;input&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;token&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;token&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;serverEnvironment&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;token&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;serverEnvironment&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+                &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;await&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;fetch&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;request&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+            &lt;span class=&quot;p&quot;&gt;},&lt;/span&gt;
+            &lt;span class=&quot;c1&quot;&gt;/// ... all endpoints look similar&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Most &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Request&lt;/code&gt;s require bearer token authorization and conform to the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;AuthorizedInputRequest&lt;/code&gt; protocol.&lt;/p&gt;
+
+&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;protocol&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;InputRequest&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;FetchRequest&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;as&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;sociatedtype&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Input&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Encodable&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;authorization&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;AppClient&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Authorization&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;get&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;path&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;get&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;input&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Input&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;get&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;serverEnvironment&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ServerEnvironment&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;get&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;kd&quot;&gt;protocol&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;AuthorizedInputRequest&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;InputRequest&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;token&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Token&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;get&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;An example request configuration:&lt;/p&gt;
+
+&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;CreateCommentRequest&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;AuthorizedInputRequest&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;typealias&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Output&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Comment&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;CreateOutput&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;path&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;/rooms/comments/create&quot;&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;input&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Comment&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;CreateInput&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;token&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Token&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;serverEnvironment&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ServerEnvironment&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Again, there’s still a lot of boilerplate, but I’ve made my peace with it.&lt;/p&gt;
+
+&lt;p&gt;The specific endpoint can be used as a dependency in the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Store&lt;/code&gt;:&lt;/p&gt;
+
+&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;@MainActor&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;@Observable&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;final&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;RoomStore&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;c1&quot;&gt;// ...&lt;/span&gt;
+    
+    &lt;span class=&quot;kd&quot;&gt;@ObservationIgnored&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;@Dependency(\.appClient.createComment)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;createComment&lt;/span&gt;
+
+    &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;createCommentTapped&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;as&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ync&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;c1&quot;&gt;// ...&lt;/span&gt;
+        
+        &lt;span class=&quot;n&quot;&gt;state&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;createMessageState&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;mutating&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;input&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Comment&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;CreateInput&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;roomID&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;roomID&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;content&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;state&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;inputText&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;seconds&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;state&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;inputSeconds&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;result&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;await&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;createComment&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;input&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;token&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;guard&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;state&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;createMessageState&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;mutating&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;else&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+        
+        &lt;span class=&quot;k&quot;&gt;switch&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;result&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;success&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;output&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;):&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;newState&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;state&lt;/span&gt;
+            &lt;span class=&quot;n&quot;&gt;newState&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;comments&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;output&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;comment&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;id&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;output&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;comment&lt;/span&gt;
+            &lt;span class=&quot;n&quot;&gt;newState&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;createMessageState&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;idle&lt;/span&gt;
+            &lt;span class=&quot;n&quot;&gt;newState&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;inputText&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;&quot;&lt;/span&gt;
+            &lt;span class=&quot;n&quot;&gt;state&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;newState&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;failure&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;error&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;):&lt;/span&gt;
+            &lt;span class=&quot;n&quot;&gt;state&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;createMessageState&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;mutationFailed&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;init&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;underlyingError&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;error&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;h3 id=&quot;root-architecture&quot;&gt;Root architecture&lt;/h3&gt;
+
+&lt;p&gt;The &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;RootView&lt;/code&gt; and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;RootStore&lt;/code&gt; pair handles the boot sequence and handling login and logout.&lt;/p&gt;
+
+&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;RootView&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;View&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;@Bindable&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;store&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;RootStore&lt;/span&gt;
+
+    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;body&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;some&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;View&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;kt&quot;&gt;ZStack&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;switch&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;store&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;state&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;initialized&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
+                &lt;span class=&quot;kt&quot;&gt;ProgressView&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+                    &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;onAppear&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;store&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;onAppear&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;restoringState&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
+                &lt;span class=&quot;kt&quot;&gt;ProgressView&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;signedOut&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;store&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;):&lt;/span&gt;
+                &lt;span class=&quot;kt&quot;&gt;AuthenticationView&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;store&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;store&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;signedIn&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;store&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;):&lt;/span&gt;
+                &lt;span class=&quot;kt&quot;&gt;NavigationStack&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+                    &lt;span class=&quot;kt&quot;&gt;RoomsDashboardView&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;store&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;store&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+                &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+            &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;@MainActor&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;@Observable&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;final&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;RootStore&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;enum&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;State&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Equatable&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;initialized&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;restoringState&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;signedOut&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;AuthenticationStore&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;signedIn&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;RoomsDashboardStore&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+    &lt;span class=&quot;kd&quot;&gt;private(set)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;state&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;State&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;initialized&lt;/span&gt;
+
+    &lt;span class=&quot;kd&quot;&gt;@ObservationIgnored&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;@Dependency(\.tokenLocalStorageClient)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;tokenLocalStorageClient&lt;/span&gt;
+
+    &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;onAppear&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;nf&quot;&gt;restoreState&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+    &lt;span class=&quot;kd&quot;&gt;private&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;restoreState&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;guard&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;initialized&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;state&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;else&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;assertionFailure&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;unexpected state&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;state&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;restoringState&lt;/span&gt;
+
+        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;token&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;tokenLocalStorageClient&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;readToken&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+
+        &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;token&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;nf&quot;&gt;transitionToDashboard&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;token&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;token&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;else&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;nf&quot;&gt;transitionToSignIn&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    
+    &lt;span class=&quot;c1&quot;&gt;// ...&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;The authenticated vs. unauthenticated domains of the app are fully isolated.&lt;/p&gt;
+
+&lt;h3 id=&quot;room-view&quot;&gt;Room View&lt;/h3&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/technicolor-beta-room-interface.png&quot; width=&quot;600&quot; height=&quot;&quot; alt=&quot;Room interface showing timestamped comments grouped by video timeline position&quot; title=&quot;Room interface showing timestamped comments grouped by video timeline position&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Room interface showing timestamped comments grouped by video timeline position&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;The &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;RoomView&lt;/code&gt; – the async chat room for a TV show episode or movie – is the most complex screen in the app.&lt;/p&gt;
+
+&lt;p&gt;Its usage story is not quite the same as a prototypical chat room. And through my own usage I’m still trying to optimize the micro-decisions in the UX. Should the keyboard dismiss after the user sends a message? When should the main content auto-scroll?&lt;/p&gt;
+
+&lt;p&gt;I store the comments in a dictionary and group and sort them live on changes. This makes handling mutations more straightforward (the current user adds new comment, other user adds new comment, a comment is edited, a comment is deleted, etc.).&lt;/p&gt;
+
+&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;State&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Equatable&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;c1&quot;&gt;// ...&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;comments&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;UUID&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Comment&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Full&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
+    &lt;span class=&quot;c1&quot;&gt;// ...&lt;/span&gt;
+    
+    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;timestamps&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;RoomViewModel&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Timestamp&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;secondsGrouped&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Dictionary&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;grouping&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;comments&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;values&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;by&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$0&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;seconds&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;})&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;timestamps&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;secondsGrouped&lt;/span&gt;
+            &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;sorted&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;by&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$0&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;key&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$1&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;key&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;})&lt;/span&gt;
+            &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;map&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;group&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt;
+                &lt;span class=&quot;kt&quot;&gt;RoomViewModel&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Timestamp&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
+                    &lt;span class=&quot;nv&quot;&gt;title&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;group&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;key&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;timestamp&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+                    &lt;span class=&quot;nv&quot;&gt;seconds&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;group&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;key&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+                    &lt;span class=&quot;nv&quot;&gt;comments&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;group&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;value&lt;/span&gt;
+                        &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;sorted&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;by&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$0&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;createdAt&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$1&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;createdAt&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;})&lt;/span&gt;
+                        &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;map&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;comment&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt;
+                            &lt;span class=&quot;kt&quot;&gt;RoomViewModel&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Comment&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
+                                &lt;span class=&quot;nv&quot;&gt;id&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;comment&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;id&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+                                &lt;span class=&quot;nv&quot;&gt;content&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;comment&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;content&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+                                &lt;span class=&quot;nv&quot;&gt;username&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;comment&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;user&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;username&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+                                &lt;span class=&quot;nv&quot;&gt;relativeCreatedAt&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;Self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;relativeDateFormatter&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;string&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;for&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;comment&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;updatedAt&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;??&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;??? ago&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+                                &lt;span class=&quot;nv&quot;&gt;color&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;comment&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;user&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;identityColor&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+                                &lt;span class=&quot;nv&quot;&gt;belongsToCurrentUser&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;comment&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;user&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;id&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;meID&lt;/span&gt;
+                            &lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+                        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+                &lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+            &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;timestamps&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Read-only data fetching state in the app is handled by the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;DataState&lt;/code&gt; struct. Mutation state is handled by the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;FallibleMutationState&lt;/code&gt; struct. I intentionally do not store the actual data in this struct (but I do store the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Error&lt;/code&gt;).&lt;/p&gt;
+
+&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;enum&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;DataState&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Equatable&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;initialized&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;loading&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;loaded&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;reloading&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;loadingFailed&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;StoreError&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;kd&quot;&gt;enum&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;FallibleMutationState&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Equatable&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;idle&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;mutating&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;mutationFailed&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;StoreError&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;RoomStore.State&lt;/code&gt; handles the following read-only data and mutation data states:&lt;/p&gt;
+
+&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;State&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Equatable&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;dataState&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;DataState&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;createMessageState&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;FallibleMutationState&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;editCommentState&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;FallibleMutationState&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;deleteMessageState&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;FallibleMutationState&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;updateWatchedState&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;FallibleMutationState&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;leaveRoomState&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;FallibleMutationState&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;deleteRoomState&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;FallibleMutationState&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;isShowingLeaveRoomConfirmation&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Bool&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;isShowingDeleteRoomConfirmation&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Bool&lt;/span&gt;
+    
+    &lt;span class=&quot;c1&quot;&gt;// ...&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;The available mutations and confirmations start to add up quickly. For this particular View, it might actually be worth it to abstract the current mutation state into its own &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Enum&lt;/code&gt; so that I can more simply enforce only one mutation is happening at a time.&lt;/p&gt;
+
+&lt;h3 id=&quot;dashboard&quot;&gt;Dashboard&lt;/h3&gt;
+
+&lt;p&gt;In my initial designs of Technicolor, the dashboard was a simple list of all Rooms ordered by creation date. There was a lot of burden on each user to keep track of which episodes they’ve watched, periodically check which episodes their friends have watched, and periodically check for replies.&lt;/p&gt;
+
+&lt;p&gt;In this latest iteration of Technicolor, I used some additional state like “Mark as Watched” and some complex SQL queries to make watchlists easier to manage, especially for power users (like me) who are watching several shows with several groups of friends over potentially multiple weeks.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/technicolor-beta-dashboard.png&quot; width=&quot;600&quot; height=&quot;&quot; alt=&quot;Dashboard screen organizing active rooms by TV show and member groups&quot; title=&quot;Dashboard screen organizing active rooms by TV show and member groups&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Dashboard screen organizing active rooms by TV show and member groups&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;The dashboard now groups sections with the following rules:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;strong&gt;TV shows by members&lt;/strong&gt;: if you’re watching the same show with multiple groups, these Rooms will be grouped separately&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;All movies by members&lt;/strong&gt;: if you have a “weekly movie night” with the same set of friends, all those movie Rooms will be grouped into the same section.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;By default, Rooms that are unwatched by at least one member will be included on the dashboard. Once all members have finished watching, the Room will appear for the next 7 days to allow time for further discussion.&lt;/p&gt;
+
+&lt;p&gt;Each scenario has its own archive screen so you can always access past Rooms. There’s also a comprehensive archive screen that ensures you can even find groups that have been archived.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/technicolor-archive-screens-combined.png&quot; width=&quot;1200&quot; height=&quot;&quot; alt=&quot;Various archive screens so all rooms are discoverable&quot; title=&quot;Various archive screens so all rooms are discoverable&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Various archive screens so all rooms are discoverable&lt;/div&gt;&lt;/div&gt;
+
+&lt;h3 id=&quot;timestamp-control&quot;&gt;Timestamp control&lt;/h3&gt;
+
+&lt;p&gt;One of my pet projects within this Technicolor was a custom timestamp adjustment control. It’s still a work in progress but it’s been fun to iterate on.&lt;/p&gt;
+
+&lt;p&gt;The goal of the control is to make it easier to adjust the timestamp (e.g. &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;15:34&lt;/code&gt;) of your comment to the timestamp of the running show. That is, easier than typing the timestamp using the iOS software keyboard. On macOS with a hardware keyboard it’s easy enough to type &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;15:43 this is my comment&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;The custom timestamp control works by tapping and dragging up and down. During a drag, moving your touch to the right adjusts the fine-tune to get better accuracy.&lt;/p&gt;
+
+&lt;video src=&quot;/images/technicolor-beta-timestamp-control.mov&quot; controls=&quot;&quot; preload=&quot;none&quot; poster=&quot;/images/technicolor-beta-timestamp-control-poster.png&quot; height=&quot;600&quot;&gt;&lt;/video&gt;
+
+&lt;h3 id=&quot;push-notification-support&quot;&gt;Push notification support&lt;/h3&gt;
+
+&lt;p&gt;One of the reasons I was excited to make native clients for Technicolor was push notification support.&lt;/p&gt;
+
+&lt;p&gt;Once a Room member finishes watching an episode, they tap “Mark as Watched”. This not only updates the Room status for the Dashboard, but it also sends a push notification to the other Room members. If the other members have already watched, this push will be a trigger for the user to check out the new comments. If the other members haven’t watched yet, this push is a good reminder they should watch the episode soon.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/technicolor-push-notifications.jpg&quot; width=&quot;600&quot; height=&quot;&quot; alt=&quot;Various push notifications&quot; title=&quot;Various push notifications&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Various push notifications&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;There are also quality-of-life pushes for when a user accepts your invite and joins Technicolor, when you receive a new friend request, and when a user accepts your friend request.&lt;/p&gt;
+
+&lt;p&gt;There’s still one missing flow: I’d like to add a timeout triggered push notification that sends in the situation that:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;User A has already finished watching an episode&lt;/li&gt;
+  &lt;li&gt;User A replies to comments after User B finishes watching&lt;/li&gt;
+  &lt;li&gt;30 minutes have passed since the last comment from User A&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;This would ensure User B sees the replies from User A, but doesn’t need to get an individual push notification for each comment.&lt;/p&gt;
+
+&lt;h3 id=&quot;deployment-script&quot;&gt;Deployment script&lt;/h3&gt;
+
+&lt;p&gt;Working on indie projects by myself, I’ve generally found it fast enough to do all my deployment to App Store Connect manually (but using a checklist).&lt;/p&gt;
+
+&lt;p&gt;However, for Technicolor I need to build and upload both an iOS and macOS version. This was just enough tedium that I decided to vibe code a deployment bash script that handles the minutiae of deployment.&lt;/p&gt;
+
+&lt;p&gt;It took a very long day of debugging certificate and provisioning profile issues, but eventually I got the script working. This has made it marginally easier to ship new builds to my TestFlight beta testers. The 24-48 hour turnaround of TestFlight App Review is still a drag though.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/technicolor-deployment-script-output.png&quot; width=&quot;&quot; height=&quot;800&quot; alt=&quot;Release automation script output showing the complete deployment workflow with environment validation, version management, build processes, App Store Connect uploads, and GitHub operations&quot; title=&quot;Release automation script output showing the complete deployment workflow with environment validation, version management, build processes, App Store Connect uploads, and GitHub operations&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Release automation script output showing the complete deployment workflow with environment validation, version management, build processes, App Store Connect uploads, and GitHub operations&lt;/div&gt;&lt;/div&gt;
+
+&lt;h2 id=&quot;lessons-learned&quot;&gt;Lessons learned&lt;/h2&gt;
+
+&lt;h4 id=&quot;complexity-of-social-networks&quot;&gt;Complexity of social networks&lt;/h4&gt;
+
+&lt;p&gt;There’s a lot of essential complexity in social networks and chat apps. As a mobile dev that usually works on the client side, it was great experience learning how to manage things like authentication, schema design for social network relationships, and server deployment.&lt;/p&gt;
+
+&lt;h4 id=&quot;standardized-architecture&quot;&gt;Standardized architecture&lt;/h4&gt;
+
+&lt;p&gt;Especially for CRUD apps, it’s incredibly important to find an architecture that makes each feature as templated and boring as possible. Predictable and well-documented features enable coding agents to accelerate development of the features that are necessary but forgettable by users and allow you to focus on the features that make your app unique.&lt;/p&gt;
+
+&lt;h4 id=&quot;choice-of-web-framework&quot;&gt;Choice of web framework&lt;/h4&gt;
+
+&lt;p&gt;It’s hard for me to recommend Swift on the server as a pragmatic choice for a production web service. All of its strengths don’t really make up for how far behind it is in the broader web framework ecosystem. Maybe in another several years if the Swift language has stabilized and the Swift community outside app development grows.&lt;/p&gt;
+
+&lt;h4 id=&quot;long-running-side-projects-using-volatile-technology-stacks&quot;&gt;Long-running side projects using volatile technology stacks&lt;/h4&gt;
+
+&lt;p&gt;I’m glad I finally found 2-3 uninterrupted weeks that I could use to get this project modernized and in a shippable state. As a side project, having a weekend available here and there usually meant that I could only tackle one small feature at a time (I remember spending a coveted 4-day weekend chipping away at getting the first deployment set up). Too much effort was burned rewriting due to language and framework and hosting churn. However, having this project did serve as a useful test bed for experimenting with and immersing myself in new ideas before introducing them into production projects at my day job.&lt;/p&gt;
+
+&lt;h4 id=&quot;qa-as-the-development-bottleneck&quot;&gt;QA as the development bottleneck&lt;/h4&gt;
+
+&lt;p&gt;In this recent sprint, I found QA to be the bottleneck for feature development. Coding agents have significantly compressed the overall time and effort required for the system design and code writing parts, but to &lt;em&gt;actually verify your feature does what it’s supposed to&lt;/em&gt; still means setting up an environment to experience the feature exactly as the user will experience it. That means a feature that only requires booting up the simulator and tapping a button to verify correctness will take 10 or 50 or 100 times less time to validate than installing a build on multiple devices, logging in with different test users, tapping through several screens in a specific order, and verifying the delivery and contents of a push notification. When estimating scope for a feature I want, I now consider the QA burden much more seriously than the one-shot implementation time.&lt;/p&gt;
+
+&lt;h2 id=&quot;conclusion&quot;&gt;Conclusion&lt;/h2&gt;
+
+&lt;p&gt;Even after over a decade of intermittent development, Technicolor is still in its early stages. I hope this post gave you some insight into what its been like as a solo dev working on a full-stack Swift project.&lt;/p&gt;
+
+&lt;p&gt;If you’re considering or working on something similar, or you want more detail on anything I’ve written about in this post, feel free to reach out on &lt;a href=&quot;https://hachyderm.io/@twocentstudios&quot;&gt;Mastodon&lt;/a&gt; or &lt;a href=&quot;https://twitter.com/twocentstudios&quot;&gt;Twitter&lt;/a&gt; or &lt;a href=&quot;mailto:chris@twocentstudios.com&quot;&gt;email&lt;/a&gt;. As of this posting I’m also available for consulting work.&lt;/p&gt;
+
+</description>
+        <pubDate>Mon, 04 Aug 2025 07:04:00 -0500</pubDate>
+        <link>https://twocentstudios.com/2025/08/04/full-stack-swift-technicolor-technical-architecture/</link>
+        <guid isPermaLink="true">https://twocentstudios.com/2025/08/04/full-stack-swift-technicolor-technical-architecture/</guid>
+        
+        <category>apple</category>
+        
+        <category>ios</category>
+        
+        <category>swiftui</category>
+        
+        <category>vapor</category>
+        
+        <category>technicolor</category>
+        
+        
+      </item>
     
       <item>
         <title>Reintroducing Technicolor: Binge Watch with Friends Over Space and Time</title>
@@ -2288,79 +3190,6 @@ delete &lt;span class=&quot;c&quot;&gt;# as long as we open the database in read
         <category>ekibright</category>
         
         <category>ekilive</category>
-        
-        <category>ios</category>
-        
-        
-      </item>
-    
-      <item>
-        <title>8-bit Nails Plus</title>
-        <description>&lt;p&gt;I’ve released 8-bit Nails v1.1 to the App Store. It includes some new features alongside a one-time in-app purchase to unlock them.&lt;/p&gt;
-
-&lt;p&gt;In this post I want to share some notes about the new features and my decision to add an in-app purchase.&lt;/p&gt;
-
-&lt;h2 id=&quot;in-app-purchase&quot;&gt;In-App Purchase&lt;/h2&gt;
-
-&lt;p&gt;A previously released app Count Biki includes in-app purchases but only as a tip that unlocks alternate app icons (admittedly no longer as popular as a perk as they once were). I wanted to start my indie app business journey by testing the waters with tip-based payment before trying other business models.&lt;/p&gt;
-
-&lt;p&gt;Unfortunately, Count Biki hasn’t had enough traffic to even begin to get the purchase funnel going. I’d probably need hundreds of thousands or even millions of users to generate any sort of revenue via the voluntary tipping model.&lt;/p&gt;
-
-&lt;p&gt;8-bit Nails is also a pretty simple app. It’s not a utility that assists users in accomplishing a specific goal, so it’s hard to justify a large price tag, especially a subscription. Perhaps I’m still undervaluing the app and will need to re-evaluate the business model again, but for now, I decided to add a single one-time purchase for “8-bit Nails Plus” which unlocks all the features of the app at once, forever.&lt;/p&gt;
-
-&lt;p&gt;The purchase screen is the image below. It’s a standard layout but I tried to make it a little flashy. I think it could be improved with some more illustrative images beneath each benefit.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/eight-bit-nails-purchase-screen.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;8-bit Nails Plus purchase screen&quot; title=&quot;8-bit Nails Plus purchase screen&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;8-bit Nails Plus purchase screen&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;v1.0 of the app allowed users to create unlimited nail sets. However, from v1.1 onwards, users will need to purchase Plus to create more than 5 nail sets. Any users that already have more than 5 (I don’t think there’s any) will need to purchase Plus before they can add more.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/eight-bit-nails-list-upsell.jpg&quot; width=&quot;&quot; height=&quot;200&quot; alt=&quot;Plus upsell on the home screen&quot; title=&quot;Plus upsell on the home screen&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Plus upsell on the home screen&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;I’m hoping that creating 5 nail sets is a good signal that users are enjoying the app and are willing to pay to continue. (I also started prompting for a review after users add their 3rd nail set). Limiting the main resource of the app doesn’t sit well with me, but it’s something I have to experiment with in this early stage.&lt;/p&gt;
-
-&lt;h2 id=&quot;widgets&quot;&gt;Widgets&lt;/h2&gt;
-
-&lt;p&gt;Plus users can add a widget to their home screen or Today View. The widget shows their current nails. As Apple has opened up the iOS home screen more and more, iOS users have gotten more comfortable personalizing and decorating the home screen beyond simply having rows of apps.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/eight-bit-nails-latest-nails-widget.jpg&quot; width=&quot;&quot; height=&quot;300&quot; alt=&quot;Latest nails widget&quot; title=&quot;Latest nails widget&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Latest nails widget&lt;/div&gt;&lt;/div&gt;
-
-&lt;h2 id=&quot;canvas-resizing&quot;&gt;Canvas resizing&lt;/h2&gt;
-
-&lt;p&gt;I added the ability for Plus users to resize the canvas. This was a suggestion from a user who noted that the default 10w by 16h canvas didn’t allow for designs with a center line. I decided to include 4 options with similar aspect ratios: small and large, each with a odd/even variant.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/eight-bit-nails-canvas-resizing.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Canvas resizing screen&quot; title=&quot;Canvas resizing screen&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Canvas resizing screen&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;I was hesitant to introduce image resizing because it can be very disruptive to the image if you’ve already “completed” your design. There’s a balance between forcing users to choose a canvas size before they start drawing and know what it means, and waiting until it’s too costly to change it. In the end, I made the preview screen so users could see what the result would be before deciding to irreversibly alter the canvas size.&lt;/p&gt;
-
-&lt;p&gt;The rescaling algorithm is nearest-neighbor which makes sense for pixel art. I was also considering adding an option for clipping, but it’s hard to imagine the cases where clipping makes more sense.&lt;/p&gt;
-
-&lt;p&gt;Under the hood, the app technically supports any canvas size, but there are a lot of assumptions based on the aspect ratio of nails. Therefore I wanted to keep it limited for now. Also, too large a canvas and touch drawing gets too difficult and time consuming.&lt;/p&gt;
-
-&lt;h2 id=&quot;list-layout&quot;&gt;List layout&lt;/h2&gt;
-
-&lt;p&gt;I made some changes to the layout of the nails list. The share and view large buttons were hidden and I wanted to make sure it was easy for users to access them. It makes the home screen a little more cluttered, but I feel okay about shifting the balance a bit towards usability and discoverability.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/eight-bit-nails-list-layout.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Nails list with buttons pulled out beneath the row&quot; title=&quot;Nails list with buttons pulled out beneath the row&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Nails list with buttons pulled out beneath the row&lt;/div&gt;&lt;/div&gt;
-
-&lt;h2 id=&quot;rendering-improvements&quot;&gt;Rendering improvements&lt;/h2&gt;
-
-&lt;p&gt;As discussed in detail in my previous post &lt;a href=&quot;/2025/03/10/pixel-art-swift-ui/&quot;&gt;Rendering Pixel Art with SwiftUI&lt;/a&gt;, I made some improvements to the rendering for nails across the app. Users will see less anti-aliasing artifacts, especially in share images.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/eight-bit-nails-share-render.png&quot; width=&quot;&quot; height=&quot;200&quot; alt=&quot;Share images look nicer&quot; title=&quot;Share images look nicer&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Share images look nicer&lt;/div&gt;&lt;/div&gt;
-
-&lt;h2 id=&quot;next-steps&quot;&gt;Next steps&lt;/h2&gt;
-
-&lt;p&gt;There are a few other features I’m considering adding like allowing nail outline customization or share image customization. But I’m going to wait for user feedback before any more overboard with guesses about what will drive downloads and usage (and revenue).&lt;/p&gt;
-
-&lt;p&gt;I’m planning to start uploading some videos to social media of me painting some nails with the app as a way to get the word out about the app. I haven’t experimented with ads or social media marketing yet and I think this could be a good opportunity to get started.&lt;/p&gt;
-
-&lt;p&gt;My other goal with adding a non-consumable in-app purchase (i.e. one-time unlock) was to have a reusable implementation for other apps. Working with StoreKit and testing all scenarios is complex and time consuming. I’m banking on this upfront work decreasing the time to add payments to future apps significantly.&lt;/p&gt;
-</description>
-        <pubDate>Wed, 12 Mar 2025 18:00:00 -0500</pubDate>
-        <link>https://twocentstudios.com/2025/03/12/8-bit-nails-plus/</link>
-        <guid isPermaLink="true">https://twocentstudios.com/2025/03/12/8-bit-nails-plus/</guid>
-        
-        <category>8bitnails</category>
         
         <category>ios</category>
         
