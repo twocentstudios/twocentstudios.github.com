@@ -5,7 +5,7 @@ date: 2025-08-12 11:38:00
 tags: apple ios swift concurrency
 ---
 
-I started my Apple platforms development journey a year before [Grand Central Dispatch](TODO) was released with iOS 4. I've lived through codebase migrations to [NSOperation](https://nshipster.com/nsoperation/). Then through the slew of FRP frameworks (of which I consider a concurrency solution): [ReactiveCocoa](TODO), [ReactiveSwift](TODO), [RxSwift](TODO), and finally [Combine](TODO).
+I started my Apple platforms development journey a year before [Grand Central Dispatch](https://developer.apple.com/documentation/dispatch) was released with iOS 4. I've lived through codebase migrations to [NSOperation](https://nshipster.com/nsoperation/). Then through the slew of FRP frameworks (of which I consider a concurrency solution): [ReactiveCocoa](https://github.com/ReactiveCocoa/ReactiveCocoa), [ReactiveSwift](https://github.com/ReactiveCocoa/ReactiveSwift), [RxSwift](https://github.com/ReactiveX/RxSwift), and finally [Combine](https://developer.apple.com/documentation/combine).
 
 My strategy for learning all these paradigms was best described as osmosis while encountering and solving real problems in codebases. Of course, you have to spend time setting breaking points and patiently stepping through with a debugger to see where all the thread hops are happening. Eventually, I reached the point where I could read code and predict which threads each section would run on. I had 80% of the operators memorized and knew exactly where in the docs to look for the remaining 20%.
 
@@ -25,7 +25,7 @@ Unlike most of my posts (I hope), these examples are unsolved problems with like
 
 ## 1. UNNotificationCenter
 
-I implemented push notifications in [Technicolor](TODO). I already had an overall architecture I was happy with, but elegantly massaging push notification support into it took some effort. I finally ended up with an implementation I thought I understood that still properly handled the multiple delegate callback points across `UIApplicationDelegate` via `@UIApplicationDelegateAdaptor` and `UNNotificationCenter`.
+I implemented push notifications in [Technicolor](/2025/07/25/reintroducing-technicolor-binge-watch-with-friends-over-space-and-time/). I already had an overall architecture I was happy with, but elegantly massaging push notification support into it took some effort. I finally ended up with an implementation I thought I understood that still properly handled the multiple delegate callback points across `UIApplicationDelegate` via `@UIApplicationDelegateAdaptor` and `UNNotificationCenter`.
 
 Besides the push token registration and user permissions, the key functionality of my push notifications wrapper client is to open the screen of the app that corresponds with the type of push notification the user tapped.
 
@@ -149,12 +149,12 @@ Presumably no one at Apple is working on the User Notifications framework anymor
 
 ## 2. CMMotionActivityManager
 
-[Core Motion](TODO) is another neglected framework that not many iOS devs have the pleasure of integrating. It seems to have mostly been "modernized" around iOS 7 when `NSOperation` had a small popularity bump. Also when the API best practices for getting permission from the device user were still being tweaked.
+[Core Motion](https://developer.apple.com/documentation/coremotion) is another neglected framework that not many iOS devs have the pleasure of integrating. It seems to have mostly been "modernized" around iOS 7 when `NSOperation` had a small popularity bump. Also when the API best practices for getting permission from the device user were still being tweaked.
 
-For a current project, I'm using [`CMMotionActivityManager`](TODO). It's a slightly higher-level data source for predicting whether the device is held by a user walking, cycling, driving, standing still, etc. It has two primary APIs:
+For a current project, I'm using [`CMMotionActivityManager`](https://developer.apple.com/documentation/coremotion/cmmotionactivitymanager). It's a slightly higher-level data source for predicting whether the device is held by a user walking, cycling, driving, standing still, etc. It has two primary APIs:
 
-- Request historical data for a time range (up to 1 week ago): [`queryActivityStarting(from:to:to:)`]()
-- Get live streaming data while the app is in the foreground: [`startActivityUpdates(to:)`]()
+- Request historical data for a time range (up to 1 week ago): [`queryActivityStarting(from:to:to:)`](https://developer.apple.com/documentation/coremotion/cmmotionactivitymanager/1615919-queryactivitystarting)
+- Get live streaming data while the app is in the foreground: [`startActivityUpdates(to:)`](https://developer.apple.com/documentation/coremotion/cmmotionactivitymanager/1615895-startactivityupdates)
 
 `queryActivityStarting` returns once to the `OperationQueue` specified in the parameters. `startActivityUpdates` keeps returning values until `stopActivityUpdates()` is called.
 
@@ -251,7 +251,7 @@ Again, I feel as if I've learned nothing. I have potentially worse intuition tha
 
 ## 3. Actor Reentrancy
 
-I've been working on a meatier problem within [Eki Live](TODO) for a couple months.
+I've been working on a meatier problem within [Eki Live](/2025/06/03/eki-live-announcement/) for a couple months.
 
 I have the following pipeline:
 
