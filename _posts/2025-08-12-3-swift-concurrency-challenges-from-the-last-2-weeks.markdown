@@ -90,7 +90,7 @@ final class PushNotificationDelegateProxy: NSObject, UNUserNotificationCenterDel
 
         let payload = // Decode payload
         await MainActor.run {
-        	notificationTapHandler?(payload)
+            notificationTapHandler?(payload)
         }
     }
 }
@@ -145,7 +145,7 @@ As far as I can tell, this no longer crashes although I haven't had time to thor
 
 From this whole weeks-long process, I've learned essentially nothing about the proper usage of Swift Concurrency, my mental model is less well-formed than it used to be, and I still have a lingering problem that I cannot practically devote enough time to comprehensively solve right now.
 
-Presumably no one at Apple is working on the User Notifications framework anymore. Nothing is being added to it. No one is giving it concurrency support. No one *has* (over the past decade and a half) or *will* document its concurrency story. The best we have is a [Stack Overflow post](https://stackoverflow.com/questions/73750724/how-can-usernotificationcenter-didreceive-cause-a-crash-even-with-nothing-in) with no unanimous best practice and no solution.
+Presumably no one at Apple is working on the User Notifications framework anymore. Nothing is being added to it. No one is giving it concurrency support. No one *has* (over the past decade) or *will* document its concurrency story. The best we have is a [Stack Overflow post](https://stackoverflow.com/questions/73750724/how-can-usernotificationcenter-didreceive-cause-a-crash-even-with-nothing-in) with no unanimous best practice and no solution.
 
 ## 2. CMMotionActivityManager
 
@@ -153,8 +153,8 @@ Presumably no one at Apple is working on the User Notifications framework anymor
 
 For a current project, I'm using [`CMMotionActivityManager`](https://developer.apple.com/documentation/coremotion/cmmotionactivitymanager). It's a slightly higher-level data source for predicting whether the device is held by a user walking, cycling, driving, standing still, etc. It has two primary APIs:
 
-- Request historical data for a time range (up to 1 week ago): [`queryActivityStarting(from:to:to:)`](https://developer.apple.com/documentation/coremotion/cmmotionactivitymanager/1615919-queryactivitystarting)
-- Get live streaming data while the app is in the foreground: [`startActivityUpdates(to:)`](https://developer.apple.com/documentation/coremotion/cmmotionactivitymanager/1615895-startactivityupdates)
+- Request historical data for a time range (up to 1 week ago): [`queryActivityStarting(from:to:to:)`](https://developer.apple.com/documentation/coremotion/cmmotionactivitymanager/queryactivitystarting(from:to:to:withhandler:))
+- Get live streaming data while the app is in the foreground: [`startActivityUpdates(to:)`](https://developer.apple.com/documentation/coremotion/cmmotionactivitymanager/startactivityupdates(to:withhandler:))
 
 `queryActivityStarting` returns once to the `OperationQueue` specified in the parameters. `startActivityUpdates` keeps returning values until `stopActivityUpdates()` is called.
 
@@ -388,23 +388,23 @@ extension LocationManagerDelegate: @preconcurrency CLLocationManagerDelegate {
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
     	// Get the shared `serialProcessor` from somewhere global then...
     	for location in locations {
-			serialProcessor.submit(location)
-		}
-	}
+            serialProcessor.submit(location)
+        }
+    }
 }
 
 // In some View Model...
 @MainActor @Observable final class ContentViewModel {
-	@ObservationIgnored let serialProcessor: SerialProcessor<CLLocation, RailwayTrackerResult>
-	private(set) var latestResult: RailwayTrackerResult?
-
-	func task() async {
-		for await result in serialProcessor.results {
-		    latestResult = result
-		}
-	}
-	
-	// ...
+    @ObservationIgnored let serialProcessor: SerialProcessor<CLLocation, RailwayTrackerResult>
+    private(set) var latestResult: RailwayTrackerResult?
+    
+    func task() async {
+        for await result in serialProcessor.results {
+            latestResult = result
+        }
+    }
+    
+    // ...
 }
 ```
 
