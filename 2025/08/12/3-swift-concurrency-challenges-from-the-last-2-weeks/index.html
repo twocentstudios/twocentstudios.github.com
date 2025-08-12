@@ -293,7 +293,7 @@
   <article class="post-content">
     <p>I started my Apple platforms development journey a year before <a href="https://developer.apple.com/documentation/dispatch">Grand Central Dispatch</a> was released with iOS 4. I’ve lived through codebase migrations to <a href="https://nshipster.com/nsoperation/">NSOperation</a>. Then through the slew of FRP frameworks (of which I consider a concurrency solution): <a href="https://github.com/ReactiveCocoa/ReactiveCocoa">ReactiveCocoa</a>, <a href="https://github.com/ReactiveCocoa/ReactiveSwift">ReactiveSwift</a>, <a href="https://github.com/ReactiveX/RxSwift">RxSwift</a>, and finally <a href="https://developer.apple.com/documentation/combine">Combine</a>.</p>
 
-<p>My strategy for learning all these paradigms was best described as osmosis while encountering and solving real problems in codebases. Of course, you have to spend time setting breaking points and patiently stepping through with a debugger to see where all the thread hops are happening. Eventually, I reached the point where I could read code and predict which threads each section would run on. I had 80% of the operators memorized and knew exactly where in the docs to look for the remaining 20%.</p>
+<p>My strategy for learning all these paradigms was best described as osmosis while encountering and solving real problems in codebases. Of course, you have to spend time setting breakpoints and patiently stepping through with a debugger to see where all the thread hops are happening. Eventually, I reached the point where I could read code and predict which threads each section would run on. I had 80% of the operators memorized and knew exactly where in the docs to look for the remaining 20%.</p>
 
 <p>Years in, that kind of confidence has eluded me so far with Swift Concurrency. I cannot yet read a snippet of code and predict what the call stack will look like. I haven’t memorized enough of the syntax to formulate solutions in my head and write it fluently. I don’t have a go-to location in the docs to find the primitive at the tip of my tongue.</p>
 
@@ -375,7 +375,7 @@
 
         <span class="k">let</span> <span class="nv">payload</span> <span class="o">=</span> <span class="c1">// Decode payload</span>
         <span class="n">await</span> <span class="kt">MainActor</span><span class="o">.</span><span class="n">run</span> <span class="p">{</span>
-        	<span class="nf">notificationTapHandler</span><span class="p">?(</span><span class="n">payload</span><span class="p">)</span>
+            <span class="nf">notificationTapHandler</span><span class="p">?(</span><span class="n">payload</span><span class="p">)</span>
         <span class="p">}</span>
     <span class="p">}</span>
 <span class="p">}</span>
@@ -431,7 +431,7 @@ Last Exception Backtrace:
 
 <p>From this whole weeks-long process, I’ve learned essentially nothing about the proper usage of Swift Concurrency, my mental model is less well-formed than it used to be, and I still have a lingering problem that I cannot practically devote enough time to comprehensively solve right now.</p>
 
-<p>Presumably no one at Apple is working on the User Notifications framework anymore. Nothing is being added to it. No one is giving it concurrency support. No one <em>has</em> (over the past decade and a half) or <em>will</em> document its concurrency story. The best we have is a <a href="https://stackoverflow.com/questions/73750724/how-can-usernotificationcenter-didreceive-cause-a-crash-even-with-nothing-in">Stack Overflow post</a> with no unanimous best practice and no solution.</p>
+<p>Presumably no one at Apple is working on the User Notifications framework anymore. Nothing is being added to it. No one is giving it concurrency support. No one <em>has</em> (over the past decade) or <em>will</em> document its concurrency story. The best we have is a <a href="https://stackoverflow.com/questions/73750724/how-can-usernotificationcenter-didreceive-cause-a-crash-even-with-nothing-in">Stack Overflow post</a> with no unanimous best practice and no solution.</p>
 
 <h2 id="2-cmmotionactivitymanager">2. CMMotionActivityManager</h2>
 
@@ -440,8 +440,8 @@ Last Exception Backtrace:
 <p>For a current project, I’m using <a href="https://developer.apple.com/documentation/coremotion/cmmotionactivitymanager"><code class="language-plaintext highlighter-rouge">CMMotionActivityManager</code></a>. It’s a slightly higher-level data source for predicting whether the device is held by a user walking, cycling, driving, standing still, etc. It has two primary APIs:</p>
 
 <ul>
-  <li>Request historical data for a time range (up to 1 week ago): <a href="https://developer.apple.com/documentation/coremotion/cmmotionactivitymanager/1615919-queryactivitystarting"><code class="language-plaintext highlighter-rouge">queryActivityStarting(from:to:to:)</code></a></li>
-  <li>Get live streaming data while the app is in the foreground: <a href="https://developer.apple.com/documentation/coremotion/cmmotionactivitymanager/1615895-startactivityupdates"><code class="language-plaintext highlighter-rouge">startActivityUpdates(to:)</code></a></li>
+  <li>Request historical data for a time range (up to 1 week ago): <a href="https://developer.apple.com/documentation/coremotion/cmmotionactivitymanager/queryactivitystarting(from:to:to:withhandler:)"><code class="language-plaintext highlighter-rouge">queryActivityStarting(from:to:to:)</code></a></li>
+  <li>Get live streaming data while the app is in the foreground: <a href="https://developer.apple.com/documentation/coremotion/cmmotionactivitymanager/startactivityupdates(to:withhandler:)"><code class="language-plaintext highlighter-rouge">startActivityUpdates(to:)</code></a></li>
 </ul>
 
 <p><code class="language-plaintext highlighter-rouge">queryActivityStarting</code> returns once to the <code class="language-plaintext highlighter-rouge">OperationQueue</code> specified in the parameters. <code class="language-plaintext highlighter-rouge">startActivityUpdates</code> keeps returning values until <code class="language-plaintext highlighter-rouge">stopActivityUpdates()</code> is called.</p>
@@ -557,7 +557,7 @@ Last Exception Backtrace:
 </code></pre>
 </div>
 
-<p>The actual architecture is a bit more complex due the relationship between instances of classes doing each part of the work. But the overall pipeline design has always felt precarious due to the underlying assumptions that:</p>
+<p>The actual architecture is a bit more complex due to the relationship between instances of classes doing each part of the work. But the overall pipeline design has always felt precarious due to the underlying assumptions that:</p>
 
 <ul>
   <li>Core Location will never produce <code class="language-plaintext highlighter-rouge">CLLocation</code> values faster than RailwayTracker can process them.</li>
@@ -569,7 +569,7 @@ Last Exception Backtrace:
 
 <p>When originally designing <code class="language-plaintext highlighter-rouge">RailwayTracker</code>, an <code class="language-plaintext highlighter-rouge">actor</code> seemed like the obvious choice. I wanted a separate isolation for its internal state and I knew it’d be doing enough heavy work that it wasn’t feasible to do on the main actor.</p>
 
-<p>However, I misinterpreted the behavior <code class="language-plaintext highlighter-rouge">actor</code>, thinking that an actor <em>also</em> ensured that an instance’s functions would be need to complete before they could be called again. In practice, <code class="language-plaintext highlighter-rouge">actor</code>s don’t do anything to prevent <a href="https://mjtsai.com/blog/2024/07/29/actor-reentrancy-in-swift/">reentrancy</a>.</p>
+<p>However, I misinterpreted the behavior of <code class="language-plaintext highlighter-rouge">actor</code>, thinking that an actor <em>also</em> ensured that an instance’s functions would need to complete before they could be called again. In practice, <code class="language-plaintext highlighter-rouge">actor</code>s don’t do anything to prevent <a href="https://mjtsai.com/blog/2024/07/29/actor-reentrancy-in-swift/">reentrancy</a>.</p>
 
 <p>Meaning that the input locations could be being processed out-of-order by the actor with the database operations being interleaved and there being all kinds of chaos and unspecified behavior.</p>
 
@@ -580,8 +580,8 @@ Last Exception Backtrace:
 <p>I decided on my specification:</p>
 
 <ul>
-  <li>CLLocation’s should never be dropped.</li>
-  <li>CLLocation’s should always be fully processed one-by-one in the order they arrive.</li>
+  <li>CLLocations should never be dropped.</li>
+  <li>CLLocations should always be fully processed one-by-one in the order they arrive.</li>
   <li>Pipeline output results should be delivered to one “subscriber” (mixing metaphors here), but I may need multiple in the near future.</li>
 </ul>
 
@@ -683,23 +683,23 @@ Last Exception Backtrace:
     <span class="kd">func</span> <span class="nf">locationManager</span><span class="p">(</span><span class="n">_</span> <span class="nv">manager</span><span class="p">:</span> <span class="kt">CLLocationManager</span><span class="p">,</span> <span class="n">didUpdateLocations</span> <span class="nv">locations</span><span class="p">:</span> <span class="p">[</span><span class="kt">CLLocation</span><span class="p">])</span> <span class="p">{</span>
     	<span class="c1">// Get the shared `serialProcessor` from somewhere global then...</span>
     	<span class="k">for</span> <span class="n">location</span> <span class="k">in</span> <span class="n">locations</span> <span class="p">{</span>
-			<span class="n">serialProcessor</span><span class="o">.</span><span class="nf">submit</span><span class="p">(</span><span class="n">location</span><span class="p">)</span>
-		<span class="p">}</span>
-	<span class="p">}</span>
+            <span class="n">serialProcessor</span><span class="o">.</span><span class="nf">submit</span><span class="p">(</span><span class="n">location</span><span class="p">)</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
 <span class="p">}</span>
 
 <span class="c1">// In some View Model...</span>
 <span class="kd">@MainActor</span> <span class="kd">@Observable</span> <span class="kd">final</span> <span class="kd">class</span> <span class="kt">ContentViewModel</span> <span class="p">{</span>
-	<span class="kd">@ObservationIgnored</span> <span class="k">let</span> <span class="nv">serialProcessor</span><span class="p">:</span> <span class="kt">SerialProcessor</span><span class="o">&lt;</span><span class="kt">CLLocation</span><span class="p">,</span> <span class="kt">RailwayTrackerResult</span><span class="o">&gt;</span>
-	<span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">latestResult</span><span class="p">:</span> <span class="kt">RailwayTrackerResult</span><span class="p">?</span>
-
-	<span class="kd">func</span> <span class="nf">task</span><span class="p">()</span> <span class="k">as</span><span class="n">ync</span> <span class="p">{</span>
-		<span class="k">for</span> <span class="n">await</span> <span class="n">result</span> <span class="k">in</span> <span class="n">serialProcessor</span><span class="o">.</span><span class="n">results</span> <span class="p">{</span>
-		    <span class="n">latestResult</span> <span class="o">=</span> <span class="n">result</span>
-		<span class="p">}</span>
-	<span class="p">}</span>
-	
-	<span class="c1">// ...</span>
+    <span class="kd">@ObservationIgnored</span> <span class="k">let</span> <span class="nv">serialProcessor</span><span class="p">:</span> <span class="kt">SerialProcessor</span><span class="o">&lt;</span><span class="kt">CLLocation</span><span class="p">,</span> <span class="kt">RailwayTrackerResult</span><span class="o">&gt;</span>
+    <span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">latestResult</span><span class="p">:</span> <span class="kt">RailwayTrackerResult</span><span class="p">?</span>
+    
+    <span class="kd">func</span> <span class="nf">task</span><span class="p">()</span> <span class="k">as</span><span class="n">ync</span> <span class="p">{</span>
+        <span class="k">for</span> <span class="n">await</span> <span class="n">result</span> <span class="k">in</span> <span class="n">serialProcessor</span><span class="o">.</span><span class="n">results</span> <span class="p">{</span>
+            <span class="n">latestResult</span> <span class="o">=</span> <span class="n">result</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    
+    <span class="c1">// ...</span>
 <span class="p">}</span>
 </code></pre>
 </div>

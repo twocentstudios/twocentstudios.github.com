@@ -5,15 +5,15 @@
     <description>A coding blog covering iOS, Swift, and other programming topics.</description>
     <link>https://twocentstudios.com/</link>
     <atom:link href="https://twocentstudios.com/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Tue, 12 Aug 2025 00:58:52 -0500</pubDate>
-    <lastBuildDate>Tue, 12 Aug 2025 00:58:52 -0500</lastBuildDate>
+    <pubDate>Tue, 12 Aug 2025 01:09:16 -0500</pubDate>
+    <lastBuildDate>Tue, 12 Aug 2025 01:09:16 -0500</lastBuildDate>
     <generator>Jekyll v3.9.3</generator>
     
       <item>
         <title>3 Swift Concurrency Challenges from the Last 2 Weeks</title>
         <description>&lt;p&gt;I started my Apple platforms development journey a year before &lt;a href=&quot;https://developer.apple.com/documentation/dispatch&quot;&gt;Grand Central Dispatch&lt;/a&gt; was released with iOS 4. I’ve lived through codebase migrations to &lt;a href=&quot;https://nshipster.com/nsoperation/&quot;&gt;NSOperation&lt;/a&gt;. Then through the slew of FRP frameworks (of which I consider a concurrency solution): &lt;a href=&quot;https://github.com/ReactiveCocoa/ReactiveCocoa&quot;&gt;ReactiveCocoa&lt;/a&gt;, &lt;a href=&quot;https://github.com/ReactiveCocoa/ReactiveSwift&quot;&gt;ReactiveSwift&lt;/a&gt;, &lt;a href=&quot;https://github.com/ReactiveX/RxSwift&quot;&gt;RxSwift&lt;/a&gt;, and finally &lt;a href=&quot;https://developer.apple.com/documentation/combine&quot;&gt;Combine&lt;/a&gt;.&lt;/p&gt;
 
-&lt;p&gt;My strategy for learning all these paradigms was best described as osmosis while encountering and solving real problems in codebases. Of course, you have to spend time setting breaking points and patiently stepping through with a debugger to see where all the thread hops are happening. Eventually, I reached the point where I could read code and predict which threads each section would run on. I had 80% of the operators memorized and knew exactly where in the docs to look for the remaining 20%.&lt;/p&gt;
+&lt;p&gt;My strategy for learning all these paradigms was best described as osmosis while encountering and solving real problems in codebases. Of course, you have to spend time setting breakpoints and patiently stepping through with a debugger to see where all the thread hops are happening. Eventually, I reached the point where I could read code and predict which threads each section would run on. I had 80% of the operators memorized and knew exactly where in the docs to look for the remaining 20%.&lt;/p&gt;
 
 &lt;p&gt;Years in, that kind of confidence has eluded me so far with Swift Concurrency. I cannot yet read a snippet of code and predict what the call stack will look like. I haven’t memorized enough of the syntax to formulate solutions in my head and write it fluently. I don’t have a go-to location in the docs to find the primitive at the tip of my tongue.&lt;/p&gt;
 
@@ -95,7 +95,7 @@
 
         &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;payload&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// Decode payload&lt;/span&gt;
         &lt;span class=&quot;n&quot;&gt;await&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;MainActor&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;run&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-        	&lt;span class=&quot;nf&quot;&gt;notificationTapHandler&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;payload&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+            &lt;span class=&quot;nf&quot;&gt;notificationTapHandler&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;payload&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
         &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
     &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
 &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
@@ -151,7 +151,7 @@ Last Exception Backtrace:
 
 &lt;p&gt;From this whole weeks-long process, I’ve learned essentially nothing about the proper usage of Swift Concurrency, my mental model is less well-formed than it used to be, and I still have a lingering problem that I cannot practically devote enough time to comprehensively solve right now.&lt;/p&gt;
 
-&lt;p&gt;Presumably no one at Apple is working on the User Notifications framework anymore. Nothing is being added to it. No one is giving it concurrency support. No one &lt;em&gt;has&lt;/em&gt; (over the past decade and a half) or &lt;em&gt;will&lt;/em&gt; document its concurrency story. The best we have is a &lt;a href=&quot;https://stackoverflow.com/questions/73750724/how-can-usernotificationcenter-didreceive-cause-a-crash-even-with-nothing-in&quot;&gt;Stack Overflow post&lt;/a&gt; with no unanimous best practice and no solution.&lt;/p&gt;
+&lt;p&gt;Presumably no one at Apple is working on the User Notifications framework anymore. Nothing is being added to it. No one is giving it concurrency support. No one &lt;em&gt;has&lt;/em&gt; (over the past decade) or &lt;em&gt;will&lt;/em&gt; document its concurrency story. The best we have is a &lt;a href=&quot;https://stackoverflow.com/questions/73750724/how-can-usernotificationcenter-didreceive-cause-a-crash-even-with-nothing-in&quot;&gt;Stack Overflow post&lt;/a&gt; with no unanimous best practice and no solution.&lt;/p&gt;
 
 &lt;h2 id=&quot;2-cmmotionactivitymanager&quot;&gt;2. CMMotionActivityManager&lt;/h2&gt;
 
@@ -160,8 +160,8 @@ Last Exception Backtrace:
 &lt;p&gt;For a current project, I’m using &lt;a href=&quot;https://developer.apple.com/documentation/coremotion/cmmotionactivitymanager&quot;&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CMMotionActivityManager&lt;/code&gt;&lt;/a&gt;. It’s a slightly higher-level data source for predicting whether the device is held by a user walking, cycling, driving, standing still, etc. It has two primary APIs:&lt;/p&gt;
 
 &lt;ul&gt;
-  &lt;li&gt;Request historical data for a time range (up to 1 week ago): &lt;a href=&quot;https://developer.apple.com/documentation/coremotion/cmmotionactivitymanager/1615919-queryactivitystarting&quot;&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;queryActivityStarting(from:to:to:)&lt;/code&gt;&lt;/a&gt;&lt;/li&gt;
-  &lt;li&gt;Get live streaming data while the app is in the foreground: &lt;a href=&quot;https://developer.apple.com/documentation/coremotion/cmmotionactivitymanager/1615895-startactivityupdates&quot;&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;startActivityUpdates(to:)&lt;/code&gt;&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;Request historical data for a time range (up to 1 week ago): &lt;a href=&quot;https://developer.apple.com/documentation/coremotion/cmmotionactivitymanager/queryactivitystarting(from:to:to:withhandler:)&quot;&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;queryActivityStarting(from:to:to:)&lt;/code&gt;&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;Get live streaming data while the app is in the foreground: &lt;a href=&quot;https://developer.apple.com/documentation/coremotion/cmmotionactivitymanager/startactivityupdates(to:withhandler:)&quot;&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;startActivityUpdates(to:)&lt;/code&gt;&lt;/a&gt;&lt;/li&gt;
 &lt;/ul&gt;
 
 &lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;queryActivityStarting&lt;/code&gt; returns once to the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;OperationQueue&lt;/code&gt; specified in the parameters. &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;startActivityUpdates&lt;/code&gt; keeps returning values until &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;stopActivityUpdates()&lt;/code&gt; is called.&lt;/p&gt;
@@ -277,7 +277,7 @@ Last Exception Backtrace:
 &lt;/code&gt;&lt;/pre&gt;
 &lt;/div&gt;
 
-&lt;p&gt;The actual architecture is a bit more complex due the relationship between instances of classes doing each part of the work. But the overall pipeline design has always felt precarious due to the underlying assumptions that:&lt;/p&gt;
+&lt;p&gt;The actual architecture is a bit more complex due to the relationship between instances of classes doing each part of the work. But the overall pipeline design has always felt precarious due to the underlying assumptions that:&lt;/p&gt;
 
 &lt;ul&gt;
   &lt;li&gt;Core Location will never produce &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLLocation&lt;/code&gt; values faster than RailwayTracker can process them.&lt;/li&gt;
@@ -289,7 +289,7 @@ Last Exception Backtrace:
 
 &lt;p&gt;When originally designing &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;RailwayTracker&lt;/code&gt;, an &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;actor&lt;/code&gt; seemed like the obvious choice. I wanted a separate isolation for its internal state and I knew it’d be doing enough heavy work that it wasn’t feasible to do on the main actor.&lt;/p&gt;
 
-&lt;p&gt;However, I misinterpreted the behavior &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;actor&lt;/code&gt;, thinking that an actor &lt;em&gt;also&lt;/em&gt; ensured that an instance’s functions would be need to complete before they could be called again. In practice, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;actor&lt;/code&gt;s don’t do anything to prevent &lt;a href=&quot;https://mjtsai.com/blog/2024/07/29/actor-reentrancy-in-swift/&quot;&gt;reentrancy&lt;/a&gt;.&lt;/p&gt;
+&lt;p&gt;However, I misinterpreted the behavior of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;actor&lt;/code&gt;, thinking that an actor &lt;em&gt;also&lt;/em&gt; ensured that an instance’s functions would need to complete before they could be called again. In practice, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;actor&lt;/code&gt;s don’t do anything to prevent &lt;a href=&quot;https://mjtsai.com/blog/2024/07/29/actor-reentrancy-in-swift/&quot;&gt;reentrancy&lt;/a&gt;.&lt;/p&gt;
 
 &lt;p&gt;Meaning that the input locations could be being processed out-of-order by the actor with the database operations being interleaved and there being all kinds of chaos and unspecified behavior.&lt;/p&gt;
 
@@ -300,8 +300,8 @@ Last Exception Backtrace:
 &lt;p&gt;I decided on my specification:&lt;/p&gt;
 
 &lt;ul&gt;
-  &lt;li&gt;CLLocation’s should never be dropped.&lt;/li&gt;
-  &lt;li&gt;CLLocation’s should always be fully processed one-by-one in the order they arrive.&lt;/li&gt;
+  &lt;li&gt;CLLocations should never be dropped.&lt;/li&gt;
+  &lt;li&gt;CLLocations should always be fully processed one-by-one in the order they arrive.&lt;/li&gt;
   &lt;li&gt;Pipeline output results should be delivered to one “subscriber” (mixing metaphors here), but I may need multiple in the near future.&lt;/li&gt;
 &lt;/ul&gt;
 
@@ -403,23 +403,23 @@ Last Exception Backtrace:
     &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;locationManager&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;_&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;manager&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;CLLocationManager&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;didUpdateLocations&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;locations&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;CLLocation&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;])&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
     	&lt;span class=&quot;c1&quot;&gt;// Get the shared `serialProcessor` from somewhere global then...&lt;/span&gt;
     	&lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;location&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;locations&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-			&lt;span class=&quot;n&quot;&gt;serialProcessor&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;submit&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;location&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-		&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-	&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+            &lt;span class=&quot;n&quot;&gt;serialProcessor&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;submit&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;location&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
 &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
 
 &lt;span class=&quot;c1&quot;&gt;// In some View Model...&lt;/span&gt;
 &lt;span class=&quot;kd&quot;&gt;@MainActor&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;@Observable&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;final&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ContentViewModel&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-	&lt;span class=&quot;kd&quot;&gt;@ObservationIgnored&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;serialProcessor&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;SerialProcessor&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;CLLocation&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;RailwayTrackerResult&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;
-	&lt;span class=&quot;kd&quot;&gt;private(set)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;latestResult&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;RailwayTrackerResult&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;
-
-	&lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;task&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;as&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ync&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-		&lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;await&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;result&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;serialProcessor&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;results&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-		    &lt;span class=&quot;n&quot;&gt;latestResult&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;result&lt;/span&gt;
-		&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-	&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-	
-	&lt;span class=&quot;c1&quot;&gt;// ...&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;@ObservationIgnored&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;serialProcessor&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;SerialProcessor&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;CLLocation&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;RailwayTrackerResult&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;private(set)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;latestResult&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;RailwayTrackerResult&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;
+    
+    &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;task&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;as&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ync&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;await&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;result&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;serialProcessor&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;results&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;n&quot;&gt;latestResult&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;result&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    
+    &lt;span class=&quot;c1&quot;&gt;// ...&lt;/span&gt;
 &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;
 &lt;/div&gt;
