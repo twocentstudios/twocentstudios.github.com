@@ -5,9 +5,452 @@
     <description>A coding blog covering iOS, Swift, and other programming topics.</description>
     <link>https://twocentstudios.com/</link>
     <atom:link href="https://twocentstudios.com/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Thu, 07 Aug 2025 11:15:29 -0500</pubDate>
-    <lastBuildDate>Thu, 07 Aug 2025 11:15:29 -0500</lastBuildDate>
+    <pubDate>Tue, 12 Aug 2025 00:58:52 -0500</pubDate>
+    <lastBuildDate>Tue, 12 Aug 2025 00:58:52 -0500</lastBuildDate>
     <generator>Jekyll v3.9.3</generator>
+    
+      <item>
+        <title>3 Swift Concurrency Challenges from the Last 2 Weeks</title>
+        <description>&lt;p&gt;I started my Apple platforms development journey a year before &lt;a href=&quot;https://developer.apple.com/documentation/dispatch&quot;&gt;Grand Central Dispatch&lt;/a&gt; was released with iOS 4. I’ve lived through codebase migrations to &lt;a href=&quot;https://nshipster.com/nsoperation/&quot;&gt;NSOperation&lt;/a&gt;. Then through the slew of FRP frameworks (of which I consider a concurrency solution): &lt;a href=&quot;https://github.com/ReactiveCocoa/ReactiveCocoa&quot;&gt;ReactiveCocoa&lt;/a&gt;, &lt;a href=&quot;https://github.com/ReactiveCocoa/ReactiveSwift&quot;&gt;ReactiveSwift&lt;/a&gt;, &lt;a href=&quot;https://github.com/ReactiveX/RxSwift&quot;&gt;RxSwift&lt;/a&gt;, and finally &lt;a href=&quot;https://developer.apple.com/documentation/combine&quot;&gt;Combine&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;My strategy for learning all these paradigms was best described as osmosis while encountering and solving real problems in codebases. Of course, you have to spend time setting breaking points and patiently stepping through with a debugger to see where all the thread hops are happening. Eventually, I reached the point where I could read code and predict which threads each section would run on. I had 80% of the operators memorized and knew exactly where in the docs to look for the remaining 20%.&lt;/p&gt;
+
+&lt;p&gt;Years in, that kind of confidence has eluded me so far with Swift Concurrency. I cannot yet read a snippet of code and predict what the call stack will look like. I haven’t memorized enough of the syntax to formulate solutions in my head and write it fluently. I don’t have a go-to location in the docs to find the primitive at the tip of my tongue.&lt;/p&gt;
+
+&lt;p&gt;I ask myself, why is my Swift Concurrency upskilling story so different?&lt;/p&gt;
+
+&lt;p&gt;Is the difference that GCD, NSOperation, and the reactive frameworks basically came out of the gate fully baked? Their paradigms may have merits and demerits, but after their first releases, anything new was additive or syntactic sugar. They were born as ugly as they’d always be.&lt;/p&gt;
+
+&lt;p&gt;Is it that my confidence was actually unearned and I never &lt;em&gt;really&lt;/em&gt; understood what was happening in my code? The kind of bugs that Swift Concurrency aims to solve are often so rare that you can go a whole career without being able to recognize the symptoms.&lt;/p&gt;
+
+&lt;p&gt;Is it that Swift Concurrency promises a higher level of abstraction (isolation domains instead of threads), but is so leaky that the programmer now has to understand both the abstraction and the paradigm it’s abstracting?&lt;/p&gt;
+
+&lt;p&gt;With that preface, I want to look at a few examples of Swift Concurrency challenges I’ve encountered recently. Let’s see if these shed any light on why I’m finding it so hard to develop intuition.&lt;/p&gt;
+
+&lt;p&gt;Unlike most of my posts (I hope), these examples are unsolved problems with likely broken code.&lt;/p&gt;
+
+&lt;h2 id=&quot;1-unnotificationcenter&quot;&gt;1. UNNotificationCenter&lt;/h2&gt;
+
+&lt;p&gt;I implemented push notifications in &lt;a href=&quot;/2025/07/25/reintroducing-technicolor-binge-watch-with-friends-over-space-and-time/&quot;&gt;Technicolor&lt;/a&gt;. I already had an overall architecture I was happy with, but elegantly massaging push notification support into it took some effort. I finally ended up with an implementation I thought I understood that still properly handled the multiple delegate callback points across &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;UIApplicationDelegate&lt;/code&gt; via &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;@UIApplicationDelegateAdaptor&lt;/code&gt; and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;UNNotificationCenter&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;Besides the push token registration and user permissions, the key functionality of my push notifications wrapper client is to open the screen of the app that corresponds with the type of push notification the user tapped.&lt;/p&gt;
+
+&lt;p&gt;As far as I can tell, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;UNNotificationCenter&lt;/code&gt; has no documented concurrency story. Each developer that sets out to use the framework has to derive what thread each delegate method is called on through trial and error on a real device in production by tapping production push notifications. We haven’t even started talking about Swift Concurrency yet.&lt;/p&gt;
+
+&lt;p&gt;To bring &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;User Notifications&lt;/code&gt; framework into the concurrency world, each developer needs to start from zero, with zero guarantees and zero support from Apple.&lt;/p&gt;
+
+&lt;p&gt;So I started with this (simplified) implementation:&lt;/p&gt;
+
+&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;// Version 1&lt;/span&gt;
+&lt;span class=&quot;kd&quot;&gt;final&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;PushNotificationDelegateProxy&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;NSObject&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;UNUserNotificationCenterDelegate&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;@unchecked&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Sendable&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;private&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;notificationTapHandler&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;((&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;PushNotificationPayload&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Void&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)?&lt;/span&gt;
+
+    &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;setNotificationTapHandler&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;_&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;handler&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;@escaping&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;PushNotificationPayload&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Void&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;notificationTapHandler&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;handler&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+    &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;userNotificationCenter&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;_&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;center&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;UNUserNotificationCenter&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;didReceive&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;response&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;UNNotificationResponse&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;as&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ync&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;userInfo&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;response&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;notification&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;request&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;content&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;userInfo&lt;/span&gt;
+
+        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;payload&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// Decode payload&lt;/span&gt;
+        &lt;span class=&quot;nf&quot;&gt;notificationTapHandler&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;payload&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;kd&quot;&gt;@MainActor&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;@Observable&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;final&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;PushNotificationSettingsStore&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Identifiable&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;@ObservationIgnored&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;@Dependency(\.pushNotificationClient)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;pushNotificationClient&lt;/span&gt;
+
+    &lt;span class=&quot;nf&quot;&gt;init&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;pushNotificationClient&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;setDelegate&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+
+        &lt;span class=&quot;nf&quot;&gt;conditionallyRegisterForRemoteNotifications&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+
+        &lt;span class=&quot;c1&quot;&gt;// Set the notification tap handler&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;pushNotificationClient&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;setNotificationTapHandler&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;weak&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;payload&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt;
+            &lt;span class=&quot;kt&quot;&gt;Task&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;@MainActor&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt;
+                &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;actions&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;notificationReceived&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;payload&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+            &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;In my initial understanding, no matter what thread &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;userNotificationCenter(didReceive:)&lt;/code&gt; called the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;notificationTapHandler&lt;/code&gt; closure, inside it the closure &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;notificationReceived(payload)&lt;/code&gt; would be called on the main thread and could do any UI operations it needed to.&lt;/p&gt;
+
+&lt;p&gt;From what I remember, I confirmed this as working during debug on device. When I was running in production on TestFlight it crashed when I opened a push notification.&lt;/p&gt;
+
+&lt;p&gt;Still unsure as to why (was it that &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;@MainActor&lt;/code&gt;-isolated &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;self&lt;/code&gt; was captured inside a non-isolated closure), I added some code that, although inelegant, would surely fix the problem:&lt;/p&gt;
+
+&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;// Version 2&lt;/span&gt;
+&lt;span class=&quot;kd&quot;&gt;final&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;PushNotificationDelegateProxy&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;NSObject&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;UNUserNotificationCenterDelegate&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;@unchecked&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Sendable&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;private&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;notificationTapHandler&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;((&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;PushNotificationPayload&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Void&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)?&lt;/span&gt;
+
+    &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;setNotificationTapHandler&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;_&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;handler&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;@escaping&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;PushNotificationPayload&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Void&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;notificationTapHandler&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;handler&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+    &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;userNotificationCenter&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;_&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;center&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;UNUserNotificationCenter&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;didReceive&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;response&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;UNNotificationResponse&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;as&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ync&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;userInfo&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;response&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;notification&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;request&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;content&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;userInfo&lt;/span&gt;
+
+        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;payload&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// Decode payload&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;await&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;MainActor&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;run&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        	&lt;span class=&quot;nf&quot;&gt;notificationTapHandler&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;payload&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Just sprinkle in &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;MainActor.run&lt;/code&gt; everywhere, right? Just like back in the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;DispatchQueue.main&lt;/code&gt; days.&lt;/p&gt;
+
+&lt;p&gt;This also crashed (every time) in production, with the following stack trace:&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;Triggered by Thread:  5
+
+Last Exception Backtrace:
+0   CoreFoundation                	0x184a5721c __exceptionPreprocess + 164 (NSException.m:249)
+1   libobjc.A.dylib               	0x181ef1abc objc_exception_throw + 88 (objc-exception.mm:356)
+2   Foundation                    	0x183d55670 -[NSAssertionHandler handleFailureInMethod:object:file:lineNumber:description:] + 288 (NSException.m:252)
+3   UIKitCore                     	0x1883ad4e8 -[UIApplication _performBlockAfterCATransactionCommitSynchronizes:] + 276 (UIApplication.m:3408)
+4   UIKitCore                     	0x1883bdecc -[UIApplication _updateStateRestorationArchiveForBackgroundEvent:saveState:exitIfCouldNotRestoreState:updateSnapshot:windowScene:] + 528 (UIApplication.m:12129)
+5   UIKitCore                     	0x1883be278 -[UIApplication _updateSnapshotAndStateRestorationWithAction:windowScene:] + 144 (UIApplication.m:12174)
+6   technicolortv                 	0x1027d6670 @objc closure #1 in PushNotificationDelegateProxy.userNotificationCenter(_:didReceive:) + 80 (/&amp;lt;compiler-generated&amp;gt;:0)
+// ...
+12  libswift_Concurrency.dylib    	0x190521241 completeTaskWithClosure(swift::AsyncContext*, swift::SwiftError*) + 1 (Task.cpp:537)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;State restoration somehow got triggered off the main thread? How? I guess I could understand if the problem were that &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;notificationTapHandler&lt;/code&gt; is unsafe to be passed between isolation domains. But that’s not what the crash is saying is it?&lt;/p&gt;
+
+&lt;p&gt;Let’s push the isolation annotations even further:&lt;/p&gt;
+
+&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;extension&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;UNUserNotificationCenter&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;@retroactive&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;@unchecked&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Sendable&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{}&lt;/span&gt;
+&lt;span class=&quot;kd&quot;&gt;extension&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;UNNotificationResponse&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;@retroactive&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;@unchecked&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Sendable&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{}&lt;/span&gt;
+
+&lt;span class=&quot;kd&quot;&gt;final&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;PushNotificationDelegateProxy&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;NSObject&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;UNUserNotificationCenterDelegate&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;@unchecked&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Sendable&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;private&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;notificationTapHandler&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kd&quot;&gt;@MainActor&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;PushNotificationPayload&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Void&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)?&lt;/span&gt;
+
+    &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;setNotificationTapHandler&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;_&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;handler&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;@escaping&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;@MainActor&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;PushNotificationPayload&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Void&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;notificationTapHandler&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;handler&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+    &lt;span class=&quot;kd&quot;&gt;@MainActor&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;userNotificationCenter&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;_&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;center&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;UNUserNotificationCenter&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;didReceive&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;response&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;UNNotificationResponse&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;as&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ync&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;userInfo&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;response&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;notification&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;request&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;content&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;userInfo&lt;/span&gt;
+
+        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;payload&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// Decode payload&lt;/span&gt;
+        &lt;span class=&quot;nf&quot;&gt;notificationTapHandler&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;payload&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Let’s try to force &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;userNotificationCenter(didReceive:)&lt;/code&gt; to be called on the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;@MainActor&lt;/code&gt; by lying to the compiler in a bunch of places about sendability.&lt;/p&gt;
+
+&lt;p&gt;As far as I can tell, this no longer crashes although I haven’t had time to thoroughly test it (since it requires multiple deployments to Test Flight and review cycles to extensively QA).&lt;/p&gt;
+
+&lt;p&gt;From this whole weeks-long process, I’ve learned essentially nothing about the proper usage of Swift Concurrency, my mental model is less well-formed than it used to be, and I still have a lingering problem that I cannot practically devote enough time to comprehensively solve right now.&lt;/p&gt;
+
+&lt;p&gt;Presumably no one at Apple is working on the User Notifications framework anymore. Nothing is being added to it. No one is giving it concurrency support. No one &lt;em&gt;has&lt;/em&gt; (over the past decade and a half) or &lt;em&gt;will&lt;/em&gt; document its concurrency story. The best we have is a &lt;a href=&quot;https://stackoverflow.com/questions/73750724/how-can-usernotificationcenter-didreceive-cause-a-crash-even-with-nothing-in&quot;&gt;Stack Overflow post&lt;/a&gt; with no unanimous best practice and no solution.&lt;/p&gt;
+
+&lt;h2 id=&quot;2-cmmotionactivitymanager&quot;&gt;2. CMMotionActivityManager&lt;/h2&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://developer.apple.com/documentation/coremotion&quot;&gt;Core Motion&lt;/a&gt; is another neglected framework that not many iOS devs have the pleasure of integrating. It seems to have mostly been “modernized” around iOS 7 when &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;NSOperation&lt;/code&gt; had a small popularity bump. Also when the API best practices for getting permission from the device user were still being tweaked.&lt;/p&gt;
+
+&lt;p&gt;For a current project, I’m using &lt;a href=&quot;https://developer.apple.com/documentation/coremotion/cmmotionactivitymanager&quot;&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CMMotionActivityManager&lt;/code&gt;&lt;/a&gt;. It’s a slightly higher-level data source for predicting whether the device is held by a user walking, cycling, driving, standing still, etc. It has two primary APIs:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Request historical data for a time range (up to 1 week ago): &lt;a href=&quot;https://developer.apple.com/documentation/coremotion/cmmotionactivitymanager/1615919-queryactivitystarting&quot;&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;queryActivityStarting(from:to:to:)&lt;/code&gt;&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;Get live streaming data while the app is in the foreground: &lt;a href=&quot;https://developer.apple.com/documentation/coremotion/cmmotionactivitymanager/1615895-startactivityupdates&quot;&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;startActivityUpdates(to:)&lt;/code&gt;&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;queryActivityStarting&lt;/code&gt; returns once to the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;OperationQueue&lt;/code&gt; specified in the parameters. &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;startActivityUpdates&lt;/code&gt; keeps returning values until &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;stopActivityUpdates()&lt;/code&gt; is called.&lt;/p&gt;
+
+&lt;p&gt;I thought each of these would be relatively straightforward to wrap into a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;withCheckedContinuation&lt;/code&gt; and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;AsyncStream&lt;/code&gt;, respectively.&lt;/p&gt;
+
+&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;// Version 1: queryActivityStarting&lt;/span&gt;
+&lt;span class=&quot;kt&quot;&gt;Task&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;@MainActor&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;weak&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;guard&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;self&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;else&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+    &lt;span class=&quot;c1&quot;&gt;// Check motion history for timeout&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;timeout&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;await&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;withCheckedContinuation&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;continuation&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;activityManager&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;queryActivityStarting&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
+            &lt;span class=&quot;nv&quot;&gt;from&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;startDate&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+            &lt;span class=&quot;nv&quot;&gt;to&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;endDate&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+            &lt;span class=&quot;nv&quot;&gt;to&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;OperationQueue&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;main&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;activities&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;error&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;guard&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;activities&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;error&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;nil&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;else&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+                &lt;span class=&quot;n&quot;&gt;continuation&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;resume&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;returning&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;nil&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+                &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt;
+            &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+            
+            &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;value&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// do work here to calculate timeout...&lt;/span&gt;
+            &lt;span class=&quot;n&quot;&gt;continuation&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;resume&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;returning&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;value&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    
+    &lt;span class=&quot;c1&quot;&gt;// ...&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;My strategy recently has been the same as the Swift team’s: isolate everything on the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;@MainActor&lt;/code&gt; unless there’s a reason not to. So that’s what I did in this case. However, is it correct to await with a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;MainActor&lt;/code&gt;-isolated &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Task&lt;/code&gt; while also having the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;queryActivityStarting&lt;/code&gt; function return on &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;OperationQueue.main&lt;/code&gt;?&lt;/p&gt;
+
+&lt;p&gt;It seemed like it was working fine in debug, but then when I was field testing I was observing what seemed to be deadlocks and the continuation never completing.&lt;/p&gt;
+
+&lt;p&gt;So I’m already having trouble reliably reproducing the bug. I’m not even sure whether the bug is related to concurrency or whether &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;queryActivityStarting&lt;/code&gt; just doesn’t respond the way I’d expect. After all, there’s a note in the docs that could be interpreted a number of ways:&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;This method runs asynchronously, returning immediately and delivering the results to the specified handler block. &lt;strong&gt;A delay of up to several minutes in reported activities is expected.&lt;/strong&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;In the end, I created this extension that forces &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;@MainActor&lt;/code&gt; at the function level and includes a timeout just in case. It seems to work so far.&lt;/p&gt;
+
+&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;extension&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;CMMotionActivityManager&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;@MainActor&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;activities&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;from&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;start&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Date&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;to&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;end&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Date&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;timeout&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;TimeInterval&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;as&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ync&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;throws&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;CMMotionActivity&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]?&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;try&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;await&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;withThrowingTaskGroup&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;of&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;CMMotionActivity&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]?&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;group&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt;
+            &lt;span class=&quot;n&quot;&gt;group&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;addTask&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+                &lt;span class=&quot;k&quot;&gt;try&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;await&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;withCheckedThrowingContinuation&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;continuation&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt;
+                    &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;queryActivityStarting&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;from&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;start&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;to&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;end&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;to&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;main&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;activities&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;error&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt;
+                        &lt;span class=&quot;k&quot;&gt;switch&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;activities&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;error&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+                        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;err&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?):&lt;/span&gt;
+                            &lt;span class=&quot;n&quot;&gt;continuation&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;resume&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;throwing&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;err&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+                        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;list&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?,&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;nil&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;):&lt;/span&gt;
+                            &lt;span class=&quot;n&quot;&gt;continuation&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;resume&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;returning&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;list&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+                        &lt;span class=&quot;k&quot;&gt;default&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
+                            &lt;span class=&quot;n&quot;&gt;continuation&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;resume&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;returning&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[])&lt;/span&gt;
+                        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+                    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+                &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+            &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+            &lt;span class=&quot;n&quot;&gt;group&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;addTask&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+                &lt;span class=&quot;k&quot;&gt;try&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;await&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Task&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;sleep&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;for&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;seconds&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;timeout&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;
+                &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;nil&lt;/span&gt;
+            &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+            &lt;span class=&quot;k&quot;&gt;guard&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;result&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;try&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;await&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;group&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;next&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;else&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+                &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;nil&lt;/span&gt;
+            &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+            &lt;span class=&quot;n&quot;&gt;group&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;cancelAll&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;result&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+    &lt;span class=&quot;kd&quot;&gt;@MainActor&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;activityUpdates&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;AsyncStream&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;CMMotionActivity&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;kt&quot;&gt;AsyncStream&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;continuation&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt;
+            &lt;span class=&quot;nf&quot;&gt;startActivityUpdates&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;to&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;main&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;activity&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt;
+                &lt;span class=&quot;k&quot;&gt;guard&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;activity&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;else&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+                    &lt;span class=&quot;n&quot;&gt;continuation&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;finish&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+                    &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt;
+                &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+                &lt;span class=&quot;n&quot;&gt;continuation&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;yield&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;activity&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+            &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+            &lt;span class=&quot;n&quot;&gt;continuation&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;onTermination&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;@Sendable&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;_&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt;
+                &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;stopActivityUpdates&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+            &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Again, I feel as if I’ve learned nothing. I have potentially worse intuition than I started with, and I may have to return to this problem again after I’ve released to production.&lt;/p&gt;
+
+&lt;h2 id=&quot;3-actor-reentrancy&quot;&gt;3. Actor Reentrancy&lt;/h2&gt;
+
+&lt;p&gt;I’ve been working on a meatier problem within &lt;a href=&quot;/2025/06/03/eki-live-announcement/&quot;&gt;Eki Live&lt;/a&gt; for a couple months.&lt;/p&gt;
+
+&lt;p&gt;I have the following pipeline:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Core Location produces &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLLocation&lt;/code&gt; values up to 1 per second.&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLLocation&lt;/code&gt;s are passed to an &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;actor RailwayTracker&lt;/code&gt; which processes them using various info from a database and incorporates that data into the actor long-term state.&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;RailwayTracker&lt;/code&gt; returns a value that is displayed in the UI via SwiftUI and can also update a LiveActivity.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Essentially:&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;CLLocationManagerDelegate -&amp;gt; RailwayTracker -&amp;gt; ContentView
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;The actual architecture is a bit more complex due the relationship between instances of classes doing each part of the work. But the overall pipeline design has always felt precarious due to the underlying assumptions that:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Core Location will never produce &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLLocation&lt;/code&gt; values faster than RailwayTracker can process them.&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;RailwayTracker&lt;/code&gt; will always process inputs in order, serially.&lt;/li&gt;
+  &lt;li&gt;SwiftUI will receive outputs from &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;RailwayTracker&lt;/code&gt; no faster than it can display them.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;In practice, I was probably breaking at least the first constraint during testing, since I could simulate &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLLocation&lt;/code&gt;s being produced at 20x real-time speed in a separate macOS app I was using to iterate on the algorithm within &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;RailwayTracker&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;When originally designing &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;RailwayTracker&lt;/code&gt;, an &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;actor&lt;/code&gt; seemed like the obvious choice. I wanted a separate isolation for its internal state and I knew it’d be doing enough heavy work that it wasn’t feasible to do on the main actor.&lt;/p&gt;
+
+&lt;p&gt;However, I misinterpreted the behavior &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;actor&lt;/code&gt;, thinking that an actor &lt;em&gt;also&lt;/em&gt; ensured that an instance’s functions would be need to complete before they could be called again. In practice, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;actor&lt;/code&gt;s don’t do anything to prevent &lt;a href=&quot;https://mjtsai.com/blog/2024/07/29/actor-reentrancy-in-swift/&quot;&gt;reentrancy&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;Meaning that the input locations could be being processed out-of-order by the actor with the database operations being interleaved and there being all kinds of chaos and unspecified behavior.&lt;/p&gt;
+
+&lt;p&gt;While doing some new work on the project, I wanted to take another stab at hardening the entire pipeline using Swift Concurrency.&lt;/p&gt;
+
+&lt;p&gt;I researched the current state of the Apple officially-sanctioned &lt;a href=&quot;https://github.com/apple/swift-async-algorithms&quot;&gt;swift-async-algorithms&lt;/a&gt; package. It seemed to be in committee-hell with no real forward progress in the last 2+ years. There’s less than half of the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Combine&lt;/code&gt; operator API implemented. There’s something called an &lt;a href=&quot;https://github.com/apple/swift-async-algorithms/blob/main/Sources/AsyncAlgorithms/AsyncAlgorithms.docc/Guides/Channel.md&quot;&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;AsyncChannel&lt;/code&gt;&lt;/a&gt;. Would that be a good primitive to base my pipeline on?&lt;/p&gt;
+
+&lt;p&gt;I decided on my specification:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;CLLocation’s should never be dropped.&lt;/li&gt;
+  &lt;li&gt;CLLocation’s should always be fully processed one-by-one in the order they arrive.&lt;/li&gt;
+  &lt;li&gt;Pipeline output results should be delivered to one “subscriber” (mixing metaphors here), but I may need multiple in the near future.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;I ended up with a generic wrapper abstraction called &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;SerialProcessor&lt;/code&gt;:&lt;/p&gt;
+
+&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;final&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;SerialProcessor&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Input&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Sendable&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Output&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Sendable&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;typealias&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Process&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;@Sendable&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Input&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;as&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ync&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Output&lt;/span&gt;
+
+    &lt;span class=&quot;c1&quot;&gt;// Inbound (sync) and outbound (single-consumer) pipes&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;private&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;inPair&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;stream&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;AsyncStream&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Input&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;continuation&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;AsyncStream&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Input&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Continuation&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;private&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;outPair&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;stream&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;AsyncStream&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Output&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;continuation&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;AsyncStream&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Output&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Continuation&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+
+    &lt;span class=&quot;kd&quot;&gt;private&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;worker&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Task&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Void&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Never&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;private&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;process&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Process&lt;/span&gt;
+
+    &lt;span class=&quot;c1&quot;&gt;/// Single-consumer stream of `Output`.&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;results&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;AsyncStream&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Output&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;outPair&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;stream&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+    &lt;span class=&quot;nf&quot;&gt;init&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
+        &lt;span class=&quot;nv&quot;&gt;inputBuffering&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;AsyncStream&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Input&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Continuation&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;BufferingPolicy&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;unbounded&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+        &lt;span class=&quot;nv&quot;&gt;outputBuffering&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;AsyncStream&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Output&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Continuation&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;BufferingPolicy&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;unbounded&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+        &lt;span class=&quot;nv&quot;&gt;process&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;@escaping&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Process&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;process&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;process&lt;/span&gt;
+
+        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;inPair&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;AsyncStream&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;makeStream&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;of&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Input&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;bufferingPolicy&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;inputBuffering&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;outPair&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;AsyncStream&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;makeStream&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;of&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Output&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;bufferingPolicy&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;outputBuffering&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;inPair&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;inPair&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;outPair&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;outPair&lt;/span&gt;
+
+        &lt;span class=&quot;n&quot;&gt;worker&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Task&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;await&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;input&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;inPair&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;stream&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+                &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;output&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;await&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;process&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;input&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+                &lt;span class=&quot;n&quot;&gt;outPair&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;continuation&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;yield&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;output&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+            &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+            &lt;span class=&quot;n&quot;&gt;outPair&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;continuation&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;finish&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+    &lt;span class=&quot;kd&quot;&gt;deinit&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;nf&quot;&gt;finish&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+    &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;submit&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;_&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;input&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Input&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;inPair&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;continuation&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;yield&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;input&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+    &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;finish&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;inPair&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;continuation&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;finish&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;worker&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;cancel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;I couldn’t use &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;AsyncChannel&lt;/code&gt; for the input side because its &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;send&lt;/code&gt; function is &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;async&lt;/code&gt; and therefore requires an async context. I don’t have that inside the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLLocationManagerDelegate&lt;/code&gt; callback function that delivers &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLLocation&lt;/code&gt;s and creating a new &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Task&lt;/code&gt; for each new &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLLocation&lt;/code&gt; would break the serial ordering guarantee.&lt;/p&gt;
+
+&lt;p&gt;In the non-realtime system implementation, usage looks like this:&lt;/p&gt;
+
+&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;// Set up the processing&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;railwayTracker&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;RailwayTracker&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;railwayDatabase&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;database&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;serialProcessor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;SerialProcessor&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
+    &lt;span class=&quot;nv&quot;&gt;inputBuffering&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;unbounded&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+    &lt;span class=&quot;nv&quot;&gt;outputBuffering&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;unbounded&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+    &lt;span class=&quot;nv&quot;&gt;process&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;@Sendable&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;input&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;await&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;railwayTracker&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;process&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;input&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+
+&lt;span class=&quot;c1&quot;&gt;// Queue all locations immediately for processing&lt;/span&gt;
+&lt;span class=&quot;c1&quot;&gt;// This is in a `Task` so it will run after `serialProcessor.results` is set up&lt;/span&gt;
+&lt;span class=&quot;kt&quot;&gt;Task&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;location&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;locations&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;serialProcessor&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;submit&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;location&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;c1&quot;&gt;// Cache the results as they arrive&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;await&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;result&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;serialProcessor&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;results&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;resultsCache&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;result&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;location&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;id&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;result&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;In the realtime system version, I believe the implementation will look something like this (although I’m not at this point in the project yet):&lt;/p&gt;
+
+&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;// Set up the processing global&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;railwayTracker&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;RailwayTracker&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;railwayDatabase&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;database&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;serialProcessor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;SerialProcessor&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
+    &lt;span class=&quot;nv&quot;&gt;inputBuffering&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;unbounded&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+    &lt;span class=&quot;nv&quot;&gt;outputBuffering&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;bufferingNewest&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// for UI, drop late values&lt;/span&gt;
+    &lt;span class=&quot;nv&quot;&gt;process&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;@Sendable&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;input&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;await&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;railwayTracker&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;process&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;input&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+
+&lt;span class=&quot;c1&quot;&gt;// Where we receive new locations from the system&lt;/span&gt;
+&lt;span class=&quot;kd&quot;&gt;extension&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;LocationManagerDelegate&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;@preconcurrency&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;CLLocationManagerDelegate&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;locationManager&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;_&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;manager&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;CLLocationManager&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;didUpdateLocations&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;locations&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;CLLocation&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;])&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    	&lt;span class=&quot;c1&quot;&gt;// Get the shared `serialProcessor` from somewhere global then...&lt;/span&gt;
+    	&lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;location&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;locations&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+			&lt;span class=&quot;n&quot;&gt;serialProcessor&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;submit&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;location&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+		&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+	&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;c1&quot;&gt;// In some View Model...&lt;/span&gt;
+&lt;span class=&quot;kd&quot;&gt;@MainActor&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;@Observable&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;final&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ContentViewModel&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+	&lt;span class=&quot;kd&quot;&gt;@ObservationIgnored&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;serialProcessor&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;SerialProcessor&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;CLLocation&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;RailwayTrackerResult&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;
+	&lt;span class=&quot;kd&quot;&gt;private(set)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;latestResult&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;RailwayTrackerResult&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;
+
+	&lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;task&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;as&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ync&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+		&lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;await&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;result&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;serialProcessor&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;results&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+		    &lt;span class=&quot;n&quot;&gt;latestResult&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;result&lt;/span&gt;
+		&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+	&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+	
+	&lt;span class=&quot;c1&quot;&gt;// ...&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;In my testing of the non-realtime setup, the system seemed to work correctly. It buffers inputs as expected, and even drops outputs if I use &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.bufferingNewest(1)&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;I’m still actively working on this problem (and should be doing so right now instead of writing this post).&lt;/p&gt;
+
+&lt;p&gt;There are other libraries like &lt;a href=&quot;https://github.com/sideeffect-io/AsyncExtensions&quot;&gt;AsyncExtensions&lt;/a&gt; that build on the Swift primitives. However, getting my head around the shape of the problems they can solve and what I can accomplish with the primitives has been tough.&lt;/p&gt;
+
+&lt;h2 id=&quot;final-thoughts-and-complaints&quot;&gt;Final thoughts and complaints&lt;/h2&gt;
+
+&lt;p&gt;Swift Concurrency is just such a bummer. We still need to know about lower-level primitives like locks and mutexes and threads. We still need to have working knowledge of past solutions like Grand Central Dispatch in order to interact with our own and Apple’s legacy APIs. Unlike previous solutions, there are fewer primitives for managing serial vs. concurrent processing. It adds a new abstraction layer and several new concepts (isolation, actors, structured/unstructured) that probably will make sense eventually but don’t right now. It adds a dozen new keywords with more essential ones arriving with each new point update. It’s difficult or impossible to find sanctioned sample code that provides a glimpse into what a “best practice” could be. We’re still not safe from runtime crashes.&lt;/p&gt;
+
+&lt;p&gt;I could keep going but I’m tired of complaining. I just want to have the confidence to write my features without having to budget multiple days of field testing and debugging time and reading the Swift forums.&lt;/p&gt;
+
+</description>
+        <pubDate>Tue, 12 Aug 2025 06:38:00 -0500</pubDate>
+        <link>https://twocentstudios.com/2025/08/12/3-swift-concurrency-challenges-from-the-last-2-weeks/</link>
+        <guid isPermaLink="true">https://twocentstudios.com/2025/08/12/3-swift-concurrency-challenges-from-the-last-2-weeks/</guid>
+        
+        <category>apple</category>
+        
+        <category>ios</category>
+        
+        <category>swift</category>
+        
+        <category>concurrency</category>
+        
+        
+      </item>
     
       <item>
         <title>Full-Stack Swift: The Technical Architecture of Technicolor</title>
@@ -2991,201 +3434,6 @@ delete &lt;span class=&quot;c&quot;&gt;# as long as we open the database in read
         <pubDate>Thu, 29 May 2025 07:22:00 -0500</pubDate>
         <link>https://twocentstudios.com/2025/05/29/train-tracker-devlog-02/</link>
         <guid isPermaLink="true">https://twocentstudios.com/2025/05/29/train-tracker-devlog-02/</guid>
-        
-        <category>ekibright</category>
-        
-        <category>ekilive</category>
-        
-        <category>ios</category>
-        
-        
-      </item>
-    
-      <item>
-        <title>Train Tracker Devlog</title>
-        <description>&lt;p&gt;Last month, I took a step back from development of my train timetables &lt;a href=&quot;/2024/07/27/eki-bright-tokyo-area-train-timetables&quot;&gt;iOS app Eki Bright&lt;/a&gt; to think about the app in a broader context. I’ve iterated on Version 1 on and off for nearly a year, with use cases emerging out of a basic feature set and evolving with my own daily usage of the app.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/eki-bright-v1-7-marketing.png&quot; width=&quot;&quot; height=&quot;250&quot; alt=&quot;Marketing screenshots for Eki Bright v1.7&quot; title=&quot;Marketing screenshots for Eki Bright v1.7&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Marketing screenshots for Eki Bright v1.7&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;As a solo developer, it’s difficult to maintain a clear perspective about any given project as it grows. It’s a balance of having a strong vision but carefully allowing reality to gently guide that vision.&lt;/p&gt;
-
-&lt;p&gt;All this is to say I spent some time thinking hard about what version 2 of Eki Bright would look like if I started over today. How could I optimize the app for the way I use it now? How can I entice potential users and provide value to new users immediately?&lt;/p&gt;
-
-&lt;p&gt;If I stopped with version 1, as a user, I’d be relatively satisfied. I know how to navigate the app and work around the various UX speed bumps and oil slicks to achieve my goal of riding the train system here in Tokyo. I can overlook the problems in the app in ways a random iPhone user wouldn’t. I knowingly stopped short of perfection on a few feature implementations in favor of getting them shipped.&lt;/p&gt;
-
-&lt;p&gt;I started to see a vision for how the app could work in a &lt;em&gt;progressive enhancement&lt;/em&gt; sort of way for the various use cases I’ve uncovered. I started to see how important it was to do as much heavy lifting in the app as possible. There’s always going to be tension between a “semi-pro” app that gives the user full control while also doing work on their behalf without asking.&lt;/p&gt;
-
-&lt;p&gt;A key part of the vision for version 2 that emerged was that Eki Bright can be a lot smarter about understanding the user’s context. With location services, it should be possible to understand whether the user is walking to a train station and wants to know if they should run to get the next train, or whether they’re riding a train and want to know when they’ll arrive at their destination.&lt;/p&gt;
-
-&lt;p&gt;I started by segmenting out users into part of an app usage lifecycle:&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;What would make a iPhone user want to download the app in the first place? Why (if at all) are Tokyo residents unsatisfied with their current navigation apps?&lt;/li&gt;
-  &lt;li&gt;For a first time user, what feature could act as an immediate hook/wedge to provide value with zero setup or explanation and remind them to come back again the next day?&lt;/li&gt;
-  &lt;li&gt;For users who have seen consistent results, what motivation would they have to want to dig deeper and trade some customization effort to get significantly more value out of the app?&lt;/li&gt;
-  &lt;li&gt;For users who have used the app consistently for some time, what features can be enhanced automatically based on usage history?&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;The features that make up this theoretical system are quite complicated! An interface that adapts to the kind of user, the user’s usage history, and the user’s current context was somewhat of a overwhelming task for me to take on all at once.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/eki-bright-v2-feature-list.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Sketching out the lattice of features that could make up Eki Bright v2&quot; title=&quot;Sketching out the lattice of features that could make up Eki Bright v2&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Sketching out the lattice of features that could make up Eki Bright v2&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;So after doing some brainstorming and pencil mockups, I decided to start prototyping a “hook” feature to capture that first segment of users: those who have not downloaded the app and first time users. A feature that is buzzy and attractive to prospective users, and is low touch and requires nearly zero configuration for first time users.&lt;/p&gt;
-
-&lt;p&gt;That feature was a &lt;em&gt;train finder&lt;/em&gt;.&lt;/p&gt;
-
-&lt;p&gt;With the timetable data embedded in the app combined with live location data from the user’s device, I reasoned it should be possible to find the exact train a user was riding if they opened Eki Bright while enroute. If the app could do this, it’d cut down on the work necessary to unlock downstream benefits for the user like:&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;Checking what time the train will arrive at a destination station&lt;/li&gt;
-  &lt;li&gt;Setting an alarm for the destination station&lt;/li&gt;
-  &lt;li&gt;Checking what other stations are stops along the way&lt;/li&gt;
-  &lt;li&gt;Setting up a &lt;a href=&quot;/2025/01/24/eki-bright-the-case-for-diy-routing/&quot;&gt;DIY route&lt;/a&gt; to more thoroughly track a transfer&lt;/li&gt;
-  &lt;li&gt;Sharing a route and arrival time to a friend&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;At this point, I still intended the train finder feature to be part of Eki Bright. I imagined the user opening up the Eki Bright app along their journey, the app quickly booting up location services and narrowing down the possible railways and trains within a few seconds, and the user being able to quickly take some related actions from there.&lt;/p&gt;
-
-&lt;p&gt;My friend David asked “why not have it run in the background so you don’t need to open the app?” I initially balked, not wanting to add background location tracking to Eki Bright due to its potential to be heavy on the device battery. I also couldn’t see how background tracking could streamline the experience beyond reducing that 1-2 second train calculation time with the tradeoff that all this work would waste battery in the cases the user never opened the app. The background activity idea stayed in the back of my mind though.&lt;/p&gt;
-
-&lt;p&gt;I started prototyping the algorithm for turning a time-series of GPS coordinates into a railway, a direction on that railway, and ultimately a train.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/train-tracker-first-algorithm.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Thinking through an train tracking algorithm. This particular algorithm turned out to be a dud.&quot; title=&quot;Thinking through an train tracking algorithm. This particular algorithm turned out to be a dud.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Thinking through an train tracking algorithm. This particular algorithm turned out to be a dud.&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;After my first day working on the algorithm, I realized that it was going to require a lot iteration on real data from inside the various trains running all over Tokyo. It wasn’t reasonable to think I could ride a train all day with my iPhone and MacBook debugging the algorithm on live data.&lt;/p&gt;
-
-&lt;p&gt;I therefore spent a day creating an app for collecting sessions of GPS coordinates. This has turned out to be a huge boon for development efficiency.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/gps-collector-screens.jpg&quot; width=&quot;&quot; height=&quot;300&quot; alt=&quot;GPS collector app I created and used to get batches of real data from the field&quot; title=&quot;GPS collector app I created and used to get batches of real data from the field&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;GPS collector app I created and used to get batches of real data from the field&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;This personal-use GPS Collector app allows me to collect raw data from Core Location in the background and annotate it while riding the various routes I take around the Tokyo area. I divide each trip up into a &lt;em&gt;session&lt;/em&gt;, then manually annotate the session with the railway, direction, departure station, and arrival station to serve as ground truth annotations. I allow exporting in GPX format (for usage within Xcode) and as JSON I can import into and decode with other apps.&lt;/p&gt;
-
-&lt;p&gt;Seeing the raw data revealed a litany of edge cases my algorithm would need to handle. First off, any train that goes underground is a non-starter for a GPS-reliant system; I’d have to make peace with that fact for now. Core Location data includes speed and heading, which is useful, but is itself a derived value and can be gleaned from other sources. GPS accuracy will sometimes plummet temporarily inside the boundaries of a station and sometimes randomly inside dense city limits. Waypoints are usually returned one-per-second, but sometimes will cut out for seconds or minutes. Some trains go from underground to above ground at least once along their designated route.&lt;/p&gt;
-
-&lt;p&gt;I spent a week or so collecting GPS data while working on other apps. I returned to Eki Bright to finish up a first draft of an algorithm that took an entire time-series of GPS data and returned a ranked list of candidates: a railway, the direction on that railway, and the previous and next station.&lt;/p&gt;
-
-&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;RidingTrainFinderCandidate&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;railway&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Railway&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;direction&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;RailDirection&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;previousStation&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Station&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;nextStation&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Station&lt;/span&gt;
-    &lt;span class=&quot;c1&quot;&gt;// let train: TrainTimetable -- TODO: determine which train&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;I added a debug viewer to visualize how my algorithm was responding to test data as it was played back. It was mostly working! It was also kind of fun to watch the playback. Being able to throw together a view like this for the sole purpose of debugging an algorithm is a huge win for SwiftUI.&lt;/p&gt;
-
-&lt;video src=&quot;/images/train-tracker-debug-view-01.mp4&quot; controls=&quot;&quot; poster=&quot;/images/train-tracker-debug-view-01.png&quot; preload=&quot;none&quot; height=&quot;400&quot;&gt;&lt;/video&gt;
-
-&lt;p&gt;I’d hit a development checkpoint, and as cool as my little debug tracker view was, I was still far from a shippable feature that solved a real problem. My next step was extending the algorithm to guess which train the user was on (not exactly a straightforward algorithm to write based on the shape of my train timetable data).&lt;/p&gt;
-
-&lt;p&gt;However, I thought back to my friend David’s remark about an app that works in the background. I thought, if I freed myself from the artificial constraints of Eki Bright as it currently existed, how could this algorithm still be useful?&lt;/p&gt;
-
-&lt;p&gt;A new vision emerged of an app that solved a much shallower problem:&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;Sometimes when I’m on a crowded train and I’ve got my headphones in, it’s hard to tell what station I’m approaching. I can’t see the display above the train car door or out the window.&lt;/li&gt;
-  &lt;li&gt;What if I had a Live Activity in my Dynamic Island that updated live as I stopped at or passed each station along a railway?&lt;/li&gt;
-  &lt;li&gt;And what if I didn’t have to manually select what railway I was on and what direction I was going?&lt;/li&gt;
-  &lt;li&gt;Better yet, what if I &lt;em&gt;didn’t even have to open the app&lt;/em&gt; and the Live Activity would automatically appear when I was riding a train and disappear when I got off?&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;If I could pull it off, this feature would be supplemental to any other navigation app. It also has a bit of “cool technology” vibe to it that could entice a download and serve as a conversation piece.&lt;/p&gt;
-
-&lt;p&gt;Realizing this new vision came with its own new implementation challenges.&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;Monitor significant location changes in the background to save battery life, then switch to live location monitoring when moving at train speeds.&lt;/li&gt;
-  &lt;li&gt;Detect the railway and railway direction.&lt;/li&gt;
-  &lt;li&gt;Continuously update which stations have been visited and passed, and which station is next on the railway, even if it’s far away.&lt;/li&gt;
-  &lt;li&gt;Start a Live Activity in the background when confidence in the current railway is high enough.&lt;/li&gt;
-  &lt;li&gt;Update the Live Activity as the user approaches, arrives at, and departs a station.&lt;/li&gt;
-  &lt;li&gt;End the Live Activity and switch back to monitoring significant location changes once the user has alighted their train.&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;I knew that significant location changes, app background activity, and the way each of these system features interacts with the relatively new (iOS 16+) Live Activities API was going to pose as the biggest risk to executing the seamless zero-touch app experience I envisioned.&lt;/p&gt;
-
-&lt;p&gt;I started by creating a new app project and creating a GRDB-backed event logging system. Next, I configured the app to request background location permission. I then created the bones of a location tracking algorithm that preserved battery life. I logged app lifecycle events and events for my location tracking algorithm to ensure I could quickly debug why the app was or wasn’t “waking up” or “sleeping” when I expected it to while out in the field.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/train-tracker-app-events.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Log of app events so I can verify background behavior&quot; title=&quot;Log of app events so I can verify background behavior&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Log of app events so I can verify background behavior&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;The next big task was reimagining my existing railway-finding algorithm for a different system lifecycle. This also meant I needed to pare down my very large train timetable static database for this new use case. I only needed the list of railways and stations. I followed a similar development flow as last time; I created a couple new debug views to view the live GPS waypoints and follow these waypoints on a map alongside the train tracking algorithm outputs.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/train-tracker-waypoints-view.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Raw waypoints view to allow confirmation of incoming data&quot; title=&quot;Raw waypoints view to allow confirmation of incoming data&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Raw waypoints view to allow confirmation of incoming data&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;I started with a version that played back existing GPS data. A dashboard view showed just the user-facing data: the detected railway and “focus” station.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/train-tracker-debug-dashboard.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;A debug view that plays back previously captured GPS data at variable speed and shows user-facing data&quot; title=&quot;A debug view that plays back previously captured GPS data at variable speed and shows user-facing data&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;A debug view that plays back previously captured GPS data at variable speed and shows user-facing data&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;There was also a list view showing the scores assigned by the algorithm and used to determine the ultimate result shown to the user.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/train-tracker-debug-list.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;The derived scores used by the algorithm to determine what railway and focus station is shown to the user&quot; title=&quot;The derived scores used by the algorithm to determine what railway and focus station is shown to the user&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The derived scores used by the algorithm to determine what railway and focus station is shown to the user&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;Then, once I was satisfied with the algorithm accuracy on the snapshot data, I migrated this view to use only live device data.&lt;/p&gt;
-
-&lt;p&gt;Watching the algorithm run live was exciting. I felt like I’d hit another checkpoint as the device would wake up and start gathering GPS data in the background, then start showing me which railway I was on and which station was next as soon as I opened it.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/train-tracker-debug-live-tracking.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Same as above but using live GPS data&quot; title=&quot;Same as above but using live GPS data&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Same as above but using live GPS data&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;With a basic (but admittedly incomplete) tracking algorithm proven, the last piece of the puzzle I needed to de-risk was starting the Live Activity automatically in the background. Unfortunately this is where I hit a frustrating roadblock.&lt;/p&gt;
-
-&lt;p&gt;In a careful scan of the lengthy &lt;a href=&quot;https://developer.apple.com/documentation/activitykit/displaying-live-data-with-live-activities#Review-Live-Activity-presentations&quot;&gt;Live Activities documentation&lt;/a&gt;, I found the line:&lt;/p&gt;
-
-&lt;blockquote&gt;
-  &lt;p&gt;Your app can only start Live Activities while it’s in the foreground. However, you can update or end a Live Activity from your app while it runs in the background.&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;p&gt;I confirmed this artificial limitation by attempting it and logging errors in my event tracking database.&lt;/p&gt;
-
-&lt;blockquote&gt;
-  &lt;p&gt;LiveActivities Error: The operation couldn’t be completed. Target is not foreground&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;p&gt;I felt like requiring the user to open the app each time they wanted the live activity to run – even if it was as simple as opening and immediately closing the app – would be too tedious an ask as a prerequisite for daily usage.&lt;/p&gt;
-
-&lt;p&gt;Before I neutered my vision or gave up on the idea entirely, I had one card left up my sleeve. From the documentation:&lt;/p&gt;
-
-&lt;blockquote&gt;
-  &lt;p&gt;Starting with iOS 17.2 and iPadOS 17.2, you can also start Live Activities with ActivityKit push notifications.&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;p&gt;So a push notification from a server can start a Live Activity without being initiated by a user (as I’d personally experienced with the Apple Sports app), but for some reason it can’t be started by the device itself? Strange, but since my app is already running in the background, I could technically fire off a network request to my own server with the data I wanted to start the Live Activity with and use my server as a pseudo-proxy to start a Live Activity. It feels like a loophole, but perhaps it’s simply a case of an Apple product manager not re-evaluating an initial safeguard after changing a related feature.&lt;/p&gt;
-
-&lt;p&gt;Setting up push notifications is &lt;em&gt;involved&lt;/em&gt;. I really did not want to be on the hook for maintaining another set of dependencies, but it was the only option left on the table.&lt;/p&gt;
-
-&lt;blockquote&gt;
-  &lt;p&gt;Aside: is it possible to send a push notification directly from a device instead of through an intermediary server controlled by the developer? In other words, could the device send a request to the APNS server directly that would send a push notification right back to it? In theory it seems possible, with the big security downside that the p8 key would need to be included in plain text within the app bundle.&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;p&gt;I’ll leave the long debug story of how I got push notifications working for another time, but after a couple days of development, I confirmed that I could indeed start a Live Activity from the background using an intermediary server.&lt;/p&gt;
-
-&lt;p&gt;Whether or not the App Store app review team considers this to be a permitted workaround is still a huge risk. I’m not sure how I can determine their stance without finishing up version 1 of the app and submitting it for review. Even an unfinished version going through Test Flight review isn’t a guarantee App Store review will also approve.&lt;/p&gt;
-
-&lt;p&gt;So this is my current checkpoint: a new app binary with lot of debug screens that starts and updates Live Activities from the background as the user rides a railway in Tokyo.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/train-tracker-proto-live-activity.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Prototype version of the working train tracker Live Activity on the lock screen&quot; title=&quot;Prototype version of the working train tracker Live Activity on the lock screen&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Prototype version of the working train tracker Live Activity on the lock screen&lt;/div&gt;&lt;/div&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/train-tracker-proto-dynamic-island.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Prototype version of the working train tracker Live Activity in the Dynamic Island&quot; title=&quot;Prototype version of the working train tracker Live Activity in the Dynamic Island&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Prototype version of the working train tracker Live Activity in the Dynamic Island&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;My plan is to release this app standalone. How it fits into the existing and future Eki Bright vision isn’t yet determined. Perhaps the train tracker app is a free marketing driver for Eki Bright. Perhaps the train tracker app evolves separately from Eki Bright and eventually obsoletes Eki Bright. I’m not sure, but my instinct is to test it in the market in isolation first.&lt;/p&gt;
-
-&lt;p&gt;What do I need to finish up in order to ship?&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;Improve the algorithm to determine the correct railway faster, handle transfers, and off-board seamlessly.&lt;/li&gt;
-  &lt;li&gt;Improve the design of the Live Activity.&lt;/li&gt;
-  &lt;li&gt;Remove the debug screens and rework the in-app UI for onboarding, settings, and simple monitoring.&lt;/li&gt;
-  &lt;li&gt;Create branding and add all the required info for the App Store.&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;I’m getting faster at getting through this part of the process, but it still takes time. However, I do feel some accomplishment in having semi-efficiently prototyped enough to de-risk this project.&lt;/p&gt;
-
-&lt;p&gt;I’m planning to write a few technical posts that detail the caveats of Live Activities once I’m more confident in the robustness of my implementation. Until then.&lt;/p&gt;
-</description>
-        <pubDate>Tue, 15 Apr 2025 12:06:00 -0500</pubDate>
-        <link>https://twocentstudios.com/2025/04/15/train-tracker-checkpoint-devlog/</link>
-        <guid isPermaLink="true">https://twocentstudios.com/2025/04/15/train-tracker-checkpoint-devlog/</guid>
         
         <category>ekibright</category>
         

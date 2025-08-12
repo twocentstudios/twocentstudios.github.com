@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>3 Swift Concurrency Challenges from the Last 2 Weeks</title>
+
+  <meta property="og:type" content="article" />
+  <meta property="og:title" content="3 Swift Concurrency Challenges from the Last 2 Weeks" />
+  <meta property="og:url" content="https://twocentstudios.com/2025/08/12/3-swift-concurrency-challenges-from-the-last-2-weeks/" />
+  
+    <meta property="og:article:published_time" content="2025-08-12T06:38:00-05:00" />
+  
+  
+  
+  <link href='https://fonts.googleapis.com/css2?family=Work+Sans:wght@300;350;400;600' rel='stylesheet' type='text/css'>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="canonical" href="https://twocentstudios.com/2025/08/12/3-swift-concurrency-challenges-from-the-last-2-weeks/">
+  <link rel="alternate" type="application/rss+xml" title="twocentstudios" href="https://twocentstudios.com/feed.xml" />
+</head>
+
+  <!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-NE82N02W8S"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-NE82N02W8S');
+</script>
+
+  <body>
+
+    <header class="site-header">
+
+  <div class="wrapper">
+
+    <a class="site-title" href="/">twocentstudios</a>
+
+    <nav class="site-nav">
+      <a href="#" class="menu-icon">
+        <svg viewBox="0 0 18 15">
+          <path fill="#424242" d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.031C17.335,0,18,0.665,18,1.484L18,1.484z"/>
+          <path fill="#424242" d="M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0c0-0.82,0.665-1.484,1.484-1.484 h15.031C17.335,6.031,18,6.696,18,7.516L18,7.516z"/>
+          <path fill="#424242" d="M18,13.516C18,14.335,17.335,15,16.516,15H1.484C0.665,15,0,14.335,0,13.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.031C17.335,12.031,18,12.696,18,13.516L18,13.516z"/>
+        </svg>
+      </a>
+
+      <div class="trigger">
+        
+          
+          <a class="page-link" href="/about/">About</a>
+          
+        
+          
+          <a class="page-link" href="/blog/">Blog</a>
+          
+        
+          
+        
+          
+        
+          
+          <a class="page-link" href="/portfolio/">Portfolio</a>
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      </div>
+    </nav>
+
+  </div>
+
+</header>
+
+
+    <div class="page-content">
+      <div class="wrapper">
+        <div class="post">
+
+  <header class="post-header">
+    <h1 class="post-title">3 Swift Concurrency Challenges from the Last 2 Weeks</h1>
+    <p class="post-meta">Aug 12, 2025</p>
+  </header>
+
+  <article class="post-content">
+    <p>I started my Apple platforms development journey a year before <a href="https://developer.apple.com/documentation/dispatch">Grand Central Dispatch</a> was released with iOS 4. I’ve lived through codebase migrations to <a href="https://nshipster.com/nsoperation/">NSOperation</a>. Then through the slew of FRP frameworks (of which I consider a concurrency solution): <a href="https://github.com/ReactiveCocoa/ReactiveCocoa">ReactiveCocoa</a>, <a href="https://github.com/ReactiveCocoa/ReactiveSwift">ReactiveSwift</a>, <a href="https://github.com/ReactiveX/RxSwift">RxSwift</a>, and finally <a href="https://developer.apple.com/documentation/combine">Combine</a>.</p>
+
+<p>My strategy for learning all these paradigms was best described as osmosis while encountering and solving real problems in codebases. Of course, you have to spend time setting breaking points and patiently stepping through with a debugger to see where all the thread hops are happening. Eventually, I reached the point where I could read code and predict which threads each section would run on. I had 80% of the operators memorized and knew exactly where in the docs to look for the remaining 20%.</p>
+
+<p>Years in, that kind of confidence has eluded me so far with Swift Concurrency. I cannot yet read a snippet of code and predict what the call stack will look like. I haven’t memorized enough of the syntax to formulate solutions in my head and write it fluently. I don’t have a go-to location in the docs to find the primitive at the tip of my tongue.</p>
+
+<p>I ask myself, why is my Swift Concurrency upskilling story so different?</p>
+
+<p>Is the difference that GCD, NSOperation, and the reactive frameworks basically came out of the gate fully baked? Their paradigms may have merits and demerits, but after their first releases, anything new was additive or syntactic sugar. They were born as ugly as they’d always be.</p>
+
+<p>Is it that my confidence was actually unearned and I never <em>really</em> understood what was happening in my code? The kind of bugs that Swift Concurrency aims to solve are often so rare that you can go a whole career without being able to recognize the symptoms.</p>
+
+<p>Is it that Swift Concurrency promises a higher level of abstraction (isolation domains instead of threads), but is so leaky that the programmer now has to understand both the abstraction and the paradigm it’s abstracting?</p>
+
+<p>With that preface, I want to look at a few examples of Swift Concurrency challenges I’ve encountered recently. Let’s see if these shed any light on why I’m finding it so hard to develop intuition.</p>
+
+<p>Unlike most of my posts (I hope), these examples are unsolved problems with likely broken code.</p>
+
+<h2 id="1-unnotificationcenter">1. UNNotificationCenter</h2>
+
+<p>I implemented push notifications in <a href="/2025/07/25/reintroducing-technicolor-binge-watch-with-friends-over-space-and-time/">Technicolor</a>. I already had an overall architecture I was happy with, but elegantly massaging push notification support into it took some effort. I finally ended up with an implementation I thought I understood that still properly handled the multiple delegate callback points across <code class="language-plaintext highlighter-rouge">UIApplicationDelegate</code> via <code class="language-plaintext highlighter-rouge">@UIApplicationDelegateAdaptor</code> and <code class="language-plaintext highlighter-rouge">UNNotificationCenter</code>.</p>
+
+<p>Besides the push token registration and user permissions, the key functionality of my push notifications wrapper client is to open the screen of the app that corresponds with the type of push notification the user tapped.</p>
+
+<p>As far as I can tell, <code class="language-plaintext highlighter-rouge">UNNotificationCenter</code> has no documented concurrency story. Each developer that sets out to use the framework has to derive what thread each delegate method is called on through trial and error on a real device in production by tapping production push notifications. We haven’t even started talking about Swift Concurrency yet.</p>
+
+<p>To bring <code class="language-plaintext highlighter-rouge">User Notifications</code> framework into the concurrency world, each developer needs to start from zero, with zero guarantees and zero support from Apple.</p>
+
+<p>So I started with this (simplified) implementation:</p>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="c1">// Version 1</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">PushNotificationDelegateProxy</span><span class="p">:</span> <span class="kt">NSObject</span><span class="p">,</span> <span class="kt">UNUserNotificationCenterDelegate</span><span class="p">,</span> <span class="kd">@unchecked</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">notificationTapHandler</span><span class="p">:</span> <span class="p">((</span><span class="kt">PushNotificationPayload</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Void</span><span class="p">)?</span>
+
+    <span class="kd">func</span> <span class="nf">setNotificationTapHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">handler</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="p">(</span><span class="kt">PushNotificationPayload</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Void</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">notificationTapHandler</span> <span class="o">=</span> <span class="n">handler</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">userNotificationCenter</span><span class="p">(</span><span class="n">_</span> <span class="nv">center</span><span class="p">:</span> <span class="kt">UNUserNotificationCenter</span><span class="p">,</span> <span class="n">didReceive</span> <span class="nv">response</span><span class="p">:</span> <span class="kt">UNNotificationResponse</span><span class="p">)</span> <span class="k">as</span><span class="n">ync</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">userInfo</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">notification</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">content</span><span class="o">.</span><span class="n">userInfo</span>
+
+        <span class="k">let</span> <span class="nv">payload</span> <span class="o">=</span> <span class="c1">// Decode payload</span>
+        <span class="nf">notificationTapHandler</span><span class="p">?(</span><span class="n">payload</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">@MainActor</span> <span class="kd">@Observable</span> <span class="kd">final</span> <span class="kd">class</span> <span class="kt">PushNotificationSettingsStore</span><span class="p">:</span> <span class="kt">Identifiable</span> <span class="p">{</span>
+    <span class="kd">@ObservationIgnored</span> <span class="kd">@Dependency(\.pushNotificationClient)</span> <span class="k">var</span> <span class="nv">pushNotificationClient</span>
+
+    <span class="nf">init</span><span class="p">()</span> <span class="p">{</span>
+        <span class="n">pushNotificationClient</span><span class="o">.</span><span class="nf">setDelegate</span><span class="p">()</span>
+
+        <span class="nf">conditionallyRegisterForRemoteNotifications</span><span class="p">()</span>
+
+        <span class="c1">// Set the notification tap handler</span>
+        <span class="n">pushNotificationClient</span><span class="o">.</span><span class="n">setNotificationTapHandler</span> <span class="p">{</span> <span class="p">[</span><span class="k">weak</span> <span class="k">self</span><span class="p">]</span> <span class="n">payload</span> <span class="k">in</span>
+            <span class="kt">Task</span> <span class="p">{</span> <span class="kd">@MainActor</span> <span class="k">in</span>
+                <span class="k">self</span><span class="p">?</span><span class="o">.</span><span class="n">actions</span><span class="o">.</span><span class="nf">notificationReceived</span><span class="p">(</span><span class="n">payload</span><span class="p">)</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p>In my initial understanding, no matter what thread <code class="language-plaintext highlighter-rouge">userNotificationCenter(didReceive:)</code> called the <code class="language-plaintext highlighter-rouge">notificationTapHandler</code> closure, inside it the closure <code class="language-plaintext highlighter-rouge">notificationReceived(payload)</code> would be called on the main thread and could do any UI operations it needed to.</p>
+
+<p>From what I remember, I confirmed this as working during debug on device. When I was running in production on TestFlight it crashed when I opened a push notification.</p>
+
+<p>Still unsure as to why (was it that <code class="language-plaintext highlighter-rouge">@MainActor</code>-isolated <code class="language-plaintext highlighter-rouge">self</code> was captured inside a non-isolated closure), I added some code that, although inelegant, would surely fix the problem:</p>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="c1">// Version 2</span>
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">PushNotificationDelegateProxy</span><span class="p">:</span> <span class="kt">NSObject</span><span class="p">,</span> <span class="kt">UNUserNotificationCenterDelegate</span><span class="p">,</span> <span class="kd">@unchecked</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">notificationTapHandler</span><span class="p">:</span> <span class="p">((</span><span class="kt">PushNotificationPayload</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Void</span><span class="p">)?</span>
+
+    <span class="kd">func</span> <span class="nf">setNotificationTapHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">handler</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="p">(</span><span class="kt">PushNotificationPayload</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Void</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">notificationTapHandler</span> <span class="o">=</span> <span class="n">handler</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">userNotificationCenter</span><span class="p">(</span><span class="n">_</span> <span class="nv">center</span><span class="p">:</span> <span class="kt">UNUserNotificationCenter</span><span class="p">,</span> <span class="n">didReceive</span> <span class="nv">response</span><span class="p">:</span> <span class="kt">UNNotificationResponse</span><span class="p">)</span> <span class="k">as</span><span class="n">ync</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">userInfo</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">notification</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">content</span><span class="o">.</span><span class="n">userInfo</span>
+
+        <span class="k">let</span> <span class="nv">payload</span> <span class="o">=</span> <span class="c1">// Decode payload</span>
+        <span class="n">await</span> <span class="kt">MainActor</span><span class="o">.</span><span class="n">run</span> <span class="p">{</span>
+        	<span class="nf">notificationTapHandler</span><span class="p">?(</span><span class="n">payload</span><span class="p">)</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p>Just sprinkle in <code class="language-plaintext highlighter-rouge">MainActor.run</code> everywhere, right? Just like back in the <code class="language-plaintext highlighter-rouge">DispatchQueue.main</code> days.</p>
+
+<p>This also crashed (every time) in production, with the following stack trace:</p>
+
+<div class="language-plaintext highlighter-rouge"><pre class="highlight"><code>Triggered by Thread:  5
+
+Last Exception Backtrace:
+0   CoreFoundation                	0x184a5721c __exceptionPreprocess + 164 (NSException.m:249)
+1   libobjc.A.dylib               	0x181ef1abc objc_exception_throw + 88 (objc-exception.mm:356)
+2   Foundation                    	0x183d55670 -[NSAssertionHandler handleFailureInMethod:object:file:lineNumber:description:] + 288 (NSException.m:252)
+3   UIKitCore                     	0x1883ad4e8 -[UIApplication _performBlockAfterCATransactionCommitSynchronizes:] + 276 (UIApplication.m:3408)
+4   UIKitCore                     	0x1883bdecc -[UIApplication _updateStateRestorationArchiveForBackgroundEvent:saveState:exitIfCouldNotRestoreState:updateSnapshot:windowScene:] + 528 (UIApplication.m:12129)
+5   UIKitCore                     	0x1883be278 -[UIApplication _updateSnapshotAndStateRestorationWithAction:windowScene:] + 144 (UIApplication.m:12174)
+6   technicolortv                 	0x1027d6670 @objc closure #1 in PushNotificationDelegateProxy.userNotificationCenter(_:didReceive:) + 80 (/&lt;compiler-generated&gt;:0)
+// ...
+12  libswift_Concurrency.dylib    	0x190521241 completeTaskWithClosure(swift::AsyncContext*, swift::SwiftError*) + 1 (Task.cpp:537)
+</code></pre>
+</div>
+
+<p>State restoration somehow got triggered off the main thread? How? I guess I could understand if the problem were that <code class="language-plaintext highlighter-rouge">notificationTapHandler</code> is unsafe to be passed between isolation domains. But that’s not what the crash is saying is it?</p>
+
+<p>Let’s push the isolation annotations even further:</p>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">extension</span> <span class="kt">UNUserNotificationCenter</span><span class="p">:</span> <span class="kd">@retroactive</span> <span class="kd">@unchecked</span> <span class="kt">Sendable</span> <span class="p">{}</span>
+<span class="kd">extension</span> <span class="kt">UNNotificationResponse</span><span class="p">:</span> <span class="kd">@retroactive</span> <span class="kd">@unchecked</span> <span class="kt">Sendable</span> <span class="p">{}</span>
+
+<span class="kd">final</span> <span class="kd">class</span> <span class="kt">PushNotificationDelegateProxy</span><span class="p">:</span> <span class="kt">NSObject</span><span class="p">,</span> <span class="kt">UNUserNotificationCenterDelegate</span><span class="p">,</span> <span class="kd">@unchecked</span> <span class="kt">Sendable</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">notificationTapHandler</span><span class="p">:</span> <span class="p">(</span><span class="kd">@MainActor</span> <span class="p">(</span><span class="kt">PushNotificationPayload</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Void</span><span class="p">)?</span>
+
+    <span class="kd">func</span> <span class="nf">setNotificationTapHandler</span><span class="p">(</span><span class="n">_</span> <span class="nv">handler</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="kd">@MainActor</span> <span class="p">(</span><span class="kt">PushNotificationPayload</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kt">Void</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">notificationTapHandler</span> <span class="o">=</span> <span class="n">handler</span>
+    <span class="p">}</span>
+
+    <span class="kd">@MainActor</span> <span class="kd">func</span> <span class="nf">userNotificationCenter</span><span class="p">(</span><span class="n">_</span> <span class="nv">center</span><span class="p">:</span> <span class="kt">UNUserNotificationCenter</span><span class="p">,</span> <span class="n">didReceive</span> <span class="nv">response</span><span class="p">:</span> <span class="kt">UNNotificationResponse</span><span class="p">)</span> <span class="k">as</span><span class="n">ync</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="nv">userInfo</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">notification</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">content</span><span class="o">.</span><span class="n">userInfo</span>
+
+        <span class="k">let</span> <span class="nv">payload</span> <span class="o">=</span> <span class="c1">// Decode payload</span>
+        <span class="nf">notificationTapHandler</span><span class="p">?(</span><span class="n">payload</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p>Let’s try to force <code class="language-plaintext highlighter-rouge">userNotificationCenter(didReceive:)</code> to be called on the <code class="language-plaintext highlighter-rouge">@MainActor</code> by lying to the compiler in a bunch of places about sendability.</p>
+
+<p>As far as I can tell, this no longer crashes although I haven’t had time to thoroughly test it (since it requires multiple deployments to Test Flight and review cycles to extensively QA).</p>
+
+<p>From this whole weeks-long process, I’ve learned essentially nothing about the proper usage of Swift Concurrency, my mental model is less well-formed than it used to be, and I still have a lingering problem that I cannot practically devote enough time to comprehensively solve right now.</p>
+
+<p>Presumably no one at Apple is working on the User Notifications framework anymore. Nothing is being added to it. No one is giving it concurrency support. No one <em>has</em> (over the past decade and a half) or <em>will</em> document its concurrency story. The best we have is a <a href="https://stackoverflow.com/questions/73750724/how-can-usernotificationcenter-didreceive-cause-a-crash-even-with-nothing-in">Stack Overflow post</a> with no unanimous best practice and no solution.</p>
+
+<h2 id="2-cmmotionactivitymanager">2. CMMotionActivityManager</h2>
+
+<p><a href="https://developer.apple.com/documentation/coremotion">Core Motion</a> is another neglected framework that not many iOS devs have the pleasure of integrating. It seems to have mostly been “modernized” around iOS 7 when <code class="language-plaintext highlighter-rouge">NSOperation</code> had a small popularity bump. Also when the API best practices for getting permission from the device user were still being tweaked.</p>
+
+<p>For a current project, I’m using <a href="https://developer.apple.com/documentation/coremotion/cmmotionactivitymanager"><code class="language-plaintext highlighter-rouge">CMMotionActivityManager</code></a>. It’s a slightly higher-level data source for predicting whether the device is held by a user walking, cycling, driving, standing still, etc. It has two primary APIs:</p>
+
+<ul>
+  <li>Request historical data for a time range (up to 1 week ago): <a href="https://developer.apple.com/documentation/coremotion/cmmotionactivitymanager/1615919-queryactivitystarting"><code class="language-plaintext highlighter-rouge">queryActivityStarting(from:to:to:)</code></a></li>
+  <li>Get live streaming data while the app is in the foreground: <a href="https://developer.apple.com/documentation/coremotion/cmmotionactivitymanager/1615895-startactivityupdates"><code class="language-plaintext highlighter-rouge">startActivityUpdates(to:)</code></a></li>
+</ul>
+
+<p><code class="language-plaintext highlighter-rouge">queryActivityStarting</code> returns once to the <code class="language-plaintext highlighter-rouge">OperationQueue</code> specified in the parameters. <code class="language-plaintext highlighter-rouge">startActivityUpdates</code> keeps returning values until <code class="language-plaintext highlighter-rouge">stopActivityUpdates()</code> is called.</p>
+
+<p>I thought each of these would be relatively straightforward to wrap into a <code class="language-plaintext highlighter-rouge">withCheckedContinuation</code> and <code class="language-plaintext highlighter-rouge">AsyncStream</code>, respectively.</p>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="c1">// Version 1: queryActivityStarting</span>
+<span class="kt">Task</span> <span class="p">{</span> <span class="kd">@MainActor</span> <span class="p">[</span><span class="k">weak</span> <span class="k">self</span><span class="p">]</span> <span class="k">in</span>
+    <span class="k">guard</span> <span class="k">let</span> <span class="nv">self</span> <span class="k">else</span> <span class="p">{</span> <span class="k">return</span> <span class="p">}</span>
+
+    <span class="c1">// Check motion history for timeout</span>
+    <span class="k">let</span> <span class="nv">timeout</span> <span class="o">=</span> <span class="n">await</span> <span class="n">withCheckedContinuation</span> <span class="p">{</span> <span class="n">continuation</span> <span class="k">in</span>
+        <span class="n">activityManager</span><span class="o">.</span><span class="nf">queryActivityStarting</span><span class="p">(</span>
+            <span class="nv">from</span><span class="p">:</span> <span class="n">startDate</span><span class="p">,</span>
+            <span class="nv">to</span><span class="p">:</span> <span class="n">endDate</span><span class="p">,</span>
+            <span class="nv">to</span><span class="p">:</span> <span class="kt">OperationQueue</span><span class="o">.</span><span class="n">main</span>
+        <span class="p">)</span> <span class="p">{</span> <span class="n">activities</span><span class="p">,</span> <span class="n">error</span> <span class="k">in</span>
+            <span class="k">guard</span> <span class="k">let</span> <span class="nv">activities</span><span class="p">,</span> <span class="n">error</span> <span class="o">==</span> <span class="kc">nil</span> <span class="k">else</span> <span class="p">{</span>
+                <span class="n">continuation</span><span class="o">.</span><span class="nf">resume</span><span class="p">(</span><span class="nv">returning</span><span class="p">:</span> <span class="kc">nil</span><span class="p">)</span>
+                <span class="k">return</span>
+            <span class="p">}</span>
+            
+            <span class="k">let</span> <span class="nv">value</span> <span class="o">=</span> <span class="c1">// do work here to calculate timeout...</span>
+            <span class="n">continuation</span><span class="o">.</span><span class="nf">resume</span><span class="p">(</span><span class="nv">returning</span><span class="p">:</span> <span class="n">value</span><span class="p">)</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    
+    <span class="c1">// ...</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p>My strategy recently has been the same as the Swift team’s: isolate everything on the <code class="language-plaintext highlighter-rouge">@MainActor</code> unless there’s a reason not to. So that’s what I did in this case. However, is it correct to await with a <code class="language-plaintext highlighter-rouge">MainActor</code>-isolated <code class="language-plaintext highlighter-rouge">Task</code> while also having the <code class="language-plaintext highlighter-rouge">queryActivityStarting</code> function return on <code class="language-plaintext highlighter-rouge">OperationQueue.main</code>?</p>
+
+<p>It seemed like it was working fine in debug, but then when I was field testing I was observing what seemed to be deadlocks and the continuation never completing.</p>
+
+<p>So I’m already having trouble reliably reproducing the bug. I’m not even sure whether the bug is related to concurrency or whether <code class="language-plaintext highlighter-rouge">queryActivityStarting</code> just doesn’t respond the way I’d expect. After all, there’s a note in the docs that could be interpreted a number of ways:</p>
+
+<blockquote>
+  <p>This method runs asynchronously, returning immediately and delivering the results to the specified handler block. <strong>A delay of up to several minutes in reported activities is expected.</strong></p>
+</blockquote>
+
+<p>In the end, I created this extension that forces <code class="language-plaintext highlighter-rouge">@MainActor</code> at the function level and includes a timeout just in case. It seems to work so far.</p>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">extension</span> <span class="kt">CMMotionActivityManager</span> <span class="p">{</span>
+    <span class="kd">@MainActor</span> <span class="kd">func</span> <span class="nf">activities</span><span class="p">(</span><span class="n">from</span> <span class="nv">start</span><span class="p">:</span> <span class="kt">Date</span><span class="p">,</span> <span class="n">to</span> <span class="nv">end</span><span class="p">:</span> <span class="kt">Date</span><span class="p">,</span> <span class="nv">timeout</span><span class="p">:</span> <span class="kt">TimeInterval</span><span class="p">)</span> <span class="k">as</span><span class="n">ync</span> <span class="k">throws</span> <span class="o">-&gt;</span> <span class="p">[</span><span class="kt">CMMotionActivity</span><span class="p">]?</span> <span class="p">{</span>
+        <span class="k">try</span> <span class="n">await</span> <span class="nf">withThrowingTaskGroup</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="p">[</span><span class="kt">CMMotionActivity</span><span class="p">]?</span><span class="o">.</span><span class="k">self</span><span class="p">)</span> <span class="p">{</span> <span class="n">group</span> <span class="k">in</span>
+            <span class="n">group</span><span class="o">.</span><span class="n">addTask</span> <span class="p">{</span>
+                <span class="k">try</span> <span class="n">await</span> <span class="n">withCheckedThrowingContinuation</span> <span class="p">{</span> <span class="n">continuation</span> <span class="k">in</span>
+                    <span class="k">self</span><span class="o">.</span><span class="nf">queryActivityStarting</span><span class="p">(</span><span class="nv">from</span><span class="p">:</span> <span class="n">start</span><span class="p">,</span> <span class="nv">to</span><span class="p">:</span> <span class="n">end</span><span class="p">,</span> <span class="nv">to</span><span class="p">:</span> <span class="o">.</span><span class="n">main</span><span class="p">)</span> <span class="p">{</span> <span class="n">activities</span><span class="p">,</span> <span class="n">error</span> <span class="k">in</span>
+                        <span class="k">switch</span> <span class="p">(</span><span class="n">activities</span><span class="p">,</span> <span class="n">error</span><span class="p">)</span> <span class="p">{</span>
+                        <span class="k">case</span> <span class="nf">let</span> <span class="p">(</span><span class="n">_</span><span class="p">,</span> <span class="n">err</span><span class="p">?):</span>
+                            <span class="n">continuation</span><span class="o">.</span><span class="nf">resume</span><span class="p">(</span><span class="nv">throwing</span><span class="p">:</span> <span class="n">err</span><span class="p">)</span>
+                        <span class="k">case</span> <span class="nf">let</span> <span class="p">(</span><span class="n">list</span><span class="p">?,</span> <span class="kc">nil</span><span class="p">):</span>
+                            <span class="n">continuation</span><span class="o">.</span><span class="nf">resume</span><span class="p">(</span><span class="nv">returning</span><span class="p">:</span> <span class="n">list</span><span class="p">)</span>
+                        <span class="k">default</span><span class="p">:</span>
+                            <span class="n">continuation</span><span class="o">.</span><span class="nf">resume</span><span class="p">(</span><span class="nv">returning</span><span class="p">:</span> <span class="p">[])</span>
+                        <span class="p">}</span>
+                    <span class="p">}</span>
+                <span class="p">}</span>
+            <span class="p">}</span>
+
+            <span class="n">group</span><span class="o">.</span><span class="n">addTask</span> <span class="p">{</span>
+                <span class="k">try</span><span class="p">?</span> <span class="n">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">seconds</span><span class="p">(</span><span class="n">timeout</span><span class="p">))</span>
+                <span class="k">return</span> <span class="kc">nil</span>
+            <span class="p">}</span>
+
+            <span class="k">guard</span> <span class="k">let</span> <span class="nv">result</span> <span class="o">=</span> <span class="k">try</span> <span class="n">await</span> <span class="n">group</span><span class="o">.</span><span class="nf">next</span><span class="p">()</span> <span class="k">else</span> <span class="p">{</span>
+                <span class="k">return</span> <span class="kc">nil</span>
+            <span class="p">}</span>
+
+            <span class="n">group</span><span class="o">.</span><span class="nf">cancelAll</span><span class="p">()</span>
+            <span class="k">return</span> <span class="n">result</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="kd">@MainActor</span> <span class="kd">func</span> <span class="nf">activityUpdates</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kt">AsyncStream</span><span class="o">&lt;</span><span class="kt">CMMotionActivity</span><span class="o">&gt;</span> <span class="p">{</span>
+        <span class="kt">AsyncStream</span> <span class="p">{</span> <span class="n">continuation</span> <span class="k">in</span>
+            <span class="nf">startActivityUpdates</span><span class="p">(</span><span class="nv">to</span><span class="p">:</span> <span class="o">.</span><span class="n">main</span><span class="p">)</span> <span class="p">{</span> <span class="n">activity</span> <span class="k">in</span>
+                <span class="k">guard</span> <span class="k">let</span> <span class="nv">activity</span> <span class="k">else</span> <span class="p">{</span>
+                    <span class="n">continuation</span><span class="o">.</span><span class="nf">finish</span><span class="p">()</span>
+                    <span class="k">return</span>
+                <span class="p">}</span>
+                <span class="n">continuation</span><span class="o">.</span><span class="nf">yield</span><span class="p">(</span><span class="n">activity</span><span class="p">)</span>
+            <span class="p">}</span>
+
+            <span class="n">continuation</span><span class="o">.</span><span class="n">onTermination</span> <span class="o">=</span> <span class="p">{</span> <span class="kd">@Sendable</span> <span class="n">_</span> <span class="k">in</span>
+                <span class="k">self</span><span class="o">.</span><span class="nf">stopActivityUpdates</span><span class="p">()</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p>Again, I feel as if I’ve learned nothing. I have potentially worse intuition than I started with, and I may have to return to this problem again after I’ve released to production.</p>
+
+<h2 id="3-actor-reentrancy">3. Actor Reentrancy</h2>
+
+<p>I’ve been working on a meatier problem within <a href="/2025/06/03/eki-live-announcement/">Eki Live</a> for a couple months.</p>
+
+<p>I have the following pipeline:</p>
+
+<ul>
+  <li>Core Location produces <code class="language-plaintext highlighter-rouge">CLLocation</code> values up to 1 per second.</li>
+  <li><code class="language-plaintext highlighter-rouge">CLLocation</code>s are passed to an <code class="language-plaintext highlighter-rouge">actor RailwayTracker</code> which processes them using various info from a database and incorporates that data into the actor long-term state.</li>
+  <li><code class="language-plaintext highlighter-rouge">RailwayTracker</code> returns a value that is displayed in the UI via SwiftUI and can also update a LiveActivity.</li>
+</ul>
+
+<p>Essentially:</p>
+
+<div class="language-plaintext highlighter-rouge"><pre class="highlight"><code>CLLocationManagerDelegate -&gt; RailwayTracker -&gt; ContentView
+</code></pre>
+</div>
+
+<p>The actual architecture is a bit more complex due the relationship between instances of classes doing each part of the work. But the overall pipeline design has always felt precarious due to the underlying assumptions that:</p>
+
+<ul>
+  <li>Core Location will never produce <code class="language-plaintext highlighter-rouge">CLLocation</code> values faster than RailwayTracker can process them.</li>
+  <li><code class="language-plaintext highlighter-rouge">RailwayTracker</code> will always process inputs in order, serially.</li>
+  <li>SwiftUI will receive outputs from <code class="language-plaintext highlighter-rouge">RailwayTracker</code> no faster than it can display them.</li>
+</ul>
+
+<p>In practice, I was probably breaking at least the first constraint during testing, since I could simulate <code class="language-plaintext highlighter-rouge">CLLocation</code>s being produced at 20x real-time speed in a separate macOS app I was using to iterate on the algorithm within <code class="language-plaintext highlighter-rouge">RailwayTracker</code>.</p>
+
+<p>When originally designing <code class="language-plaintext highlighter-rouge">RailwayTracker</code>, an <code class="language-plaintext highlighter-rouge">actor</code> seemed like the obvious choice. I wanted a separate isolation for its internal state and I knew it’d be doing enough heavy work that it wasn’t feasible to do on the main actor.</p>
+
+<p>However, I misinterpreted the behavior <code class="language-plaintext highlighter-rouge">actor</code>, thinking that an actor <em>also</em> ensured that an instance’s functions would be need to complete before they could be called again. In practice, <code class="language-plaintext highlighter-rouge">actor</code>s don’t do anything to prevent <a href="https://mjtsai.com/blog/2024/07/29/actor-reentrancy-in-swift/">reentrancy</a>.</p>
+
+<p>Meaning that the input locations could be being processed out-of-order by the actor with the database operations being interleaved and there being all kinds of chaos and unspecified behavior.</p>
+
+<p>While doing some new work on the project, I wanted to take another stab at hardening the entire pipeline using Swift Concurrency.</p>
+
+<p>I researched the current state of the Apple officially-sanctioned <a href="https://github.com/apple/swift-async-algorithms">swift-async-algorithms</a> package. It seemed to be in committee-hell with no real forward progress in the last 2+ years. There’s less than half of the <code class="language-plaintext highlighter-rouge">Combine</code> operator API implemented. There’s something called an <a href="https://github.com/apple/swift-async-algorithms/blob/main/Sources/AsyncAlgorithms/AsyncAlgorithms.docc/Guides/Channel.md"><code class="language-plaintext highlighter-rouge">AsyncChannel</code></a>. Would that be a good primitive to base my pipeline on?</p>
+
+<p>I decided on my specification:</p>
+
+<ul>
+  <li>CLLocation’s should never be dropped.</li>
+  <li>CLLocation’s should always be fully processed one-by-one in the order they arrive.</li>
+  <li>Pipeline output results should be delivered to one “subscriber” (mixing metaphors here), but I may need multiple in the near future.</li>
+</ul>
+
+<p>I ended up with a generic wrapper abstraction called <code class="language-plaintext highlighter-rouge">SerialProcessor</code>:</p>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">final</span> <span class="kd">class</span> <span class="kt">SerialProcessor</span><span class="o">&lt;</span><span class="kt">Input</span><span class="p">:</span> <span class="kt">Sendable</span><span class="p">,</span> <span class="kt">Output</span><span class="p">:</span> <span class="kt">Sendable</span><span class="o">&gt;</span> <span class="p">{</span>
+    <span class="kd">typealias</span> <span class="kt">Process</span> <span class="o">=</span> <span class="kd">@Sendable</span> <span class="p">(</span><span class="kt">Input</span><span class="p">)</span> <span class="k">as</span><span class="n">ync</span> <span class="o">-&gt;</span> <span class="kt">Output</span>
+
+    <span class="c1">// Inbound (sync) and outbound (single-consumer) pipes</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">inPair</span><span class="p">:</span> <span class="p">(</span><span class="nv">stream</span><span class="p">:</span> <span class="kt">AsyncStream</span><span class="o">&lt;</span><span class="kt">Input</span><span class="o">&gt;</span><span class="p">,</span> <span class="nv">continuation</span><span class="p">:</span> <span class="kt">AsyncStream</span><span class="o">&lt;</span><span class="kt">Input</span><span class="o">&gt;.</span><span class="kt">Continuation</span><span class="p">)</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">outPair</span><span class="p">:</span> <span class="p">(</span><span class="nv">stream</span><span class="p">:</span> <span class="kt">AsyncStream</span><span class="o">&lt;</span><span class="kt">Output</span><span class="o">&gt;</span><span class="p">,</span> <span class="nv">continuation</span><span class="p">:</span> <span class="kt">AsyncStream</span><span class="o">&lt;</span><span class="kt">Output</span><span class="o">&gt;.</span><span class="kt">Continuation</span><span class="p">)</span>
+
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">worker</span><span class="p">:</span> <span class="kt">Task</span><span class="o">&lt;</span><span class="kt">Void</span><span class="p">,</span> <span class="kt">Never</span><span class="o">&gt;</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">process</span><span class="p">:</span> <span class="kt">Process</span>
+
+    <span class="c1">/// Single-consumer stream of `Output`.</span>
+    <span class="k">var</span> <span class="nv">results</span><span class="p">:</span> <span class="kt">AsyncStream</span><span class="o">&lt;</span><span class="kt">Output</span><span class="o">&gt;</span> <span class="p">{</span> <span class="n">outPair</span><span class="o">.</span><span class="n">stream</span> <span class="p">}</span>
+
+    <span class="nf">init</span><span class="p">(</span>
+        <span class="nv">inputBuffering</span><span class="p">:</span> <span class="kt">AsyncStream</span><span class="o">&lt;</span><span class="kt">Input</span><span class="o">&gt;.</span><span class="kt">Continuation</span><span class="o">.</span><span class="kt">BufferingPolicy</span> <span class="o">=</span> <span class="o">.</span><span class="n">unbounded</span><span class="p">,</span>
+        <span class="nv">outputBuffering</span><span class="p">:</span> <span class="kt">AsyncStream</span><span class="o">&lt;</span><span class="kt">Output</span><span class="o">&gt;.</span><span class="kt">Continuation</span><span class="o">.</span><span class="kt">BufferingPolicy</span> <span class="o">=</span> <span class="o">.</span><span class="n">unbounded</span><span class="p">,</span>
+        <span class="nv">process</span><span class="p">:</span> <span class="kd">@escaping</span> <span class="kt">Process</span>
+    <span class="p">)</span> <span class="p">{</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">process</span> <span class="o">=</span> <span class="n">process</span>
+
+        <span class="k">let</span> <span class="nv">inPair</span> <span class="o">=</span> <span class="kt">AsyncStream</span><span class="o">.</span><span class="nf">makeStream</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="kt">Input</span><span class="o">.</span><span class="k">self</span><span class="p">,</span> <span class="nv">bufferingPolicy</span><span class="p">:</span> <span class="n">inputBuffering</span><span class="p">)</span>
+        <span class="k">let</span> <span class="nv">outPair</span> <span class="o">=</span> <span class="kt">AsyncStream</span><span class="o">.</span><span class="nf">makeStream</span><span class="p">(</span><span class="nv">of</span><span class="p">:</span> <span class="kt">Output</span><span class="o">.</span><span class="k">self</span><span class="p">,</span> <span class="nv">bufferingPolicy</span><span class="p">:</span> <span class="n">outputBuffering</span><span class="p">)</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">inPair</span> <span class="o">=</span> <span class="n">inPair</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">outPair</span> <span class="o">=</span> <span class="n">outPair</span>
+
+        <span class="n">worker</span> <span class="o">=</span> <span class="kt">Task</span> <span class="p">{</span>
+            <span class="k">for</span> <span class="n">await</span> <span class="n">input</span> <span class="k">in</span> <span class="n">inPair</span><span class="o">.</span><span class="n">stream</span> <span class="p">{</span>
+                <span class="k">let</span> <span class="nv">output</span> <span class="o">=</span> <span class="n">await</span> <span class="nf">process</span><span class="p">(</span><span class="n">input</span><span class="p">)</span>
+                <span class="n">outPair</span><span class="o">.</span><span class="n">continuation</span><span class="o">.</span><span class="nf">yield</span><span class="p">(</span><span class="n">output</span><span class="p">)</span>
+            <span class="p">}</span>
+            <span class="n">outPair</span><span class="o">.</span><span class="n">continuation</span><span class="o">.</span><span class="nf">finish</span><span class="p">()</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+    <span class="kd">deinit</span> <span class="p">{</span>
+        <span class="nf">finish</span><span class="p">()</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">submit</span><span class="p">(</span><span class="n">_</span> <span class="nv">input</span><span class="p">:</span> <span class="kt">Input</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">inPair</span><span class="o">.</span><span class="n">continuation</span><span class="o">.</span><span class="nf">yield</span><span class="p">(</span><span class="n">input</span><span class="p">)</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">finish</span><span class="p">()</span> <span class="p">{</span>
+        <span class="n">inPair</span><span class="o">.</span><span class="n">continuation</span><span class="o">.</span><span class="nf">finish</span><span class="p">()</span>
+        <span class="n">worker</span><span class="o">.</span><span class="nf">cancel</span><span class="p">()</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p>I couldn’t use <code class="language-plaintext highlighter-rouge">AsyncChannel</code> for the input side because its <code class="language-plaintext highlighter-rouge">send</code> function is <code class="language-plaintext highlighter-rouge">async</code> and therefore requires an async context. I don’t have that inside the <code class="language-plaintext highlighter-rouge">CLLocationManagerDelegate</code> callback function that delivers <code class="language-plaintext highlighter-rouge">CLLocation</code>s and creating a new <code class="language-plaintext highlighter-rouge">Task</code> for each new <code class="language-plaintext highlighter-rouge">CLLocation</code> would break the serial ordering guarantee.</p>
+
+<p>In the non-realtime system implementation, usage looks like this:</p>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="c1">// Set up the processing</span>
+<span class="k">let</span> <span class="nv">railwayTracker</span> <span class="o">=</span> <span class="kt">RailwayTracker</span><span class="p">(</span><span class="nv">railwayDatabase</span><span class="p">:</span> <span class="n">database</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">serialProcessor</span> <span class="o">=</span> <span class="kt">SerialProcessor</span><span class="p">(</span>
+    <span class="nv">inputBuffering</span><span class="p">:</span> <span class="o">.</span><span class="n">unbounded</span><span class="p">,</span>
+    <span class="nv">outputBuffering</span><span class="p">:</span> <span class="o">.</span><span class="n">unbounded</span><span class="p">,</span>
+    <span class="nv">process</span><span class="p">:</span> <span class="p">{</span> <span class="kd">@Sendable</span> <span class="n">input</span> <span class="k">in</span>
+        <span class="n">await</span> <span class="n">railwayTracker</span><span class="o">.</span><span class="nf">process</span><span class="p">(</span><span class="n">input</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">)</span>
+
+<span class="c1">// Queue all locations immediately for processing</span>
+<span class="c1">// This is in a `Task` so it will run after `serialProcessor.results` is set up</span>
+<span class="kt">Task</span> <span class="p">{</span>
+    <span class="k">for</span> <span class="n">location</span> <span class="k">in</span> <span class="n">locations</span> <span class="p">{</span>
+        <span class="n">serialProcessor</span><span class="o">.</span><span class="nf">submit</span><span class="p">(</span><span class="n">location</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1">// Cache the results as they arrive</span>
+<span class="k">for</span> <span class="n">await</span> <span class="n">result</span> <span class="k">in</span> <span class="n">serialProcessor</span><span class="o">.</span><span class="n">results</span> <span class="p">{</span>
+    <span class="n">resultsCache</span><span class="p">[</span><span class="n">result</span><span class="o">.</span><span class="n">location</span><span class="o">.</span><span class="n">id</span><span class="p">]</span> <span class="o">=</span> <span class="n">result</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p>In the realtime system version, I believe the implementation will look something like this (although I’m not at this point in the project yet):</p>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="c1">// Set up the processing global</span>
+<span class="k">let</span> <span class="nv">railwayTracker</span> <span class="o">=</span> <span class="kt">RailwayTracker</span><span class="p">(</span><span class="nv">railwayDatabase</span><span class="p">:</span> <span class="n">database</span><span class="p">)</span>
+<span class="k">let</span> <span class="nv">serialProcessor</span> <span class="o">=</span> <span class="kt">SerialProcessor</span><span class="p">(</span>
+    <span class="nv">inputBuffering</span><span class="p">:</span> <span class="o">.</span><span class="n">unbounded</span><span class="p">,</span>
+    <span class="nv">outputBuffering</span><span class="p">:</span> <span class="o">.</span><span class="nf">bufferingNewest</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="c1">// for UI, drop late values</span>
+    <span class="nv">process</span><span class="p">:</span> <span class="p">{</span> <span class="kd">@Sendable</span> <span class="n">input</span> <span class="k">in</span>
+        <span class="n">await</span> <span class="n">railwayTracker</span><span class="o">.</span><span class="nf">process</span><span class="p">(</span><span class="n">input</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">)</span>
+
+<span class="c1">// Where we receive new locations from the system</span>
+<span class="kd">extension</span> <span class="kt">LocationManagerDelegate</span><span class="p">:</span> <span class="kd">@preconcurrency</span> <span class="kt">CLLocationManagerDelegate</span> <span class="p">{</span>
+    <span class="kd">func</span> <span class="nf">locationManager</span><span class="p">(</span><span class="n">_</span> <span class="nv">manager</span><span class="p">:</span> <span class="kt">CLLocationManager</span><span class="p">,</span> <span class="n">didUpdateLocations</span> <span class="nv">locations</span><span class="p">:</span> <span class="p">[</span><span class="kt">CLLocation</span><span class="p">])</span> <span class="p">{</span>
+    	<span class="c1">// Get the shared `serialProcessor` from somewhere global then...</span>
+    	<span class="k">for</span> <span class="n">location</span> <span class="k">in</span> <span class="n">locations</span> <span class="p">{</span>
+			<span class="n">serialProcessor</span><span class="o">.</span><span class="nf">submit</span><span class="p">(</span><span class="n">location</span><span class="p">)</span>
+		<span class="p">}</span>
+	<span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c1">// In some View Model...</span>
+<span class="kd">@MainActor</span> <span class="kd">@Observable</span> <span class="kd">final</span> <span class="kd">class</span> <span class="kt">ContentViewModel</span> <span class="p">{</span>
+	<span class="kd">@ObservationIgnored</span> <span class="k">let</span> <span class="nv">serialProcessor</span><span class="p">:</span> <span class="kt">SerialProcessor</span><span class="o">&lt;</span><span class="kt">CLLocation</span><span class="p">,</span> <span class="kt">RailwayTrackerResult</span><span class="o">&gt;</span>
+	<span class="kd">private(set)</span> <span class="k">var</span> <span class="nv">latestResult</span><span class="p">:</span> <span class="kt">RailwayTrackerResult</span><span class="p">?</span>
+
+	<span class="kd">func</span> <span class="nf">task</span><span class="p">()</span> <span class="k">as</span><span class="n">ync</span> <span class="p">{</span>
+		<span class="k">for</span> <span class="n">await</span> <span class="n">result</span> <span class="k">in</span> <span class="n">serialProcessor</span><span class="o">.</span><span class="n">results</span> <span class="p">{</span>
+		    <span class="n">latestResult</span> <span class="o">=</span> <span class="n">result</span>
+		<span class="p">}</span>
+	<span class="p">}</span>
+	
+	<span class="c1">// ...</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p>In my testing of the non-realtime setup, the system seemed to work correctly. It buffers inputs as expected, and even drops outputs if I use <code class="language-plaintext highlighter-rouge">.bufferingNewest(1)</code>.</p>
+
+<p>I’m still actively working on this problem (and should be doing so right now instead of writing this post).</p>
+
+<p>There are other libraries like <a href="https://github.com/sideeffect-io/AsyncExtensions">AsyncExtensions</a> that build on the Swift primitives. However, getting my head around the shape of the problems they can solve and what I can accomplish with the primitives has been tough.</p>
+
+<h2 id="final-thoughts-and-complaints">Final thoughts and complaints</h2>
+
+<p>Swift Concurrency is just such a bummer. We still need to know about lower-level primitives like locks and mutexes and threads. We still need to have working knowledge of past solutions like Grand Central Dispatch in order to interact with our own and Apple’s legacy APIs. Unlike previous solutions, there are fewer primitives for managing serial vs. concurrent processing. It adds a new abstraction layer and several new concepts (isolation, actors, structured/unstructured) that probably will make sense eventually but don’t right now. It adds a dozen new keywords with more essential ones arriving with each new point update. It’s difficult or impossible to find sanctioned sample code that provides a glimpse into what a “best practice” could be. We’re still not safe from runtime crashes.</p>
+
+<p>I could keep going but I’m tired of complaining. I just want to have the confidence to write my features without having to budget multiple days of field testing and debugging time and reading the Swift forums.</p>
+
+
+  </article>
+
+</div>
+
+      </div>
+    </div>
+
+    <footer class="site-footer">
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">twocentstudios</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col  footer-col-1">
+        <ul class="contact-list">
+          <li><a href="mailto:chris@twocentstudios.com">chris@twocentstudios.com</a></li>
+          
+          <li>
+            <a href="https://github.com/twocentstudios">
+              <span class="icon  icon--github">
+                <svg viewBox="0 0 16 16">
+                  <path fill="#828282" d="M7.999,0.431c-4.285,0-7.76,3.474-7.76,7.761 c0,3.428,2.223,6.337,5.307,7.363c0.388,0.071,0.53-0.168,0.53-0.374c0-0.184-0.007-0.672-0.01-1.32 c-2.159,0.469-2.614-1.04-2.614-1.04c-0.353-0.896-0.862-1.135-0.862-1.135c-0.705-0.481,0.053-0.472,0.053-0.472 c0.779,0.055,1.189,0.8,1.189,0.8c0.692,1.186,1.816,0.843,2.258,0.645c0.071-0.502,0.271-0.843,0.493-1.037 C4.86,11.425,3.049,10.76,3.049,7.786c0-0.847,0.302-1.54,0.799-2.082C3.768,5.507,3.501,4.718,3.924,3.65 c0,0,0.652-0.209,2.134,0.796C6.677,4.273,7.34,4.187,8,4.184c0.659,0.003,1.323,0.089,1.943,0.261 c1.482-1.004,2.132-0.796,2.132-0.796c0.423,1.068,0.157,1.857,0.077,2.054c0.497,0.542,0.798,1.235,0.798,2.082 c0,2.981-1.814,3.637-3.543,3.829c0.279,0.24,0.527,0.713,0.527,1.437c0,1.037-0.01,1.874-0.01,2.129 c0,0.208,0.14,0.449,0.534,0.373c3.081-1.028,5.302-3.935,5.302-7.362C15.76,3.906,12.285,0.431,7.999,0.431z"/>
+                </svg>
+              </span>
+
+              <span class="username">twocentstudios</span>
+            </a>
+          </li>
+          
+
+          <li>
+            <a href="https://hackyderm.io/@twocentstudios">
+              <span class="icon">
+                <svg viewBox="0 0 24 24">
+                  <path fill="#828282" d="M21.327 8.566c0-4.339-2.843-5.61-2.843-5.61-1.433-.658-3.894-.935-6.451-.956h-.063c-2.557.021-5.016.298-6.45.956 0 0-2.843 1.272-2.843 5.61 0 .993-.019 2.181.012 3.441.103 4.243.778 8.425 4.701 9.463 1.809.479 3.362.579 4.612.51 2.268-.126 3.541-.809 3.541-.809l-.075-1.646s-1.621.511-3.441.449c-1.804-.062-3.707-.194-3.999-2.409a4.523 4.523 0 0 1-.04-.621s1.77.433 4.014.536c1.372.063 2.658-.08 3.965-.236 2.506-.299 4.688-1.843 4.962-3.254.434-2.223.398-5.424.398-5.424zm-3.353 5.59h-2.081V9.057c0-1.075-.452-1.62-1.357-1.62-1 0-1.501.647-1.501 1.927v2.791h-2.069V9.364c0-1.28-.501-1.927-1.502-1.927-.905 0-1.357.546-1.357 1.62v5.099H6.026V8.903c0-1.074.273-1.927.823-2.558.566-.631 1.307-.955 2.228-.955 1.065 0 1.872.409 2.405 1.228l.518.869.519-.869c.533-.819 1.34-1.228 2.405-1.228.92 0 1.662.324 2.228.955.549.631.822 1.484.822 2.558v5.253z"/>
+                </svg>
+              </span>
+
+              <span class="username">twocentstudios</span>
+            </a>
+          </li>
+
+          
+          <li>
+            <a href="https://twitter.com/twocentstudios">
+              <span class="icon  icon--twitter">
+                <svg viewBox="0 0 16 16">
+                  <path fill="#828282" d="M15.969,3.058c-0.586,0.26-1.217,0.436-1.878,0.515c0.675-0.405,1.194-1.045,1.438-1.809
+                  c-0.632,0.375-1.332,0.647-2.076,0.793c-0.596-0.636-1.446-1.033-2.387-1.033c-1.806,0-3.27,1.464-3.27,3.27 c0,0.256,0.029,0.506,0.085,0.745C5.163,5.404,2.753,4.102,1.14,2.124C0.859,2.607,0.698,3.168,0.698,3.767 c0,1.134,0.577,2.135,1.455,2.722C1.616,6.472,1.112,6.325,0.671,6.08c0,0.014,0,0.027,0,0.041c0,1.584,1.127,2.906,2.623,3.206 C3.02,9.402,2.731,9.442,2.433,9.442c-0.211,0-0.416-0.021-0.615-0.059c0.416,1.299,1.624,2.245,3.055,2.271 c-1.119,0.877-2.529,1.4-4.061,1.4c-0.264,0-0.524-0.015-0.78-0.046c1.447,0.928,3.166,1.469,5.013,1.469 c6.015,0,9.304-4.983,9.304-9.304c0-0.142-0.003-0.283-0.009-0.423C14.976,4.29,15.531,3.714,15.969,3.058z"/>
+                </svg>
+              </span>
+
+              <span class="username">twocentstudios</span>
+            </a>
+          </li>
+          
+        </ul>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+
+
+  </body>
+
+</html>
