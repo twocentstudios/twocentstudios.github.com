@@ -7,7 +7,7 @@ tags: apple ios swift concurrency
 
 I started my Apple platforms development journey a year before [Grand Central Dispatch](https://developer.apple.com/documentation/dispatch) was released with iOS 4. I've lived through codebase migrations to [NSOperation](https://nshipster.com/nsoperation/). Then through the slew of FRP frameworks (of which I consider a concurrency solution): [ReactiveCocoa](https://github.com/ReactiveCocoa/ReactiveCocoa), [ReactiveSwift](https://github.com/ReactiveCocoa/ReactiveSwift), [RxSwift](https://github.com/ReactiveX/RxSwift), and finally [Combine](https://developer.apple.com/documentation/combine).
 
-My strategy for learning all these paradigms was best described as osmosis while encountering and solving real problems in codebases. Of course, you have to spend time setting breaking points and patiently stepping through with a debugger to see where all the thread hops are happening. Eventually, I reached the point where I could read code and predict which threads each section would run on. I had 80% of the operators memorized and knew exactly where in the docs to look for the remaining 20%.
+My strategy for learning all these paradigms was best described as osmosis while encountering and solving real problems in codebases. Of course, you have to spend time setting breakpoints and patiently stepping through with a debugger to see where all the thread hops are happening. Eventually, I reached the point where I could read code and predict which threads each section would run on. I had 80% of the operators memorized and knew exactly where in the docs to look for the remaining 20%.
 
 Years in, that kind of confidence has eluded me so far with Swift Concurrency. I cannot yet read a snippet of code and predict what the call stack will look like. I haven't memorized enough of the syntax to formulate solutions in my head and write it fluently. I don't have a go-to location in the docs to find the primitive at the tip of my tongue.
 
@@ -265,7 +265,7 @@ Essentially:
 CLLocationManagerDelegate -> RailwayTracker -> ContentView
 ```
 
-The actual architecture is a bit more complex due the relationship between instances of classes doing each part of the work. But the overall pipeline design has always felt precarious due to the underlying assumptions that:
+The actual architecture is a bit more complex due to the relationship between instances of classes doing each part of the work. But the overall pipeline design has always felt precarious due to the underlying assumptions that:
 
 - Core Location will never produce `CLLocation` values faster than RailwayTracker can process them.
 - `RailwayTracker` will always process inputs in order, serially.
@@ -275,7 +275,7 @@ In practice, I was probably breaking at least the first constraint during testin
 
 When originally designing `RailwayTracker`, an `actor` seemed like the obvious choice. I wanted a separate isolation for its internal state and I knew it'd be doing enough heavy work that it wasn't feasible to do on the main actor.
 
-However, I misinterpreted the behavior `actor`, thinking that an actor *also* ensured that an instance's functions would be need to complete before they could be called again. In practice, `actor`s don't do anything to prevent [reentrancy](https://mjtsai.com/blog/2024/07/29/actor-reentrancy-in-swift/).
+However, I misinterpreted the behavior of `actor`, thinking that an actor *also* ensured that an instance's functions would need to complete before they could be called again. In practice, `actor`s don't do anything to prevent [reentrancy](https://mjtsai.com/blog/2024/07/29/actor-reentrancy-in-swift/).
 
 Meaning that the input locations could be being processed out-of-order by the actor with the database operations being interleaved and there being all kinds of chaos and unspecified behavior.
 
@@ -285,8 +285,8 @@ I researched the current state of the Apple officially-sanctioned [swift-async-a
 
 I decided on my specification:
 
-- CLLocation's should never be dropped.
-- CLLocation's should always be fully processed one-by-one in the order they arrive.
+- CLLocations should never be dropped.
+- CLLocations should always be fully processed one-by-one in the order they arrive.
 - Pipeline output results should be delivered to one "subscriber" (mixing metaphors here), but I may need multiple in the near future.
 
 I ended up with a generic wrapper abstraction called `SerialProcessor`:
