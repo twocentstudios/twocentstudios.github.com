@@ -567,11 +567,39 @@ Last Exception Backtrace:
 
 <p>In practice, I was probably breaking at least the first constraint during testing, since I could simulate <code class="language-plaintext highlighter-rouge">CLLocation</code>s being produced at 20x real-time speed in a separate macOS app I was using to iterate on the algorithm within <code class="language-plaintext highlighter-rouge">RailwayTracker</code>.</p>
 
+<p>Here is a very simplified version of the shape of <code class="language-plaintext highlighter-rouge">RailwayTracker</code>:</p>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">RailwayTrackerResult</span> <span class="p">{</span>
+    <span class="k">let</span> <span class="nv">location</span><span class="p">:</span> <span class="kt">Location</span>
+    <span class="k">let</span> <span class="nv">value</span><span class="p">:</span> <span class="kt">Int</span>
+<span class="p">}</span>
+
+<span class="n">actor</span> <span class="kt">RailwayTracker</span> <span class="p">{</span>
+    <span class="kd">private</span> <span class="k">let</span> <span class="nv">railwayDatabase</span><span class="p">:</span> <span class="p">(</span><span class="n">any</span> <span class="kt">DatabaseReader</span><span class="p">)?</span>
+    
+    <span class="kd">private</span> <span class="k">var</span> <span class="nv">runningValues</span><span class="p">:</span> <span class="p">[</span><span class="kt">Location</span><span class="p">:</span> <span class="kt">Int</span><span class="p">]</span> <span class="o">=</span> <span class="p">[:]</span>
+
+    <span class="nf">init</span><span class="p">(</span><span class="nv">railwayDatabase</span><span class="p">:</span> <span class="p">(</span><span class="n">any</span> <span class="kt">DatabaseReader</span><span class="p">)?)</span> <span class="p">{</span>
+        <span class="k">self</span><span class="o">.</span><span class="n">railwayDatabase</span> <span class="o">=</span> <span class="n">railwayDatabase</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">process</span><span class="p">(</span><span class="n">_</span> <span class="nv">input</span><span class="p">:</span> <span class="kt">Location</span><span class="p">)</span> <span class="k">as</span><span class="n">ync</span> <span class="o">-&gt;</span> <span class="kt">RailwayTrackerResult</span> <span class="p">{</span>
+        <span class="c1">// lots of database reads</span>
+        <span class="c1">// lots of reads from `runningValues`</span>
+        <span class="c1">// lots of updates to `runningValues`</span>
+        <span class="k">return</span> <span class="kt">RailwayTrackerResult</span><span class="p">(</span><span class="nv">location</span><span class="p">:</span> <span class="n">input</span><span class="p">,</span> <span class="nv">value</span><span class="p">:</span> <span class="n">someCalculatedValue</span><span class="p">)</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">reset</span><span class="p">()</span> <span class="p">{</span>
+        <span class="n">runningValues</span> <span class="o">=</span> <span class="p">[:]</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
 <p>When originally designing <code class="language-plaintext highlighter-rouge">RailwayTracker</code>, an <code class="language-plaintext highlighter-rouge">actor</code> seemed like the obvious choice. I wanted a separate isolation for its internal state and I knew it’d be doing enough heavy work that it wasn’t feasible to do on the main actor.</p>
 
-<p>However, I misinterpreted the behavior of <code class="language-plaintext highlighter-rouge">actor</code>, thinking that an actor <em>also</em> ensured that an instance’s functions would need to complete before they could be called again. In practice, <code class="language-plaintext highlighter-rouge">actor</code>s don’t do anything to prevent <a href="https://mjtsai.com/blog/2024/07/29/actor-reentrancy-in-swift/">reentrancy</a>.</p>
-
-<p>Meaning that the input locations could be being processed out-of-order by the actor with the database operations being interleaved and there being all kinds of chaos and unspecified behavior.</p>
+<p>However, I misinterpreted the behavior of <code class="language-plaintext highlighter-rouge">actor</code>, thinking that an actor <em>also</em> ensured that an instance’s functions would need to complete before they could be called again. In practice, <code class="language-plaintext highlighter-rouge">actor</code>s don’t do anything to prevent <a href="https://mjtsai.com/blog/2024/07/29/actor-reentrancy-in-swift/">reentrancy</a>. Meaning that the input locations could be being processed out-of-order by the actor with the database operations being interleaved and there being all kinds of chaos and unspecified behavior.</p>
 
 <p>While doing some new work on the project, I wanted to take another stab at hardening the entire pipeline using Swift Concurrency.</p>
 
