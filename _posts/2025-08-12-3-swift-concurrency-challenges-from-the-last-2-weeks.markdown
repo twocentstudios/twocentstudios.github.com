@@ -273,11 +273,39 @@ The actual architecture is a bit more complex due to the relationship between in
 
 In practice, I was probably breaking at least the first constraint during testing, since I could simulate `CLLocation`s being produced at 20x real-time speed in a separate macOS app I was using to iterate on the algorithm within `RailwayTracker`.
 
+Here is a very simplified version of the shape of `RailwayTracker`:
+
+```swift
+struct RailwayTrackerResult {
+    let location: Location
+    let value: Int
+}
+
+actor RailwayTracker {
+    private let railwayDatabase: (any DatabaseReader)?
+    
+    private var runningValues: [Location: Int] = [:]
+
+    init(railwayDatabase: (any DatabaseReader)?) {
+        self.railwayDatabase = railwayDatabase
+    }
+
+    func process(_ input: Location) async -> RailwayTrackerResult {
+        // lots of database reads
+        // lots of reads from `runningValues`
+        // lots of updates to `runningValues`
+        return RailwayTrackerResult(location: input, value: someCalculatedValue)
+    }
+
+    func reset() {
+        runningValues = [:]
+    }
+}
+```
+
 When originally designing `RailwayTracker`, an `actor` seemed like the obvious choice. I wanted a separate isolation for its internal state and I knew it'd be doing enough heavy work that it wasn't feasible to do on the main actor.
 
-However, I misinterpreted the behavior of `actor`, thinking that an actor *also* ensured that an instance's functions would need to complete before they could be called again. In practice, `actor`s don't do anything to prevent [reentrancy](https://mjtsai.com/blog/2024/07/29/actor-reentrancy-in-swift/).
-
-Meaning that the input locations could be being processed out-of-order by the actor with the database operations being interleaved and there being all kinds of chaos and unspecified behavior.
+However, I misinterpreted the behavior of `actor`, thinking that an actor *also* ensured that an instance's functions would need to complete before they could be called again. In practice, `actor`s don't do anything to prevent [reentrancy](https://mjtsai.com/blog/2024/07/29/actor-reentrancy-in-swift/). Meaning that the input locations could be being processed out-of-order by the actor with the database operations being interleaved and there being all kinds of chaos and unspecified behavior.
 
 While doing some new work on the project, I wanted to take another stab at hardening the entire pipeline using Swift Concurrency.
 
