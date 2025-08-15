@@ -55,15 +55,17 @@ Alongside my duties as a quality assurance engineer for electrical test tools, I
 
 ## Talks
 
+#### Record your own cooking video with Cookpad Studio Satellite
+
+Presented March 21st, 2019 at [Cookpad Tech Kitchen #21](https://cookpad.connpass.com/event/122585/) in Tokyo, Japan.
+
+#### Architecting for Experiments at Cookpad Global - [slides](https://speakerdeck.com/twocentstudios/architecting-for-experiments-at-cookpad-global)
+
+Presented February 16th, 2018 at [Cookpad Tech Kitchen #14](https://cookpad.connpass.com/event/77842/) in Tokyo, Japan.
+
 #### MVVM Architecture at Timehop - [slides](https://speakerdeck.com/twocentstudios/mvvm-architecture-at-timehop)
 
 Presented March 6th, 2015 at [iOSoho](https://www.meetup.com/iOSoho/) in New York City.
-
-## Projects
-
-#### HOPStrings - [source](https://github.com/timehop/HOPStrings)
-
-A lightweight Objective-C library for creating `NSAttributedString`s.
 
 ## Archive
 
@@ -94,3 +96,7 @@ An iPhone app for viewing bus arrival times at The Ohio State University.
 #### AppleCart - [post](/2012/09/18/applecart-my-first-production-rails-app/) | [source](https://github.com/twocentstudios/applecart)
 
 A custom online shopping cart for an American Cancer Society fundraiser.
+
+#### HOPStrings - [source](https://github.com/timehop/HOPStrings)
+
+A lightweight Objective-C library for creating `NSAttributedString`s.
