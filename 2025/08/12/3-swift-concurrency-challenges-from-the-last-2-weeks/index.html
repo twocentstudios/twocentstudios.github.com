@@ -435,7 +435,7 @@ Last Exception Backtrace:
 
 <p><strong>Update 2025/08/18</strong></p>
 
-<p><a href="https://mastodon.social/@auramagi/">Mike Apurin</a> solved the underlying issue (the fix is the same). From the stack trace, <code class="language-plaintext highlighter-rouge">completeTaskWithClosure(swift::AsyncContext*, swift::SwiftError*)</code> is the closure automatically created and called by Swift at the end of the <code class="language-plaintext highlighter-rouge">async</code> version of the <code class="language-plaintext highlighter-rouge">userNotificationCenter(_:didReceive:)</code> function. Although it’s not documented, this closure must presumably be called on the main thread.</p>
+<p><a href="https://mastodon.social/@auramagi/">Mike Apurin</a> solved the underlying issue (the fix is the same). From the stack trace, <code class="language-plaintext highlighter-rouge">completeTaskWithClosure(swift::AsyncContext*, swift::SwiftError*)</code> is the closure automatically created and called by Swift at the end of the <code class="language-plaintext highlighter-rouge">async</code> version of the <code class="language-plaintext highlighter-rouge">userNotificationCenter(_:didReceive:)</code> function. Although it’s not documented, the crash leads me to believe this closure must be called on the main thread.</p>
 
 <p>We have no direct control over what actor the closure runs on; it’s presumably whatever actor the function is isolated to. This means that we can only:</p>
 

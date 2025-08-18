@@ -5,8 +5,8 @@
     <description>A coding blog covering iOS, Swift, and other programming topics.</description>
     <link>https://twocentstudios.com/blog/tags/swift/index.html</link>
     <atom:link href="https://twocentstudios.com/blog/tags/swift/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Mon, 18 Aug 2025 10:01:32 -0500</pubDate>
-    <lastBuildDate>Mon, 18 Aug 2025 10:01:32 -0500</lastBuildDate>
+    <pubDate>Mon, 18 Aug 2025 10:06:15 -0500</pubDate>
+    <lastBuildDate>Mon, 18 Aug 2025 10:06:15 -0500</lastBuildDate>
     <generator>Jekyll v3.9.3</generator>
     
       <item>
@@ -155,7 +155,7 @@ Last Exception Backtrace:
 
 &lt;p&gt;&lt;strong&gt;Update 2025/08/18&lt;/strong&gt;&lt;/p&gt;
 
-&lt;p&gt;&lt;a href=&quot;https://mastodon.social/@auramagi/&quot;&gt;Mike Apurin&lt;/a&gt; solved the underlying issue (the fix is the same). From the stack trace, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;completeTaskWithClosure(swift::AsyncContext*, swift::SwiftError*)&lt;/code&gt; is the closure automatically created and called by Swift at the end of the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;async&lt;/code&gt; version of the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;userNotificationCenter(_:didReceive:)&lt;/code&gt; function. Although it’s not documented, this closure must presumably be called on the main thread.&lt;/p&gt;
+&lt;p&gt;&lt;a href=&quot;https://mastodon.social/@auramagi/&quot;&gt;Mike Apurin&lt;/a&gt; solved the underlying issue (the fix is the same). From the stack trace, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;completeTaskWithClosure(swift::AsyncContext*, swift::SwiftError*)&lt;/code&gt; is the closure automatically created and called by Swift at the end of the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;async&lt;/code&gt; version of the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;userNotificationCenter(_:didReceive:)&lt;/code&gt; function. Although it’s not documented, the crash leads me to believe this closure must be called on the main thread.&lt;/p&gt;
 
 &lt;p&gt;We have no direct control over what actor the closure runs on; it’s presumably whatever actor the function is isolated to. This means that we can only:&lt;/p&gt;
 
