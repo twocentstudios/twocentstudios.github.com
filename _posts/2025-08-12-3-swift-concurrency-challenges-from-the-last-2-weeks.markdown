@@ -147,6 +147,16 @@ From this whole weeks-long process, I've learned essentially nothing about the p
 
 Presumably no one at Apple is working on the User Notifications framework anymore. Nothing is being added to it. No one is giving it concurrency support. No one *has* (over the past decade) or *will* document its concurrency story. The best we have is a [Stack Overflow post](https://stackoverflow.com/questions/73750724/how-can-usernotificationcenter-didreceive-cause-a-crash-even-with-nothing-in) with no unanimous best practice and no solution.
 
+**Update 2025/08/18**
+
+[Mike Apurin](https://mastodon.social/@auramagi/) solved the underlying issue (the fix is the same). From the stack trace, `completeTaskWithClosure(swift::AsyncContext*, swift::SwiftError*)` is the closure automatically created and called by Swift at the end of the `async` version of the `userNotificationCenter(_:didReceive:)` function. Although it's not documented, this closure must presumably be called on the main thread.
+
+We have no direct control over what actor the closure runs on; it's presumably whatever actor the function is isolated to. This means that we can only:
+
+- Add `@MainActor` to the Delegate class.
+- Add `@MainActor` to the function. (the fix we used in the post)
+- Use the non-async version of the function, `userNotificationCenter(_:didReceive:withCompletionHandler:)` and wrap the completion handler in a `MainActor.run` closure.
+
 ## 2. CMMotionActivityManager
 
 [Core Motion](https://developer.apple.com/documentation/coremotion) is another neglected framework that not many iOS devs have the pleasure of integrating. It seems to have mostly been "modernized" around iOS 7 when `NSOperation` had a small popularity bump. Also when the API best practices for getting permission from the device user were still being tweaked.
