@@ -149,7 +149,7 @@ Presumably no one at Apple is working on the User Notifications framework anymor
 
 **Update 2025/08/18**
 
-[Mike Apurin](https://mastodon.social/@auramagi/) solved the underlying issue (the fix is the same). From the stack trace, `completeTaskWithClosure(swift::AsyncContext*, swift::SwiftError*)` is the closure automatically created and called by Swift at the end of the `async` version of the `userNotificationCenter(_:didReceive:)` function. Although it's not documented, this closure must presumably be called on the main thread.
+[Mike Apurin](https://mastodon.social/@auramagi/) solved the underlying issue (the fix is the same). From the stack trace, `completeTaskWithClosure(swift::AsyncContext*, swift::SwiftError*)` is the closure automatically created and called by Swift at the end of the `async` version of the `userNotificationCenter(_:didReceive:)` function. Although it's not documented, the crash leads me to believe this closure must be called on the main thread.
 
 We have no direct control over what actor the closure runs on; it's presumably whatever actor the function is isolated to. This means that we can only:
 
