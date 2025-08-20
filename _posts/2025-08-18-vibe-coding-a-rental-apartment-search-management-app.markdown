@@ -7,17 +7,17 @@ tags: claude web react typescript vibecoding
 
 I've been apartment hunting here in the Tokyo-area with my girlfriend. We've been sending links to various rental property listings back and forth in LINE (messaging app) and emailing with brokers. In a chat interface, it was hard keeping up with the status of each of the properties we'd seen, we wanted to see, we'd inquired about, etc. Classic project management problem.
 
-![TODO normal page listing for a SUUMO property](![_SUUMO_____________________________ __________________________________1004530702](../../../Downloads/_SUUMO_____________________________ __________________________________1004530702.jpeg))
+{% caption_img /images/bukkenlist-suumo-listing-example.jpg h400 Example SUUMO property listing page slightly edited for clarity %}
 
-I decided to skip the step of putting each property into a shared spreadsheet and jump straight to vibe coding a web app with Claude Code. I've never worked on a full stack Typescript app before, and my impression is that LLMs are most proficient at it, so that's what I went with.
+I decided to skip the step of putting each property into a shared spreadsheet and jump straight to vibe coding a web app with Claude Code. I've never worked on a full stack TypeScript app before, and my impression is that LLMs are most proficient at it, so that's what I went with.
 
-![TODO finished desktop interface for the app](![Screenshot 2025-08-20 at 9.37.50](../../../Downloads/Screenshot 2025-08-20 at 9.37.50.png))
+{% caption_img /images/bukkenlist-finished-desktop-interface.jpg h400 Finished desktop interface for Bukkenlist %}
 
 My goal was to create a shared space we could keep track of the status of listings, add new ones easily, do calculations like 2-year amortized cost, keep a notes and ratings field for each of us, see all the salient points of a property at a glance, and archive properties that we decide against or are already taken.
 
-After a day of work, it supported scraping SUUMO listings and worked on mobile and desktop web. Another 2 half-days of work and it supports 4 listing sites, maps, expired listings, and English/Japanese localization.
+After a day of work, it supported scraping SUUMO listings and worked on mobile and desktop web. Another 2 half-days of work and it supports 4 listing sites, maps, expired listings, and English/Japanese localization. I called it Bukkenlist 物件リスト.
 
-![TODO site after the first day, second day, and final]()
+{% caption_img /images/bukkenlist-day1-and-final-comparison.jpg h400 App progression from end of day 1 (left) to final polished version (right) - there's not much visual difference %}
 
 This was "vibe coding" in the customary definition of "not looking at the generated code at all". I see the code scrolling past in the terminal window but I'm letting Claude commit it after I check that the rendered result looks and works as intended in the browser window. For this project, I'm playing the role of product manager and QA engineer. However, I did make the decisions about using SQLite for storage, the schema, and the deployment strategy. And I helped Claude dig itself out of holes in the way only an engineer can.
 
@@ -29,17 +29,17 @@ I have a Claude Code $100/mo Max subscription. I used the pattern of using "plan
 
 ### Day 1
 
-Learning from some [past experiments](TODO vinylogue post), I decided this time to be more intentional with my initial getting-started prompts. I didn't dump my entire vision for the app onto the model and have it create a full product requirements doc and phase-by-phase development plan. I thought staying in the loop would ensure the best chance of success and even minor scalability. 
+Learning from some [past experiments](/2025/06/22/vinylogue-swift-rewrite/), I decided this time to be more intentional with my initial getting-started prompts. I didn't dump my entire vision for the app onto the model and have it create a full product requirements doc and phase-by-phase development plan. I thought staying in the loop would ensure the best chance of success and even minor scalability. 
 
 SUUMO listing scraping was the most risky part, so I had it start by creating some infrastructure around fetching and parsing the HTML for a few example listings and comparing the results with the values I'd plucked out by hand. 
 
-![TODO image of the console showing results from the initial parsing](![Screenshot 2025-08-20 at 9.45.08](../../../Downloads/Screenshot 2025-08-20 at 9.45.08.png))
+{% caption_img /images/bukkenlist-console-parsing-results.jpg h400 Console showing results from the initial SUUMO listing parsing %}
 
 Only after the parsing seemed relatively robust did I have Claude create the initial structure of the Express.js backend and React frontend. It used VITE but I only sort of know what role that plays. The first renderable version was a text field for the SUUMO URL, a submit button, and then a list of the keys and values parsed out.
 
-![TODO image of the first working interface with the text field and listing](![Screenshot 2025-08-20 at 9.48.22](../../../Downloads/Screenshot 2025-08-20 at 9.48.22.png))
+{% caption_img /images/bukkenlist-first-working-interface.jpg h400 First working interface with URL input field and parsed listing key/values %}
 
-Then it was time to add persistence. This was the part where I *should* have first decided on hosting, got that set up, *then* decided on the most low maintenance storage solution. Instead, I chose SQLite, which I've been interested in lately and have [already deployed](TODO my post about swift sqlite flyio) successfully on Fly.io.
+Then it was time to add persistence. This was the part where I *should* have first decided on hosting, got that set up, *then* decided on the most low maintenance storage solution. Instead, I chose SQLite, which I've been interested in lately and have [already deployed](/2025/07/02/swift-vapor-fly-io-sqlite-config/) successfully on Fly.io.
 
 With my engineer hat on, I made the initial decision to have Claude go with a mixed schema-less approach, storing a generous amount of metadata about each property in named columns, but then having a dumping ground JSON column with all the parsed key/value data. Hard to say whether that's made my life easier or harder while adding new listing sources. For a personal project with 2-users, I think it was fine decision. For a real production site, I can already tell it would be a nightmare to maintain.
 
@@ -67,7 +67,7 @@ With my engineer hat on, I made the initial decision to have Claude go with a mi
 
 From there I had Claude build out the master/detail list in desktop mode. It had little trouble putting together a passible design.
 
-![TODO initial master detail view](![Vite _ React _ TS · 9.56am · 08-20](../../../Downloads/Vite _ React _ TS · 9.56am · 08-20.jpeg))
+{% caption_img /images/bukkenlist-initial-master-detail-view.jpg h400 Initial master-detail interface showing property list and selected property detail %}
 
 I added delete and refresh support since those were helpful in manual testing. Refresh should re-run the scraping and parsing and replace all the fields with the freshly parsed content.
 
@@ -75,35 +75,35 @@ Then it was kind of the fun part: pushing around the fields in the UI to make it
 
 Next I had to add image carousel support which was surprisingly easy. I prompted Claude to do some extra research for best practices before deciding on a solution.
 
-![TODO reorganizing the UI and image carousel support](![Vite _ React _ TS · 9.58am · 08-20](../../../Downloads/Vite _ React _ TS · 9.58am · 08-20.jpeg))
+{% caption_img /images/bukkenlist-ui-reorganizing-carousel.jpg h400 Reorganized UI with image carousel %}
 
 I added deterministic unique color generation for each property based on its unique ID mapped to a hue value 0-359 in HSV. I use this technique often in projects as a nice touch to make resources easier to identify.
 
-![TODO color id support](![Screenshot 2025-08-20 at 9.37.50 2](../../../Downloads/Screenshot 2025-08-20 at 9.37.50 2.png))
+{% caption_img /images/bukkenlist-color-id-support.jpg h400 Properties with unique color IDs for intuitive identification %}
 
 I can't sightread Japanese as fast as I can English, so I had Claude add full UI localization in both English and Japanese to the entire app and have it save the preference in local storage. This helped speed up QA of parser errors going forward.
 
-![TODO localization](![Screenshot 2025-08-20 at 9.37.50 3](../../../Downloads/Screenshot 2025-08-20 at 9.37.50 3.png))
+{% caption_img /images/bukkenlist-localization-support.jpg h400 English/Japanese localization toggle %}
 
 I wanted to highlight the at-a-glance parts each property that were especially important to the two of us, so I added those in big font next to the image carousel.
 
-![TODO at a glance properties](![Vite _ React _ TS · 9.58am · 08-20 2](../../../Downloads/Vite _ React _ TS · 9.58am · 08-20 2.jpeg))
+{% caption_img /images/bukkenlist-at-a-glance-properties.jpg h400 First version of the at-a-glance property details %}
 
 From here it was a lot of polish. I felt like I was in full product manager flow-state, just picking off the next obvious change in the UI and prompting Claude to have a go at it.
 
 The whole point of the app was to facilitate our apartment search process, which ultimately meant appending our own information to listings. I added a open-ended status field to track things like "requested viewing" or "viewing on 8/24". I added an open ended notes field for each of us, then a 4-level rating system. In the notes field, we've been adding merits/demerits. The rating system is an easy way to clearly communicate our enthusiasm towards each property and see it at a glance in the sidebar.
 
-![TODO fleshed out with notes and ratings](![Screenshot 2025-08-20 at 10.05.12](../../../Downloads/Screenshot 2025-08-20 at 10.05.12.png))
+{% caption_img /images/bukkenlist-notes-and-ratings.jpg h400 First version of the notes and rating system for each (hardcoded) user %}
 
 A cool feature I'd very loosely prototyped with a single ChatGPT query a few days previous was an "amortized cost" field, calculated from several fields. There are so many disparate fees for each listing (monthly rent, management fees, security deposit, key money, parking fee, etc.) that it's hard to do an apples-to-apples comparison of how expensive properties actually are. It's elementary school math, but just annoying to do.
 
 It was pretty simple to add this field: parse out the semantic values, multiply the monthly costs by the lease term, add the one-time costs, then divide by the lease term to get the overall monthly cost.
 
-![TODO all in cost](![Screenshot 2025-08-20 at 9.37.50 4](../../../Downloads/Screenshot 2025-08-20 at 9.37.50 4.png))
+{% caption_img /images/bukkenlist-all-in-cost.jpg h400 Amortized cost calculation for true monthly expense comparison %}
 
 I was on the fence about whether to build out a full user table and authentication system. It may have been worth seeing whether Claude could have one-shotted multi-user support. Instead, I opted for a simple password auth and full editing support for any field. I'm pretty happy with this solution and proud of myself for not going overboard on the spec. It's much easier to share a single password than deal with a create account flow on multiple devices or while on the go. I set some strict rate limits for password attempts and page requests in general and know that if the site gets hacked and trashed somehow it's not a huge deal.
 
-![TODO login screen](![Bukkenlist - Property Management · 10.11am · 08-20](../../../Downloads/Bukkenlist - Property Management · 10.11am · 08-20.jpeg))
+{% caption_img /images/bukkenlist-login-screen.jpg h400 Simple password login screen to gate the whole app %}
 
 It was finally time for deployment! I was definitely procrastinating on this, but I wanted to get it online before I went to bed.
 
@@ -117,23 +117,21 @@ At this point, I took a step back and though about whether I actually needed a f
 
 If I'd have tried deploying immediately after finishing the very first version of the scraper, I'd have had a much easier time. But I also realized I wouldn't have had much invested at this point, and my motivation to continue may not have survived this deployment slog. An interesting paradox! In theory I would have saved hours, but in practice I may not have shipped anything. It's also possible I would have chose a different deployment service that affected my choice of persistence solution, etc. Decision ordering really matters, and I'm trying to get better at it. But also, LLMs make spikes, backtracking, and rewrites so low-cost/low-effort that as long as you're willing to ignore sunk costs and your motivation survives you can end up with a much more optimal solutions in the long run.
 
-![TODO deployed to production at the end of day 1](![Screenshot 2025-08-20 at 10.11.58](../../../Downloads/Screenshot 2025-08-20 at 10.11.58.png))
+{% caption_img /images/bukkenlist-deployed-production-end-day1.jpg h400 App successfully deployed to production at the end of day 1 (Japanese interface) %}
 
 My first commit was 4pm on Saturday and my last commit before going to sleep was 6am Sunday. I'd (re)watched 3 seasons of Silicon Valley in the background. I send my girlfriend a link and the password and went to bed.
 
 ## Day 2 & 3
 
-I woke up a couple hours later and made pancakes and got a message from my girlfriend with links to listings from 2 other services. So it was time to add support for more sources!
+I woke up a couple hours later and made pancakes and got a message from my girlfriend with links to listings from 2 other services. So it was time to add support for more listing sources!
 
 I had Claude do a refactor the scraper in preparation for adding multi-service support. Again, this was vibe coding so I had no idea how well it did, but I trusted it. This took about an hour. I gave it a link to a new listing and had it run its scraping parsing iterative procedure to write an initial version of the parser. According to the git logs it took about an hour to write the two new scrapers and a guide for itself for writing future scrapers.
 
-![TODO multi source support](directions to claude: concatenate the below 3 images together)
-![Screenshot 2025-08-20 at 10.48.56](../../../Downloads/Screenshot 2025-08-20 at 10.48.56.png)![Screenshot 2025-08-20 at 10.48.45](../../../Downloads/Screenshot 2025-08-20 at 10.48.45.png)![Screenshot 2025-08-20 at 10.48.38](../../../Downloads/Screenshot 2025-08-20 at 10.48.38.png)
+{% caption_img /images/bukkenlist-multi-source-support.jpg h300 Multi-source support showing listings from different rental websites %}
 
 I realized the two of us would need to use my new site from our iPhones, so I added mobile support. This was way way faster than I expected. It took a bit more Claude coercing the next day to get it fully optimized, but the first attempt was definitely usable.
 
-![TODO initial mobile](directions to claude: concatenate the below two images together)
-![Bukkenlist - Property Management · 10.51am · 08-20](../../../Downloads/Bukkenlist - Property Management · 10.51am · 08-20.jpeg)![Bukkenlist - Property Management · 10.50am · 08-20 (1)](../../../Downloads/Bukkenlist - Property Management · 10.50am · 08-20 (1).jpeg)
+{% caption_img /images/bukkenlist-initial-mobile-interface.jpg h400 Initial mobile interface with separate property list screen (left) and property detail screen (right) %}
 
 Sunday was a half-day. On Monday, I put in another half-day optimizing the mobile layout, adding another source, adding listing expiry support, maps support, and deep linking support.
 
@@ -147,7 +145,7 @@ I had to get a lot more hands on and spent a long dev cycle restarting the dev s
 
 In the end, we got it working, but it's hard for me to say *why* Claude struggled so hard with this particular task and how I could have approached it differently.
 
-![TODO maps support](![Screenshot 2025-08-20 at 10.52.20](../../../Downloads/Screenshot 2025-08-20 at 10.52.20.png))
+{% caption_img /images/bukkenlist-maps-support.jpg h400 Map showing the property location and its relationship to closest station %}
 
 ## Iteration loop workflow
 
@@ -167,7 +165,7 @@ But this was a good experience seeing how feasible vibe coding is for someone wi
 
 One thing's for certain that I never would have attempted a project like this without an LLM agent. If I did, I probably would have lost motivation after finishing the first scraper. I probably would have used a technology I already knew even if it was not the most prudent choice in 2025.
 
-I'd like to try some of the more "batteries included" vibe coding environments (e.g. Lovable, Blot, Replit, V0) to do a similarly scoped project in the near future. I'm most comfortable with Claude Code at the moment because I'm used to the freedom + sharp edges combination. But it's hard for me to imagine a non-programmer or even a junior programmer being able to dig themselves out of the holes I found myself in a few times. There's just a *lot* to know still to get an MVP designed, developed, and deployed.
+I'd like to try some of the more "batteries included" vibe coding environments (e.g. Lovable, Bolt, Replit, V0) to do a similarly scoped project in the near future. I'm most comfortable with Claude Code at the moment because I'm used to the freedom + sharp edges combination. But it's hard for me to imagine a non-programmer or even a junior programmer being able to dig themselves out of the holes I found myself in a few times. There's just a *lot* to know still to get an MVP designed, developed, and deployed.
 
 I can see how using an vibe coding environment with less freedom but more well-paved integrations could prevent dead-ends and thrashing and bad developer experience. Maybe within the year both Claude Code and the vibe coding platforms will have converged into providing decent enough support for users of any background.
 
