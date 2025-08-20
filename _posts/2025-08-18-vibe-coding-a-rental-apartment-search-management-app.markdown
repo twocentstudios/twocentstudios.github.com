@@ -2,7 +2,8 @@
 layout: post
 title: Vibe Coding a Rental Apartment Search Management App
 date: 2025-08-18 17:46:25
-tags: claude web react typescript vibecoding
+image: /images/bukkenlist-finished-desktop-interface.jpg
+tags: claude web react typescript vibecoding app javascript nodejs flyio sqlite debugging
 ---
 
 I've been apartment hunting here in the Tokyo-area with my girlfriend. We've been sending links to various rental property listings back and forth in LINE (messaging app) and emailing with brokers. In a chat interface, it was hard keeping up with the status of each of the properties we'd seen, we wanted to see, we'd inquired about, etc. Classic project management problem.
