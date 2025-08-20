@@ -18,28 +18,30 @@ This is a Jekyll-based blog with a unique dual-branch Git setup for GitHub Pages
 
 #### Create Horizontal Row of Images with Uniform Spacing
 
-**Method 1: Using +smush (Most Precise)**
+**Method 1: Using Selective Borders (Recommended)**
+```bash
+# For 2 images - add borders to create visible separation
+magick image1.png -bordercolor "gray70" -border 25x0 temp1.png
+magick image2.png -bordercolor "gray70" -border 25x0 temp2.png
+magick temp1.png temp2.png -background "gray70" +smush 50 -bordercolor "gray70" -border 50 -resize 1500x1500\> -quality 85 output.jpg
+rm temp1.png temp2.png
+
+# For 3 images - selective borders to avoid artifacts
+magick image1.png -bordercolor "gray70" -border 0x0+25+0 temp1.png  # right border only
+magick image2.png -bordercolor "gray70" -border 25x0 temp2.png       # both sides
+magick image3.png -bordercolor "gray70" -border 0x0+0+25 temp3.png   # left border only
+magick temp1.png temp2.png temp3.png +append -bordercolor "gray70" -border 25 -resize 1500x1500\> -quality 85 output.jpg
+rm temp1.png temp2.png temp3.png
+```
+
+**Method 2: Using +smush (Simple but may lack visible separation)**
 ```bash
 # Combine images with exact spacing and outer border
-magick image1.png image2.png image3.png +smush 15 -bordercolor "gray20" -border 50 output.png
+magick image1.png image2.png image3.png +smush 15 -bordercolor "gray70" -border 50 output.png
 
 # Note: +smush for horizontal, -smush for vertical
 # Number specifies exact pixels between images (no doubling)
-# Border values should be proportional to input image size (15px spacing and 50px border work well for iPhone screenshots ~1200px wide)
-```
-
-**Method 2: Using Individual Borders (Traditional)**
-```bash
-# Add individual borders to each image first (50px horizontal for 100px total spacing)
-magick image1.png -bordercolor "gray20" -border 50x0 temp_01.png
-magick image2.png -bordercolor "gray20" -border 50x0 temp_02.png
-# ... repeat for all images
-
-# Append all bordered images with final outer border
-magick temp_01.png temp_02.png temp_03.png +append -bordercolor "gray20" -border 50x100 final_image.png
-
-# Resize maintaining aspect ratio
-magick final_image.png -resize x400 final_image_400h.png
+# Use gray70 for subtle separation, gray20 for darker separation
 ```
 
 #### Basic Image Operations
@@ -91,19 +93,23 @@ ffmpeg -i input.mov -c:v libx264 -crf 23 -c:a aac output.mp4
 
 ### Optimization Commands
 
-#### Image Compression
+#### Image Processing and Optimization
 ```bash
+# Standard image processing: resize to smallest edge 1500px (without upscaling) and optimize
+magick input.png -resize 1500x1500> -quality 85 output.jpg
+
+# For web optimization, convert to JPEG with quality 85
+magick input.png -resize 1500x1500> -quality 85 output.jpg
+
 # Optimize PNG (requires pngquant)
 pngquant --quality=65-90 input.png --output output.png
-
-# Optimize JPEG (using ImageMagick)
-magick input.jpg -quality 85 output.jpg
 ```
 
 ## Blog-Specific Guidelines
 
 - **Always reference images as `/images/filename.ext`** in posts
-- **Use caption_img plugin** for captioned images: `{% caption_img /images/image.png w400 h300 Caption text %}`
+- **Use caption_img plugin** for captioned images: `{% caption_img /images/image.png h400 Caption text %}`
+- **Use height-only sizing** in caption_img - specify only height (e.g. `h400`) and omit width for responsive scaling
 - **Include poster images for videos** using HTML video tags
 - **Test locally** with `bundle exec jekyll serve --livereload --drafts` before deploying
 - **Tag appropriately** - use `apple` tag for iOS Dev Directory inclusion

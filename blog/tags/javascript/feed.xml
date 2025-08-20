@@ -1,0 +1,209 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>twocentstudios</title>
+    <description>A coding blog covering iOS, Swift, and other programming topics.</description>
+    <link>https://twocentstudios.com/blog/tags/javascript/index.html</link>
+    <atom:link href="https://twocentstudios.com/blog/tags/javascript/feed.xml" rel="self" type="application/rss+xml"/>
+    <pubDate>Tue, 19 Aug 2025 23:16:57 -0500</pubDate>
+    <lastBuildDate>Tue, 19 Aug 2025 23:16:57 -0500</lastBuildDate>
+    <generator>Jekyll v3.9.3</generator>
+    
+      <item>
+        <title>Vibe Coding a Rental Apartment Search Management App</title>
+        <description>&lt;p&gt;I’ve been apartment hunting here in the Tokyo-area with my girlfriend. We’ve been sending links to various rental property listings back and forth in LINE (messaging app) and emailing with brokers. In a chat interface, it was hard keeping up with the status of each of the properties we’d seen, we wanted to see, we’d inquired about, etc. Classic project management problem.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/bukkenlist-suumo-listing-example.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Example SUUMO property listing page slightly edited for clarity&quot; title=&quot;Example SUUMO property listing page slightly edited for clarity&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Example SUUMO property listing page slightly edited for clarity&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;I decided to skip the step of putting each property into a shared spreadsheet and jump straight to vibe coding a web app with Claude Code. I’ve never worked on a full-stack TypeScript app before, and my impression is that LLMs are most proficient at it, so that’s what I went with.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/bukkenlist-finished-desktop-interface.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Finished desktop interface for Bukkenlist&quot; title=&quot;Finished desktop interface for Bukkenlist&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Finished desktop interface for Bukkenlist&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;My goal was to create a shared space where we could keep track of the status of listings, add new ones easily, do calculations like 2-year amortized cost, keep a notes and ratings field for each of us, see all the salient points of a property at a glance, and archive properties that we decide against or are already taken.&lt;/p&gt;
+
+&lt;p&gt;After a day of work, it supported scraping SUUMO listings and worked on mobile and desktop web. Another 2 half-days of work and it supports 4 listing sites, maps, expired listings, and English/Japanese localization. I called it Bukkenlist 物件リスト.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/bukkenlist-day1-and-final-comparison.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;App progression from end of day 1 (left) to final polished version (right) - there&apos;s not much visual difference&quot; title=&quot;App progression from end of day 1 (left) to final polished version (right) - there&apos;s not much visual difference&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;App progression from end of day 1 (left) to final polished version (right) - there&apos;s not much visual difference&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;This was “vibe coding” in the customary definition of “not looking at the generated code at all”. I see the code scrolling past in the terminal window but I’m letting Claude commit it after I check that the rendered result looks and works as intended in the browser window. For this project, I’m playing the role of product manager and QA engineer. However, I did make the decisions about using SQLite for storage, the schema, and the deployment strategy. And I helped Claude dig itself out of holes in the way only an engineer can.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;The TL;DR:&lt;/strong&gt; In 2 working days I produced a completely functional web app with much better usability than the spreadsheet it would compete with. Using an AI tool like Claude Code aimed at professionals, it’s hard for me to imagine someone with no coding background being able to get to the same finish line I did. But with the existing cadre of no-code AI tools, perhaps this would be a perfectly scoped project.&lt;/p&gt;
+
+&lt;h2 id=&quot;the-full-development-process&quot;&gt;The full development process&lt;/h2&gt;
+
+&lt;p&gt;I have a Claude Code $100/mo Max subscription. I used the pattern of using “plan mode” with Opus aggressively to ensure proper context gathering and then “accept edits” mode with Sonnet to execute the plan. These were long sessions, so I actually blew through my usage limits once or twice with 1 or 2 hours remaining (with my usual Swift projects I hadn’t hit the Max limit for Sonnet before). At those times, I switched over to the nascent OpenAI Codex CLI (with a $20/mo Pro plan) to see how it did. Everything about Codex still feels months behind Claude Code, but it did handle some of the tasks I threw at it well enough.&lt;/p&gt;
+
+&lt;h3 id=&quot;day-1&quot;&gt;Day 1&lt;/h3&gt;
+
+&lt;p&gt;Learning from some &lt;a href=&quot;/2025/06/22/vinylogue-swift-rewrite/&quot;&gt;past experiments&lt;/a&gt;, I decided this time to be more intentional with my initial getting-started prompts. I didn’t dump my entire vision for the app onto the model and have it create a full product requirements doc and phase-by-phase development plan. I thought staying in the loop would ensure the best chance of success and even minor scalability.&lt;/p&gt;
+
+&lt;p&gt;SUUMO listing scraping was the most risky part, so I had it start by creating some infrastructure around fetching and parsing the HTML for a few example listings and comparing the results with the values I’d plucked out by hand.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/bukkenlist-console-parsing-results.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Console showing results from the initial SUUMO listing parsing&quot; title=&quot;Console showing results from the initial SUUMO listing parsing&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Console showing results from the initial SUUMO listing parsing&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Only after the parsing seemed relatively robust did I have Claude create the initial structure of the Express.js backend and React frontend. It used VITE but I only sort of know what role that plays. The first renderable version was a text field for the SUUMO URL, a submit button, and then a list of the keys and values parsed out.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/bukkenlist-first-working-interface.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;First working interface with URL input field and parsed listing key/values&quot; title=&quot;First working interface with URL input field and parsed listing key/values&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;First working interface with URL input field and parsed listing key/values&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Then it was time to add persistence. This was the part where I &lt;em&gt;should&lt;/em&gt; have first decided on hosting, got that set up, &lt;em&gt;then&lt;/em&gt; decided on the most low maintenance storage solution. Instead, I chose SQLite, which I’ve been interested in lately and have &lt;a href=&quot;/2025/07/02/swift-vapor-fly-io-sqlite-config/&quot;&gt;already deployed&lt;/a&gt; successfully on Fly.io.&lt;/p&gt;
+
+&lt;p&gt;With my engineer hat on, I made the initial decision to have Claude go with a mixed schema-less approach, storing a generous amount of metadata about each property in named columns, but then having a dumping ground JSON column with all the parsed key/value data. Hard to say whether that’s made my life easier or harder while adding new listing sources. For a personal project with 2 users, I think it was a fine decision. For a real production site, I can already tell it would be a nightmare to maintain.&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;# Final schema of the `scrapes` table
+     cid  name           type     notnull  dflt_value  pk
+     ---  -------------  -------  -------  ----------  --
+     0    id             INTEGER  0                    1
+     1    url            TEXT     1                    0
+     2    property_name  TEXT     0                    0
+     3    scraped_data   TEXT     1                    0
+     4    created_at     INTEGER  1                    0
+     5    status         TEXT     0                    0
+     6    archived       INTEGER  1        0           0
+     7    kiyoko_notes   TEXT     0                    0
+     8    chris_notes    TEXT     0                    0
+     9    kiyoko_rating  INTEGER  0                    0
+     10   chris_rating   INTEGER  0                    0
+     11   source_site    TEXT     1        &apos;suumo&apos;     0
+     12   color_id       TEXT     0                    0
+     13   latitude       REAL     0                    0
+     14   longitude      REAL     0                    0
+     15   expired        INTEGER  1        0           0
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;From there I had Claude build out the master/detail list in desktop mode. It had little trouble putting together a passible design.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/bukkenlist-initial-master-detail-view.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Initial master-detail interface showing property list and selected property detail&quot; title=&quot;Initial master-detail interface showing property list and selected property detail&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Initial master-detail interface showing property list and selected property detail&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;I added delete and refresh support since those were helpful in manual testing. Refresh should re-run the scraping and parsing and replace all the fields with the freshly parsed content.&lt;/p&gt;
+
+&lt;p&gt;Then it was kind of the fun part: pushing around the fields in the UI to make it more pretty and readable.&lt;/p&gt;
+
+&lt;p&gt;Next I had to add image carousel support which was surprisingly easy. I prompted Claude to do some extra research for best practices before deciding on a solution.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/bukkenlist-ui-reorganizing-carousel.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Reorganized UI with image carousel&quot; title=&quot;Reorganized UI with image carousel&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Reorganized UI with image carousel&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;I added deterministic unique color generation for each property based on its unique ID mapped to a hue value 0-359 in HSV. I use this technique often in projects as a nice touch to make resources easier to identify.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/bukkenlist-color-id-support.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Properties with unique color IDs for intuitive identification&quot; title=&quot;Properties with unique color IDs for intuitive identification&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Properties with unique color IDs for intuitive identification&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;I can’t sightread Japanese as fast as I can English, so I had Claude add full UI localization in both English and Japanese to the entire app and have it save the preference in local storage. This helped speed up QA of parser errors going forward.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/bukkenlist-localization-support.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;English/Japanese localization toggle&quot; title=&quot;English/Japanese localization toggle&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;English/Japanese localization toggle&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;I wanted to highlight the at-a-glance parts each property that were especially important to the two of us, so I added those in big font next to the image carousel.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/bukkenlist-at-a-glance-properties.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;First version of the at-a-glance property details&quot; title=&quot;First version of the at-a-glance property details&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;First version of the at-a-glance property details&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;From here it was a lot of polish. I felt like I was in full product manager flow-state, just picking off the next obvious change in the UI and prompting Claude to have a go at it.&lt;/p&gt;
+
+&lt;p&gt;The whole point of the app was to facilitate our apartment search process, which ultimately meant appending our own information to listings. I added an open-ended status field to track things like “requested viewing” or “viewing on 8/24”. I added an open-ended notes field for each of us, then a 4-level rating system. In the notes field, we’ve been adding merits/demerits. The rating system is an easy way to clearly communicate our enthusiasm towards each property and see it at a glance in the sidebar.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/bukkenlist-notes-and-ratings.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;First version of the notes and rating system for each (hardcoded) user&quot; title=&quot;First version of the notes and rating system for each (hardcoded) user&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;First version of the notes and rating system for each (hardcoded) user&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;A cool feature I’d very loosely prototyped with a single ChatGPT query a few days previously was an “amortized cost” field, calculated from several fields. There are so many disparate fees for each listing (monthly rent, management fees, security deposit, key money, parking fee, etc.) that it’s hard to do an apples-to-apples comparison of how expensive properties actually are. It’s elementary school math, but just annoying to do.&lt;/p&gt;
+
+&lt;p&gt;It was pretty simple to add this field: parse out the semantic values, multiply the monthly costs by the lease term, add the one-time costs, then divide by the lease term to get the overall monthly cost.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/bukkenlist-all-in-cost.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Amortized cost calculation for true monthly expense comparison&quot; title=&quot;Amortized cost calculation for true monthly expense comparison&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Amortized cost calculation for true monthly expense comparison&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;I was on the fence about whether to build out a full user table and authentication system. It may have been worth seeing whether Claude could have one-shotted multi-user support. Instead, I opted for a simple password auth and full editing support for any field. I’m pretty happy with this solution and proud of myself for not going overboard on the spec. It’s much easier to share a single password than deal with a create account flow on multiple devices or while on the go. I set some strict rate limits for password attempts and page requests in general and know that if the site gets hacked and trashed somehow it’s not a huge deal.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/bukkenlist-login-screen.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Simple password login screen to gate the whole app&quot; title=&quot;Simple password login screen to gate the whole app&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Simple password login screen to gate the whole app&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;It was finally time for deployment! I was definitely procrastinating on this, but I wanted to get it online before I went to bed.&lt;/p&gt;
+
+&lt;p&gt;Looking into some of the common free hosting services that target JS, I realized Vercel was serverless and I’d need a different solution for the SQLite storage. I could have tried Turso for SQLite hosting, but signing up for 2 services felt like too much complexity. I went back to Fly.io since I have some experience with them and an existing account and all the CLI stuff installed.&lt;/p&gt;
+
+&lt;p&gt;Claude was happy to set up all the deployment stuff and mostly one-shotted it. The big issue came with my underlying scraping implementation. Scraping was based on &lt;a href=&quot;https://playwright.dev/&quot;&gt;Playwright&lt;/a&gt; which needs to spin up a full Chromium instance and that takes 10+ seconds on a 2 GB machine. I have aggressive suspension set for my Fly.io instances which means this heavy startup cost needs to be paid every time a new listing is added. I also didn’t want to pay for a full 2 GB machine on Fly.&lt;/p&gt;
+
+&lt;p&gt;I started another vibe spike to replace Playwright with Puppeteer and a lighter Chromium fork based on &lt;a href=&quot;https://vercel.com/guides/deploying-puppeteer-with-nextjs-on-vercel&quot;&gt;this guide&lt;/a&gt; from Vercel. With a lot of trial and error (including rewriting the parser), I got the memory requirement down to 512 MB at the cost of 30+ second scraping.&lt;/p&gt;
+
+&lt;p&gt;At this point, I took a step back and thought about whether I actually needed a full Chromium-based scraper. After all, I’d never actually verified whether these sites were doing enough JS rendering to require it. I don’t have a lot of experience with scrapers and this project was an attempt to fix that. I had Claude do yet another spike with some initial research as to what the most common tools were for low-resource scraping and it chose &lt;a href=&quot;https://github.com/jsdom/jsdom&quot;&gt;JSDOM&lt;/a&gt;. After rewriting the parser yet again, it turned out this worked fine and was super fast and easily deployable to a tiny 256 MB machine.&lt;/p&gt;
+
+&lt;p&gt;If I’d have tried deploying immediately after finishing the very first version of the scraper, I’d have had a much easier time. But I also realized I wouldn’t have had much invested at this point, and my motivation to continue may not have survived this deployment slog. An interesting paradox! In theory I would have saved hours, but in practice I may not have shipped anything. It’s also possible I would have chosen a different deployment service that affected my choice of persistence solution, etc. Decision ordering really matters, and I’m trying to get better at it. But also, LLMs make spikes, backtracking, and rewrites so low-cost/low-effort that as long as you’re willing to ignore sunk costs and your motivation survives you can end up with much more optimal solutions in the long run.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/bukkenlist-deployed-production-end-day1.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;App successfully deployed to production at the end of day 1 (Japanese interface)&quot; title=&quot;App successfully deployed to production at the end of day 1 (Japanese interface)&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;App successfully deployed to production at the end of day 1 (Japanese interface)&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;My first commit was 4pm on Saturday and my last commit before going to sleep was 6am Sunday. I’d (re)watched 3 seasons of Silicon Valley in the background. I sent my girlfriend a link and the password and went to bed.&lt;/p&gt;
+
+&lt;h2 id=&quot;day-2--3&quot;&gt;Day 2 &amp;amp; 3&lt;/h2&gt;
+
+&lt;p&gt;I woke up a couple hours later and made pancakes and got a message from my girlfriend with links to listings from 2 other services. So it was time to add support for more listing sources!&lt;/p&gt;
+
+&lt;p&gt;I had Claude do a refactor of the scraper in preparation for adding multi-service support. Again, this was vibe coding so I had no idea how well it did, but I trusted it. This took about an hour. I gave it a link to a new listing and had it run its scraping parsing iterative procedure to write an initial version of the parser. According to the git logs it took about an hour to write the two new scrapers and a guide for itself for writing future scrapers.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/bukkenlist-multi-source-support.jpg&quot; width=&quot;&quot; height=&quot;300&quot; alt=&quot;Multi-source support showing listings from different rental websites&quot; title=&quot;Multi-source support showing listings from different rental websites&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Multi-source support showing listings from different rental websites&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;I realized the two of us would need to use my new site from our iPhones, so I added mobile support. This was way way faster than I expected. It took a bit more Claude coercing the next day to get it fully optimized, but the first attempt was definitely usable.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/bukkenlist-initial-mobile-interface.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Initial mobile interface with separate property list screen (left) and property detail screen (right)&quot; title=&quot;Initial mobile interface with separate property list screen (left) and property detail screen (right)&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Initial mobile interface with separate property list screen (left) and property detail screen (right)&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Sunday was a half-day. On Monday, I put in another half-day optimizing the mobile layout, adding another source, adding listing expiry support, maps support, and deep linking support.&lt;/p&gt;
+
+&lt;p&gt;Maps support was actually the most difficult single-feature I’d vibe coded for the whole project. Scraping the coordinates for a listing wasn’t too bad, but deciding on the maps provider and implementation was difficult.&lt;/p&gt;
+
+&lt;p&gt;At first, I was planning on rendering out a static map image on the backend during property add because it seemed simplest and lowest cost. But since I already have an Apple Developer account, using the MapKit JS API was free so I went with that.&lt;/p&gt;
+
+&lt;p&gt;Turns out that Claude had a pretty awful time integrating the MapKit JS library. This is where I ran into a lot of frustration with vibe coding and not having any idea how React works, how JS library loading should work, how environment variables work on the client side, how JS library token authorization should work, and more. I was in thrashing mode with Claude, watching it implement “fixes” that seemed dubious even to me, a JS novice, and inevitably did not work at all.&lt;/p&gt;
+
+&lt;p&gt;I had to get a lot more hands on and spent a long dev cycle restarting the dev server, deploying to production over and over, copying and pasting browser console logs, and adding and removing secrets from the Fly.io admin page.&lt;/p&gt;
+
+&lt;p&gt;In the end, we got it working, but it’s hard for me to say &lt;em&gt;why&lt;/em&gt; Claude struggled so hard with this particular task and how I could have approached it differently.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/bukkenlist-maps-support.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Map showing the property location and its relationship to closest station&quot; title=&quot;Map showing the property location and its relationship to closest station&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Map showing the property location and its relationship to closest station&lt;/div&gt;&lt;/div&gt;
+
+&lt;h2 id=&quot;iteration-loop-workflow&quot;&gt;Iteration loop workflow&lt;/h2&gt;
+
+&lt;p&gt;For my overall development experience, the local build and serve process was more effortless than iOS, but I found Claude’s new background Bash processes feature frustrating.&lt;/p&gt;
+
+&lt;p&gt;Claude would write some code, start a background server, test the code by making some calls to the server, make some code changes, then not realize that the server needed to be restarted and get stuck in a “why isn’t the output changing” loop. I’d need to keep an eye out for this and intervene.&lt;/p&gt;
+
+&lt;p&gt;After a while I took control of starting/stopping the dev server in a separate terminal window, but Claude would ignore this and keep trying to do its own thing. If I was working on this full time I would certainly spend some time making this flow more efficient. I dealt with the paper cuts.&lt;/p&gt;
+
+&lt;h2 id=&quot;final-thoughts&quot;&gt;Final thoughts&lt;/h2&gt;
+
+&lt;p&gt;We still have at least a few weeks left in the apartment hunting process. The less we need to use this app the happier I will be.&lt;/p&gt;
+
+&lt;p&gt;For the time investment, I’d consider this app overkill. It’s useful individually, but for a production app it wouldn’t work as scraping is presumably against the TOSes. The parsing is sloppy. There’s no user account system. There’s no sharing system. There’s no base SaaS functionality. Even individually, it would have taken a lot less time to simply enter the key fields into a spreadsheet manually.&lt;/p&gt;
+
+&lt;p&gt;But this was a good experience seeing how feasible vibe coding is for someone with my background. There were several points in the process where I hit that beautiful flow state and really loved it. But there were also stretches where Claude was thrashing and I was losing my patience. Or when I was the tool of the LLM clicking boxes in admin panels or doing visual QA while it was doing the interesting architecture and coding tasks.&lt;/p&gt;
+
+&lt;p&gt;One thing’s for certain: I never would have attempted a project like this without an LLM agent. If I did, I probably would have lost motivation after finishing the first scraper. I probably would have used a technology I already knew even if it was not the most prudent choice in 2025.&lt;/p&gt;
+
+&lt;p&gt;I’d like to try some of the more “batteries included” vibe coding environments (e.g. Lovable, Bolt, Replit, V0) to do a similarly scoped project in the near future. I’m most comfortable with Claude Code at the moment because I’m used to the freedom + sharp edges combination. But it’s hard for me to imagine a non-programmer or even a junior programmer being able to dig themselves out of the holes I found myself in a few times. There’s just a &lt;em&gt;lot&lt;/em&gt; to know still to get an MVP designed, developed, and deployed.&lt;/p&gt;
+
+&lt;p&gt;I can see how using a vibe coding environment with less freedom but more well-paved integrations could prevent dead-ends and thrashing and bad developer experience. Maybe within the year both Claude Code and the vibe coding platforms will have converged into providing decent enough support for users of any background.&lt;/p&gt;
+
+</description>
+        <pubDate>Mon, 18 Aug 2025 12:46:25 -0500</pubDate>
+        <link>https://twocentstudios.com/2025/08/18/vibe-coding-a-rental-apartment-search-management-app/</link>
+        <guid isPermaLink="true">https://twocentstudios.com/2025/08/18/vibe-coding-a-rental-apartment-search-management-app/</guid>
+        
+        <category>claude</category>
+        
+        <category>web</category>
+        
+        <category>react</category>
+        
+        <category>typescript</category>
+        
+        <category>vibecoding</category>
+        
+        <category>app</category>
+        
+        <category>javascript</category>
+        
+        <category>nodejs</category>
+        
+        <category>flyio</category>
+        
+        <category>sqlite</category>
+        
+        <category>debugging</category>
+        
+        
+      </item>
+    
+  </channel>
+</rss>
