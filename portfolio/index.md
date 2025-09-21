@@ -7,11 +7,11 @@ permalink: /portfolio/
 
 ## Independent Apps
 
-#### Eki Live - [appstore](https://apps.apple.com/us/app/eki-live/id6745218674) | [post](https://twocentstudios.com/2025/06/03/eki-live-announcement/) | [tag](https://twocentstudios.com/blog/tags/ekilive)
+#### Eki Live - [appstore](https://apps.apple.com/app/id6745218674) | [post](https://twocentstudios.com/2025/06/03/eki-live-announcement/) | [tag](https://twocentstudios.com/blog/tags/ekilive)
 
 A zero-touch iOS app for navigating Tokyo's railways via Live Activities.
 
-#### Eki Bright - [appstore](https://apps.apple.com/app/%E9%A7%85%E3%83%96%E3%83%A9%E3%82%A4%E3%83%88/id6504702463) | [post](/2024/07/27/eki-bright-tokyo-area-train-timetables/) | [tag](https://twocentstudios.com/blog/tags/ekibright)
+#### Eki Bright - [appstore](https://apps.apple.com/app/id6504702463) | [post](/2024/07/27/eki-bright-tokyo-area-train-timetables/) | [tag](https://twocentstudios.com/blog/tags/ekibright)
 
 An iOS app for viewing Tokyo-area station and train timetables.
 
@@ -35,7 +35,7 @@ An iOS/macOS chat app and web service for watching TV shows with friends asynchr
 
 A bespoke macOS app for time tracking.
 
-#### Core Image Labo - [appstore](https://apps.apple.com/us/app/count-biki/id6463796779) | [source](https://github.com/twocentstudios/coreimagelab) | [post](/2025-02-25-core-image-labo/)
+#### Core Image Labo - [appstore](https://apps.apple.com/app/id6742433427) | [source](https://github.com/twocentstudios/coreimagelab) | [post](/2025-02-25-core-image-labo/)
 
 An iOS app for experimenting with Core Image filters.
 
