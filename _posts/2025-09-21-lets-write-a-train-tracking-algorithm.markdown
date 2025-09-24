@@ -6,12 +6,18 @@ image: /images/eki-live-presentation-01.jpeg
 tags: ekilive apple ios presentation
 ---
 
-I did a 20-minute presentation on September 20th at [iOSDC Japan 2025](https://iosdc.jp/2025/).
+I delivered a 20-minute presentation on September 20th at [iOSDC Japan 2025](https://iosdc.jp/2025/).
 
 If you prefer video:
 
-- Japanese (conference): (available 2025/10/22)
-- English (home): [YouTube](https://youtu.be/xBQlipN0pMg)
+- Japanese (conference): _available 2025/10/22_
+- English (post-conference recording): [YouTube](https://youtu.be/xBQlipN0pMg)
+
+Other materials:
+
+- [GitHub: train-tracker-talk](https://github.com/twocentstudios/train-tracker-talk) - Open source code and presentation materials
+- [Blog: I Presented At iOSDC 2025](/2025/09/21/i-presented-at-iosdc-2025/) - More about the conference and presentation context
+- [App Store: Eki Live](https://apps.apple.com/app/id6745218674) - The app discussed in the presenation
 
 This post is a deconstructed version of the talk with the slide images above and my speaker notes in English below.
 
