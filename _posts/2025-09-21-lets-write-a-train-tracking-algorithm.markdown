@@ -480,7 +480,7 @@ This post is a deconstructed version of the talk with the slide images above and
 
 - The next station is shown on the train information display.
 - We'll call this the "focus station phase" going forward.
-- The includes the station name (e.g. Kikuna) and its phase (e.g. Next).
+- This includes the station name (e.g. Kikuna) and its phase (e.g. Next).
 
 ---
 
@@ -568,7 +568,7 @@ This post is a deconstructed version of the talk with the slide images above and
 
 - In step 1, we categorize a `Location` as "visiting" or "approaching" if it lies within the bounds of a Station.
 - Our rule is that only 1 Station per Railway will store a unique `Location` in the `visitingLocations` or `approachingLocations` array.
-- Usually, this is not an issue, but some Stations on the same Railway are within 200km of each other.
+- Usually, this is not an issue, but some Stations on the same Railway are within 200m of each other.
 - To disambiguate, we always choose the closest Station.
 
 ---
