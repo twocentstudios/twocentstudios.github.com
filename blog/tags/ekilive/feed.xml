@@ -5,9 +5,949 @@
     <description>A coding blog covering iOS, Swift, and other programming topics.</description>
     <link>https://twocentstudios.com/blog/tags/ekilive/index.html</link>
     <atom:link href="https://twocentstudios.com/blog/tags/ekilive/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Sat, 20 Sep 2025 22:31:01 -0500</pubDate>
-    <lastBuildDate>Sat, 20 Sep 2025 22:31:01 -0500</lastBuildDate>
+    <pubDate>Wed, 24 Sep 2025 02:51:56 -0500</pubDate>
+    <lastBuildDate>Wed, 24 Sep 2025 02:51:56 -0500</lastBuildDate>
     <generator>Jekyll v3.9.3</generator>
+    
+      <item>
+        <title>Let&apos;s Write a Train Tracking Algorithm</title>
+        <description>&lt;p&gt;I delivered a 20-minute presentation on September 20th at &lt;a href=&quot;https://iosdc.jp/2025/&quot;&gt;iOSDC Japan 2025&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;If you prefer video:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Japanese (conference): &lt;em&gt;available 2025/10/22&lt;/em&gt;&lt;/li&gt;
+  &lt;li&gt;English (post-conference recording): &lt;a href=&quot;https://youtu.be/xBQlipN0pMg&quot;&gt;YouTube&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Other materials:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;a href=&quot;https://github.com/twocentstudios/train-tracker-talk&quot;&gt;GitHub: train-tracker-talk&lt;/a&gt; - Open source code and presentation materials&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;/2025/09/21/i-presented-at-iosdc-2025/&quot;&gt;Blog: I Presented At iOSDC 2025&lt;/a&gt; - More about the conference and presentation context&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://apps.apple.com/app/id6745218674&quot;&gt;App Store: Eki Live&lt;/a&gt; - The app discussed in the presenation&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;This post is a deconstructed version of the talk with the slide images above and my speaker notes in English below.&lt;/p&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-01.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Lately I’ve been working on an app called &lt;a href=&quot;https://twocentstudios.com/2025/06/03/eki-live-announcement/&quot;&gt;Eki Live&lt;/a&gt;.&lt;/li&gt;
+  &lt;li&gt;Today I’m going to talk about a part of that app.&lt;/li&gt;
+  &lt;li&gt;So what do I mean by train tracking algorithm?&lt;/li&gt;
+  &lt;li&gt;Well, when riding a train, it’s useful to know the upcoming station.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-02.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;On the train, we can see the train information display or listen for announcements.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;video src=&quot;/images/eki-live-presentation-03.mp4&quot; autoplay=&quot;&quot; controls=&quot;&quot; preload=&quot;true&quot; width=&quot;100%&quot;&gt;&lt;/video&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;But would it also be useful to see this information in your Dynamic Island?&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-04.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;In my talk, we’ll first review the data prerequisites we’ll need for the algorithm.&lt;/li&gt;
+  &lt;li&gt;Then, we’ll write each part of the algorithm, improving it step-by-step.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-05.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;We need two types of data for the train tracking algorithm:&lt;/li&gt;
+  &lt;li&gt;Static data that describes the railway system of greater Tokyo.&lt;/li&gt;
+  &lt;li&gt;And Live GPS data from the iPhone user.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-06.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Railways are ordered groups of Stations.&lt;/li&gt;
+  &lt;li&gt;In this example, we can see that the Minatomirai Line is made up of 6 stations.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-07.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Trains travel in both Directions on a Railway.&lt;/li&gt;
+  &lt;li&gt;Coordinates make up the path of a Railway’s physical tracks.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-08.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;This map shows the Railway data we’ll be using.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-09.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;We collect live GPS data from an iPhone using the Core Location framework.&lt;/li&gt;
+  &lt;li&gt;We store the data in a local SQLite database.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-10.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;A &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Location&lt;/code&gt; has all data from &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLLocation&lt;/code&gt;.&lt;/li&gt;
+  &lt;li&gt;Latitude, longitude, speed, course, accuracy, etc.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-11.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;A Session is an ordered list of Locations.&lt;/li&gt;
+  &lt;li&gt;A Session represents a possible journey.&lt;/li&gt;
+  &lt;li&gt;Green is for fast and red is for stopped.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-12.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;I created a macOS app to visualize the raw data.&lt;/li&gt;
+  &lt;li&gt;In the left sidebar there is a list of Sessions.&lt;/li&gt;
+  &lt;li&gt;In the bottom panel there is a list of ordered Locations for a Session.&lt;/li&gt;
+  &lt;li&gt;Clicking on a Location shows its position and course on the map.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-13.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Our goal is to write an algorithm that determines 3 types of information:&lt;/li&gt;
+  &lt;li&gt;The Railway, the direction of the train, and the next Station.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-14.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Here is a brief overview of the system.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-15.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;The app channels &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Location&lt;/code&gt; values to the algorithm.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-16.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;The algorithm reads the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Location&lt;/code&gt; and gathers information from its memory.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-17.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;The algorithm updates its understanding of the device’s location in the world.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-18.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;The algorithm calculates a new result set of railway, direction, and station phase.&lt;/li&gt;
+  &lt;li&gt;The result is used to update the app UI and Live Activity.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-19.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Let’s start by considering a single &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Location&lt;/code&gt;.&lt;/li&gt;
+  &lt;li&gt;I captured this Location while riding the Tokyu Toyoko Line close to Tsunashima Station.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-20.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Can we determine the Railway from just this Location?&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-21.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;We &lt;em&gt;do&lt;/em&gt; have coordinates that outline the railway…&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-22.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;First, we find the closest &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;RailwayCoordinate&lt;/code&gt; to the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Location&lt;/code&gt; for each Railway.&lt;/li&gt;
+  &lt;li&gt;Then, we order the Railways by which &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;RailwayCoordinate&lt;/code&gt; is nearest.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-23.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Here are our results.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-24.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;The closest &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;RailwayCoordinate&lt;/code&gt; is from the Toyoko Line at only 12 meters away.&lt;/li&gt;
+  &lt;li&gt;The next closest &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;RailwayCoordinate&lt;/code&gt; is from the Shin-Yokohama Line at 177 meters away.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;video src=&quot;/images/eki-live-presentation-applause.mp4&quot; autoplay=&quot;&quot; loop=&quot;&quot; preload=&quot;true&quot; width=&quot;100%&quot;&gt;&lt;/video&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;We did it!&lt;/li&gt;
+  &lt;li&gt;Our algorithm works well for &lt;em&gt;this&lt;/em&gt; case.&lt;/li&gt;
+  &lt;li&gt;But…&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-26.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Let’s consider another &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Location&lt;/code&gt;.&lt;/li&gt;
+  &lt;li&gt;This &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Location&lt;/code&gt; was also captured on the Toyoko Line.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-27.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;But in this section of the railway track, the Toyoko Line and Meguro Line run parallel.&lt;/li&gt;
+  &lt;li&gt;It’s not possible to determine whether the correct line is Toyoko or Meguro from just this one &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Location&lt;/code&gt;.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-28.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;The algorithm needs to use all &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Location&lt;/code&gt;s from the journey.&lt;/li&gt;
+  &lt;li&gt;The example journey follows the Toyoko Line for longer than the Meguro Line.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-29.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;First, we convert the distance between the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Location&lt;/code&gt; and the nearest &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;RailwayCoordinate&lt;/code&gt; to a score.&lt;/li&gt;
+  &lt;li&gt;The score is high if close and exponentially lower when far.&lt;/li&gt;
+  &lt;li&gt;Then, we add the scores over time.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-30.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;The score from Nakameguro to Hiyoshi is now higher for the Toyoko Line than the Meguro Line.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;video src=&quot;/images/eki-live-presentation-applause.mp4&quot; autoplay=&quot;&quot; loop=&quot;&quot; preload=&quot;true&quot; width=&quot;100%&quot;&gt;&lt;/video&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;We did it!&lt;/li&gt;
+  &lt;li&gt;Our algorithm works well for this case.&lt;/li&gt;
+  &lt;li&gt;But…&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-32.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Let’s consider a third &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Location&lt;/code&gt;.&lt;/li&gt;
+  &lt;li&gt;This &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Location&lt;/code&gt; was captured on the Keihin-Tohoku Line which runs the east corridor of Tokyo.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-33.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Several lines run parallel in this corridor.&lt;/li&gt;
+  &lt;li&gt;The Tokaido Line follows the same track as the Keihin-Tohoku Line&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-34.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;But the Tokaido Line skips many stations.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-35.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;If we only compare railway coordinate proximity scores, the scores will be the same.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-36.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Let’s add a small penalty to the score if a station is passed.&lt;/li&gt;
+  &lt;li&gt;If a station is passed, that indicates the iPhone may be on a parallel express railway.&lt;/li&gt;
+  &lt;li&gt;Let’s also add a small penalty to the score if a train stops between stations.&lt;/li&gt;
+  &lt;li&gt;If a train stops between stations, that indicates the iPhone may be on a parallel local railway.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-37.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Using this algorithm, the Keihin-Tohoku score is now slightly larger than the Tokaido score.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-38.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Let’s consider two example trips to better understand penalties.&lt;/li&gt;
+  &lt;li&gt;For an example trip 1 that starts at Tokyo station…&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-39.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;The train stops at the second Keihin-Tohoku station.&lt;/li&gt;
+  &lt;li&gt;The Tokaido score receives a penalty since the stop occurs between stations.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-40.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;As we continue…&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-41.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;The Tokaido score receives many penalties.&lt;/li&gt;
+  &lt;li&gt;Therefore, the algorithm determines the trip was on the Keihin-Tohoku Line.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-42.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;For an example trip 2 that also starts at Tokyo…&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-43.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;The train passes the 2nd Keihin-Tohoku station.&lt;/li&gt;
+  &lt;li&gt;And the Keihin-Tohoku score receives a penalty.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-44.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;As we continue…&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-45.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;The Keihin-Tohoku score receives many penalties.&lt;/li&gt;
+  &lt;li&gt;Therefore, the algorithm determines the trip was on the Tokaido Line.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;video src=&quot;/images/eki-live-presentation-applause.mp4&quot; autoplay=&quot;&quot; loop=&quot;&quot; preload=&quot;true&quot; width=&quot;100%&quot;&gt;&lt;/video&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;We did it!&lt;/li&gt;
+  &lt;li&gt;Our algorithm works well for this case.&lt;/li&gt;
+  &lt;li&gt;There are many more edge cases.&lt;/li&gt;
+  &lt;li&gt;However, let’s continue.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-48.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;For each potential railway, we will determine which direction the train is moving.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-49.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Every railway has 2 directions.&lt;/li&gt;
+  &lt;li&gt;We’re used to seeing separate timetables on the departure board at a non-terminal station.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-50.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;For example, the Toyoko Line goes inbound towards Shibuya and outbound towards Yokohama.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-51.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Let’s consider a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Location&lt;/code&gt; captured on the Toyoko Line going inbound to Shibuya.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-52.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Once we have visited two stations, we can compare the temporal order the station visits.&lt;/li&gt;
+  &lt;li&gt;If the visit order matches the order of the stations in the database, we say that the iPhone is heading in the “ascending” direction.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-53.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;The iPhone visited Kikuna and then Okurayama.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-54.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;This ordering does not match the database, so we consider it “descending”.&lt;/li&gt;
+  &lt;li&gt;In the database, “descending” maps to inbound.&lt;/li&gt;
+  &lt;li&gt;Therefore, we know the iPhone is heading inbound to Shibuya.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;video src=&quot;/images/eki-live-presentation-applause.mp4&quot; autoplay=&quot;&quot; loop=&quot;&quot; preload=&quot;true&quot; width=&quot;100%&quot;&gt;&lt;/video&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;We did it!&lt;/li&gt;
+  &lt;li&gt;Our algorithm works well for this case.&lt;/li&gt;
+  &lt;li&gt;But…&lt;/li&gt;
+  &lt;li&gt;It could take 5 minutes to determine the train direction.&lt;/li&gt;
+  &lt;li&gt;Can we do better?&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-56.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Let’s use the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Location&lt;/code&gt;’s course.&lt;/li&gt;
+  &lt;li&gt;Remember that course is included with some &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLLocation&lt;/code&gt;s by Core Location.&lt;/li&gt;
+  &lt;li&gt;Several points moving at a decent speed are required before Core Location adds course to a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLLocation&lt;/code&gt;.&lt;/li&gt;
+  &lt;li&gt;And course itself has its own accuracy value included.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-57.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Core Location provides an estimate of the iPhone’s course in degrees.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-58.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Note that this is &lt;em&gt;not&lt;/em&gt; the iPhone’s orientation using the compass.&lt;/li&gt;
+  &lt;li&gt;The course value should be the same regardless of whether the iPhone is in a pocket or held in a hand facing the rear of the train.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-59.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;The course for the example &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Location&lt;/code&gt; is 359.6 degrees.&lt;/li&gt;
+  &lt;li&gt;It’s almost directly North.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-60.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;First, we find the 2 closest stations to the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Location&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-61.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Next, we calculate the vector between the 2 closest stations for the “ascending” direction in our database.&lt;/li&gt;
+  &lt;li&gt;For the Toyoko line, the “ascending” direction is outbound (as mentioned earlier).&lt;/li&gt;
+  &lt;li&gt;Therefore the vector goes from Tsunashima to Okurayama.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-62.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;We need to take a quick sidebar to talk about the dot product.&lt;/li&gt;
+  &lt;li&gt;Do you remember the dot product from math class?&lt;/li&gt;
+  &lt;li&gt;We can compare the direction of unit vectors with the dot product.&lt;/li&gt;
+  &lt;li&gt;Two vectors facing the same direction have a positive dot product.&lt;/li&gt;
+  &lt;li&gt;Two vectors facing in opposite directions have a negative dot product.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-63.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Next, we calculate the dot product between the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Location&lt;/code&gt;’s course vector and the stations vector.&lt;/li&gt;
+  &lt;li&gt;If the dot product is positive, then the railway direction is “ascending”.&lt;/li&gt;
+  &lt;li&gt;If the dot product is negative, then the railway direction is “descending”.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-65.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;The dot product is -0.95.&lt;/li&gt;
+  &lt;li&gt;It’s negative.&lt;/li&gt;
+  &lt;li&gt;Negative means “descending”.&lt;/li&gt;
+  &lt;li&gt;And “descending” in our database maps to inbound for the Toyoko Line.&lt;/li&gt;
+  &lt;li&gt;Therefore, the iPhone is heading to Shibuya.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;video src=&quot;/images/eki-live-presentation-applause.mp4&quot; autoplay=&quot;&quot; loop=&quot;&quot; preload=&quot;true&quot; width=&quot;100%&quot;&gt;&lt;/video&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;We did it!&lt;/li&gt;
+  &lt;li&gt;Our algorithm works well.&lt;/li&gt;
+  &lt;li&gt;Let’s move on to the last part of the algorithm.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-67.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Finally, we can determine the next station.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-68.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;The next station is shown on the train information display.&lt;/li&gt;
+  &lt;li&gt;We’ll call this the “focus station phase” going forward.&lt;/li&gt;
+  &lt;li&gt;This includes the station name (e.g. Kikuna) and its phase (e.g. Next).&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-69.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;The display cycles through next, soon, and now phases for each station.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-70.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;On a map, here is where we will show each phase.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-71.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;We calculate the distance &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;d&lt;/code&gt; and direction vector &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;c&lt;/code&gt; from the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Location&lt;/code&gt; to the closest station.&lt;/li&gt;
+  &lt;li&gt;We show the closest station &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;S&lt;/code&gt; or the next station in the travel direction &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;S+1&lt;/code&gt; depending on &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;d&lt;/code&gt; and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;c&lt;/code&gt;.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-72.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;When the closest station is in the travel direction, the phase will be “next”.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-73.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;A &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Location&lt;/code&gt; less than 500m from the station will be “soon”.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-74.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;A &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Location&lt;/code&gt; less than 200m from the station will be “now”.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-75.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Even though the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Location&lt;/code&gt; is within 500m from the closest station, the station is not in the travel direction.&lt;/li&gt;
+  &lt;li&gt;Therefore, the phase will be “next” for the next station in the travel direction.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;video src=&quot;/images/eki-live-presentation-applause.mp4&quot; autoplay=&quot;&quot; loop=&quot;&quot; preload=&quot;true&quot; width=&quot;100%&quot;&gt;&lt;/video&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;We did it!&lt;/li&gt;
+  &lt;li&gt;Our algorithm works well.&lt;/li&gt;
+  &lt;li&gt;But…&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-77.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;GPS data is unreliable.&lt;/li&gt;
+  &lt;li&gt;Especially within big stations.&lt;/li&gt;
+  &lt;li&gt;Especially when not moving.&lt;/li&gt;
+  &lt;li&gt;Here is an example &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Location&lt;/code&gt; stopped inside Kawasaki station that has an abysmal 1 km accuracy.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-78.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Let’s create a history of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Location&lt;/code&gt;s for each station.&lt;/li&gt;
+  &lt;li&gt;For each station, let’s categorize each &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Location&lt;/code&gt; according to its distance and direction.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-79.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;In this example, “approaching” points are orange, “visiting” points are green, and the departure point is “red”.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-80.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Focus station algorithm version 2 has 3 steps.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-81.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;In step 1, we categorize a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Location&lt;/code&gt; as “visiting” or “approaching” if it lies within the bounds of a Station.&lt;/li&gt;
+  &lt;li&gt;Our rule is that only 1 Station per Railway will store a unique &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Location&lt;/code&gt; in the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;visitingLocations&lt;/code&gt; or &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;approachingLocations&lt;/code&gt; array.&lt;/li&gt;
+  &lt;li&gt;Usually, this is not an issue, but some Stations on the same Railway are within 200m of each other.&lt;/li&gt;
+  &lt;li&gt;To disambiguate, we always choose the closest Station.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-82.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;If the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Location&lt;/code&gt; is outside the bounds of any Station that already has &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;visitingLocations&lt;/code&gt; or &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;approachingLocations&lt;/code&gt; as non-empty, we set the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;firstDepartureLocation&lt;/code&gt; for that Station.&lt;/li&gt;
+  &lt;li&gt;It’s okay for a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Location&lt;/code&gt; to be set as &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;firstDepartureLocation&lt;/code&gt; for Station A while also being in a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;visitingLocations&lt;/code&gt; or &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;approachingLocations&lt;/code&gt; array of Station B.&lt;/li&gt;
+  &lt;li&gt;Additionally, there is special handling for the startup case where a railway has no &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Location&lt;/code&gt;s set yet. In this case, we try to find the closest &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Station&lt;/code&gt; opposite the travel direction and set its &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;firstDepartureLocation&lt;/code&gt;.&lt;/li&gt;
+  &lt;li&gt;We can then consider that &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Station&lt;/code&gt; the user’s departure station and use it to determine the focus station.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-83.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;In step 2, we use the station history to calculate the phase for each station.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-84.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;This is a departure phase for Minami-Senju station.&lt;/li&gt;
+  &lt;li&gt;The &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;StationDirectionalLocationHistory&lt;/code&gt; has only a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;firstDepartureLocation&lt;/code&gt;.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-85.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;This is an approaching phase for Kita-Senju station.&lt;/li&gt;
+  &lt;li&gt;Note: this would still count as an approaching phase even if there were only 1 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Location&lt;/code&gt; in the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;approachingLocations&lt;/code&gt; array.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-86.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;This is a visiting phase.&lt;/li&gt;
+  &lt;li&gt;Note: this would still count as a visiting phase even if there were only 1 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Location&lt;/code&gt; in the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;visitingLocations&lt;/code&gt; array.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-87.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;This is a visited phase.&lt;/li&gt;
+  &lt;li&gt;You can see the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;firstDepartureLocation&lt;/code&gt; in red.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-88.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;In step 3, we look through the station phase history for all stations to determine the focus station phase.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-89a.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;In an example, when the latest phase for Kawasaki station is visited, then the focus phase is “Next: Kamata”&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-89b.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;In another example, when the latest station phase for Musashi-Kosugi station is visited and Motosumiyoshi station is approaching, then the focus phase is “Soon: Motosumiyoshi”&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-90.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Using a state machine gives us more stable results.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;video src=&quot;/images/eki-live-presentation-applause.mp4&quot; autoplay=&quot;&quot; loop=&quot;&quot; preload=&quot;true&quot; width=&quot;100%&quot;&gt;&lt;/video&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;We did it!&lt;/li&gt;
+  &lt;li&gt;Our algorithm works well…&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-91.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;But can we tell the difference between a visited station and a passed station?&lt;/li&gt;
+  &lt;li&gt;Remember, we need this information to calculate a potential penalty for the railway score.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-92.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;If the train is stopped within a station’s bounds for more than 20 seconds then we consider it visited.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-93.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;If the train is moving within a station’s bounds for more than 70 seconds then we also consider it visited.&lt;/li&gt;
+  &lt;li&gt;This case is for stations with bad GPS reception.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-94.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Otherwise we consider the station as passed.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;video src=&quot;/images/eki-live-presentation-95a.mp4&quot; controls=&quot;&quot; preload=&quot;false&quot; width=&quot;100%&quot;&gt;&lt;/video&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Now I’d like to demo the SessionViewer macOS app I created.&lt;/li&gt;
+  &lt;li&gt;I’ll show a journey from Kannai station to Kawasaki station on the Keihin-Tohoku line.&lt;/li&gt;
+  &lt;li&gt;It takes some time for all &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Location&lt;/code&gt;s to be processed by the algorithm (top right).&lt;/li&gt;
+  &lt;li&gt;But while it’s processing, I can start playback to see the journey at 10x speed (top right).&lt;/li&gt;
+  &lt;li&gt;In the inspector (right sidebar), you can see the algorithm’s results updating.&lt;/li&gt;
+  &lt;li&gt;Keihin-Tohoku line has the highest score (top right).&lt;/li&gt;
+  &lt;li&gt;The direction is northbound (top right).&lt;/li&gt;
+  &lt;li&gt;The latest phase for each station is shown (middle right).&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;video src=&quot;/images/eki-live-presentation-95b.mp4&quot; controls=&quot;&quot; preload=&quot;false&quot; width=&quot;100%&quot;&gt;&lt;/video&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;When we reach the last &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Location&lt;/code&gt; in the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Session&lt;/code&gt;, we can see the full Station history (middle right).&lt;/li&gt;
+  &lt;li&gt;We can see the phase history for any station by clicking its current phase.&lt;/li&gt;
+  &lt;li&gt;When I click on a station, I can see on the map the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Location&lt;/code&gt;s that were used to calculate its phase.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-96.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;The 5 iOS apps I created to collect this data are &lt;a href=&quot;https://github.com/twocentstudios/train-tracker-talk&quot;&gt;open source on GitHub&lt;/a&gt;.&lt;/li&gt;
+  &lt;li&gt;The macOS app and algorithm are included as well.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-97.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;The algorithm is still being improved!&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-98.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;But if you want to try it, Eki Live is on the &lt;a href=&quot;https://apps.apple.com/app/id6745218674&quot;&gt;App Store&lt;/a&gt; now.&lt;/li&gt;
+  &lt;li&gt;The app starts up automatically in the background and shows the next station in the Dynamic Island.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;hr /&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/eki-live-presentation-99.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Thanks for reading this presentation.&lt;/li&gt;
+  &lt;li&gt;If you have questions or comments, feel free to reach out.&lt;/li&gt;
+&lt;/ul&gt;
+</description>
+        <pubDate>Mon, 22 Sep 2025 15:00:00 -0500</pubDate>
+        <link>https://twocentstudios.com/2025/09/22/lets-write-a-train-tracking-algorithm/</link>
+        <guid isPermaLink="true">https://twocentstudios.com/2025/09/22/lets-write-a-train-tracking-algorithm/</guid>
+        
+        <category>ekilive</category>
+        
+        <category>apple</category>
+        
+        <category>ios</category>
+        
+        <category>presentation</category>
+        
+        
+      </item>
     
       <item>
         <title>I Presented At iOSDC 2025</title>
