@@ -55,6 +55,10 @@ Alongside my duties as a quality assurance engineer for electrical test tools, I
 
 ## Talks
 
+#### Let's Write a Train Tracking Algorithm - [slides & video](https://twocentstudios.com/2025/09/22/lets-write-a-train-tracking-algorithm/)
+
+Presented September 20th, 2025 at [iOSDC 2025](https://iosdc.jp/2025/) in Tokyo, Japan.
+
 #### Record your own cooking video with Cookpad Studio Satellite
 
 Presented March 21st, 2019 at [Cookpad Tech Kitchen #21](https://cookpad.connpass.com/event/122585/) in Tokyo, Japan.
