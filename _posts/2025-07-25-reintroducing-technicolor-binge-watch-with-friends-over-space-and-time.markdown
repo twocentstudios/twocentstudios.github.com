@@ -140,5 +140,5 @@ I got somewhat lost in the scope creep flow state, tearing through the implement
 
 As mentioned above, Technicolor's backend is written using the [Swift Vapor](https://vapor.codes/) framework. It's hosted on [Fly.io](https://fly.io/). The client is an iOS target written in Swift and SwiftUI and supporting iOS 17+. There's technically a native macOS target via Mac Catalyst, but it actually looks and functions worse than the "Designed for iPad" version, so I'm probably going to deprecate the Mac Catalyst version.
 
-I'll do a deeper dive into the tech stack in a future post because I think there's at least a few interesting and unique points to the architecture.
+~~I'll do a deeper dive into the tech stack in a future post because I think there's at least a few interesting and unique points to the architecture.~~ I go into the technical details in the next post: [Full-Stack Swift: The Technical Architecture of Technicolor](/2025/08/04/full-stack-swift-technicolor-technical-architecture/).
 
