@@ -35,7 +35,7 @@ An iOS/macOS chat app and web service for watching TV shows with friends asynchr
 
 A bespoke macOS app for time tracking.
 
-#### Core Image Labo - [appstore](https://apps.apple.com/app/id6742433427) | [source](https://github.com/twocentstudios/coreimagelab) | [post](/2025-02-25-core-image-labo/)
+#### Core Image Labo - [appstore](https://apps.apple.com/app/id6742433427) | [source](https://github.com/twocentstudios/coreimagelab) | [post](/2025/02/25/core-image-labo/)
 
 An iOS app for experimenting with Core Image filters.
 
