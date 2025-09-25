@@ -5,13 +5,13 @@ header: true
 permalink: /about/
 ---
 
-<img width="250" src="/images/about-headshot.jpg">
+<img width="250" src="/images/about-headshot.jpg" style="border-radius: 15px; float: right; margin-left: 20px;">
 
-**Hi, I'm Chris.** I'm a software developer living in Yokohama, Japan but originally from Chicago, Illinois.
+**Hi, I'm Chris.** I'm a software developer living in Chiba, Japan but originally from Chicago, Illinois.
 
 I like designing and developing products, usually for iOS devices, but sometimes for macOS and the web. I started developing for iOS a little before the release of iOS 3.0 in 2009.
 
-I'm interested in app architecture, UI and UX design, animation, and augmented reality.
+I'm interested in app architecture, UI and UX design, animation, art, music, and transportation.
 
 I've alternated between company work and releasing apps independently. Several of my apps are open source on [GitHub](https://github.com/twocentstudios).
 
