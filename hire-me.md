@@ -11,7 +11,7 @@ I specialize in **iOS development with Swift**, but I'm enthusiastic about learn
 
 I'm happy doing full-lifecycle feature work, specialized UI and animation, legacy code refactoring, infrastructure, performance tuning, bug investigation, prototyping, code review, technical writing, management, presentations, and more. When doing feature work, I prefer working on multi-functional teams where I can contribute to the complete end-user experience.
 
-I'm open to **remote roles** compatible with East Asian timezones (GMT+9) or in-person in the **Tokyo-area**. I'm an American citizen and a **permanent resident of Japan**. 
+I'm open to **remote roles** compatible with East Asian timezones (GMT+9) or **in-person in the Tokyo-area**. I'm an American citizen and a **permanent resident of Japan**. 
 
 I have native English and intermediate Japanese language skill. I've worked on fully English-speaking, fully Japanese-speaking, and mixed-language teams. I am (and will forever be) actively studying Japanese.
 
