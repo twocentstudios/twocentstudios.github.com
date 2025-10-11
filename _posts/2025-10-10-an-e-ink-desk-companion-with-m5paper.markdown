@@ -16,9 +16,9 @@ M5Paper is an all-in-one development kit device that wraps an ESP32 microcontrol
 
 My new idea was to have the M5Paper on my desk mirroring my current TODO list for the day. 
 
-I keep a daily markdown file with my TODOs at top and then notes about the day's work below it. I've been doing this for the last 2 years. Previously I'd use one markdown file for an entire year and use it as a rolling TODO list and scratch pad (this actually worked surprisingly well).
+I keep a daily markdown file with my TODOs at the top and then notes about the day's work below it. I've been doing this for the last 2 years. Previously I'd use one markdown file for an entire year and use it as a rolling TODO list and scratch pad (this actually worked surprisingly well).
 
-I've found that my daily TODO list often falls off my radar as soon as the Obsidian window gets buried behind all the others. I end up leaving TODOs unchecked or, even worse, completely forget to do a task. **I realized the E-Ink display of the M5Paper was one way to keep my TODO list in my literal peripheral vision without requiring any additional TODO list management** including manual duplication or otherwise altering my current workflow.
+I've found that my daily TODO list often falls off my radar as soon as the Obsidian window gets buried behind all the others. I end up leaving TODOs unchecked or, even worse, completely forget to do a task. **I realized the E-Ink display of the M5Paper was one way to keep my TODO list in my literal peripheral vision without requiring any additional TODO list management**, including manual duplication or otherwise altering my current workflow.
 
 The Obsidian vault I use for my daily notes and project notes is sourced from a folder synced with Dropbox. Therefore, I realized I could have the M5Paper run the following:
 
@@ -30,17 +30,17 @@ The Obsidian vault I use for my daily notes and project notes is sourced from a 
 
 I had Claude Code and Codex help me along the prototyping journey.
 
-The first big decision was what environment to use for programming the ESP32. There's the beginner-friendly [UiFlow2](https://docs.m5stack.com/en/uiflow2/uiflow_web) web-IDE, the [Arduino IDE](https://docs.m5stack.com/en/arduino/arduino_ide), the [PlatformIO](https://platformio.org/) plugin for VSCode, and then the more command line heavy route.
+The first big decision was what environment to use for programming the ESP32. There's the beginner-friendly [UiFlow2](https://docs.m5stack.com/en/uiflow2/uiflow_web) web IDE, the [Arduino IDE](https://docs.m5stack.com/en/arduino/arduino_ide), the [PlatformIO](https://platformio.org/) plugin for VSCode, and then the more command line heavy route.
 
-After flashing the firmware with UiFlow2 (this required downloading an out-of-date macOS app), I decided to use MicroPython with command line tools. I've used PlatformIO and ArduinoIDE before but I wanted to see if MicroPython was more ergonomic than the embedded C++ variant.
+After flashing the firmware with UiFlow2 (this required downloading an out-of-date macOS app), I decided to use MicroPython with command line tools. I've used PlatformIO and Arduino IDE before but I wanted to see if MicroPython was more ergonomic than the embedded C++ variant.
 
-The command line tools I ended up using were [esptool](TODO) and [mpremote](TODO). Another reason I picked these was so my coding agents could be more helpful in being part of the development loop. Although maybe the models have more training data for Arduino code?
+The command line tools I ended up using were [esptool](https://docs.espressif.com/projects/esptool/en/latest/) and [mpremote](https://docs.micropython.org/en/latest/reference/mpremote.html). Another reason I picked these was so my coding agents could be more helpful in being part of the development loop, although maybe the models have more training data for Arduino code?
 
 The Dropbox part was a big unknown for me. I was banking on being able to fetch from my existing folder hierarchy with the Dropbox API. If it turned out to be impossible I probably would have given up since I'm not willing to change my entire personal knowledge-base setup.
 
-Luckily, it was really easy to create an Dropbox App that worked only for my account. I could even generate a hardcoded API token with the right permissions that lasted 4 hours for testing. With that in place, Claude Code generated the first attempt at the code needed to get something from Dropbox onto the screen.
+Luckily, it was really easy to create a Dropbox App that worked only for my account. I could even generate a hardcoded API token with the right permissions that lasted 4 hours for testing. With that in place, Claude Code generated the first attempt at the code needed to get something from Dropbox onto the screen.
 
-Next step was understanding how deployment to device was supposed to work and then later automating it. This was especially error prone because I was intentionally putting the device into deep sleep, which would cause it to become unresponsive to the base commands. In the end, I have a Makefile with a deploy command that looks like this:
+The next step was understanding how deployment to device was supposed to work and then later automating it. This was especially error-prone because I was intentionally putting the device into deep sleep, which would cause it to become unresponsive to the base commands. In the end, I have a Makefile with a deploy command that looks like this:
 
 ```Makefile
 DEVICE_PORT = /dev/cu.usbserial-0214257D
@@ -64,13 +64,13 @@ deploy: ## Deploy main.py, secrets.py, and bm8563_rtc.py to M5Paper (full deploy
 	@echo "✅ Deployment complete!"
 ```
 
-This essentially just copies over the Python files from my Mac to the M5Paper, but with a few extra steps to make sure the device is ready to be written to. Hard won knowledge, but after getting this in place, the development loop is about as fast as it can be.
+This essentially just copies over the Python files from my Mac to the M5Paper, but with a few extra steps to make sure the device is ready to be written to. Hard-won knowledge, but after getting this in place, the development loop is about as fast as it can be.
 
 I had my first working prototype up and running after a few hours which was great. However, there were some lingering issues the next day:
 
 - The dev-use-only Dropbox API token I had used expired after 4 hours. I needed to use the full OAuth flow to get a refreshable token.
 - The real time clock (RTC) was often getting confused after wake-ups or power events and either returning to the unix epoch or defaulting to an incorrect hour during the correct day.
-- Japanese characters showed up as retangular boxes.
+- Japanese characters showed up as rectangular boxes.
 - I wanted a way to refresh the contents manually by pressing the side button.
 
 ### Dropbox API token
@@ -105,4 +105,4 @@ The final small task (mostly for ongoing debugging) was to add a battery level i
 
 ## Conclusion
 
-If you've never done embedded systems development before, hopefully I've shown that building personal-use hardware is within reach for most software developers. There's an infinite web of tangential devices and use cases out there (looking at you, Raspberry Pi 4 in a box in my closet). Hopefully this has given you, the reader, some ideas for fun weekend projects you can enjoy the results of everyday.
+If you've never done embedded systems development before, hopefully I've shown that building personal-use hardware is within reach for most software developers. There's an infinite web of tangential devices and use cases out there (looking at you, Raspberry Pi 4 in a box in my closet). Hopefully this has given you, the reader, some ideas for fun weekend projects whose results you can enjoy every day.
