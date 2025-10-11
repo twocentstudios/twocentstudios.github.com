@@ -2,21 +2,25 @@
 layout: post
 title: "An E-Ink Desk Companion With M5Paper"
 date: 2025-10-10 18:39:28
-image:
-tags:
+image: /images/m5paper-desk-unit.jpg
+tags: hardware micropython claudecode m5paper esp32
 ---
 
-![](TODO M5Paper unit on my desk)
+{% caption_img /images/m5paper-desk-unit.jpg h400 The M5Paper on my desk displaying my daily TODO list %}
 
 I've had an [M5Paper](https://shop.m5stack.com/products/m5paper-esp32-development-kit-v1-1-960x540-4-7-eink-display-235-ppi) since my days in the R&D Department at Cookpad that I've never known what to do with. My friend Dave has been doing a lot of microcontroller projects in his spare time, and it inspired me to get out the M5Paper again.
 
-![](TODO M5Paper unit)
+{% caption_img /images/m5paper-marketing.jpg h400 M5Paper ESP32 development kit with E-Ink display marketing image %}
 
-M5Paper is an all-in-one development kit device that wraps an ESP32 microcontroller, a rechargeable battery, some environment sensors, and sticks on a 4.7" capacitive-touch E-Ink display. I bought it for about ¥8000 yen a couple years ago, but the [improved version](https://shop.m5stack.com/products/m5papers3-esp32s3-development-kit) goes for $59 USD now.
+M5Paper is an all-in-one development kit device that wraps an ESP32 microcontroller, a rechargeable battery, some environment sensors, and sticks on a 4.7" capacitive-touch E-Ink display. I bought it for about ¥8000 a couple years ago, but the [improved version S3](https://shop.m5stack.com/products/m5papers3-esp32s3-development-kit) goes for $59 USD at the time of this writing.
 
 My new idea was to have the M5Paper on my desk mirroring my current TODO list for the day. 
 
+## Feasibility research
+
 I keep a daily markdown file with my TODOs at the top and then notes about the day's work below it. I've been doing this for the last 2 years. Previously I'd use one markdown file for an entire year and use it as a rolling TODO list and scratch pad (this actually worked surprisingly well).
+
+{% caption_img /images/m5paper-obsidian-daily-notes.png h400 Daily notes in Obsidian with TODO items at the top %}
 
 I've found that my daily TODO list often falls off my radar as soon as the Obsidian window gets buried behind all the others. I end up leaving TODOs unchecked or, even worse, completely forget to do a task. **I realized the E-Ink display of the M5Paper was one way to keep my TODO list in my literal peripheral vision without requiring any additional TODO list management**, including manual duplication or otherwise altering my current workflow.
 
@@ -28,7 +32,11 @@ The Obsidian vault I use for my daily notes and project notes is sourced from a 
 - Display the contents of the file on the E-Ink display
 - Go to sleep for some amount of time (an hour?) to conserve battery
 
+{% caption_img /images/m5paper-workflow-illustration.png h400 Workflow diagram showing the M5Paper fetch and display cycle %}
+
 I had Claude Code and Codex help me along the prototyping journey.
+
+## First prototype
 
 The first big decision was what environment to use for programming the ESP32. There's the beginner-friendly [UiFlow2](https://docs.m5stack.com/en/uiflow2/uiflow_web) web IDE, the [Arduino IDE](https://docs.m5stack.com/en/arduino/arduino_ide), the [PlatformIO](https://platformio.org/) plugin for VSCode, and then the more command line heavy route.
 
@@ -66,6 +74,24 @@ deploy: ## Deploy main.py, secrets.py, and bm8563_rtc.py to M5Paper (full deploy
 
 This essentially just copies over the Python files from my Mac to the M5Paper, but with a few extra steps to make sure the device is ready to be written to. Hard-won knowledge, but after getting this in place, the development loop is about as fast as it can be.
 
+Putting the device in deep sleep blocks the REPL from connecting normally. Therefore, I also have a Makefile command for temporarily replacing the deployed contents with a dummy file.
+
+```Makefile
+repl-mode: ## Replace main.py with a stub so the device boots straight to the REPL
+	@echo "🛠  Entering REPL mode..."
+	@echo "⚡ Resetting device..."
+	@$(ESPTOOL) > /dev/null 2>&1
+	@echo "⏳ Waiting for boot..."
+	@sleep 4
+	@echo "🗑  Installing REPL stub..."
+	@$(MPREMOTE) cp repl_stub.py :main.py > /dev/null 2>&1 && echo "  ✓ stub copied" || echo "  ⚠️ stub copy failed"
+	@echo "🔄 Final reset..."
+	@$(ESPTOOL) > /dev/null 2>&1
+	@echo "✅ Device will now stay idle for REPL access."
+```
+
+## Going beyond the prototype
+
 I had my first working prototype up and running after a few hours which was great. However, there were some lingering issues the next day:
 
 - The dev-use-only Dropbox API token I had used expired after 4 hours. I needed to use the full OAuth flow to get a refreshable token.
@@ -77,6 +103,8 @@ I had my first working prototype up and running after a few hours which was grea
 
 The Dropbox API token issue turned out to be the easiest solve of the above problems. Claude Code wrote me a quick script I could run on my Mac that used my Dropbox app secret credentials to return a refreshable token. I added that token to the secrets.py file on the M5Paper and now I had a long-term solution.
 
+{% caption_img /images/m5paper-dropbox-app-api.jpg h400 Dropbox app settings showing API token configuration %}
+
 ### Clock issues
 
 As usual, anything with clocks or calendars is the hardest problem. 1. My lack of knowledge about the M5Paper itself combined with 2. the difficulty of isolating a test environment that allowed me to observe the device without interrupting it – prolonged the debugging experience.
@@ -85,7 +113,7 @@ Through a lot of agent churn, I finally learned that the M5Paper has two clocks:
 
 ### Japanese characters
 
-I sometimes leave notes in Japanese. I noticed these characters appeared on the display as unrenderable. Leaving them this way was not a deal breaker, but through a quick exploration of the M5 API, I found there was already a pre-loaded Japanese font I could use that solved the problem. The only down side is that the granularity of font sizes with the Japanese font makes it so I have to choose between a-little-too-small and a-little-too-large (I chose large).
+I sometimes leave notes in Japanese. I noticed these characters appeared on the display as unrenderable unicode blocks like `▯▯▯`. Leaving them this way was not a deal breaker, but through a quick exploration of the M5 API, I found there was already a pre-loaded Japanese font I could use that solved the problem. The only down side is that the granularity of font sizes with the Japanese font makes it so I have to choose between a-little-too-small and a-little-too-large (I chose large).
 
 ### Contents refresh and power management
 
@@ -106,3 +134,5 @@ The final small task (mostly for ongoing debugging) was to add a battery level i
 ## Conclusion
 
 If you've never done embedded systems development before, hopefully I've shown that building personal-use hardware is within reach for most software developers. There's an infinite web of tangential devices and use cases out there (looking at you, Raspberry Pi 4 in a box in my closet). Hopefully this has given you, the reader, some ideas for fun weekend projects whose results you can enjoy every day.
+
+{% caption_img /images/m5paper-final-setup.jpg h400 The completed M5Paper desk companion in action %}
