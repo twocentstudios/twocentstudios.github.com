@@ -6,11 +6,26 @@ DATETIME=$(date +%Y-%m-%d\ %H:%M:%S)
 
 if [[ -z "$*" ]]; then
   echo "Please enter a post title"
-  exit
+  exit 1
 fi
  
 INPUT_POST_TITLE="${*}"
 POST_TITLE="${*// /-}"
 POST_TITLE="${POST_TITLE:l}"
 
-echo -e "---\nlayout: post\ntitle: $INPUT_POST_TITLE\ndate: $DATETIME\n---\n" > _drafts/$DATE-$POST_TITLE.markdown
+FILE_PATH="_drafts/$DATE-$POST_TITLE.markdown"
+TITLE_ESCAPED="${INPUT_POST_TITLE//\"/\\\"}"
+
+cat <<EOF > "$FILE_PATH"
+---
+layout: post
+title: "$TITLE_ESCAPED"
+date: $DATETIME
+image:
+tags:
+---
+
+EOF
+
+echo "$FILE_PATH"
+open "$FILE_PATH"
