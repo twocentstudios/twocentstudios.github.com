@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>twocentstudios</title>
+    <description>A coding blog covering iOS, Swift, and other programming topics.</description>
+    <link>https://twocentstudios.com/blog/tags/hardware/index.html</link>
+    <atom:link href="https://twocentstudios.com/blog/tags/hardware/feed.xml" rel="self" type="application/rss+xml"/>
+    <pubDate>Fri, 10 Oct 2025 21:59:22 -0500</pubDate>
+    <lastBuildDate>Fri, 10 Oct 2025 21:59:22 -0500</lastBuildDate>
+    <generator>Jekyll v3.9.3</generator>
+    
+      <item>
+        <title>An E-Ink Desk Companion With M5Paper</title>
+        <description>&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/m5paper-desk-unit.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;The M5Paper on my desk displaying my daily TODO list&quot; title=&quot;The M5Paper on my desk displaying my daily TODO list&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The M5Paper on my desk displaying my daily TODO list&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;I’ve had an &lt;a href=&quot;https://shop.m5stack.com/products/m5paper-esp32-development-kit-v1-1-960x540-4-7-eink-display-235-ppi&quot;&gt;M5Paper&lt;/a&gt; since my days in the R&amp;amp;D Department at Cookpad that I’ve never known what to do with. My friend Dave has been doing a lot of microcontroller projects in his spare time, and it inspired me to get out the M5Paper again.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/m5paper-marketing.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;M5Paper ESP32 development kit with E-Ink display marketing image&quot; title=&quot;M5Paper ESP32 development kit with E-Ink display marketing image&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;M5Paper ESP32 development kit with E-Ink display marketing image&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;M5Paper is an all-in-one development kit device that wraps an ESP32 microcontroller, a rechargeable battery, some environment sensors, and sticks on a 4.7” capacitive-touch E-Ink display. I bought it for about ¥8000 a couple years ago, but the &lt;a href=&quot;https://shop.m5stack.com/products/m5papers3-esp32s3-development-kit&quot;&gt;improved version S3&lt;/a&gt; goes for $59 USD at the time of this writing.&lt;/p&gt;
+
+&lt;p&gt;My new idea was to have the M5Paper on my desk mirroring my current TODO list for the day.&lt;/p&gt;
+
+&lt;h2 id=&quot;feasibility-research&quot;&gt;Feasibility research&lt;/h2&gt;
+
+&lt;p&gt;I keep a daily markdown file with my TODOs at the top and then notes about the day’s work below it. I’ve been doing this for the last 2 years. Previously I’d use one markdown file for an entire year and use it as a rolling TODO list and scratch pad (this actually worked surprisingly well).&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/m5paper-obsidian-daily-notes.png&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Daily notes in Obsidian with TODO items at the top&quot; title=&quot;Daily notes in Obsidian with TODO items at the top&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Daily notes in Obsidian with TODO items at the top&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;I’ve found that my daily TODO list often falls off my radar as soon as the Obsidian window gets buried behind all the others. I end up leaving TODOs unchecked or, even worse, completely forget to do a task. &lt;strong&gt;I realized the E-Ink display of the M5Paper was one way to keep my TODO list in my literal peripheral vision without requiring any additional TODO list management&lt;/strong&gt;, including manual duplication or otherwise altering my current workflow.&lt;/p&gt;
+
+&lt;p&gt;The Obsidian vault I use for my daily notes and project notes is sourced from a folder synced with Dropbox. Therefore, I realized I could have the M5Paper run the following:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Wake up and connect to WiFi&lt;/li&gt;
+  &lt;li&gt;Calculate the current date&lt;/li&gt;
+  &lt;li&gt;Use the Dropbox API to fetch a file called 2025-10-10.md within a hardcoded folder path (i.e. the current date)&lt;/li&gt;
+  &lt;li&gt;Display the contents of the file on the E-Ink display&lt;/li&gt;
+  &lt;li&gt;Go to sleep for some amount of time (an hour?) to conserve battery&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/m5paper-workflow-illustration.png&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Workflow diagram showing the M5Paper fetch and display cycle&quot; title=&quot;Workflow diagram showing the M5Paper fetch and display cycle&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Workflow diagram showing the M5Paper fetch and display cycle&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;I had Claude Code and Codex help me along the prototyping journey.&lt;/p&gt;
+
+&lt;h2 id=&quot;first-prototype&quot;&gt;First prototype&lt;/h2&gt;
+
+&lt;p&gt;The first big decision was what environment to use for programming the ESP32. There’s the beginner-friendly &lt;a href=&quot;https://docs.m5stack.com/en/uiflow2/uiflow_web&quot;&gt;UiFlow2&lt;/a&gt; web IDE, the &lt;a href=&quot;https://docs.m5stack.com/en/arduino/arduino_ide&quot;&gt;Arduino IDE&lt;/a&gt;, the &lt;a href=&quot;https://platformio.org/&quot;&gt;PlatformIO&lt;/a&gt; plugin for VSCode, and then the more command line heavy route.&lt;/p&gt;
+
+&lt;p&gt;After flashing the firmware with UiFlow2 (this required downloading an out-of-date macOS app), I decided to use MicroPython with command line tools. I’ve used PlatformIO and Arduino IDE before but I wanted to see if MicroPython was more ergonomic than the embedded C++ variant.&lt;/p&gt;
+
+&lt;p&gt;The command line tools I ended up using were &lt;a href=&quot;https://docs.espressif.com/projects/esptool/en/latest/&quot;&gt;esptool&lt;/a&gt; and &lt;a href=&quot;https://docs.micropython.org/en/latest/reference/mpremote.html&quot;&gt;mpremote&lt;/a&gt;. Another reason I picked these was so my coding agents could be more helpful in being part of the development loop, although maybe the models have more training data for Arduino code?&lt;/p&gt;
+
+&lt;p&gt;The Dropbox part was a big unknown for me. I was banking on being able to fetch from my existing folder hierarchy with the Dropbox API. If it turned out to be impossible I probably would have given up since I’m not willing to change my entire personal knowledge-base setup.&lt;/p&gt;
+
+&lt;p&gt;Luckily, it was really easy to create a Dropbox App that worked only for my account. I could even generate a hardcoded API token with the right permissions that lasted 4 hours for testing. With that in place, Claude Code generated the first attempt at the code needed to get something from Dropbox onto the screen.&lt;/p&gt;
+
+&lt;p&gt;The next step was understanding how deployment to device was supposed to work and then later automating it. This was especially error-prone because I was intentionally putting the device into deep sleep, which would cause it to become unresponsive to the base commands. In the end, I have a Makefile with a deploy command that looks like this:&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&quot;language-Makefile&quot;&gt;DEVICE_PORT = /dev/cu.usbserial-0214257D
+ESPTOOL = python3 -m esptool --chip esp32 --port $(DEVICE_PORT) read_mac
+MPREMOTE = python3 -m mpremote connect $(DEVICE_PORT)
+
+.PHONY: deploy test list clean help reset rtc-check rtc-sync rtc-init repl-mode
+
+deploy: ## Deploy main.py, secrets.py, and bm8563_rtc.py to M5Paper (full deployment)
+	@echo &quot;🔄 Deploying to M5Paper...&quot;
+	@echo &quot;⚡ Resetting device...&quot;
+	@$(ESPTOOL) &amp;gt; /dev/null 2&amp;gt;&amp;amp;1
+	@echo &quot;⏳ Waiting for boot...&quot;
+	@sleep 4
+	@echo &quot;📁 Copying files...&quot;
+	@$(MPREMOTE) cp main.py :main.py &amp;gt; /dev/null 2&amp;gt;&amp;amp;1 &amp;amp;&amp;amp; echo &quot;  ✓ main.py copied&quot; || echo &quot;  ⚠️ main.py failed&quot;
+	@if [ -f secrets.py ]; then $(MPREMOTE) cp secrets.py :secrets.py &amp;gt; /dev/null 2&amp;gt;&amp;amp;1 &amp;amp;&amp;amp; echo &quot;  ✓ secrets.py copied&quot; || echo &quot;  ⚠️ secrets.py failed&quot;; fi
+	@if [ -f bm8563_rtc.py ]; then $(MPREMOTE) cp bm8563_rtc.py :bm8563_rtc.py &amp;gt; /dev/null 2&amp;gt;&amp;amp;1 &amp;amp;&amp;amp; echo &quot;  ✓ bm8563_rtc.py copied&quot; || echo &quot;  ⚠️ bm8563_rtc.py failed&quot;; fi
+	@echo &quot;🔄 Final reset...&quot;
+	@$(ESPTOOL) &amp;gt; /dev/null 2&amp;gt;&amp;amp;1
+	@echo &quot;✅ Deployment complete!&quot;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;p&gt;This essentially just copies over the Python files from my Mac to the M5Paper, but with a few extra steps to make sure the device is ready to be written to. Hard-won knowledge, but after getting this in place, the development loop is about as fast as it can be.&lt;/p&gt;
+
+&lt;p&gt;Putting the device in deep sleep blocks the REPL from connecting normally. Therefore, I also have a Makefile command for temporarily replacing the deployed contents with a dummy file.&lt;/p&gt;
+
+&lt;pre&gt;&lt;code class=&quot;language-Makefile&quot;&gt;repl-mode: ## Replace main.py with a stub so the device boots straight to the REPL
+	@echo &quot;🛠  Entering REPL mode...&quot;
+	@echo &quot;⚡ Resetting device...&quot;
+	@$(ESPTOOL) &amp;gt; /dev/null 2&amp;gt;&amp;amp;1
+	@echo &quot;⏳ Waiting for boot...&quot;
+	@sleep 4
+	@echo &quot;🗑  Installing REPL stub...&quot;
+	@$(MPREMOTE) cp repl_stub.py :main.py &amp;gt; /dev/null 2&amp;gt;&amp;amp;1 &amp;amp;&amp;amp; echo &quot;  ✓ stub copied&quot; || echo &quot;  ⚠️ stub copy failed&quot;
+	@echo &quot;🔄 Final reset...&quot;
+	@$(ESPTOOL) &amp;gt; /dev/null 2&amp;gt;&amp;amp;1
+	@echo &quot;✅ Device will now stay idle for REPL access.&quot;
+&lt;/code&gt;&lt;/pre&gt;
+
+&lt;h2 id=&quot;going-beyond-the-prototype&quot;&gt;Going beyond the prototype&lt;/h2&gt;
+
+&lt;p&gt;I had my first working prototype up and running after a few hours which was great. However, there were some lingering issues the next day:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;The dev-use-only Dropbox API token I had used expired after 4 hours. I needed to use the full OAuth flow to get a refreshable token.&lt;/li&gt;
+  &lt;li&gt;The real time clock (RTC) was often getting confused after wake-ups or power events and either returning to the unix epoch or defaulting to an incorrect hour during the correct day.&lt;/li&gt;
+  &lt;li&gt;Japanese characters showed up as rectangular boxes.&lt;/li&gt;
+  &lt;li&gt;I wanted a way to refresh the contents manually by pressing the side button.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;dropbox-api-token&quot;&gt;Dropbox API token&lt;/h3&gt;
+
+&lt;p&gt;The Dropbox API token issue turned out to be the easiest solve of the above problems. Claude Code wrote me a quick script I could run on my Mac that used my Dropbox app secret credentials to return a refreshable token. I added that token to the secrets.py file on the M5Paper and now I had a long-term solution.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/m5paper-dropbox-app-api.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Dropbox app settings showing API token configuration&quot; title=&quot;Dropbox app settings showing API token configuration&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Dropbox app settings showing API token configuration&lt;/div&gt;&lt;/div&gt;
+
+&lt;h3 id=&quot;clock-issues&quot;&gt;Clock issues&lt;/h3&gt;
+
+&lt;p&gt;As usual, anything with clocks or calendars is the hardest problem. 1. My lack of knowledge about the M5Paper itself combined with 2. the difficulty of isolating a test environment that allowed me to observe the device without interrupting it – prolonged the debugging experience.&lt;/p&gt;
+
+&lt;p&gt;Through a lot of agent churn, I finally learned that the M5Paper has two clocks: ESP’s on-chip RTC and a dedicated chip external RTC connected to the lithium battery. Setting the external RTC with a one-off script during dev time would save a lot of hassle and complexity in the main loop.&lt;/p&gt;
+
+&lt;h3 id=&quot;japanese-characters&quot;&gt;Japanese characters&lt;/h3&gt;
+
+&lt;p&gt;I sometimes leave notes in Japanese. I noticed these characters appeared on the display as unrenderable unicode blocks like &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;▯▯▯&lt;/code&gt;. Leaving them this way was not a deal breaker, but through a quick exploration of the M5 API, I found there was already a pre-loaded Japanese font I could use that solved the problem. The only down side is that the granularity of font sizes with the Japanese font makes it so I have to choose between a-little-too-small and a-little-too-large (I chose large).&lt;/p&gt;
+
+&lt;h3 id=&quot;contents-refresh-and-power-management&quot;&gt;Contents refresh and power management&lt;/h3&gt;
+
+&lt;p&gt;I was originally hoping I could use the M5Paper for long stretches on battery power. Unfortunately, I think its age has left the battery in a vestigial state. Plus, I have a new charging port available for it, which makes keeping it plugged in all the time no longer an issue.&lt;/p&gt;
+
+&lt;p&gt;I’ve therefore set the refresh logic going forward as:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;On battery power: refresh once an hour.&lt;/li&gt;
+  &lt;li&gt;On USB power: refresh once every 5 minutes.&lt;/li&gt;
+  &lt;li&gt;Also refresh on side button tap.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;On redraws, the whole screen flickers black and white, then draws the text (quickly) line by line. This would be a little distracting to see in my field of view every 5 minutes, especially since the TODO list does not change that often (and I am the only one changing it). Therefore, I also added some diffing logic. Although the list is refreshed every 5 minutes, it will only redraw if the contents on screen have changed.&lt;/p&gt;
+
+&lt;p&gt;The M5Paper does have a capacitive touch screen, but in my preliminary investigations, the deep sleep interrupt does not work the same way as it does for the hardware button. Since I’ve recently changed the refresh logic to account for unlimited USB power, I could go further and keep the ESP32 awake, add scrolling, and add other capacitive touch buttons to the display. But for now I’m happy with the light feature set.&lt;/p&gt;
+
+&lt;p&gt;The final small task (mostly for ongoing debugging) was to add a battery level indicator to the bottom of the screen as a screen-width progress bar. I’m only using the battery level indicator to get a feel for how the internal battery handles daily usage going forward. This knowledge will inform future decisions about product direction (heavy air quotes on “product” since this is just for me).&lt;/p&gt;
+
+&lt;h2 id=&quot;conclusion&quot;&gt;Conclusion&lt;/h2&gt;
+
+&lt;p&gt;If you’ve never done embedded systems development before, hopefully I’ve shown that building personal-use hardware is within reach for most software developers. There’s an infinite web of tangential devices and use cases out there (looking at you, Raspberry Pi 4 in a box in my closet). Hopefully this has given you, the reader, some ideas for fun weekend projects whose results you can enjoy every day.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/m5paper-final-setup.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;The completed M5Paper desk companion in action&quot; title=&quot;The completed M5Paper desk companion in action&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The completed M5Paper desk companion in action&lt;/div&gt;&lt;/div&gt;
+</description>
+        <pubDate>Fri, 10 Oct 2025 13:39:28 -0500</pubDate>
+        <link>https://twocentstudios.com/2025/10/10/an-e-ink-desk-companion-with-m5paper/</link>
+        <guid isPermaLink="true">https://twocentstudios.com/2025/10/10/an-e-ink-desk-companion-with-m5paper/</guid>
+        
+        <category>hardware</category>
+        
+        <category>micropython</category>
+        
+        <category>claudecode</category>
+        
+        <category>m5paper</category>
+        
+        <category>esp32</category>
+        
+        
+      </item>
+    
+  </channel>
+</rss>
