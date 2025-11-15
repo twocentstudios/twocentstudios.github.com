@@ -20,7 +20,7 @@ But I think the important part is recognizing exactly _how basic_ you need to ma
 
 Language is so multi-dimensional that it's incredibly time consuming – both as a creator _and_ a consumer of materials – to get the exact level of material that is both comprehensible but challenging enough to increase your overall ability. Then add another dimension of _motivation_: as a reader, how do you find materials with a subject matter that's interesting to you and will keep you motivated to push through word-after-word, page-after-page, day-after-day?
 
-This lead to a hypothesis:
+This led to a hypothesis:
 
 - Graded readers are usually close to the correct difficulty to facilitate learning, but do not have an audience wide enough to support a wide variety of interesting subject material.
 - Native materials cover an infinite range of interesting topics, but are infeasible to read until the latest stages of language acquisition. 
@@ -33,7 +33,7 @@ The barriers to this being feasible are:
 - Can an LLM properly translate from e.g. Native Japanese to JLPT N4 level Japanese in a "natural" way – where it is simultaneously challenging, comprehensible, and accurate?
 - Can the translation happen fast enough to fit within a user's desired language-learning workflow?
 - What additional resources are required to facilitate language learning? In-line dictionary lookup? An SRS system? Customized word lists?
-- What unique points are there to each target language that increase the interface complexity? For example, for Japanese learning, should be include furigana for all potentially unknown kanji?
+- What unique points are there to each target language that increase the interface complexity? For example, for Japanese learning, should we include furigana for all potentially unknown kanji?
 - Does it also make sense to allow translation from e.g. Native English to simple Japanese (if the target language is Japanese)?
 
 ## Specification for the prototype app
@@ -127,7 +127,7 @@ By default, my (simple) system prompt is:
 
 > Faithfully translate the native-level input markdown text into the target language with the target difficulty level.
 > 
-> Be creative in transforming difficult words into simpler phrases that use vocabulary at the target difficult level. Combine or split sentences when necessary, but try to preserve paragraph integrity.
+> Be creative in transforming difficult words into simpler phrases that use vocabulary at the target difficulty level. Combine or split sentences when necessary, but try to preserve paragraph integrity.
 > 
 > The output format should be standard Markdown including all supported markdown formatting like image/video tags. Preserve all structure from the input (paragraphs, lists, headings, links, images, videos). DO NOT ADD COMMENTARY.
 > 
@@ -137,29 +137,29 @@ By default, my (simple) system prompt is:
 
 I'll discuss my impressions of the effectiveness of this prompt a little later on.
 
-Something I noticed almost immediately during testing was that requests were taking at minimum 30 seconds and sometimes over 60 seconds to complete. It didn't really depend on model size either. I found the same performance characteristics for both OpenAI and Gemini APIs direct from first-party servers. I thought it might be the streaming API or perhaps some configuration in AnyLanguageModel I was not in control of, so I switched back the single-request version. It didn't help. I also began testing the same prompt and inputs from the API sandbox pages like [OpenAI's playground](https://platform.openai.com/chat/edit) and [Google's AI Studio](https://aistudio.google.com/u/1/prompts/new_chat) and saw basically the same results. 
+Something I noticed almost immediately during testing was that requests were taking at minimum 30 seconds and sometimes over 60 seconds to complete. It didn't really depend on model size either. I found the same performance characteristics for both OpenAI and Gemini APIs direct from first-party servers. I thought it might be the streaming API or perhaps some configuration in AnyLanguageModel I was not in control of, so I switched back to the single-request version. It didn't help. I also began testing the same prompt and inputs from the API sandbox pages like [OpenAI's playground](https://platform.openai.com/chat/edit) and [Google's AI Studio](https://aistudio.google.com/u/1/prompts/new_chat) and saw basically the same results. 
 
 Although the slow translation speed is a pretty substantial blocker, I felt like, at least temporarily, I could work around it in the UX by leaning into the read-it-later nature of the app. I added support for Apple's [Background Tasks](https://developer.apple.com/documentation/backgroundtasks) API so there was a greater chance that articles added early in the day would be ready to read by the time the user opened the app. 
 
 ### App UI
 
-With the translation flow was in place, I began shaping the app UI.
+With the translation flow in place, I began shaping the app UI.
 
 The list of articles was simple enough. I held off on adding lots of important, but not urgent, contextual actions like archiving and deleting from the list view.
 
 I did add both "import from pasteboard" and "import from free text" buttons to the toolbar.
 
-I spent more time on the article detail view. Initially, it displayed the title, import state, and translated article. My focus for adding actions was to facilitate debugging primarily for myself and secondarily for my beta testers. This meant buttons for copying article original article text, copying translated article text, deleting an article, opening the original link, and retrying the translation (with different settings).
+I spent more time on the article detail view. Initially, it displayed the title, import state, and translated article. My focus for adding actions was to facilitate debugging primarily for myself and secondarily for my beta testers. This meant buttons for copying the original article text, copying translated article text, deleting an article, opening the original link, and retrying the translation (with different settings).
 
 After some initial usage, I realized I wanted to see the original text and the translated text side-by-side so that I could compare the language usage by sentence and paragraph.
 
 However, the most time-consuming and impactful change was the markdown display system. This was a tough decision, but I think ultimately necessary for the first version. 
 
-Originally, I was planning to use [swift-markdown-ui](https://github.com/gonzalezreal/swift-markdown-ui) to display the translated markdown text in SwiftUI. This implementation was basically plug-and-play, rendered exactly as I wanted, supported images out of the box, and was performant. However, the [one fundamental and unsolvable issue](https://github.com/gonzalezreal/swift-markdown-ui/issues/264) is that SwiftUI Text only supports paragraph level copy support and does not support character-level or word-level selection. For language learning, I absolutely need the ability to select a word and use the context action "Look Up" or "Translate" or "Copy" button. swift-markdown-ui would not be able to support this and I needed research other solutions.
+Originally, I was planning to use [swift-markdown-ui](https://github.com/gonzalezreal/swift-markdown-ui) to display the translated markdown text in SwiftUI. This implementation was basically plug-and-play, rendered exactly as I wanted, supported images out of the box, and was performant. However, the [one fundamental and unsolvable issue](https://github.com/gonzalezreal/swift-markdown-ui/issues/264) is that SwiftUI Text only supports paragraph level copy support and does not support character-level or word-level selection. For language learning, I absolutely need the ability to select a word and use the context action "Look Up" or "Translate" or "Copy" button. swift-markdown-ui would not be able to support this and I needed to research other solutions.
 
 I spent nearly a full day researching and experimenting with other Markdown solutions. My second preference was to convert Markdown to AttributedString either [natively](https://developer.apple.com/documentation/foundation/instantiating-attributed-strings-with-markdown-syntax) or [with an package](https://github.com/madebywindmill/MarkdownToAttributedString), then display the AttributedString in a [SwiftUI-wrapped UITextView](https://github.com/kevinhermawan/SelectableText) with selection enabled but editing disabled. However, both the native and package versions of AttributedString initialization failed at properly respecting whitespace, newlines, and supporting images. My estimation was that it'd take significantly more time for me to grok the full Markdown spec, all the underlying packages, and then implement the required patches than I was willing to spend for a prototype.
 
-Therefore, I pivoted to using a browser-based target view instead. iOS 26 was blessed with [WebView](https://developer.apple.com/documentation/webkit/webview-swift.struct), a modern (again) implementation of `UIWebView` and `WKWebView` before it. With a `WebView` as the new target, I used [Ink](https://github.com/JohnSundell/Ink) to convert the LLM output Markdown back to HTML, added a barebones stylesheet, and loaded these contents. I don't love using a `WebView` for this use case since it's comparatively heavy, has plenty of rendering quirks (like white background flashes), and requires a full screen layout. But at the moment it's the lease-worst option.
+Therefore, I pivoted to using a browser-based target view instead. iOS 26 was blessed with [WebView](https://developer.apple.com/documentation/webkit/webview-swift.struct), a modern (again) implementation of `UIWebView` and `WKWebView` before it. With a `WebView` as the new target, I used [Ink](https://github.com/JohnSundell/Ink) to convert the LLM output Markdown back to HTML, added a barebones stylesheet, and loaded these contents. I don't love using a `WebView` for this use case since it's comparatively heavy, has plenty of rendering quirks (like white background flashes), and requires a full screen layout. But at the moment it's the least-worst option.
 
 ### Share Extension and Action Extension
 
@@ -171,7 +171,7 @@ I kept the full functionality of the share extension intact in case I can solve 
 
 ### Import flow
 
-App Extensions can share data on device with the main app using an [App Group](https://developer.apple.com/documentation/Xcode/configuring-app-groups). When the user indicates they want to add the URL or raw text to the app, the Extension serializes an `Article` model to a `json` and write a new file to the App Group. The main app monitors the shared App Group directory for new files. When it detects a new file, it adds the `Article` to the app's SQLite database. If the `Article` already finished translation, it will include the translated markdown and no further processing is necessary. Otherwise, it will be queued for processing.
+App Extensions can share data on device with the main app using an [App Group](https://developer.apple.com/documentation/Xcode/configuring-app-groups). When the user indicates they want to add the URL or raw text to the app, the Extension serializes an `Article` model to a `json` and writes a new file to the App Group. The main app monitors the shared App Group directory for new files. When it detects a new file, it adds the `Article` to the app's SQLite database. If the `Article` already finished translation, it will include the translated markdown and no further processing is necessary. Otherwise, it will be queued for processing.
 
 I chose not to share the SQLite database between the main app and the extensions because, since the app and extensions are separate processes, there are [myriad issues](https://swiftpackageindex.com/groue/GRDB.swift/v7.8.0/documentation/grdb/databasesharing) with using SQLite in this way. Since data sharing is one way (from extension to app) there's no need to introduce that complexity.
 
@@ -187,15 +187,15 @@ All that said, coding agents can automate enough of this work that I added full 
 
 ### Impressions so far
 
-What I've learned so far is that the prompt needs to be more customized to each target language and should probably go as far as including a allow-list of words to use, especially for the most basic target difficulties.
+What I've learned so far is that the prompt needs to be more customized to each target language and should probably go as far as including an allow-list of words to use, especially for the most basic target difficulties.
 
-I've found the models have a hard time with native Japanese news articles. Something about the language is just so dense that my first prompt attempt does not push the model to simply enough.
+I've found the models have a hard time with native Japanese news articles. Something about the language is just so dense that my first prompt attempt does not push the model to simplify enough.
 
 Similar to what I've found with even commercial apps like Instapaper, a large percentage of sites now have enough paywall or otherwise reader-hostile javascript that it's not enough to fetch a simple URL directly from the source. I'm not ready to handle the endless, unforgiving work of handling all the edge cases of the open web, so URL fetching is going to be best effort for the foreseeable future.
 
 The Readability library itself is not perfect at parsing out text from pages that aren't obviously written as "articles". This isn't all that different from the built-in Safari reader mode which isn't universally supported across the entire web.
 
-Seeing some of my blog posts in super-simple English was really fun. One of my ongoing goals is to write simpler without giving up my voice, so seeing how an LLM breaks up my sentences and phrases and clauses is enlightening (of course, not at all related the use case the prototype was built for).
+Seeing some of my blog posts in super-simple English was really fun. One of my ongoing goals is to write simpler without giving up my voice, so seeing how an LLM breaks up my sentences and phrases and clauses is enlightening (of course, not at all related to the use case the prototype was built for).
 
 For Japanese, there's some unpredictability on how the LLM deals with kanji. Usually it includes kanji as is, but sometimes it will add the reading in parentheses directly after for literally every word. For example, "果物（くだもの）を食べる（たべる）". Native ruby/furigana support would be ideal, and possibly easier using HTML than [AttributedString](https://github.com/ApolloZhu/RubyAttribute).
 
@@ -203,4 +203,4 @@ For Japanese, there's some unpredictability on how the LLM deals with kanji. Usu
 
 Comprehensible Later is on Test Flight in private beta with myself and a few friends. I'm planning on collecting feedback and evaluating the app's potential for wider release. It could take another generation or two of LLM. It could take as long as waiting for local models to improve. Or the entire concept could be flawed. I'm not sure yet. But that's what the prototype is for.
 
-Regardless of the result, it was of course a good learning experience to see what's it like to build a read-it-later service for iOS in 2025.
+Regardless of the result, it was of course a good learning experience to see what it's like to build a read-it-later service for iOS in 2025.
