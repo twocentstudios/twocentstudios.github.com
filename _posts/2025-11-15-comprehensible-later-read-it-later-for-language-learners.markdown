@@ -10,11 +10,11 @@ This post is a short retrospective on Comprehensible Later, my working-title for
 
 ## What is Comprehensible Input
 
-[Comprehensible Input]() is part of a language acquisition framework first introduced by [Dr. Stephen D. Krashen](https://www.sdkrashen.com/). The framework states that language is separately _acquired_ and _learned_. _Acquisition_ happens by ensuring ample input (reading or listening) with the important caveat that that input is _comprehensible_ at the learner's current level. _Learning_ happens through comprehensive study of rules and vocabulary. From this [summary](https://www.dreaming.com/blog-posts/the-og-immersion-method):
+[Comprehensible Input](https://en.wikipedia.org/wiki/Input_hypothesis) is part of a language acquisition framework first introduced by [Dr. Stephen D. Krashen](https://www.sdkrashen.com/). The framework states that language is separately _acquired_ and _learned_. _Acquisition_ happens by ensuring ample input (reading or listening) with the important caveat that that input is _comprehensible_ at the learner's current level. _Learning_ happens through comprehensive study of rules and vocabulary. From this [summary](https://www.dreaming.com/blog-posts/the-og-immersion-method):
 
 > When we receive comprehensible input, the conditions are met for our brain to be able to use its natural ability to acquire language, without having to do anything else. There’s no need to study, review vocabulary, or practice anything. Watching and reading itself results in acquisition.
 
-In some senses, this method seems intuitive, not in the least since almost all children acquire language skills before they begin formal teaching. In a second-language context, [graded readers](https://en.wikipedia.org/wiki/Graded_reader) – books written for various non-native language levels – have existed for over a century. Wikipedia even has a [simple English](TODO) language variant for many common articles. I've occasionally used the modern [Satori Reader](https://www.satorireader.com/) service for Japanese graded texts. 
+In some senses, this method seems intuitive, not in the least since almost all children acquire language skills before they begin formal teaching. In a second-language context, [graded readers](https://en.wikipedia.org/wiki/Graded_reader) – books written for various non-native language levels – have existed for over a century. Wikipedia even has a [simple English](https://simple.wikipedia.org/) language variant for many common articles. I've occasionally used the modern [Satori Reader](https://www.satorireader.com/) service for Japanese graded texts. 
 
 But I think the important part is recognizing exactly _how basic_ you need to make some input in order for it to be understandable, especially at the absolute-beginner level. In a since-removed introductory YouTube video from the creator, he shows a session of an instructor sitting with a zero-level beginner student, pointing at vivid images in a travel magazine and gesturing heavily and explaining the contents very slowly in the target language as the primary means of bootstrapping.
 
@@ -69,12 +69,12 @@ I worked through several iterations of a detailed implementation spec with Claud
 
 The key packages that would make this closer to a weekend prototype and not a months-long project were:
 
-- [swift-readability](TODO) - wrapper for Firefox's reader-view parsing library for stripping down a full page HTML to its essential content.
-- [AnyLanguageModel](TODO) - use any LLM API with Apple's Foundation Models SDK interface.
-- [swift-markdown-ui](TODO) - display the full Markdown spec in SwiftUI (note: I later replaced this).
-- [Demark](TODO) - convert HTML-to-Markdown.
-- [Ink](TODO) - convert Markdown-to-HTML.
-- [sqlite-data](TODO) - SQLite wrapper for local article storage and observable data layer for the app.
+- [swift-readability](https://github.com/Ryu0118/swift-readability) - wrapper for Firefox's reader-view parsing library for stripping down a full page HTML to its essential content.
+- [AnyLanguageModel](https://github.com/mattt/AnyLanguageModel) - use any LLM API with Apple's Foundation Models SDK interface.
+- [swift-markdown-ui](https://github.com/gonzalezreal/swift-markdown-ui) - display the full Markdown spec in SwiftUI (note: I later replaced this).
+- [Demark](https://github.com/steipete/Demark) - convert HTML-to-Markdown.
+- [Ink](https://github.com/JohnSundell/Ink) - convert Markdown-to-HTML.
+- [sqlite-data](https://github.com/pointfreeco/sqlite-data) - SQLite wrapper for local article storage and observable data layer for the app.
 
 ### Data flow
 
@@ -117,7 +117,7 @@ As of iOS 26, Apple's local Foundation model is slow, not-ubiquitously available
 
 Therefore, I grabbed both an OpenAI and Gemini API key and wired them up to AnyLanguageModel for testing. I ran a few trials with the top-tier, mini, and nano variants and decided on defaulting to the mini variant as a compromise between speed, cost, and accuracy. Specifically, Gemini Flash 2.5 is the current default, but I suspect I could spend several weeks creating and running benchmarks across the dozens of closed and open models.
 
-[AnyLanguageModel](TODO) made it easy to build a user settings-based model switcher with very little code adjustments required on my side. Technically, Gemini ships an [OpenAI-compatible endpoint](https://ai.google.dev/gemini-api/docs/openai) so I could have kept even more of the same codepath. During debugging, I realized that AnyLanguageModel wasn't passing through the `instructions` parameter to OpenAI, so I submitted a [quick PR](https://github.com/mattt/AnyLanguageModel/pull/20) and Mattt had it merged and version bumped by the next day.
+[AnyLanguageModel](https://github.com/mattt/AnyLanguageModel) made it easy to build a user settings-based model switcher with very little code adjustments required on my side. Technically, Gemini ships an [OpenAI-compatible endpoint](https://ai.google.dev/gemini-api/docs/openai) so I could have kept even more of the same codepath. During debugging, I realized that AnyLanguageModel wasn't passing through the `instructions` parameter to OpenAI, so I submitted a [quick PR](https://github.com/mattt/AnyLanguageModel/pull/20) and Mattt had it merged and version bumped by the next day.
 
 In a later mini-sprint, I added a full settings screen that allows switching model provider, model, target language, target difficulty, adding custom translation instructions, and even fully rewriting the system prompt. Of course, I would never include all these settings in a production app, but it's useful for my trusted beta testers to tinker if they so choose.
 
@@ -159,7 +159,7 @@ Originally, I was planning to use [swift-markdown-ui](https://github.com/gonzale
 
 I spent nearly a full day researching and experimenting with other Markdown solutions. My second preference was to convert Markdown to AttributedString either [natively](https://developer.apple.com/documentation/foundation/instantiating-attributed-strings-with-markdown-syntax) or [with an package](https://github.com/madebywindmill/MarkdownToAttributedString), then display the AttributedString in a [SwiftUI-wrapped UITextView](https://github.com/kevinhermawan/SelectableText) with selection enabled but editing disabled. However, both the native and package versions of AttributedString initialization failed at properly respecting whitespace, newlines, and supporting images. My estimation was that it'd take significantly more time for me to grok the full Markdown spec, all the underlying packages, and then implement the required patches than I was willing to spend for a prototype.
 
-Therefore, I pivoted to using a browser-based target view instead. iOS 26 was blessed with [WebView](https://developer.apple.com/documentation/webkit/webview-swift.struct), a modern (again) implementation of `UIWebView` and `WKWebView` before it. With a `WebView` as the new target, I used [Ink](TODO) to convert the LLM output Markdown back to HTML, added a barebones stylesheet, and loaded these contents. I don't love using a `WebView` for this use case since it's comparatively heavy, has plenty of rendering quirks (like white background flashes), and requires a full screen layout. But at the moment it's the lease-worst option.
+Therefore, I pivoted to using a browser-based target view instead. iOS 26 was blessed with [WebView](https://developer.apple.com/documentation/webkit/webview-swift.struct), a modern (again) implementation of `UIWebView` and `WKWebView` before it. With a `WebView` as the new target, I used [Ink](https://github.com/JohnSundell/Ink) to convert the LLM output Markdown back to HTML, added a barebones stylesheet, and loaded these contents. I don't love using a `WebView` for this use case since it's comparatively heavy, has plenty of rendering quirks (like white background flashes), and requires a full screen layout. But at the moment it's the lease-worst option.
 
 ### Share Extension and Action Extension
 
@@ -177,7 +177,7 @@ I chose not to share the SQLite database between the main app and the extensions
 
 Adding articles from the main app instance skips the file encoding/decoding step and simply writes a new `Article` to the database.
 
-The processing code is admittedly a bit fragile, but in testing has worked well enough that I haven't felt an immediate need to rewrite it. It uses an `enum Status` stored alongside each `Article` in the database in order to manage the translation queue, including failures. [SQLiteData](TODO) supports observation, so both the article list view and the article detail view are always up to date on an `Article`'s status.
+The processing code is admittedly a bit fragile, but in testing has worked well enough that I haven't felt an immediate need to rewrite it. It uses an `enum Status` stored alongside each `Article` in the database in order to manage the translation queue, including failures. [SQLiteData](https://github.com/pointfreeco/sqlite-data) supports observation, so both the article list view and the article detail view are always up to date on an `Article`'s status.
 
 ### Localization
 
