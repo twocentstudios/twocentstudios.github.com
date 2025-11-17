@@ -1,12 +1,20 @@
 ---
 layout: post
-title: "Comprehensible Later: Read-it-later for Language Learners"
+title: "Comprehensible Later: A Read-it-later App for Language Learners"
 date: 2025-11-15 11:57:31
 image:
 tags: apple ios comprehensiblelater app
 ---
 
 This post is a short retrospective on Comprehensible Later, my working-title for a read-it-later iOS app prototype I worked on last week. Although it's currently in private beta on Test Flight, I want to share the motivation and technical challenges I ran into while working on it.
+
+{% caption_img /images/comprehensible_later_screens.jpg h400 Share sheet, main app article list, and article detail screens %}
+
+TLDR: Comprehensible Later is an iOS app for saving articles natively written in a language you're learning, with automatic translation via LLM to a simpler version of your target language. The goal is to give you more interesting things to read at a level you can understand without looking up every other word.
+
+{% caption_img /images/comprehensible_later_japanese_comparison.jpg h400 Original level and simple level for a Japanese article %}
+
+{% caption_img /images/comprehensible_later_english_comparison.jpg h400 Original level and simple level for an English article (from this blog) %}
 
 ## What is Comprehensible Input
 
@@ -52,7 +60,7 @@ My next thought was a Share Extension. Share Extensions are old iOS technology, 
 
 However, I also wanted to support the read-it-later use case. Personally, I stumble upon articles when doing feed scrolling sessions when I have a few minutes on the train but don't necessarily have the time to read the whole article, even in English, at that time. I use Instapaper for read-it-later for English articles and I felt this would be a similarly useful use case to model my app after.
 
-With that in mind I got to work on the actual prototype with the following initial spec: 
+With that in mind I got to work on the actual prototype with the following initial spec:
 
 - A native app that:
 	- keeps a list of articles imported from URLs or as raw text.
@@ -121,7 +129,7 @@ Therefore, I grabbed both an OpenAI and Gemini API key and wired them up to AnyL
 
 In a later mini-sprint, I added a full settings screen that allows switching model provider, model, target language, target difficulty, adding custom translation instructions, and even fully rewriting the system prompt. Of course, I would never include all these settings in a production app, but it's useful for my trusted beta testers to tinker if they so choose.
 
-![setting screen](TODO)
+{% caption_img /images/comprehensible_later_settings.jpg h400 The translation settings screen %}
 
 By default, my (simple) system prompt is:
 
@@ -131,9 +139,9 @@ By default, my (simple) system prompt is:
 > 
 > The output format should be standard Markdown including all supported markdown formatting like image/video tags. Preserve all structure from the input (paragraphs, lists, headings, links, images, videos). DO NOT ADD COMMENTARY.
 > 
-> Target language: \(targetLanguage)
-> Target difficulty level: \(targetDifficulty)
-> Additional notes: \(additionalNotes)
+> Target language: \\(targetLanguage)  
+> Target difficulty level: \\(targetDifficulty)  
+> Additional notes: \\(additionalNotes)  
 
 I'll discuss my impressions of the effectiveness of this prompt a little later on.
 
@@ -149,9 +157,19 @@ The list of articles was simple enough. I held off on adding lots of important, 
 
 I did add both "import from pasteboard" and "import from free text" buttons to the toolbar.
 
+{% caption_img /images/comprehensible_later_article_list.jpg h400 The article list view showing toolbar buttons for importing from pasteboard and free text %}
+
+{% caption_img /images/comprehensible_later_import_screen.jpg h400 The import URL/text screen %}
+
 I spent more time on the article detail view. Initially, it displayed the title, import state, and translated article. My focus for adding actions was to facilitate debugging primarily for myself and secondarily for my beta testers. This meant buttons for copying the original article text, copying translated article text, deleting an article, opening the original link, and retrying the translation (with different settings).
 
 After some initial usage, I realized I wanted to see the original text and the translated text side-by-side so that I could compare the language usage by sentence and paragraph.
+
+{% caption_img /images/comprehensible_later_article_detail.jpg h500 Article detail view with options to display original and translated text %}
+
+{% caption_img /images/comprehensible_later_article_actions.jpg h400 Supported actions for article detail %}
+
+{% caption_img /images/comprehensible_later_debug_info.jpg h400 Debug info viewer %}
 
 However, the most time-consuming and impactful change was the markdown display system. This was a tough decision, but I think ultimately necessary for the first version. 
 
@@ -169,6 +187,10 @@ My initial vision was to load a one-page preview of the translation as quickly a
 
 I kept the full functionality of the share extension intact in case I can solve the translation speed issue in the future. But as another workaround, I added an Action Extension. An Action Extension appears in the bottom section of the system share sheet. Like a Share Extension it can also present custom UI, however since I already have a Share Extension I made my Action Extension have no UI and immediately save the URL to the app.
 
+{% caption_img /images/comprehensible_later_share_sheet.jpg h450 iOS share sheet showing both the Share Extension and Action Extension for quickly saving articles to Comprehensible Later %}
+
+{% caption_img /images/comprehensible_later_share_extension.jpg h450 Share Extension with translation complete %}
+
 ### Import flow
 
 App Extensions can share data on device with the main app using an [App Group](https://developer.apple.com/documentation/Xcode/configuring-app-groups). When the user indicates they want to add the URL or raw text to the app, the Extension serializes an `Article` model to a `json` and writes a new file to the App Group. The main app monitors the shared App Group directory for new files. When it detects a new file, it adds the `Article` to the app's SQLite database. If the `Article` already finished translation, it will include the translated markdown and no further processing is necessary. Otherwise, it will be queued for processing.
@@ -184,6 +206,8 @@ The processing code is admittedly a bit fragile, but in testing has worked well 
 Localizing a prototype would be something I'd never consider doing before the advent of coding agents. The actual act of translation between a base language and another language is insignificant compared to the amount of additional tooling and operational complexity of introducing localization keys, adding comments, handling interpolation, handling pluralization rules, handling error messages and other strings generated deep in business logic, and handling the indirection involved in looking up the values for the keys. The new `xcstrings` file's autogeneration definitely helps. But it's at least an order of magnitude more work in my opinion.
 
 All that said, coding agents can automate enough of this work that I added full localization support for Japanese for one of my beta testers who wanted to try the app for converting English to simple English. I'm still cognizant of the ongoing support complexity full localization adds to a prototype, but for now it's not a decision I regret.
+
+{% caption_img /images/comprehensible_later_japanese_localization.jpg h400 Various screens with Japanese localization %}
 
 ### Impressions so far
 
