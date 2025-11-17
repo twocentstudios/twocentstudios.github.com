@@ -89,22 +89,49 @@ The key packages that would make this closer to a weekend prototype and not a mo
 The initial data flow for articles imported via URL was the following:
 
 ```
-Input URL     ->     HTML Data    ->   HTML UTF-8 String   ->    Clean HTML   ->   Markdown   ->   Translated Markdown   ->   Display
-         URLSession     String(data:encoding:)         Readability          Demark        AnyLanguageModel        swift-markdown-ui
+Input URL
+    ↓ URLSession
+HTML Data
+    ↓ String(data:)
+HTML String
+    ↓ Readability
+Clean HTML
+    ↓ Demark
+Markdown
+    ↓ AnyLanguageModel
+Translated MD
+    ↓ swift-markdown-ui
+Display
 ```
 
 The initial flow for raw text:
 
 ```
-Input Text  ->  Translated Markdown  ->  Display
-     AnyLanguageModel        swift-markdown-ui
+Input Text
+    ↓ AnyLanguageModel
+Translated MD
+    ↓ swift-markdown-ui
+Display
 ```
 
 However, due to limitations with the swift-markdown-ui package, the final version of the prototype uses this flow:
 
 ```
-Input URL   ->    HTML Data    ->    HTML UTF-8 String    ->    Clean HTML   ->  Markdown    ->   Translated Markdown  ->  Translated HTML  ->   Display
-         URLSession     String(data:encoding:)        Readability         Demark         AnyLanguageModel              Ink                WebView       
+Input URL
+    ↓ URLSession
+HTML Data
+    ↓ String(data:)
+HTML String
+    ↓ Readability
+Clean HTML
+    ↓ Demark
+Markdown
+    ↓ AnyLanguageModel
+Translated MD
+    ↓ Ink
+HTML
+    ↓ WebView
+Display
 ```
 
 With the bones of the app architecture and dependencies in place, I began testing and optimizing the data flow.
