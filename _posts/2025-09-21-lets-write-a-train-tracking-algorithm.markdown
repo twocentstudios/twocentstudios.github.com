@@ -10,7 +10,7 @@ I delivered a 20-minute presentation on September 20th at [iOSDC Japan 2025](htt
 
 If you prefer video:
 
-- Japanese (conference): _available 2025/10/22_
+- Japanese (conference): [YouTube](https://www.youtube.com/watch?v=CdzUxJom3Ps)
 - English (post-conference recording): [YouTube](https://youtu.be/xBQlipN0pMg)
 
 Other materials:
