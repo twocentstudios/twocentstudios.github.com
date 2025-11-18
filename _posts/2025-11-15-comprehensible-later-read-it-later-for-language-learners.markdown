@@ -8,9 +8,9 @@ tags: apple ios comprehensiblelater app
 
 This post is a short retrospective on Comprehensible Later, my working-title for a read-it-later iOS app prototype I worked on last week. Although it's currently in private beta on Test Flight, I want to share the motivation and technical challenges I ran into while working on it.
 
-{% caption_img /images/comprehensible_later_screens.jpg h400 Share sheet, main app article list, and article detail screens %}
+{% caption_img /images/comprehensible_later_screens.jpg h400 Share Extension presented from Safari, main app article list, and article detail screens %}
 
-TLDR: Comprehensible Later is an iOS app for saving articles natively written in a language you're learning, with automatic translation via LLM to a simpler version of your target language. The goal is to give you more interesting things to read at a level you can understand without looking up every other word.
+TLDR: Comprehensible Later is an iOS app for saving articles natively written in a language you're learning, with automatic translation via LLM to a simpler version of your target language. The goal is to give you more interesting things to read at a level you can understand without needing to pause to look up every other word.
 
 {% caption_img /images/comprehensible_later_japanese_comparison.jpg h400 Original level and simple level for a Japanese article %}
 
@@ -24,13 +24,13 @@ TLDR: Comprehensible Later is an iOS app for saving articles natively written in
 
 In some senses, this method seems intuitive, not in the least since almost all children acquire language skills before they begin formal teaching. In a second-language context, [graded readers](https://en.wikipedia.org/wiki/Graded_reader) – books written for various non-native language levels – have existed for over a century. Wikipedia even has a [simple English](https://simple.wikipedia.org/) language variant for many common articles. I've occasionally used the modern [Satori Reader](https://www.satorireader.com/) service for Japanese graded texts. 
 
-But I think the important part is recognizing exactly _how basic_ you need to make some input in order for it to be understandable, especially at the absolute-beginner level. In a since-removed introductory YouTube video from the creator, he shows a session of an instructor sitting with a zero-level beginner student, pointing at vivid images in a travel magazine and gesturing heavily and explaining the contents very slowly in the target language as the primary means of bootstrapping.
+But I think the important part is recognizing exactly _how basic_ you need to make some input in order for it to be understandable, especially at the absolute-beginner level. In a since-removed introductory YouTube video from the creator, he shows a session of an instructor sitting with a zero-level beginner student, pointing at vivid images in a travel magazine and gesturing heavily while explaining the contents very slowly in the target language as the primary means of bootstrapping.
 
 Language is so multi-dimensional that it's incredibly time consuming – both as a creator _and_ a consumer of materials – to get the exact level of material that is both comprehensible but challenging enough to increase your overall ability. Then add another dimension of _motivation_: as a reader, how do you find materials with a subject matter that's interesting to you and will keep you motivated to push through word-after-word, page-after-page, day-after-day?
 
 This led to a hypothesis:
 
-- Graded readers are usually close to the correct difficulty to facilitate learning, but do not have an audience wide enough to support a wide variety of interesting subject material.
+- Graded readers are usually close to the correct difficulty to facilitate learning, but do not have an audience wide enough to support a variety of interesting subject material.
 - Native materials cover an infinite range of interesting topics, but are infeasible to read until the latest stages of language acquisition. 
 - One of the most commonly accepted use-cases for LLMs is text summary and translation.
 
@@ -69,15 +69,17 @@ With that in mind I got to work on the actual prototype with the following initi
 	- immediately processes the shared URL or text and displays it in the share modal.
 	- allows the user to optionally save the translated text in the app for later.
 
+Note that as of iOS 18.4, there's actually _another_ option for the interface: [TranslationUIProviderExtension](https://developer.apple.com/documentation/TranslationUIProvider/Preparing-your-app-to-be-the-default-translation-app). iOS users can replace Apple's Translation app with another translation app, meaning the `Translate` menu tooltip can open a third-party app. I have mine set to [DeepL](https://www.deepl.com/). Due to the limitations I'll discuss later (namely, translation processing time), it doesn't make sense yet to implement Comprehensible Later as a Translation Extension.
+
 ## Implementation
 
-I worked through several iterations of a detailed implementation spec with Claude and Codex then set them off to work getting the foundations of the app in place. This wasn't exactly vibe coding because I specified technologies and packages to use up front and guided their output along the way. But I was still aiming to have the agents create the clay that I'd be molding in the next phase.
+I worked through several iterations of a detailed implementation spec with Claude and Codex then set them off to work getting the foundations of the app in place. This wasn't exactly vibe coding because I specified technologies and packages to use up front and guided their output along the way. But I was still aiming to have the agents create the clay that I'd be molding in a distinct second phase of development.
 
 ### Packages
 
 The key packages that would make this closer to a weekend prototype and not a months-long project were:
 
-- [swift-readability](https://github.com/Ryu0118/swift-readability) - wrapper for Firefox's reader-view parsing library for stripping down a full page HTML to its essential content.
+- [swift-readability](https://github.com/Ryu0118/swift-readability) - wrapper for Firefox's [reader-view parsing library](https://github.com/mozilla/readability) for stripping down a full page HTML to its essential content.
 - [AnyLanguageModel](https://github.com/mattt/AnyLanguageModel) - use any LLM API with Apple's Foundation Models SDK interface.
 - [swift-markdown-ui](https://github.com/gonzalezreal/swift-markdown-ui) - display the full Markdown spec in SwiftUI (note: I later replaced this).
 - [Demark](https://github.com/steipete/Demark) - convert HTML-to-Markdown.
@@ -200,11 +202,11 @@ After some initial usage, I realized I wanted to see the original text and the t
 
 However, the most time-consuming and impactful change was the markdown display system. This was a tough decision, but I think ultimately necessary for the first version. 
 
-Originally, I was planning to use [swift-markdown-ui](https://github.com/gonzalezreal/swift-markdown-ui) to display the translated markdown text in SwiftUI. This implementation was basically plug-and-play, rendered exactly as I wanted, supported images out of the box, and was performant. However, the [one fundamental and unsolvable issue](https://github.com/gonzalezreal/swift-markdown-ui/issues/264) is that SwiftUI Text only supports paragraph level copy support and does not support character-level or word-level selection. For language learning, I absolutely need the ability to select a word and use the context action "Look Up" or "Translate" or "Copy" button. swift-markdown-ui would not be able to support this and I needed to research other solutions.
+Originally, I was planning to use [swift-markdown-ui](https://github.com/gonzalezreal/swift-markdown-ui) to display the translated markdown text in SwiftUI. This implementation was basically plug-and-play, rendered exactly as I wanted, supported images out of the box, and was performant. However, the [one fundamental and unsolvable issue](https://github.com/gonzalezreal/swift-markdown-ui/issues/264) is that **SwiftUI Text only supports paragraph level copy support and does not support character-level or word-level selection**. For language learning, I absolutely need the ability to select a word and use the context menu tooltip action "Look Up" or "Translate" or "Copy" buttons. `swift-markdown-ui` would not be able to support this and I needed to research other solutions.
 
 I spent nearly a full day researching and experimenting with other Markdown solutions. My second preference was to convert Markdown to AttributedString either [natively](https://developer.apple.com/documentation/foundation/instantiating-attributed-strings-with-markdown-syntax) or [with a package](https://github.com/madebywindmill/MarkdownToAttributedString), then display the AttributedString in a [SwiftUI-wrapped UITextView](https://github.com/kevinhermawan/SelectableText) with selection enabled but editing disabled. However, both the native and package versions of AttributedString initialization failed at properly respecting whitespace, newlines, and supporting images. My estimation was that it'd take significantly more time for me to grok the full Markdown spec, all the underlying packages, and then implement the required patches than I was willing to spend for a prototype.
 
-Therefore, I pivoted to using a browser-based target view instead. iOS 26 was blessed with [WebView](https://developer.apple.com/documentation/webkit/webview-swift.struct), a modern (again) implementation of `UIWebView` and `WKWebView` before it. With a `WebView` as the new target, I used [Ink](https://github.com/JohnSundell/Ink) to convert the LLM output Markdown back to HTML, added a barebones stylesheet, and loaded these contents. I don't love using a `WebView` for this use case since it's comparatively heavy, has plenty of rendering quirks (like white background flashes), and requires a full screen layout. But at the moment it's the least-worst option.
+Therefore, I pivoted to using a browser-based target view instead. iOS 26 was blessed with [WebView](https://developer.apple.com/documentation/webkit/webview-swift.struct), a modern SwiftUI-native implementation of the `UIWebView` and `WKWebView` UIKit views before it. With a `WebView` as the new target, I used [Ink](https://github.com/JohnSundell/Ink) to convert the LLM output Markdown back to HTML, added a barebones stylesheet, and loaded these contents. I don't love using a `WebView` for this use case since it's comparatively heavy, has plenty of rendering quirks (like occasional white background flashes), and requires a full screen layout. But at the moment it's the least-worst option.
 
 ### Share Extension and Action Extension
 
@@ -214,7 +216,7 @@ My initial vision was to load a one-page preview of the translation as quickly a
 
 I kept the full functionality of the share extension intact in case I can solve the translation speed issue in the future. But as another workaround, I added an Action Extension. An Action Extension appears in the bottom section of the system share sheet. Like a Share Extension it can also present custom UI, however since I already have a Share Extension I made my Action Extension have no UI and immediately save the URL to the app.
 
-{% caption_img /images/comprehensible_later_share_sheet.jpg h450 iOS share sheet showing both the Share Extension and Action Extension for quickly saving articles to Comprehensible Later %}
+{% caption_img /images/comprehensible_later_share_sheet.jpg h450 iOS share sheet showing both the Share Extension and Action Extension for quickly saving articles %}
 
 {% caption_img /images/comprehensible_later_share_extension.jpg h450 Share Extension with translation complete %}
 
@@ -230,7 +232,7 @@ The processing code is admittedly a bit fragile, but in testing has worked well 
 
 ### Localization
 
-Localizing a prototype would be something I'd never consider doing before the advent of coding agents. The actual act of translation between a base language and another language is insignificant compared to the amount of additional tooling and operational complexity of introducing localization keys, adding comments, handling interpolation, handling pluralization rules, handling error messages and other strings generated deep in business logic, and handling the indirection involved in looking up the values for the keys. The new `xcstrings` file's autogeneration definitely helps. But it's at least an order of magnitude more work in my opinion.
+Localizing a prototype would be something I'd never consider doing before the advent of coding agents. The actual act of translation between a base language and another language is insignificant compared to the amount of additional tooling and operational complexity of introducing localization keys, adding comments, handling interpolation, handling pluralization rules, handling error messages and other strings generated deep in business logic, and handling the indirection involved in looking up the values for the keys. The new `xcstrings` file's autogeneration definitely helps ease the burden. But it's at least an order of magnitude more work in my opinion.
 
 All that said, coding agents can automate enough of this work that I added full localization support for Japanese for one of my beta testers who wanted to try the app for converting English to simple English. I'm still cognizant of the ongoing support complexity full localization adds to a prototype, but for now it's not a decision I regret.
 
