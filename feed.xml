@@ -5,9 +5,296 @@
     <description>A coding blog covering iOS, Swift, and other programming topics.</description>
     <link>https://twocentstudios.com/</link>
     <atom:link href="https://twocentstudios.com/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Fri, 10 Oct 2025 22:09:10 -0500</pubDate>
-    <lastBuildDate>Fri, 10 Oct 2025 22:09:10 -0500</lastBuildDate>
+    <pubDate>Mon, 17 Nov 2025 20:12:25 -0600</pubDate>
+    <lastBuildDate>Mon, 17 Nov 2025 20:12:25 -0600</lastBuildDate>
     <generator>Jekyll v3.9.3</generator>
+    
+      <item>
+        <title>Comprehensible Later: A Read-it-later App for Language Learners</title>
+        <description>&lt;p&gt;This post is a short retrospective on Comprehensible Later, my working-title for a read-it-later iOS app prototype I worked on last week. Although it’s currently in private beta on Test Flight, I want to share the motivation and technical challenges I ran into while working on it.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/comprehensible_later_screens.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Share Extension presented from Safari, main app article list, and article detail screens&quot; title=&quot;Share Extension presented from Safari, main app article list, and article detail screens&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Share Extension presented from Safari, main app article list, and article detail screens&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;TLDR: Comprehensible Later is an iOS app for saving articles natively written in a language you’re learning, with automatic translation via LLM to a simpler version of your target language. The goal is to give you more interesting things to read at a level you can understand without needing to pause to look up every other word.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/comprehensible_later_japanese_comparison.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Original level and simple level for a Japanese article&quot; title=&quot;Original level and simple level for a Japanese article&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Original level and simple level for a Japanese article&lt;/div&gt;&lt;/div&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/comprehensible_later_english_comparison.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Original level and simple level for an English article (from this blog)&quot; title=&quot;Original level and simple level for an English article (from this blog)&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Original level and simple level for an English article (from this blog)&lt;/div&gt;&lt;/div&gt;
+
+&lt;h2 id=&quot;what-is-comprehensible-input&quot;&gt;What is Comprehensible Input&lt;/h2&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://en.wikipedia.org/wiki/Input_hypothesis&quot;&gt;Comprehensible Input&lt;/a&gt; is part of a language acquisition framework first introduced by &lt;a href=&quot;https://www.sdkrashen.com/&quot;&gt;Dr. Stephen D. Krashen&lt;/a&gt;. The framework states that language is separately &lt;em&gt;acquired&lt;/em&gt; and &lt;em&gt;learned&lt;/em&gt;. &lt;em&gt;Acquisition&lt;/em&gt; happens by ensuring ample input (reading or listening) with the important caveat that the input is &lt;em&gt;comprehensible&lt;/em&gt; at the learner’s current level. &lt;em&gt;Learning&lt;/em&gt; happens through comprehensive study of rules and vocabulary. From this &lt;a href=&quot;https://www.dreaming.com/blog-posts/the-og-immersion-method&quot;&gt;summary&lt;/a&gt;:&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;When we receive comprehensible input, the conditions are met for our brain to be able to use its natural ability to acquire language, without having to do anything else. There’s no need to study, review vocabulary, or practice anything. Watching and reading itself results in acquisition.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;In some senses, this method seems intuitive, not in the least since almost all children acquire language skills before they begin formal teaching. In a second-language context, &lt;a href=&quot;https://en.wikipedia.org/wiki/Graded_reader&quot;&gt;graded readers&lt;/a&gt; – books written for various non-native language levels – have existed for over a century. Wikipedia even has a &lt;a href=&quot;https://simple.wikipedia.org/&quot;&gt;simple English&lt;/a&gt; language variant for many common articles. I’ve occasionally used the modern &lt;a href=&quot;https://www.satorireader.com/&quot;&gt;Satori Reader&lt;/a&gt; service for Japanese graded texts.&lt;/p&gt;
+
+&lt;p&gt;But I think the important part is recognizing exactly &lt;em&gt;how basic&lt;/em&gt; you need to make some input in order for it to be understandable, especially at the absolute-beginner level. In a since-removed introductory YouTube video from the creator, he shows a session of an instructor sitting with a zero-level beginner student, pointing at vivid images in a travel magazine and gesturing heavily while explaining the contents very slowly in the target language as the primary means of bootstrapping.&lt;/p&gt;
+
+&lt;p&gt;Language is so multi-dimensional that it’s incredibly time consuming – both as a creator &lt;em&gt;and&lt;/em&gt; a consumer of materials – to get the exact level of material that is both comprehensible but challenging enough to increase your overall ability. Then add another dimension of &lt;em&gt;motivation&lt;/em&gt;: as a reader, how do you find materials with a subject matter that’s interesting to you and will keep you motivated to push through word-after-word, page-after-page, day-after-day?&lt;/p&gt;
+
+&lt;p&gt;This led to a hypothesis:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Graded readers are usually close to the correct difficulty to facilitate learning, but do not have an audience wide enough to support a variety of interesting subject material.&lt;/li&gt;
+  &lt;li&gt;Native materials cover an infinite range of interesting topics, but are infeasible to read until the latest stages of language acquisition.&lt;/li&gt;
+  &lt;li&gt;One of the most commonly accepted use-cases for LLMs is text summary and translation.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;&lt;strong&gt;What if we used LLMs to translate any native article on-demand to the user’s exact target language level?&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;The barriers to this being feasible are:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Can an LLM properly translate from e.g. Native Japanese to JLPT N4 level Japanese in a “natural” way – where it is simultaneously challenging, comprehensible, and accurate?&lt;/li&gt;
+  &lt;li&gt;Can the translation happen fast enough to fit within a user’s desired language-learning workflow?&lt;/li&gt;
+  &lt;li&gt;What additional resources are required to facilitate language learning? In-line dictionary lookup? An SRS system? Customized word lists?&lt;/li&gt;
+  &lt;li&gt;What unique points are there to each target language that increase the interface complexity? For example, for Japanese learning, should we include furigana for all potentially unknown kanji?&lt;/li&gt;
+  &lt;li&gt;Does it also make sense to allow translation from e.g. Native English to simple Japanese (if the target language is Japanese)?&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&quot;specification-for-the-prototype-app&quot;&gt;Specification for the prototype app&lt;/h2&gt;
+
+&lt;p&gt;I’ve used 2025 frontier LLMs to write and translate simple versions of text before, so I’m confident it’s either possible now at a minimally acceptable translation quality or will be in the very near future.&lt;/p&gt;
+
+&lt;p&gt;What I wasn’t confident about is whether it’s cost prohibitive or time prohibitive to use the highest quality reasoning models to do the translation.&lt;/p&gt;
+
+&lt;p&gt;In retrospect, I should have spent at least a little more time doing bench testing on the API versions of various models on a wide array of sample articles. Instead, I took the less (more?) pragmatic route of jumping into the implementation for an app prototype that I could start using ASAP in context, as well as distribute to a few friends.&lt;/p&gt;
+
+&lt;p&gt;My initial thought was that my main source of content would be blog posts and news articles I come across from my everyday feed scrolling. But I also felt I should support translating raw text too, like that from social media posts.&lt;/p&gt;
+
+&lt;p&gt;I considered a Safari Extension to replace existing text on a webpage with the simplified translation, similar to how the built-in translation function in Safari works. But my gut-feeling was that this would be too limiting for language learning use cases. Even reading a text at a simpler level of a target language still takes enough time that it would be better to ensure the user doesn’t feel obligated to read everything at once. Additionally, this wouldn’t work for native text outside of Safari.&lt;/p&gt;
+
+&lt;p&gt;My next thought was a Share Extension. Share Extensions are old iOS technology, but still highly used and useful. In a share extension I could display the translated article content in a dedicated modal and have full control over its presentation and layout.&lt;/p&gt;
+
+&lt;p&gt;However, I also wanted to support the read-it-later use case. Personally, I stumble upon articles when doing feed scrolling sessions when I have a few minutes on the train but don’t necessarily have the time to read the whole article, even in English, at that time. I use Instapaper for read-it-later for English articles and I felt this would be a similarly useful use case to model my app after.&lt;/p&gt;
+
+&lt;p&gt;With that in mind I got to work on the actual prototype with the following initial spec:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;A native app that:
+    &lt;ul&gt;
+      &lt;li&gt;keeps a list of articles imported from URLs or as raw text.&lt;/li&gt;
+      &lt;li&gt;has a detail view that shows both the original and translated versions of the text.&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+  &lt;li&gt;A share extension that:
+    &lt;ul&gt;
+      &lt;li&gt;immediately processes the shared URL or text and displays it in the share modal.&lt;/li&gt;
+      &lt;li&gt;allows the user to optionally save the translated text in the app for later.&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Note that as of iOS 18.4, there’s actually &lt;em&gt;another&lt;/em&gt; option for the interface: &lt;a href=&quot;https://developer.apple.com/documentation/TranslationUIProvider/Preparing-your-app-to-be-the-default-translation-app&quot;&gt;TranslationUIProviderExtension&lt;/a&gt;. iOS users can replace Apple’s Translation app with another translation app, meaning the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Translate&lt;/code&gt; menu tooltip can open a third-party app. I have mine set to &lt;a href=&quot;https://www.deepl.com/&quot;&gt;DeepL&lt;/a&gt;. Due to the limitations I’ll discuss later (namely, translation processing time), it doesn’t make sense yet to implement Comprehensible Later as a Translation Extension.&lt;/p&gt;
+
+&lt;h2 id=&quot;implementation&quot;&gt;Implementation&lt;/h2&gt;
+
+&lt;p&gt;I worked through several iterations of a detailed implementation spec with Claude and Codex then set them off to work getting the foundations of the app in place. This wasn’t exactly vibe coding because I specified technologies and packages to use up front and guided their output along the way. But I was still aiming to have the agents create the clay that I’d be molding in a distinct second phase of development.&lt;/p&gt;
+
+&lt;h3 id=&quot;packages&quot;&gt;Packages&lt;/h3&gt;
+
+&lt;p&gt;The key packages that would make this closer to a weekend prototype and not a months-long project were:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;a href=&quot;https://github.com/Ryu0118/swift-readability&quot;&gt;swift-readability&lt;/a&gt; - wrapper for Firefox’s &lt;a href=&quot;https://github.com/mozilla/readability&quot;&gt;reader-view parsing library&lt;/a&gt; for stripping down a full page HTML to its essential content.&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://github.com/mattt/AnyLanguageModel&quot;&gt;AnyLanguageModel&lt;/a&gt; - use any LLM API with Apple’s Foundation Models SDK interface.&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://github.com/gonzalezreal/swift-markdown-ui&quot;&gt;swift-markdown-ui&lt;/a&gt; - display the full Markdown spec in SwiftUI (note: I later replaced this).&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://github.com/steipete/Demark&quot;&gt;Demark&lt;/a&gt; - convert HTML-to-Markdown.&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://github.com/JohnSundell/Ink&quot;&gt;Ink&lt;/a&gt; - convert Markdown-to-HTML.&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://github.com/pointfreeco/sqlite-data&quot;&gt;sqlite-data&lt;/a&gt; - SQLite wrapper for local article storage and observable data layer for the app.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;data-flow&quot;&gt;Data flow&lt;/h3&gt;
+
+&lt;p&gt;The initial data flow for articles imported via URL was the following:&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;Input URL
+    ↓ URLSession
+HTML Data
+    ↓ String(data:)
+HTML String
+    ↓ Readability
+Clean HTML
+    ↓ Demark
+Markdown
+    ↓ AnyLanguageModel
+Translated MD
+    ↓ swift-markdown-ui
+Display
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;The initial flow for raw text:&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;Input Text
+    ↓ AnyLanguageModel
+Translated MD
+    ↓ swift-markdown-ui
+Display
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;However, due to limitations with the swift-markdown-ui package, the final version of the prototype uses this flow:&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;Input URL
+    ↓ URLSession
+HTML Data
+    ↓ String(data:)
+HTML String
+    ↓ Readability
+Clean HTML
+    ↓ Demark
+Markdown
+    ↓ AnyLanguageModel
+Translated MD
+    ↓ Ink
+HTML
+    ↓ WebView
+Display
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;With the bones of the app architecture and dependencies in place, I began testing and optimizing the data flow.&lt;/p&gt;
+
+&lt;h3 id=&quot;readability&quot;&gt;Readability&lt;/h3&gt;
+
+&lt;p&gt;I found a small bug in the Readability Swift wrapper where the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;baseURL&lt;/code&gt; parameter was inaccessible to the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;URL&lt;/code&gt;-based initializer &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Readability().parse(url:options:)&lt;/code&gt;. This prevented relative image tags from getting properly resolved to a full address. For example, on my website image tags look like &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;/images/example.jpg&lt;/code&gt; and are resolved by my browser automatically to be either &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;https://twocentstudios.com/images/example.jpg&lt;/code&gt; (the real server) or &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;http://localhost:4000/images/example.jpg&lt;/code&gt; (my local machine).&lt;/p&gt;
+
+&lt;p&gt;Luckily, the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;baseURL&lt;/code&gt; parameter was accessible in the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Readability().parse(html:options:baseURL:)&lt;/code&gt; initializer. As a workaround I simply needed to fetch the page data myself with &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;URLSession&lt;/code&gt;.&lt;/p&gt;
+
+&lt;h3 id=&quot;demark&quot;&gt;Demark&lt;/h3&gt;
+
+&lt;p&gt;Demark has two different HTML-&amp;gt;Markdown parsing implementations: heavy-and-accurate or fast-and-inaccurate. Since the HTML is getting pre-processed by &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Readability&lt;/code&gt; in advance of being passed to Demark, I’m using the fast-and-inaccurate version that doesn’t load the full page in a headless &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;WKWebView&lt;/code&gt;.&lt;/p&gt;
+
+&lt;h3 id=&quot;anylanguagemodel&quot;&gt;AnyLanguageModel&lt;/h3&gt;
+
+&lt;p&gt;As of iOS 26, Apple’s local Foundation model is slow, not-ubiquitously available on devices, and (arguably) barely functional for most use cases, especially mine. Within a few years I expect it may be useful. Similarly, my impression is that any other MLX-compatible models runnable on an iOS device are not yet accurate or fast enough for my use case.&lt;/p&gt;
+
+&lt;p&gt;Therefore, I grabbed both an OpenAI and Gemini API key and wired them up to AnyLanguageModel for testing. I ran a few trials with the top-tier, mini, and nano variants and decided on defaulting to the mini variant as a compromise between speed, cost, and accuracy. Specifically, Gemini Flash 2.5 is the current default, but I suspect I could spend several weeks creating and running benchmarks across the dozens of closed and open models.&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://github.com/mattt/AnyLanguageModel&quot;&gt;AnyLanguageModel&lt;/a&gt; made it easy to build a user settings-based model switcher with very little code adjustments required on my side. Technically, Gemini ships an &lt;a href=&quot;https://ai.google.dev/gemini-api/docs/openai&quot;&gt;OpenAI-compatible endpoint&lt;/a&gt; so I could have kept even more of the same codepath. During debugging, I realized that AnyLanguageModel wasn’t passing through the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;instructions&lt;/code&gt; parameter to OpenAI, so I submitted a &lt;a href=&quot;https://github.com/mattt/AnyLanguageModel/pull/20&quot;&gt;quick PR&lt;/a&gt; and Mattt had it merged and version bumped by the next day.&lt;/p&gt;
+
+&lt;p&gt;In a later mini-sprint, I added a full settings screen that allows switching model provider, model, target language, target difficulty, adding custom translation instructions, and even fully rewriting the system prompt. Of course, I would never include all these settings in a production app, but it’s useful for my trusted beta testers to tinker if they so choose.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/comprehensible_later_settings.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;The translation settings screen&quot; title=&quot;The translation settings screen&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The translation settings screen&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;By default, my (simple) system prompt is:&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;Faithfully translate the native-level input markdown text into the target language with the target difficulty level.&lt;/p&gt;
+
+  &lt;p&gt;Be creative in transforming difficult words into simpler phrases that use vocabulary at the target difficulty level. Combine or split sentences when necessary, but try to preserve paragraph integrity.&lt;/p&gt;
+
+  &lt;p&gt;The output format should be standard Markdown including all supported markdown formatting like image/video tags. Preserve all structure from the input (paragraphs, lists, headings, links, images, videos). DO NOT ADD COMMENTARY.&lt;/p&gt;
+
+  &lt;p&gt;Target language: \(targetLanguage)&lt;br /&gt;
+Target difficulty level: \(targetDifficulty)&lt;br /&gt;
+Additional notes: \(additionalNotes)&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;I’ll discuss my impressions of the effectiveness of this prompt a little later on.&lt;/p&gt;
+
+&lt;p&gt;Something I noticed almost immediately during testing was that requests were taking at minimum 30 seconds and sometimes over 60 seconds to complete. It didn’t really depend on model size either. I found the same performance characteristics for both OpenAI and Gemini APIs direct from first-party servers. I thought it might be the streaming API or perhaps some configuration in AnyLanguageModel I was not in control of, so I switched back to the single-request version. It didn’t help. I also began testing the same prompt and inputs from the API sandbox pages like &lt;a href=&quot;https://platform.openai.com/chat/edit&quot;&gt;OpenAI’s playground&lt;/a&gt; and &lt;a href=&quot;https://aistudio.google.com/u/1/prompts/new_chat&quot;&gt;Google’s AI Studio&lt;/a&gt; and saw basically the same results.&lt;/p&gt;
+
+&lt;p&gt;Although the slow translation speed is a pretty substantial blocker, I felt like, at least temporarily, I could work around it in the UX by leaning into the read-it-later nature of the app. I added support for Apple’s &lt;a href=&quot;https://developer.apple.com/documentation/backgroundtasks&quot;&gt;Background Tasks&lt;/a&gt; API so there was a greater chance that articles added early in the day would be ready to read by the time the user opened the app.&lt;/p&gt;
+
+&lt;h3 id=&quot;app-ui&quot;&gt;App UI&lt;/h3&gt;
+
+&lt;p&gt;With the translation flow in place, I began shaping the app UI.&lt;/p&gt;
+
+&lt;p&gt;The list of articles was simple enough. I held off on adding lots of important, but not urgent, contextual actions like archiving and deleting from the list view.&lt;/p&gt;
+
+&lt;p&gt;I did add both “import from pasteboard” and “import from free text” buttons to the toolbar.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/comprehensible_later_article_list.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;The article list view showing toolbar buttons for importing from pasteboard and free text&quot; title=&quot;The article list view showing toolbar buttons for importing from pasteboard and free text&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The article list view showing toolbar buttons for importing from pasteboard and free text&lt;/div&gt;&lt;/div&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/comprehensible_later_import_screen.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;The import URL/text screen&quot; title=&quot;The import URL/text screen&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The import URL/text screen&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;I spent more time on the article detail view. Initially, it displayed the title, import state, and translated article. My focus for adding actions was to facilitate debugging primarily for myself and secondarily for my beta testers. This meant buttons for copying the original article text, copying translated article text, deleting an article, opening the original link, and retrying the translation (with different settings).&lt;/p&gt;
+
+&lt;p&gt;After some initial usage, I realized I wanted to see the original text and the translated text side-by-side so that I could compare the language usage by sentence and paragraph.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/comprehensible_later_article_detail.jpg&quot; width=&quot;&quot; height=&quot;500&quot; alt=&quot;Article detail view with options to display original and translated text&quot; title=&quot;Article detail view with options to display original and translated text&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Article detail view with options to display original and translated text&lt;/div&gt;&lt;/div&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/comprehensible_later_article_actions.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Supported actions for article detail&quot; title=&quot;Supported actions for article detail&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Supported actions for article detail&lt;/div&gt;&lt;/div&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/comprehensible_later_debug_info.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Debug info viewer&quot; title=&quot;Debug info viewer&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Debug info viewer&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;However, the most time-consuming and impactful change was the markdown display system. This was a tough decision, but I think ultimately necessary for the first version.&lt;/p&gt;
+
+&lt;p&gt;Originally, I was planning to use &lt;a href=&quot;https://github.com/gonzalezreal/swift-markdown-ui&quot;&gt;swift-markdown-ui&lt;/a&gt; to display the translated markdown text in SwiftUI. This implementation was basically plug-and-play, rendered exactly as I wanted, supported images out of the box, and was performant. However, the &lt;a href=&quot;https://github.com/gonzalezreal/swift-markdown-ui/issues/264&quot;&gt;one fundamental and unsolvable issue&lt;/a&gt; is that &lt;strong&gt;SwiftUI Text only supports paragraph level copy support and does not support character-level or word-level selection&lt;/strong&gt;. For language learning, I absolutely need the ability to select a word and use the context menu tooltip action “Look Up” or “Translate” or “Copy” buttons. &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;swift-markdown-ui&lt;/code&gt; would not be able to support this and I needed to research other solutions.&lt;/p&gt;
+
+&lt;p&gt;I spent nearly a full day researching and experimenting with other Markdown solutions. My second preference was to convert Markdown to AttributedString either &lt;a href=&quot;https://developer.apple.com/documentation/foundation/instantiating-attributed-strings-with-markdown-syntax&quot;&gt;natively&lt;/a&gt; or &lt;a href=&quot;https://github.com/madebywindmill/MarkdownToAttributedString&quot;&gt;with a package&lt;/a&gt;, then display the AttributedString in a &lt;a href=&quot;https://github.com/kevinhermawan/SelectableText&quot;&gt;SwiftUI-wrapped UITextView&lt;/a&gt; with selection enabled but editing disabled. However, both the native and package versions of AttributedString initialization failed at properly respecting whitespace, newlines, and supporting images. My estimation was that it’d take significantly more time for me to grok the full Markdown spec, all the underlying packages, and then implement the required patches than I was willing to spend for a prototype.&lt;/p&gt;
+
+&lt;p&gt;Therefore, I pivoted to using a browser-based target view instead. iOS 26 was blessed with &lt;a href=&quot;https://developer.apple.com/documentation/webkit/webview-swift.struct&quot;&gt;WebView&lt;/a&gt;, a modern SwiftUI-native implementation of the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;UIWebView&lt;/code&gt; and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;WKWebView&lt;/code&gt; UIKit views before it. With a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;WebView&lt;/code&gt; as the new target, I used &lt;a href=&quot;https://github.com/JohnSundell/Ink&quot;&gt;Ink&lt;/a&gt; to convert the LLM output Markdown back to HTML, added a barebones stylesheet, and loaded these contents. I don’t love using a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;WebView&lt;/code&gt; for this use case since it’s comparatively heavy, has plenty of rendering quirks (like occasional white background flashes), and requires a full screen layout. But at the moment it’s the least-worst option.&lt;/p&gt;
+
+&lt;h3 id=&quot;share-extension-and-action-extension&quot;&gt;Share Extension and Action Extension&lt;/h3&gt;
+
+&lt;p&gt;Unfortunately, the slow translation speed meant some of the complexity of creating a fully-featured Share Extension was in vain; it didn’t make sense for the user to wait 30-60 seconds for the share extension to load a preview of the article content like I’d originally planned.&lt;/p&gt;
+
+&lt;p&gt;My initial vision was to load a one-page preview of the translation as quickly as possible. Then, I’d allow the user to tap a button to continue viewing the full translation in line. Or at any time they could tap a button to save the article URL (or raw text) to the main app to read later. I was planning on having an “open in app” button too, but as far as I can tell it’s not supported to open an app directly from a Share Extension.&lt;/p&gt;
+
+&lt;p&gt;I kept the full functionality of the share extension intact in case I can solve the translation speed issue in the future. But as another workaround, I added an Action Extension. An Action Extension appears in the bottom section of the system share sheet. Like a Share Extension it can also present custom UI, however since I already have a Share Extension I made my Action Extension have no UI and immediately save the URL to the app.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/comprehensible_later_share_sheet.jpg&quot; width=&quot;&quot; height=&quot;450&quot; alt=&quot;iOS share sheet showing both the Share Extension and Action Extension for quickly saving articles&quot; title=&quot;iOS share sheet showing both the Share Extension and Action Extension for quickly saving articles&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;iOS share sheet showing both the Share Extension and Action Extension for quickly saving articles&lt;/div&gt;&lt;/div&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/comprehensible_later_share_extension.jpg&quot; width=&quot;&quot; height=&quot;450&quot; alt=&quot;Share Extension with translation complete&quot; title=&quot;Share Extension with translation complete&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Share Extension with translation complete&lt;/div&gt;&lt;/div&gt;
+
+&lt;h3 id=&quot;import-flow&quot;&gt;Import flow&lt;/h3&gt;
+
+&lt;p&gt;App Extensions can share data on device with the main app using an &lt;a href=&quot;https://developer.apple.com/documentation/Xcode/configuring-app-groups&quot;&gt;App Group&lt;/a&gt;. When the user indicates they want to add the URL or raw text to the app, the Extension serializes an &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Article&lt;/code&gt; model to a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;json&lt;/code&gt; and writes a new file to the App Group. The main app monitors the shared App Group directory for new files. When it detects a new file, it adds the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Article&lt;/code&gt; to the app’s SQLite database. If the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Article&lt;/code&gt; already finished translation, it will include the translated markdown and no further processing is necessary. Otherwise, it will be queued for processing.&lt;/p&gt;
+
+&lt;p&gt;I chose not to share the SQLite database between the main app and the extensions because, since the app and extensions are separate processes, there are &lt;a href=&quot;https://swiftpackageindex.com/groue/GRDB.swift/v7.8.0/documentation/grdb/databasesharing&quot;&gt;myriad issues&lt;/a&gt; with using SQLite in this way. Since data sharing is one way (from extension to app) there’s no need to introduce that complexity.&lt;/p&gt;
+
+&lt;p&gt;Adding articles from the main app instance skips the file encoding/decoding step and simply writes a new &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Article&lt;/code&gt; to the database.&lt;/p&gt;
+
+&lt;p&gt;The processing code is admittedly a bit fragile, but in testing has worked well enough that I haven’t felt an immediate need to rewrite it. It uses an &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;enum Status&lt;/code&gt; stored alongside each &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Article&lt;/code&gt; in the database in order to manage the translation queue, including failures. &lt;a href=&quot;https://github.com/pointfreeco/sqlite-data&quot;&gt;SQLiteData&lt;/a&gt; supports observation, so both the article list view and the article detail view are always up to date on an &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Article&lt;/code&gt;’s status.&lt;/p&gt;
+
+&lt;h3 id=&quot;localization&quot;&gt;Localization&lt;/h3&gt;
+
+&lt;p&gt;Localizing a prototype would be something I’d never consider doing before the advent of coding agents. The actual act of translation between a base language and another language is insignificant compared to the amount of additional tooling and operational complexity of introducing localization keys, adding comments, handling interpolation, handling pluralization rules, handling error messages and other strings generated deep in business logic, and handling the indirection involved in looking up the values for the keys. The new &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;xcstrings&lt;/code&gt; file’s autogeneration definitely helps ease the burden. But it’s at least an order of magnitude more work in my opinion.&lt;/p&gt;
+
+&lt;p&gt;All that said, coding agents can automate enough of this work that I added full localization support for Japanese for one of my beta testers who wanted to try the app for converting English to simple English. I’m still cognizant of the ongoing support complexity full localization adds to a prototype, but for now it’s not a decision I regret.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/comprehensible_later_japanese_localization.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Various screens with Japanese localization&quot; title=&quot;Various screens with Japanese localization&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Various screens with Japanese localization&lt;/div&gt;&lt;/div&gt;
+
+&lt;h3 id=&quot;impressions-so-far&quot;&gt;Impressions so far&lt;/h3&gt;
+
+&lt;p&gt;What I’ve learned so far is that the prompt needs to be more customized to each target language and should probably go as far as including an allow-list of words to use, especially for the most basic target difficulties.&lt;/p&gt;
+
+&lt;p&gt;I’ve found the models have a hard time with native Japanese news articles. Something about the language is just so dense that my first prompt attempt does not push the model to simplify enough.&lt;/p&gt;
+
+&lt;p&gt;Similar to what I’ve found with even commercial apps like Instapaper, a large percentage of sites now have enough paywall or otherwise reader-hostile javascript that it’s not enough to fetch a simple URL directly from the source. I’m not ready to handle the endless, unforgiving work of handling all the edge cases of the open web, so URL fetching is going to be best effort for the foreseeable future.&lt;/p&gt;
+
+&lt;p&gt;The Readability library itself is not perfect at parsing out text from pages that aren’t obviously written as “articles”. This isn’t all that different from the built-in Safari reader mode which isn’t universally supported across the entire web.&lt;/p&gt;
+
+&lt;p&gt;Seeing some of my blog posts in super-simple English was really fun. One of my ongoing goals is to write simpler without giving up my voice, so seeing how an LLM breaks up my sentences and phrases and clauses is enlightening (of course, not at all related to the use case the prototype was built for).&lt;/p&gt;
+
+&lt;p&gt;For Japanese, there’s some unpredictability on how the LLM deals with kanji. Usually it includes kanji as is, but sometimes it will add the reading in parentheses directly after for literally every word. For example, “果物（くだもの）を食べる（たべる）”. Native ruby/furigana support would be ideal, and possibly easier using HTML than &lt;a href=&quot;https://github.com/ApolloZhu/RubyAttribute&quot;&gt;AttributedString&lt;/a&gt;.&lt;/p&gt;
+
+&lt;h2 id=&quot;whats-next&quot;&gt;What’s next?&lt;/h2&gt;
+
+&lt;p&gt;Comprehensible Later is on Test Flight in private beta with myself and a few friends. I’m planning on collecting feedback and evaluating the app’s potential for wider release. It could take another generation or two of LLM. It could take as long as waiting for local models to improve. Or the entire concept could be flawed. I’m not sure yet. But that’s what the prototype is for.&lt;/p&gt;
+
+&lt;p&gt;Regardless of the result, it was of course a good learning experience to see what it’s like to build a read-it-later service for iOS in 2025.&lt;/p&gt;
+</description>
+        <pubDate>Sat, 15 Nov 2025 05:57:31 -0600</pubDate>
+        <link>https://twocentstudios.com/2025/11/15/comprehensible-later-read-it-later-for-language-learners/</link>
+        <guid isPermaLink="true">https://twocentstudios.com/2025/11/15/comprehensible-later-read-it-later-for-language-learners/</guid>
+        
+        <category>apple</category>
+        
+        <category>ios</category>
+        
+        <category>comprehensiblelater</category>
+        
+        <category>app</category>
+        
+        
+      </item>
     
       <item>
         <title>An E-Ink Desk Companion With M5Paper</title>
@@ -3580,111 +3867,6 @@ fly ssh sftp get /data/db.sqlite ./backup-&lt;span class=&quot;k&quot;&gt;$(&lt;
         <category>hosting</category>
         
         <category>flyio</category>
-        
-        <category>apple</category>
-        
-        
-      </item>
-    
-      <item>
-        <title>How to Configure Fly.io Managed Postgres with a Swift Vapor App</title>
-        <description>&lt;p&gt;I migrated my Swift Vapor app from Fly.io’s regular Postgres to their new Managed Postgres service. As could be expected, this did not go smoothly, so below is a quick guide and the associated debugging story.&lt;/p&gt;
-
-&lt;h2 id=&quot;tldr-quick-setup-guide&quot;&gt;TL;DR: Quick Setup Guide&lt;/h2&gt;
-
-&lt;p&gt;This assumes you’ve already got a working Docker file and you’ve had no issue deploying your Vapor App to Fly.io. (This is not a full Vapor + Fly.io setup walkthrough).&lt;/p&gt;
-
-&lt;p&gt;(There’s also a chance the below setup is required for other app runtimes as well beyond Vapor, so if you found this via post in anger via search engine, give it a try and see if it fixes your problem.)&lt;/p&gt;
-
-&lt;p&gt;Assuming that, here is how you create a Managed Postgres instance and connect it to your App:&lt;/p&gt;
-
-&lt;h3 id=&quot;1-flyio-setup-admin-panel&quot;&gt;1. Fly.io setup (admin panel)&lt;/h3&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;Open your organization page.&lt;/li&gt;
-  &lt;li&gt;In the left sidebar, click “Managed Postgres”.&lt;/li&gt;
-  &lt;li&gt;In the main content window, click “Create new cluster”.&lt;/li&gt;
-  &lt;li&gt;Configure it as necessary.&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h3 id=&quot;2-find-the-database_url&quot;&gt;2. Find the DATABASE_URL&lt;/h3&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/fly-managed-postgres-connection-urls.png&quot; width=&quot;&quot; height=&quot;&quot; alt=&quot;Redacted Managed Postgres Connect page&quot; title=&quot;Redacted Managed Postgres Connect page&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Redacted Managed Postgres Connect page&lt;/div&gt;&lt;/div&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;In the Managed Postgres cluster you just created, click “Connect” in the sidebar.&lt;/li&gt;
-  &lt;li&gt;Use the &lt;strong&gt;Connection URL&lt;/strong&gt; under the “Connect to your database” header (not the Pooled Connection URL). Pooled Connection URL ignores SSL parameters.&lt;/li&gt;
-  &lt;li&gt;Ensure you &lt;strong&gt;manually add&lt;/strong&gt; &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;?ssl=false&lt;/code&gt; at the end.&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;# ✅ Working: Direct Connection URL&lt;/span&gt;
-&lt;span class=&quot;c&quot;&gt;# Note: `direct` subdomain AND MANUALLY ADD `?ssl=false`&lt;/span&gt;
-&lt;span class=&quot;nv&quot;&gt;DATABASE_URL&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;postgres://user:pass@direct.abc123.flympg.net/dbname?ssl&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;false&lt;/span&gt;
-
-&lt;span class=&quot;c&quot;&gt;# ❌ Failed: Pooled Connection URL (ignores ssl=false)&lt;/span&gt;
-&lt;span class=&quot;c&quot;&gt;# Note: `pgbouncer` subdomain is incorrect&lt;/span&gt;
-&lt;span class=&quot;nv&quot;&gt;DATABASE_URL&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;postgres://user:pass@pgbouncer.abc123.flympg.net/dbname?ssl&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;false&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;h3 id=&quot;3-add-the-database_url-you-modified-in-2-to-your-app-secrets&quot;&gt;3. Add the DATABASE_URL you modified in (2) to your App Secrets&lt;/h3&gt;
-
-&lt;p&gt;Via CLI (&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;fly secrets&lt;/code&gt;) or the Fly.io admin panel.&lt;/p&gt;
-
-&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;fly secrets &lt;span class=&quot;nb&quot;&gt;set &lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;DATABASE_URL&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;postgres://user:pass@direct.abc123.flympg.net/dbname?ssl=false&quot;&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;h3 id=&quot;4-vapor-configureswift-setup&quot;&gt;4. Vapor &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;configure.swift&lt;/code&gt; Setup&lt;/h3&gt;
-
-&lt;p&gt;Update your Vapor configuration to prefer &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;DATABASE_URL&lt;/code&gt;:&lt;/p&gt;
-
-&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;// Configure database - prefer DATABASE_URL if available&lt;/span&gt;
-&lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;databaseURL&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Environment&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;get&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;DATABASE_URL&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;try&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;app&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;databases&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;use&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;postgres&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;url&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;databaseURL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;as&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;psql&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;else&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;c1&quot;&gt;// Fallback to individual environment variables&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;try&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;app&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;databases&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;use&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;postgres&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;configuration&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;init&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
-        &lt;span class=&quot;nv&quot;&gt;hostname&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Environment&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;get&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;DATABASE_HOST&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;??&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;localhost&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
-        &lt;span class=&quot;c1&quot;&gt;// ... other config&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;)),&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;as&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;psql&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;h3 id=&quot;5-deploy&quot;&gt;5. Deploy&lt;/h3&gt;
-
-&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;fly deploy
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;h2 id=&quot;the-debugging-story&quot;&gt;The Debugging Story&lt;/h2&gt;
-
-&lt;p&gt;My project is a Swift Vapor (Swift on server) app plus iOS app client called Technicolor. I’ve been working on it on and off for a few years, which means each time I come back to it I have to spent hours or days upgrading all the disparate parts.&lt;/p&gt;
-
-&lt;p&gt;This time, after 2 years, I came back to the Fly.io deployment. At first, I just wanted to add a migration to the production server to prepare for the TestFlight beta release.&lt;/p&gt;
-
-&lt;p&gt;Trying out the deployment, everything seemed to be working at first. But I noticed that the Postgres App that ran alongside the main App in Fly.io “Apps” was now deprecated. Doing some basic reading up on the new offering called Managed Postgres, it seemed like a decent idea to migrate to it while it was on my mind.&lt;/p&gt;
-
-&lt;p&gt;I’m still learning the ropes with Claude Code. I &lt;a href=&quot;/2025/06/22/vinylogue-swift-rewrite/&quot;&gt;wrote about&lt;/a&gt; my experience about using Claude Code while rewriting an iOS project. But this is the first time I’ve used it for doing server side work, specifically using the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;fly&lt;/code&gt; CLI.&lt;/p&gt;
-
-&lt;p&gt;I think the first issue I ran into was that, after deployment, it &lt;em&gt;seemed&lt;/em&gt; like the new Managed Postgres instance was up and running fine since the API calls I made were successful. However, it was only after deleting the now obsoleted Postgres App instance that I realized the ENV vars were still pointing the server to the old database.&lt;/p&gt;
-
-&lt;p&gt;Claude Code was happy enough trying to debug the issue by tweaking random values and doing lots of 5+ minute deploys (I kept it on a long leash for a while to see how it handled the debugging). It did seem to get lucky a couple times and read the server logs at just the right time to discover the above problem (old database URL). It also eventually discovered there was an SSL error with the new database URL.&lt;/p&gt;
-
-&lt;p&gt;But from there it had no chance. I had to consult a bunch of other sources, many outdated, and take the reins back. I looked through the Vapor/Fluent source code to see which SSL parameters were now valid. I made a checklist of database URL variations I needed to try, updated the ENV var, waited for the deploy, and checked the logs.&lt;/p&gt;
-
-&lt;p&gt;Luckily I did discover a URL that worked.&lt;/p&gt;
-
-&lt;p&gt;Real talk: I honestly feel like Vapor was fun as a learning experience. You get to sling Swift. You get to share the model transport layer with server and client. You get to get into the weeds a bit more than a fully scaffolded solution with a plethora of drop in frameworks that solve every imaginable  problem and use case. But the community required to support a vibrant developer ecosystem has never showed up after all these years. That means that all the &lt;a href=&quot;https://xkcd.com/979/&quot;&gt;DenverCoder9&lt;/a&gt; problems I’m normally fine debugging myself in iOS land because it’s my main focus, I’m a hopeless case in server-land. Using some JS framework or Rails is playing the much better odds that someone will have already found and solved your bug and wrote a post like this one before you did. Does that mean I’m going to rewrite the backend of this project? Not yet, but maybe one or two more of these heisenbugs and I’m going to have to cut my losses.&lt;/p&gt;
-</description>
-        <pubDate>Mon, 30 Jun 2025 15:00:00 -0500</pubDate>
-        <link>https://twocentstudios.com/2025/06/30/swift-vapor-fly-managed-postgres/</link>
-        <guid isPermaLink="true">https://twocentstudios.com/2025/06/30/swift-vapor-fly-managed-postgres/</guid>
-        
-        <category>vapor</category>
-        
-        <category>debugging</category>
         
         <category>apple</category>
         
