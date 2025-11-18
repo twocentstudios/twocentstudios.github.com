@@ -2,7 +2,7 @@
 layout: post
 title: "Comprehensible Later: A Read-it-later App for Language Learners"
 date: 2025-11-15 11:57:31
-image: /images/comprehensible_later_article_detail.jpg
+image: /images/comprehensible_later_screens.jpg
 tags: apple ios comprehensiblelater app
 ---
 
