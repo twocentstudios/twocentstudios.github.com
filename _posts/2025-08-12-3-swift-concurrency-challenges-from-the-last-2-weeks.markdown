@@ -157,6 +157,18 @@ We have no direct control over what actor the closure runs on; it's presumably w
 - Add `@MainActor` to the function. (the fix we used in the post)
 - Use the non-async version of the function, `userNotificationCenter(_:didReceive:withCompletionHandler:)` and wrap the completion handler in a `MainActor.run` closure.
 
+**Update 2025/11/18**
+
+Tiziano Coroneo alerted me to a new Swift 6.2 feature that helps address this problem called [isolated conformances](https://github.com/swiftlang/swift-evolution/blob/main/proposals/0470-isolated-conformances.md) (further explained by [Hacking with Swift](https://www.hackingwithswift.com/articles/277/whats-new-in-swift-6-2#:~:text=Global%2Dactor%20isolated%20conformances).
+
+Tiziano says his declaration now looks like this:
+
+```swift
+public final class UserNotificationManager: NSObject, @MainActor UNUserNotificationCenterDelegate {
+```
+
+My fix is similar but a little more involved since it involves wrapping my class for use with the Swift Dependencies library. I'll try to document it fully in a future post.
+
 ## 2. CMMotionActivityManager
 
 [Core Motion](https://developer.apple.com/documentation/coremotion) is another neglected framework that not many iOS devs have the pleasure of integrating. It seems to have mostly been "modernized" around iOS 7 when `NSOperation` had a small popularity bump. Also when the API best practices for getting permission from the device user were still being tweaked.
