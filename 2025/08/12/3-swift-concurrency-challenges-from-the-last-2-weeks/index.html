@@ -66,10 +66,6 @@
           
         
           
-          <a class="page-link" href="/hire-me/">Hire Me</a>
-          
-        
-          
         
           
           <a class="page-link" href="/portfolio/">Portfolio</a>
@@ -504,6 +500,18 @@ Last Exception Backtrace:
   <li>Add <code class="language-plaintext highlighter-rouge">@MainActor</code> to the function. (the fix we used in the post)</li>
   <li>Use the non-async version of the function, <code class="language-plaintext highlighter-rouge">userNotificationCenter(_:didReceive:withCompletionHandler:)</code> and wrap the completion handler in a <code class="language-plaintext highlighter-rouge">MainActor.run</code> closure.</li>
 </ul>
+
+<p><strong>Update 2025/11/18</strong></p>
+
+<p>Tiziano Coroneo alerted me to a new Swift 6.2 feature that helps address this problem called <a href="https://github.com/swiftlang/swift-evolution/blob/main/proposals/0470-isolated-conformances.md">isolated conformances</a> (further explained by <a href="https://www.hackingwithswift.com/articles/277/whats-new-in-swift-6-2#:~:text=Global%2Dactor%20isolated%20conformances">Hacking with Swift</a>.</p>
+
+<p>Tiziano says his declaration now looks like this:</p>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">public</span> <span class="kd">final</span> <span class="kd">class</span> <span class="kt">UserNotificationManager</span><span class="p">:</span> <span class="kt">NSObject</span><span class="p">,</span> <span class="kd">@MainActor</span> <span class="kt">UNUserNotificationCenterDelegate</span> <span class="p">{</span>
+</code></pre>
+</div>
+
+<p>My fix is similar but a little more involved since it involves wrapping my class for use with the Swift Dependencies library. I’ll try to document it fully in a future post.</p>
 
 <h2 id="2-cmmotionactivitymanager">2. CMMotionActivityManager</h2>
 
