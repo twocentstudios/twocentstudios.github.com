@@ -13,7 +13,7 @@ This is an evergreen page with a list of the tools I use that are in some way no
 
 <img src="/images/tools-macbook-pro.jpg" alt="MacBook Pro M2 Max" align="right" width="300" style="margin-left: 1em;">
 
-Easily the best computer I've ever owned. The Apple Silicon era breathed new life into Macs (all while macOS has been doing its best to undo all those gains). I owned my last Intel MacBook Pro for about 7 years before it finally stopped getting updates and was unusable for iOS development. I plan on using this one for just as long or not longer.
+Easily the best computer I've ever owned. The Apple Silicon era breathed new life into Macs (all while macOS has been doing its best to undo all those gains). I owned my last Intel MacBook Pro for about 7 years before it finally stopped getting updates and was unusable for iOS development. I plan on using this one for just as long if not longer.
 
 <div style="clear: both;"></div>
 
@@ -93,7 +93,7 @@ Kanademono is a Japanese company that makes various wood-based furniture. Essent
 
 <img src="/images/tools-lg-monitor.jpg" alt="LG Monitor 27UP850-W" align="right" width="300" style="margin-left: 1em;">
 
-For my simple setup, this monitor has been mostly solid for me. I don't do pro color grading or design work, so the color quality is fine (besides, I can use my MacBook display if I really need accuracy). I use it as my hub, usually required just the USB-C connection to get power to the MacBook, display output from the MacBook, and data connection to my keyboard and USB sound card. My biggest complaints is that it only has 2 USB-A slots and they can't handle very much simultaneous power draw from devices. For example, I can't really run my external keyboard's backlighting and an external hard drive at the same time. Also there's a really strange issue where updating macOS temporarily breaks the display connection and requires completely unplugging the monitor from the wall for 10 seconds (not just disconnecting the MacBook or even disconnecting the power cable at the back of the monitor).
+For my simple setup, this monitor has been mostly solid for me. I don't do pro color grading or design work, so the color quality is fine (besides, I can use my MacBook display if I really need accuracy). I use it as my hub, usually required just the USB-C connection to get power to the MacBook, display output from the MacBook, and data connection to my keyboard and USB sound card. My biggest complaint is that it only has 2 USB-A slots and they can't handle very much simultaneous power draw from devices. For example, I can't really run my external keyboard's backlighting and an external hard drive at the same time. Also there's a really strange issue where updating macOS temporarily breaks the display connection and requires completely unplugging the monitor from the wall for 10 seconds (not just disconnecting the MacBook or even disconnecting the power cable at the back of the monitor).
 
 <div style="clear: both;"></div>
 
@@ -133,7 +133,7 @@ Although it's on the DIY side, this espresso machine is one of my favorite purch
 
 <img src="/images/tools-instax-sq1.jpg" alt="Instax SQ1 Instant Camera" align="right" width="300" style="margin-left: 1em;">
 
-I used a prosumer Canon DSLR with 24-70mm and 50mm lenses throughout my 20s. I gave this up when I moved to Japan, and serious photography and videography along with it. However, a few years ago I bought the Instax on a whim and I've loved having it. Its constraints are well balanced and it takes a little time to learn. Diffuse sunlight and close range or selfie mode work best. I love taking it along on trips and getting a couple physical photos to add to my [clear wall hanger](https://amzn.asia/d/7T2eHee). Or taking photos at an event and immediately giving them away as gifts.
+I used a prosumer Canon DSLR with 24-70mm and 50mm lenses throughout my 20s. I gave this up when I moved to Japan, and serious photography and videography along with it. However, a few years ago I bought the Instax on a whim and I've loved having it. Its constraints are well-balanced and it takes a little time to learn. Diffuse sunlight and close range or selfie mode work best. I love taking it along on trips and getting a couple physical photos to add to my [clear wall hanger](https://amzn.asia/d/7T2eHee). Or taking photos at an event and immediately giving them away as gifts.
 
 <div style="clear: both;"></div>
 
@@ -151,11 +151,11 @@ IINA is the best all purpose video player.
 
 #### [Music](https://www.apple.com/apple-music/)
 
-I'm an old soul when it comes to music listening technology; I don't subscribe to any music streaming service. I buy all my albums from artists direct on Bandcamp, store a copy of the FLAC, and load the mp3s onto my iPhone through the Music app. This has caused me hours and hours of pain throughout the years, but is still my preferred system.
+I'm an old soul when it comes to music listening technology; I don't subscribe to any music streaming service. I buy all my albums directly from artists on Bandcamp, store a copy of the FLAC, and load the mp3s onto my iPhone through the Music app. This has caused me hours and hours of pain throughout the years, but is still my preferred system.
 
 #### [Arc](https://arc.net/)
 
-I'm an Arc browser hold out. I'm sure at some point I will either switch to Dia or back to Chrome.
+I'm an Arc browser holdout. I'm sure at some point I will either switch to Dia or back to Chrome.
 
 #### [Obsidian](https://obsidian.md/)
 
@@ -191,11 +191,11 @@ My go-to app for single file viewing and editing, for markdown, text, or code. F
 
 #### [Figma](https://www.figma.com/)
 
-I do visual design separate from code less and less these days, but when I do I use Figma. I used to be a Sketch person but it doesn't make sense to maintain an subscription for how infrequently I need it. I sometimes do light image or vector editing in Figma. I also do App Store screenshot designs in it.
+I do visual design separate from code less and less these days, but when I do I use Figma. I used to be a Sketch person but it doesn't make sense to maintain a subscription for how infrequently I need it. I sometimes do light image or vector editing in Figma. I also do App Store screenshot designs in it.
 
 #### [Pixelmator Pro](https://www.pixelmator.com/pro/)
 
-In the rare case I need to photo editing or manipulation, I use Pixelmator. I miss my ancient Adobe Photoshop CS4 install to be honest.
+In the rare case I need to do photo editing or manipulation, I use Pixelmator. I miss my ancient Adobe Photoshop CS4 install to be honest.
 
 #### [Krita](https://krita.org/)
 
