@@ -2,7 +2,7 @@
 layout: post
 title: "SwiftUI Group Still(?) Considered Harmful"
 date: 2025-12-12 16:37:39
-image:
+image: /images/swiftui-group-onappear-demo-poster.png
 tags: apple swiftui ios
 ---
 
@@ -16,7 +16,7 @@ TL;DR: I still think this is a useful axiom, although at some point over the las
 
 ## `Group` distributes its modifiers amongst its subviews
 
-`Group` is documented as wrapper `View`. From the official docs (emphasis mine):
+`Group` is documented as a wrapper `View`. From the official docs (emphasis mine):
 
 > Use a group to collect multiple views into a single instance, without affecting the layout of those views, like an `HStack`, `VStack`, or `Section` would. After creating a group, **any modifier you apply to the group affects all of that group’s members**.
 
@@ -30,11 +30,12 @@ Group {
         LoginView()
     }
 }
+.navigationBarTitle("Start")
 ```
 
 > The modifier applies to all members of the group — and not to the group itself. For example, if you apply `onAppear(perform:)` to the above group, it applies to all of the views produced by the if `isLoggedIn` conditional, and it executes every time `isLoggedIn` changes.
 
-This burned me in the past because I had a screen pattern like (the very simplified version) below:
+This burned me in the past because I had a screen pattern like the (very simplified version) below:
 
 ```swift
 struct ContentView: View {
@@ -54,8 +55,8 @@ struct ContentView: View {
     }
     
     private func fetchData() {
-    	// make network request
-    	// set `isLoading = false` in completion handler	
+        // make network request
+        // set `isLoading = false` in completion handler
     }
 }
 ```
@@ -66,29 +67,29 @@ With `Group`'s documented behavior, the `onAppear` modifier is essentially distr
 Group {
     if isLoading {
         ProgressView()
-	        .onAppear {
-			    fetchData()
-			}
+            .onAppear {
+                fetchData()
+            }
     } else {
         DataLoadedView()
-        	.onAppear {
-			    fetchData()
-			}
+            .onAppear {
+                fetchData()
+            }
     }
 }
 ```
 
-The bug is that `fetchData` will be called twice: once when `ProgressView` appears, and once again when `DataLoadedView` appears.
+The bug *was* (at the time) that `fetchData` will be called twice: once when `ProgressView` appears, and once again when `DataLoadedView` appears.
 
-Of course, there are many new modifiers and patterns since iOS 13 or 14 or whenever I was bitten by this (probably before the documentation was added). Regardless, after learning about this behavior it sort of makes sense. So I learned my lesson that `Group` should not be used in this case.
+Of course, there are many new modifiers and patterns since iOS 13 or 14 or whenever I was bitten by this (probably before the documentation was added). Regardless, after learning about this behavior it sort of makes sense. And so I learned my lesson that `Group` should not be used in this case.
 
 ## What's changed with `Group`
 
-I'd locked this knowledge away and not considered it in as many years. However, coding agents seem to *love* to use `Group` to write the exact buggy code pattern I just illustrated above. It got me curious to investigate it again.
+I'd locked this knowledge away and hadn't considered it in years. However, coding agents seem to *love* to use `Group` to write the exact buggy code pattern I just illustrated above. I was curious enough to investigate it again.
 
 Well it turns out that in iOS 26 and maybe even as far back as iOS 15, in most cases `Group` no longer distributes its `onAppear` or `task` calls amongst its subviews. Read on for the caveats.
 
-From my testing, `onAppear`, `onDisappear`, `task`, and maybe other modifiers **seem to have been a special-cased by Apple** to work at the `Group` level and not be distributed to subviews like they used to. Note that this means the documentation for `Group` (that I quoted above) is now incorrect.
+From my testing, `onAppear`, `onDisappear`, `task`, and maybe other modifiers **seem to have been special-cased by Apple** to work at the `Group`-level and **not** be distributed to subviews like they used to. Note that this means the documentation for `Group` (that I quoted above) is now incorrect.
 
 ### `onAppear` and `task`
 
@@ -126,7 +127,7 @@ struct ContentView: View {
 
 According to the docs, this code should loop between the left and right rectangles. However, as of iOS 26 (and as far back as I can test, iOS 15), it runs the `onAppear` modifier once and stays showing the right blue rectangle.
 
-![]()
+<video src="/images/swiftui-group-onappear-demo.mp4" controls preload="none" poster="/images/swiftui-group-onappear-demo-poster.png" width="400"></video>
 
 The console:
 
@@ -171,7 +172,7 @@ struct ContentView: View {
 
 My guess is that this was reported during iOS 13, right before iOS 14 beta.
 
-I wanted to test this as well, and it turns out the OP's example no longer prints `onAppear2` twice in iOS 15 or iOS 26.
+I tested this code as well, and it turns out the OP's example no longer prints `onAppear2` twice on iOS 15 or iOS 26.
 
 ### List
 
@@ -209,7 +210,7 @@ struct ContentView: View {
 }
 ```
 
-![]()
+<video src="/images/swiftui-group-list-demo.mp4" controls preload="none" poster="/images/swiftui-group-list-demo-poster.png" width="400"></video>
 
 The console:
 
@@ -295,28 +296,28 @@ In the below toy example with Form:
 
 ```swift
 Form {
-	Text("Title")
-	Group {
-		Text("Subtitle")
-		Text("Description")	
-	}
-	.foregroundStyle(.secondary)
+    Text("Title")
+    Group {
+        Text("Subtitle")
+        Text("Description")
+    }
+    .foregroundStyle(.secondary)
 }
 ```
 
 I would prefer simply duplicating the modifier manually:
 
-```
+```swift
 Form {
-	Text("Title")
-	Text("Subtitle")
-		.foregroundStyle(.secondary)
-	Text("Description")	
-		.foregroundStyle(.secondary)
+    Text("Title")
+    Text("Subtitle")
+        .foregroundStyle(.secondary)
+    Text("Description")
+        .foregroundStyle(.secondary)
 }
 ```
 
-In my experience, the conditions that lead to `Group` being useful for this case are exceedingly rare. In a quick search of my current codebase, only I have only a couple examples. 
+In my experience, the conditions that lead to `Group` being useful for this case are exceedingly rare. In a quick search of my current codebase, I have only a couple examples. 
 
 This one just barely makes sense as it applies 4 modifiers to these 2 slightly different conditional subviews. Not quite large enough to justify separating out into named views; not quite small enough to duplicate the modifiers inline.
 
@@ -343,7 +344,7 @@ Group {
 .background(Material.ultraThick, in: RoundedRectangle(cornerRadius: 4))
 ```
 
-### ~Overcoming the 10-subview limit~ (no longer applies)
+### ~~Overcoming the 10-subview limit~~ (no longer applies)
 
 Before Swift 5.9's variadic generics, ViewBuilder could only handle 10 non-enumerated subviews. This example is still in the `Group` docs but no longer applies:
 
