@@ -5,9 +5,395 @@
     <description>A coding blog covering iOS, Swift, and other programming topics.</description>
     <link>https://twocentstudios.com/blog/tags/ios/index.html</link>
     <atom:link href="https://twocentstudios.com/blog/tags/ios/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Sun, 30 Nov 2025 02:49:24 -0600</pubDate>
-    <lastBuildDate>Sun, 30 Nov 2025 02:49:24 -0600</lastBuildDate>
+    <pubDate>Fri, 12 Dec 2025 03:54:32 -0600</pubDate>
+    <lastBuildDate>Fri, 12 Dec 2025 03:54:32 -0600</lastBuildDate>
     <generator>Jekyll v3.9.3</generator>
+    
+      <item>
+        <title>SwiftUI Group Still(?) Considered Harmful</title>
+        <description>&lt;p&gt;A number of years ago, I internalized a SwiftUI axiom after getting burned on what appeared at first as a heisenbug.&lt;/p&gt;
+
+&lt;p&gt;The axiom:&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;Never use &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Group&lt;/code&gt; (with only a few exceptions).&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;TL;DR: I still think this is a useful axiom, although at some point over the last several iOS updates the behavior of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Group&lt;/code&gt; is &lt;em&gt;less&lt;/em&gt; harmful when applied naively. But there are still some reasons why it’s useful to treat it with caution.&lt;/p&gt;
+
+&lt;h2 id=&quot;group-distributes-its-modifiers-amongst-its-subviews&quot;&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Group&lt;/code&gt; distributes its modifiers amongst its subviews&lt;/h2&gt;
+
+&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Group&lt;/code&gt; is documented as a wrapper &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;View&lt;/code&gt;. From the official docs (emphasis mine):&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;Use a group to collect multiple views into a single instance, without affecting the layout of those views, like an &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;HStack&lt;/code&gt;, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;VStack&lt;/code&gt;, or &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Section&lt;/code&gt; would. After creating a group, &lt;strong&gt;any modifier you apply to the group affects all of that group’s members&lt;/strong&gt;.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Apple specifically calls out what “affects all of that group’s members” means in the next paragraph, with an accompanying code sample:&lt;/p&gt;
+
+&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kt&quot;&gt;Group&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;isLoggedIn&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;kt&quot;&gt;WelcomeView&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;else&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;kt&quot;&gt;LoginView&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;navigationBarTitle&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;Start&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;The modifier applies to all members of the group — and not to the group itself. For example, if you apply &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;onAppear(perform:)&lt;/code&gt; to the above group, it applies to all of the views produced by the if &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;isLoggedIn&lt;/code&gt; conditional, and it executes every time &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;isLoggedIn&lt;/code&gt; changes.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;This burned me in the past because I had a screen pattern like the (very simplified version) below:&lt;/p&gt;
+
+&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ContentView&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;View&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;@State&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;isLoading&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;true&lt;/span&gt;
+
+    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;body&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;some&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;View&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;kt&quot;&gt;Group&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;isLoading&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+                &lt;span class=&quot;kt&quot;&gt;ProgressView&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+            &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;else&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+                &lt;span class=&quot;kt&quot;&gt;DataLoadedView&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+            &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+        &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;onAppear&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;nf&quot;&gt;fetchData&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    
+    &lt;span class=&quot;kd&quot;&gt;private&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;fetchData&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;c1&quot;&gt;// make network request&lt;/span&gt;
+        &lt;span class=&quot;c1&quot;&gt;// set `isLoading = false` in completion handler&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;With &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Group&lt;/code&gt;’s documented behavior, the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;onAppear&lt;/code&gt; modifier is essentially distributed across the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Group&lt;/code&gt;’s views:&lt;/p&gt;
+
+&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kt&quot;&gt;Group&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;isLoading&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;kt&quot;&gt;ProgressView&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+            &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;onAppear&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+                &lt;span class=&quot;nf&quot;&gt;fetchData&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+            &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;else&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;kt&quot;&gt;DataLoadedView&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+            &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;onAppear&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+                &lt;span class=&quot;nf&quot;&gt;fetchData&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+            &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;The bug &lt;em&gt;was&lt;/em&gt; (at the time) that &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;fetchData&lt;/code&gt; will be called twice: once when &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ProgressView&lt;/code&gt; appears, and once again when &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;DataLoadedView&lt;/code&gt; appears.&lt;/p&gt;
+
+&lt;p&gt;Of course, there are many new modifiers and patterns since iOS 13 or 14 or whenever I was bitten by this (probably before the documentation was added). Regardless, after learning about this behavior it sort of makes sense. And so I learned my lesson that &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Group&lt;/code&gt; should not be used in this case.&lt;/p&gt;
+
+&lt;h2 id=&quot;whats-changed-with-group&quot;&gt;What’s changed with &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Group&lt;/code&gt;&lt;/h2&gt;
+
+&lt;p&gt;I’d locked this knowledge away and hadn’t considered it in years. However, coding agents seem to &lt;em&gt;love&lt;/em&gt; to use &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Group&lt;/code&gt; to write the exact buggy code pattern I just illustrated above. I was curious enough to investigate it again.&lt;/p&gt;
+
+&lt;p&gt;Well it turns out that in iOS 26 and maybe even as far back as iOS 15, in most cases &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Group&lt;/code&gt; no longer distributes its &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;onAppear&lt;/code&gt; or &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;task&lt;/code&gt; calls amongst its subviews. Read on for the caveats.&lt;/p&gt;
+
+&lt;p&gt;From my testing, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;onAppear&lt;/code&gt;, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;onDisappear&lt;/code&gt;, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;task&lt;/code&gt;, and maybe other modifiers &lt;strong&gt;seem to have been special-cased by Apple&lt;/strong&gt; to work at the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Group&lt;/code&gt;-level and &lt;strong&gt;not&lt;/strong&gt; be distributed to subviews like they used to. Note that this means the documentation for &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Group&lt;/code&gt; (that I quoted above) is now incorrect.&lt;/p&gt;
+
+&lt;h3 id=&quot;onappear-and-task&quot;&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;onAppear&lt;/code&gt; and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;task&lt;/code&gt;&lt;/h3&gt;
+
+&lt;p&gt;Consider the following &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;View&lt;/code&gt;:&lt;/p&gt;
+
+&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ContentView&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;View&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;@State&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;isLeft&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;true&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;body&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;some&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;View&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;kt&quot;&gt;Group&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;isLeft&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+                &lt;span class=&quot;kt&quot;&gt;Rectangle&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;fill&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;red&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;frame&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;width&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;50&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+                    &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;frame&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;maxWidth&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;infinity&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;alignment&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;leading&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+                    &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;onAppear&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+                        &lt;span class=&quot;nf&quot;&gt;print&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;left&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+                    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+            &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;else&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+                &lt;span class=&quot;kt&quot;&gt;Rectangle&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;fill&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;blue&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;frame&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;width&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;50&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+                    &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;frame&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;maxWidth&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;infinity&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;alignment&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;trailing&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+                    &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;onAppear&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+                        &lt;span class=&quot;nf&quot;&gt;print&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;right&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+                    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+            &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+        &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;onAppear&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;nf&quot;&gt;print&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;group&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+            &lt;span class=&quot;kt&quot;&gt;Task&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+                &lt;span class=&quot;k&quot;&gt;try&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;await&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Task&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;sleep&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;for&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;seconds&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;
+                &lt;span class=&quot;n&quot;&gt;isLeft&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;toggle&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+            &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;According to the docs, this code should loop between the left and right rectangles. However, as of iOS 26 (and as far back as I can test, iOS 15), it runs the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;onAppear&lt;/code&gt; modifier once and stays showing the right blue rectangle.&lt;/p&gt;
+
+&lt;video src=&quot;/images/swiftui-group-onappear-demo.mp4&quot; controls=&quot;&quot; preload=&quot;none&quot; poster=&quot;/images/swiftui-group-onappear-demo-poster.png&quot; width=&quot;400&quot;&gt;&lt;/video&gt;
+
+&lt;p&gt;The console:&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;left
+group
+right
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;h3 id=&quot;screen-level-views&quot;&gt;Screen-level Views&lt;/h3&gt;
+
+&lt;p&gt;I stumbled on this lonely bug report from June 2020:&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://forums.swift.org/t/inconsistency-in-how-groups-onappear-and-ondisappear-are-called/37111&quot;&gt;Inconsistency in how Group’s onAppear and onDisappear are called - Using Swift - Swift Forums&lt;/a&gt;&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;Something that I noticed today and didn’t expect it is that if a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Group&lt;/code&gt; is not the root view of the screen, its &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;onAppear&lt;/code&gt; is called per each child, while for a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Group&lt;/code&gt; that is the root, the method is called once, regardless of the number of its children.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ContentView&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;View&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;body&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;some&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;View&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;kt&quot;&gt;Group&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// Group is the root of the screen, onAppear is called once&lt;/span&gt;
+            &lt;span class=&quot;kt&quot;&gt;Group&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;  &lt;span class=&quot;c1&quot;&gt;// non-root view, onAppear is called once per each child&lt;/span&gt;
+                &lt;span class=&quot;kt&quot;&gt;Color&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;red&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+                &lt;span class=&quot;kt&quot;&gt;Color&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;yellow&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+            &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+            &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;onAppear&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;print&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;.:. onAppear2&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+            &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;onDisappear&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;print&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;.:. onDisappear2&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+            
+            &lt;span class=&quot;kt&quot;&gt;Color&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;blue&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+            &lt;span class=&quot;kt&quot;&gt;Color&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;purple&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+        &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;onAppear&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;print&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;.:. onAppear1&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+        &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;onDisappear&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;print&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;.:. onDisappear1&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;cm&quot;&gt;/* Output:
+.:. onAppear1
+.:. onAppear2
+.:. onAppear2
+*/&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;My guess is that this was reported during iOS 13, right before iOS 14 beta.&lt;/p&gt;
+
+&lt;p&gt;I tested this code as well, and it turns out the OP’s example no longer prints &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;onAppear2&lt;/code&gt; twice on iOS 15 or iOS 26.&lt;/p&gt;
+
+&lt;h3 id=&quot;list&quot;&gt;List&lt;/h3&gt;
+
+&lt;p&gt;The only case I’ve found (so far) where the documented &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;onAppear&lt;/code&gt; (and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;task&lt;/code&gt;) distributed-across-subviews behavior still exists is when &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Group&lt;/code&gt; is within a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;List&lt;/code&gt;:&lt;/p&gt;
+
+&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ContentView&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;View&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;@State&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;isLeft&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;true&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;body&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;some&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;View&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;kt&quot;&gt;List&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;kt&quot;&gt;Group&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+                &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;isLeft&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+                    &lt;span class=&quot;kt&quot;&gt;Rectangle&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;fill&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;red&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;frame&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;width&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;50&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+                        &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;frame&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;maxWidth&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;infinity&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;alignment&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;leading&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+                        &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;onAppear&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+                            &lt;span class=&quot;nf&quot;&gt;print&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;left&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+                        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+                &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;else&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+                    &lt;span class=&quot;kt&quot;&gt;Rectangle&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;fill&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;blue&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;frame&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;width&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;50&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+                        &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;frame&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;maxWidth&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;infinity&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;alignment&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;trailing&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+                        &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;onAppear&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+                            &lt;span class=&quot;nf&quot;&gt;print&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;right&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+                        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+                &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+            &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+            &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;onAppear&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+                &lt;span class=&quot;nf&quot;&gt;print&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;group&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+                &lt;span class=&quot;kt&quot;&gt;Task&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+                    &lt;span class=&quot;k&quot;&gt;try&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;await&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Task&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;sleep&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;for&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;seconds&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;
+                    &lt;span class=&quot;n&quot;&gt;isLeft&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;toggle&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+                &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+            &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;video src=&quot;/images/swiftui-group-list-demo.mp4&quot; controls=&quot;&quot; preload=&quot;none&quot; poster=&quot;/images/swiftui-group-list-demo-poster.png&quot; width=&quot;400&quot;&gt;&lt;/video&gt;
+
+&lt;p&gt;The console:&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;left
+group
+right
+group
+left
+group
+right
+... (repeats forever)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;h3 id=&quot;regular-modifiers-with-group&quot;&gt;Regular modifiers with Group&lt;/h3&gt;
+
+&lt;p&gt;As a check that &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Group&lt;/code&gt; still distributes its modifiers in the general case, I created a simple custom modifier that prints on &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;init&lt;/code&gt; and applied it to the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Group&lt;/code&gt;:&lt;/p&gt;
+
+&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;PrintModifier&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ViewModifier&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;nf&quot;&gt;init&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;nf&quot;&gt;print&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;modifier init&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+    &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;body&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;content&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Content&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;some&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;View&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;content&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ContentView&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;View&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;@State&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;isLeft&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;true&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;body&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;some&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;View&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;kt&quot;&gt;Group&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;isLeft&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+                &lt;span class=&quot;kt&quot;&gt;Rectangle&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;fill&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;red&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;frame&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;width&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;50&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+                    &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;frame&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;maxWidth&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;infinity&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;alignment&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;leading&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+                    &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;onAppear&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+                        &lt;span class=&quot;nf&quot;&gt;print&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;left&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+                    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+            &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;else&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+                &lt;span class=&quot;kt&quot;&gt;Rectangle&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;fill&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;blue&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;frame&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;width&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;50&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+                    &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;frame&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;maxWidth&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;infinity&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;alignment&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;trailing&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+                    &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;onAppear&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+                        &lt;span class=&quot;nf&quot;&gt;print&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;right&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+                    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+            &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+        &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;modifier&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;PrintModifier&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;())&lt;/span&gt;
+        &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;onAppear&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;nf&quot;&gt;print&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;group&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+            &lt;span class=&quot;kt&quot;&gt;Task&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+                &lt;span class=&quot;k&quot;&gt;try&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;await&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Task&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;sleep&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;for&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;seconds&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;
+                &lt;span class=&quot;n&quot;&gt;isLeft&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;toggle&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+            &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;The console:&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;modifier init
+group
+left
+modifier init
+right
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;As we can see, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;PrintModifier&lt;/code&gt; is being applied to each subview independently as is documented. We’ve somewhat proven to ourselves that in the general case, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Group&lt;/code&gt; still distributes modifiers.&lt;/p&gt;
+
+&lt;h2 id=&quot;when-is-group-useful&quot;&gt;When is Group useful?&lt;/h2&gt;
+
+&lt;p&gt;When is &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Group&lt;/code&gt; still the right choice?&lt;/p&gt;
+
+&lt;p&gt;Honestly, not very often!&lt;/p&gt;
+
+&lt;h3 id=&quot;distributing-a-lot-of-modifiers-across-sibling-views&quot;&gt;Distributing a lot of modifiers across sibling views&lt;/h3&gt;
+
+&lt;p&gt;If you really really really need to apply one or more modifiers independently to a set of sibling views &lt;strong&gt;and&lt;/strong&gt; you need the sibling views to stay legible to their current parent container, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Group&lt;/code&gt; is the right choice.&lt;/p&gt;
+
+&lt;p&gt;In the below toy example with Form:&lt;/p&gt;
+
+&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kt&quot;&gt;Form&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;kt&quot;&gt;Text&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;Title&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;kt&quot;&gt;Group&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;kt&quot;&gt;Text&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;Subtitle&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;kt&quot;&gt;Text&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;Description&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;foregroundStyle&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;secondary&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;I would prefer simply duplicating the modifier manually:&lt;/p&gt;
+
+&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kt&quot;&gt;Form&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;kt&quot;&gt;Text&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;Title&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;kt&quot;&gt;Text&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;Subtitle&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;foregroundStyle&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;secondary&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;kt&quot;&gt;Text&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;Description&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;foregroundStyle&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;secondary&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;In my experience, the conditions that lead to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Group&lt;/code&gt; being useful for this case are exceedingly rare. In a quick search of my current codebase, I have only a couple examples.&lt;/p&gt;
+
+&lt;p&gt;This one just barely makes sense as it applies 4 modifiers to these 2 slightly different conditional subviews. Not quite large enough to justify separating out into named views; not quite small enough to duplicate the modifiers inline.&lt;/p&gt;
+
+&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kt&quot;&gt;Group&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;switch&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;routeOption&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;departure&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;departureOnly&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
+        &lt;span class=&quot;kt&quot;&gt;HStack&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;spacing&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;3&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;kt&quot;&gt;Image&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;systemName&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;arrow.up.right&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;imageScale&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;small&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;bold&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+            &lt;span class=&quot;kt&quot;&gt;Image&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;systemName&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;train.side.middle.car&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+        &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;padding&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;horizontal&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;10&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;arrival&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;arrivalOnly&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
+        &lt;span class=&quot;kt&quot;&gt;HStack&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;spacing&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;kt&quot;&gt;Image&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;systemName&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;train.side.middle.car&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+            &lt;span class=&quot;kt&quot;&gt;Image&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;systemName&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;arrow.down.right&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;imageScale&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;small&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;bold&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+        &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;padding&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;horizontal&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;11&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;font&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;caption&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;foregroundStyle&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;secondary&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;padding&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;vertical&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;10&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;background&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Material&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ultraThick&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;in&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;RoundedRectangle&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;cornerRadius&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;4&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;h3 id=&quot;overcoming-the-10-subview-limit-no-longer-applies&quot;&gt;&lt;del&gt;Overcoming the 10-subview limit&lt;/del&gt; (no longer applies)&lt;/h3&gt;
+
+&lt;p&gt;Before Swift 5.9’s variadic generics, ViewBuilder could only handle 10 non-enumerated subviews. This example is still in the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Group&lt;/code&gt; docs but no longer applies:&lt;/p&gt;
+
+&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;// No longer applies as of Swift 5.9&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;body&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;some&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;View&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;kt&quot;&gt;VStack&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;kt&quot;&gt;Group&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;kt&quot;&gt;Text&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;1&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+            &lt;span class=&quot;kt&quot;&gt;Text&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;2&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+            &lt;span class=&quot;kt&quot;&gt;Text&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;3&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+            &lt;span class=&quot;kt&quot;&gt;Text&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;4&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+            &lt;span class=&quot;kt&quot;&gt;Text&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;5&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+            &lt;span class=&quot;kt&quot;&gt;Text&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;6&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+            &lt;span class=&quot;kt&quot;&gt;Text&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;7&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+            &lt;span class=&quot;kt&quot;&gt;Text&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;8&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+            &lt;span class=&quot;kt&quot;&gt;Text&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;9&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+            &lt;span class=&quot;kt&quot;&gt;Text&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;10&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+        &lt;span class=&quot;kt&quot;&gt;Text&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;11&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+</description>
+        <pubDate>Fri, 12 Dec 2025 10:37:39 -0600</pubDate>
+        <link>https://twocentstudios.com/2025/12/12/swiftui-group-still-considered-harmful/</link>
+        <guid isPermaLink="true">https://twocentstudios.com/2025/12/12/swiftui-group-still-considered-harmful/</guid>
+        
+        <category>apple</category>
+        
+        <category>swiftui</category>
+        
+        <category>ios</category>
+        
+        
+      </item>
     
       <item>
         <title>Comprehensible Later: A Read-it-later App for Language Learners</title>
@@ -3846,201 +4232,6 @@ delete &lt;span class=&quot;c&quot;&gt;# as long as we open the database in read
         <pubDate>Thu, 29 May 2025 07:22:00 -0500</pubDate>
         <link>https://twocentstudios.com/2025/05/29/train-tracker-devlog-02/</link>
         <guid isPermaLink="true">https://twocentstudios.com/2025/05/29/train-tracker-devlog-02/</guid>
-        
-        <category>ekibright</category>
-        
-        <category>ekilive</category>
-        
-        <category>ios</category>
-        
-        
-      </item>
-    
-      <item>
-        <title>Train Tracker Devlog</title>
-        <description>&lt;p&gt;Last month, I took a step back from development of my train timetables &lt;a href=&quot;/2024/07/27/eki-bright-tokyo-area-train-timetables&quot;&gt;iOS app Eki Bright&lt;/a&gt; to think about the app in a broader context. I’ve iterated on Version 1 on and off for nearly a year, with use cases emerging out of a basic feature set and evolving with my own daily usage of the app.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/eki-bright-v1-7-marketing.png&quot; width=&quot;&quot; height=&quot;250&quot; alt=&quot;Marketing screenshots for Eki Bright v1.7&quot; title=&quot;Marketing screenshots for Eki Bright v1.7&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Marketing screenshots for Eki Bright v1.7&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;As a solo developer, it’s difficult to maintain a clear perspective about any given project as it grows. It’s a balance of having a strong vision but carefully allowing reality to gently guide that vision.&lt;/p&gt;
-
-&lt;p&gt;All this is to say I spent some time thinking hard about what version 2 of Eki Bright would look like if I started over today. How could I optimize the app for the way I use it now? How can I entice potential users and provide value to new users immediately?&lt;/p&gt;
-
-&lt;p&gt;If I stopped with version 1, as a user, I’d be relatively satisfied. I know how to navigate the app and work around the various UX speed bumps and oil slicks to achieve my goal of riding the train system here in Tokyo. I can overlook the problems in the app in ways a random iPhone user wouldn’t. I knowingly stopped short of perfection on a few feature implementations in favor of getting them shipped.&lt;/p&gt;
-
-&lt;p&gt;I started to see a vision for how the app could work in a &lt;em&gt;progressive enhancement&lt;/em&gt; sort of way for the various use cases I’ve uncovered. I started to see how important it was to do as much heavy lifting in the app as possible. There’s always going to be tension between a “semi-pro” app that gives the user full control while also doing work on their behalf without asking.&lt;/p&gt;
-
-&lt;p&gt;A key part of the vision for version 2 that emerged was that Eki Bright can be a lot smarter about understanding the user’s context. With location services, it should be possible to understand whether the user is walking to a train station and wants to know if they should run to get the next train, or whether they’re riding a train and want to know when they’ll arrive at their destination.&lt;/p&gt;
-
-&lt;p&gt;I started by segmenting out users into part of an app usage lifecycle:&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;What would make a iPhone user want to download the app in the first place? Why (if at all) are Tokyo residents unsatisfied with their current navigation apps?&lt;/li&gt;
-  &lt;li&gt;For a first time user, what feature could act as an immediate hook/wedge to provide value with zero setup or explanation and remind them to come back again the next day?&lt;/li&gt;
-  &lt;li&gt;For users who have seen consistent results, what motivation would they have to want to dig deeper and trade some customization effort to get significantly more value out of the app?&lt;/li&gt;
-  &lt;li&gt;For users who have used the app consistently for some time, what features can be enhanced automatically based on usage history?&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;The features that make up this theoretical system are quite complicated! An interface that adapts to the kind of user, the user’s usage history, and the user’s current context was somewhat of a overwhelming task for me to take on all at once.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/eki-bright-v2-feature-list.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Sketching out the lattice of features that could make up Eki Bright v2&quot; title=&quot;Sketching out the lattice of features that could make up Eki Bright v2&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Sketching out the lattice of features that could make up Eki Bright v2&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;So after doing some brainstorming and pencil mockups, I decided to start prototyping a “hook” feature to capture that first segment of users: those who have not downloaded the app and first time users. A feature that is buzzy and attractive to prospective users, and is low touch and requires nearly zero configuration for first time users.&lt;/p&gt;
-
-&lt;p&gt;That feature was a &lt;em&gt;train finder&lt;/em&gt;.&lt;/p&gt;
-
-&lt;p&gt;With the timetable data embedded in the app combined with live location data from the user’s device, I reasoned it should be possible to find the exact train a user was riding if they opened Eki Bright while enroute. If the app could do this, it’d cut down on the work necessary to unlock downstream benefits for the user like:&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;Checking what time the train will arrive at a destination station&lt;/li&gt;
-  &lt;li&gt;Setting an alarm for the destination station&lt;/li&gt;
-  &lt;li&gt;Checking what other stations are stops along the way&lt;/li&gt;
-  &lt;li&gt;Setting up a &lt;a href=&quot;/2025/01/24/eki-bright-the-case-for-diy-routing/&quot;&gt;DIY route&lt;/a&gt; to more thoroughly track a transfer&lt;/li&gt;
-  &lt;li&gt;Sharing a route and arrival time to a friend&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;At this point, I still intended the train finder feature to be part of Eki Bright. I imagined the user opening up the Eki Bright app along their journey, the app quickly booting up location services and narrowing down the possible railways and trains within a few seconds, and the user being able to quickly take some related actions from there.&lt;/p&gt;
-
-&lt;p&gt;My friend David asked “why not have it run in the background so you don’t need to open the app?” I initially balked, not wanting to add background location tracking to Eki Bright due to its potential to be heavy on the device battery. I also couldn’t see how background tracking could streamline the experience beyond reducing that 1-2 second train calculation time with the tradeoff that all this work would waste battery in the cases the user never opened the app. The background activity idea stayed in the back of my mind though.&lt;/p&gt;
-
-&lt;p&gt;I started prototyping the algorithm for turning a time-series of GPS coordinates into a railway, a direction on that railway, and ultimately a train.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/train-tracker-first-algorithm.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Thinking through an train tracking algorithm. This particular algorithm turned out to be a dud.&quot; title=&quot;Thinking through an train tracking algorithm. This particular algorithm turned out to be a dud.&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Thinking through an train tracking algorithm. This particular algorithm turned out to be a dud.&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;After my first day working on the algorithm, I realized that it was going to require a lot iteration on real data from inside the various trains running all over Tokyo. It wasn’t reasonable to think I could ride a train all day with my iPhone and MacBook debugging the algorithm on live data.&lt;/p&gt;
-
-&lt;p&gt;I therefore spent a day creating an app for collecting sessions of GPS coordinates. This has turned out to be a huge boon for development efficiency.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/gps-collector-screens.jpg&quot; width=&quot;&quot; height=&quot;300&quot; alt=&quot;GPS collector app I created and used to get batches of real data from the field&quot; title=&quot;GPS collector app I created and used to get batches of real data from the field&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;GPS collector app I created and used to get batches of real data from the field&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;This personal-use GPS Collector app allows me to collect raw data from Core Location in the background and annotate it while riding the various routes I take around the Tokyo area. I divide each trip up into a &lt;em&gt;session&lt;/em&gt;, then manually annotate the session with the railway, direction, departure station, and arrival station to serve as ground truth annotations. I allow exporting in GPX format (for usage within Xcode) and as JSON I can import into and decode with other apps.&lt;/p&gt;
-
-&lt;p&gt;Seeing the raw data revealed a litany of edge cases my algorithm would need to handle. First off, any train that goes underground is a non-starter for a GPS-reliant system; I’d have to make peace with that fact for now. Core Location data includes speed and heading, which is useful, but is itself a derived value and can be gleaned from other sources. GPS accuracy will sometimes plummet temporarily inside the boundaries of a station and sometimes randomly inside dense city limits. Waypoints are usually returned one-per-second, but sometimes will cut out for seconds or minutes. Some trains go from underground to above ground at least once along their designated route.&lt;/p&gt;
-
-&lt;p&gt;I spent a week or so collecting GPS data while working on other apps. I returned to Eki Bright to finish up a first draft of an algorithm that took an entire time-series of GPS data and returned a ranked list of candidates: a railway, the direction on that railway, and the previous and next station.&lt;/p&gt;
-
-&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;RidingTrainFinderCandidate&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;railway&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Railway&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;direction&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;RailDirection&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;previousStation&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Station&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;nextStation&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Station&lt;/span&gt;
-    &lt;span class=&quot;c1&quot;&gt;// let train: TrainTimetable -- TODO: determine which train&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;I added a debug viewer to visualize how my algorithm was responding to test data as it was played back. It was mostly working! It was also kind of fun to watch the playback. Being able to throw together a view like this for the sole purpose of debugging an algorithm is a huge win for SwiftUI.&lt;/p&gt;
-
-&lt;video src=&quot;/images/train-tracker-debug-view-01.mp4&quot; controls=&quot;&quot; poster=&quot;/images/train-tracker-debug-view-01.png&quot; preload=&quot;none&quot; height=&quot;400&quot;&gt;&lt;/video&gt;
-
-&lt;p&gt;I’d hit a development checkpoint, and as cool as my little debug tracker view was, I was still far from a shippable feature that solved a real problem. My next step was extending the algorithm to guess which train the user was on (not exactly a straightforward algorithm to write based on the shape of my train timetable data).&lt;/p&gt;
-
-&lt;p&gt;However, I thought back to my friend David’s remark about an app that works in the background. I thought, if I freed myself from the artificial constraints of Eki Bright as it currently existed, how could this algorithm still be useful?&lt;/p&gt;
-
-&lt;p&gt;A new vision emerged of an app that solved a much shallower problem:&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;Sometimes when I’m on a crowded train and I’ve got my headphones in, it’s hard to tell what station I’m approaching. I can’t see the display above the train car door or out the window.&lt;/li&gt;
-  &lt;li&gt;What if I had a Live Activity in my Dynamic Island that updated live as I stopped at or passed each station along a railway?&lt;/li&gt;
-  &lt;li&gt;And what if I didn’t have to manually select what railway I was on and what direction I was going?&lt;/li&gt;
-  &lt;li&gt;Better yet, what if I &lt;em&gt;didn’t even have to open the app&lt;/em&gt; and the Live Activity would automatically appear when I was riding a train and disappear when I got off?&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;If I could pull it off, this feature would be supplemental to any other navigation app. It also has a bit of “cool technology” vibe to it that could entice a download and serve as a conversation piece.&lt;/p&gt;
-
-&lt;p&gt;Realizing this new vision came with its own new implementation challenges.&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;Monitor significant location changes in the background to save battery life, then switch to live location monitoring when moving at train speeds.&lt;/li&gt;
-  &lt;li&gt;Detect the railway and railway direction.&lt;/li&gt;
-  &lt;li&gt;Continuously update which stations have been visited and passed, and which station is next on the railway, even if it’s far away.&lt;/li&gt;
-  &lt;li&gt;Start a Live Activity in the background when confidence in the current railway is high enough.&lt;/li&gt;
-  &lt;li&gt;Update the Live Activity as the user approaches, arrives at, and departs a station.&lt;/li&gt;
-  &lt;li&gt;End the Live Activity and switch back to monitoring significant location changes once the user has alighted their train.&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;I knew that significant location changes, app background activity, and the way each of these system features interacts with the relatively new (iOS 16+) Live Activities API was going to pose as the biggest risk to executing the seamless zero-touch app experience I envisioned.&lt;/p&gt;
-
-&lt;p&gt;I started by creating a new app project and creating a GRDB-backed event logging system. Next, I configured the app to request background location permission. I then created the bones of a location tracking algorithm that preserved battery life. I logged app lifecycle events and events for my location tracking algorithm to ensure I could quickly debug why the app was or wasn’t “waking up” or “sleeping” when I expected it to while out in the field.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/train-tracker-app-events.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Log of app events so I can verify background behavior&quot; title=&quot;Log of app events so I can verify background behavior&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Log of app events so I can verify background behavior&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;The next big task was reimagining my existing railway-finding algorithm for a different system lifecycle. This also meant I needed to pare down my very large train timetable static database for this new use case. I only needed the list of railways and stations. I followed a similar development flow as last time; I created a couple new debug views to view the live GPS waypoints and follow these waypoints on a map alongside the train tracking algorithm outputs.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/train-tracker-waypoints-view.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Raw waypoints view to allow confirmation of incoming data&quot; title=&quot;Raw waypoints view to allow confirmation of incoming data&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Raw waypoints view to allow confirmation of incoming data&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;I started with a version that played back existing GPS data. A dashboard view showed just the user-facing data: the detected railway and “focus” station.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/train-tracker-debug-dashboard.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;A debug view that plays back previously captured GPS data at variable speed and shows user-facing data&quot; title=&quot;A debug view that plays back previously captured GPS data at variable speed and shows user-facing data&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;A debug view that plays back previously captured GPS data at variable speed and shows user-facing data&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;There was also a list view showing the scores assigned by the algorithm and used to determine the ultimate result shown to the user.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/train-tracker-debug-list.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;The derived scores used by the algorithm to determine what railway and focus station is shown to the user&quot; title=&quot;The derived scores used by the algorithm to determine what railway and focus station is shown to the user&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;The derived scores used by the algorithm to determine what railway and focus station is shown to the user&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;Then, once I was satisfied with the algorithm accuracy on the snapshot data, I migrated this view to use only live device data.&lt;/p&gt;
-
-&lt;p&gt;Watching the algorithm run live was exciting. I felt like I’d hit another checkpoint as the device would wake up and start gathering GPS data in the background, then start showing me which railway I was on and which station was next as soon as I opened it.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/train-tracker-debug-live-tracking.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Same as above but using live GPS data&quot; title=&quot;Same as above but using live GPS data&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Same as above but using live GPS data&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;With a basic (but admittedly incomplete) tracking algorithm proven, the last piece of the puzzle I needed to de-risk was starting the Live Activity automatically in the background. Unfortunately this is where I hit a frustrating roadblock.&lt;/p&gt;
-
-&lt;p&gt;In a careful scan of the lengthy &lt;a href=&quot;https://developer.apple.com/documentation/activitykit/displaying-live-data-with-live-activities#Review-Live-Activity-presentations&quot;&gt;Live Activities documentation&lt;/a&gt;, I found the line:&lt;/p&gt;
-
-&lt;blockquote&gt;
-  &lt;p&gt;Your app can only start Live Activities while it’s in the foreground. However, you can update or end a Live Activity from your app while it runs in the background.&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;p&gt;I confirmed this artificial limitation by attempting it and logging errors in my event tracking database.&lt;/p&gt;
-
-&lt;blockquote&gt;
-  &lt;p&gt;LiveActivities Error: The operation couldn’t be completed. Target is not foreground&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;p&gt;I felt like requiring the user to open the app each time they wanted the live activity to run – even if it was as simple as opening and immediately closing the app – would be too tedious an ask as a prerequisite for daily usage.&lt;/p&gt;
-
-&lt;p&gt;Before I neutered my vision or gave up on the idea entirely, I had one card left up my sleeve. From the documentation:&lt;/p&gt;
-
-&lt;blockquote&gt;
-  &lt;p&gt;Starting with iOS 17.2 and iPadOS 17.2, you can also start Live Activities with ActivityKit push notifications.&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;p&gt;So a push notification from a server can start a Live Activity without being initiated by a user (as I’d personally experienced with the Apple Sports app), but for some reason it can’t be started by the device itself? Strange, but since my app is already running in the background, I could technically fire off a network request to my own server with the data I wanted to start the Live Activity with and use my server as a pseudo-proxy to start a Live Activity. It feels like a loophole, but perhaps it’s simply a case of an Apple product manager not re-evaluating an initial safeguard after changing a related feature.&lt;/p&gt;
-
-&lt;p&gt;Setting up push notifications is &lt;em&gt;involved&lt;/em&gt;. I really did not want to be on the hook for maintaining another set of dependencies, but it was the only option left on the table.&lt;/p&gt;
-
-&lt;blockquote&gt;
-  &lt;p&gt;Aside: is it possible to send a push notification directly from a device instead of through an intermediary server controlled by the developer? In other words, could the device send a request to the APNS server directly that would send a push notification right back to it? In theory it seems possible, with the big security downside that the p8 key would need to be included in plain text within the app bundle.&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;p&gt;I’ll leave the long debug story of how I got push notifications working for another time, but after a couple days of development, I confirmed that I could indeed start a Live Activity from the background using an intermediary server.&lt;/p&gt;
-
-&lt;p&gt;Whether or not the App Store app review team considers this to be a permitted workaround is still a huge risk. I’m not sure how I can determine their stance without finishing up version 1 of the app and submitting it for review. Even an unfinished version going through Test Flight review isn’t a guarantee App Store review will also approve.&lt;/p&gt;
-
-&lt;p&gt;So this is my current checkpoint: a new app binary with lot of debug screens that starts and updates Live Activities from the background as the user rides a railway in Tokyo.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/train-tracker-proto-live-activity.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Prototype version of the working train tracker Live Activity on the lock screen&quot; title=&quot;Prototype version of the working train tracker Live Activity on the lock screen&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Prototype version of the working train tracker Live Activity on the lock screen&lt;/div&gt;&lt;/div&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/train-tracker-proto-dynamic-island.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Prototype version of the working train tracker Live Activity in the Dynamic Island&quot; title=&quot;Prototype version of the working train tracker Live Activity in the Dynamic Island&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Prototype version of the working train tracker Live Activity in the Dynamic Island&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;My plan is to release this app standalone. How it fits into the existing and future Eki Bright vision isn’t yet determined. Perhaps the train tracker app is a free marketing driver for Eki Bright. Perhaps the train tracker app evolves separately from Eki Bright and eventually obsoletes Eki Bright. I’m not sure, but my instinct is to test it in the market in isolation first.&lt;/p&gt;
-
-&lt;p&gt;What do I need to finish up in order to ship?&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;Improve the algorithm to determine the correct railway faster, handle transfers, and off-board seamlessly.&lt;/li&gt;
-  &lt;li&gt;Improve the design of the Live Activity.&lt;/li&gt;
-  &lt;li&gt;Remove the debug screens and rework the in-app UI for onboarding, settings, and simple monitoring.&lt;/li&gt;
-  &lt;li&gt;Create branding and add all the required info for the App Store.&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;I’m getting faster at getting through this part of the process, but it still takes time. However, I do feel some accomplishment in having semi-efficiently prototyped enough to de-risk this project.&lt;/p&gt;
-
-&lt;p&gt;I’m planning to write a few technical posts that detail the caveats of Live Activities once I’m more confident in the robustness of my implementation. Until then.&lt;/p&gt;
-</description>
-        <pubDate>Tue, 15 Apr 2025 12:06:00 -0500</pubDate>
-        <link>https://twocentstudios.com/2025/04/15/train-tracker-checkpoint-devlog/</link>
-        <guid isPermaLink="true">https://twocentstudios.com/2025/04/15/train-tracker-checkpoint-devlog/</guid>
         
         <category>ekibright</category>
         

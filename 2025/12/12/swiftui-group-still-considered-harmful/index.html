@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html>
+
+  <head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>SwiftUI Group Still(?) Considered Harmful</title>
+
+  <meta property="og:type" content="article" />
+  <meta property="og:title" content="SwiftUI Group Still(?) Considered Harmful" />
+  <meta property="og:url" content="https://twocentstudios.com/2025/12/12/swiftui-group-still-considered-harmful/" />
+  
+    <meta property="og:article:published_time" content="2025-12-12T10:37:39-06:00" />
+  
+  
+    <meta property="og:image" content="https://twocentstudios.com/images/swiftui-group-onappear-demo-poster.png" />
+  
+
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="SwiftUI Group Still(?) Considered Harmful" />
+  
+    <meta name="twitter:image" content="https://twocentstudios.com/images/swiftui-group-onappear-demo-poster.png" />
+  
+
+  <link href='https://fonts.googleapis.com/css2?family=Work+Sans:wght@300;350;400;600' rel='stylesheet' type='text/css'>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="canonical" href="https://twocentstudios.com/2025/12/12/swiftui-group-still-considered-harmful/">
+  <link rel="alternate" type="application/rss+xml" title="twocentstudios" href="https://twocentstudios.com/feed.xml" />
+</head>
+
+  <!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-NE82N02W8S"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-NE82N02W8S');
+</script>
+
+  <body>
+
+    <header class="site-header">
+
+  <div class="wrapper">
+
+    <a class="site-title" href="/">twocentstudios</a>
+
+    <nav class="site-nav">
+      <a href="#" class="menu-icon">
+        <svg viewBox="0 0 18 15">
+          <path fill="#424242" d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.031C17.335,0,18,0.665,18,1.484L18,1.484z"/>
+          <path fill="#424242" d="M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0c0-0.82,0.665-1.484,1.484-1.484 h15.031C17.335,6.031,18,6.696,18,7.516L18,7.516z"/>
+          <path fill="#424242" d="M18,13.516C18,14.335,17.335,15,16.516,15H1.484C0.665,15,0,14.335,0,13.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.031C17.335,12.031,18,12.696,18,13.516L18,13.516z"/>
+        </svg>
+      </a>
+
+      <div class="trigger">
+        
+          
+          <a class="page-link" href="/about/">About</a>
+          
+        
+          
+          <a class="page-link" href="/blog/">Blog</a>
+          
+        
+          
+        
+          
+        
+          
+          <a class="page-link" href="/portfolio/">Portfolio</a>
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+          <a class="page-link" href="/tools/">Tools</a>
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+          
+        
+      </div>
+    </nav>
+
+  </div>
+
+</header>
+
+
+    <div class="page-content">
+      <div class="wrapper">
+        <div class="post">
+
+  <header class="post-header">
+    <h1 class="post-title">SwiftUI Group Still(?) Considered Harmful</h1>
+    <p class="post-meta">Dec 12, 2025</p>
+  </header>
+
+  <article class="post-content">
+    <p>A number of years ago, I internalized a SwiftUI axiom after getting burned on what appeared at first as a heisenbug.</p>
+
+<p>The axiom:</p>
+
+<blockquote>
+  <p>Never use <code class="language-plaintext highlighter-rouge">Group</code> (with only a few exceptions).</p>
+</blockquote>
+
+<p>TL;DR: I still think this is a useful axiom, although at some point over the last several iOS updates the behavior of <code class="language-plaintext highlighter-rouge">Group</code> is <em>less</em> harmful when applied naively. But there are still some reasons why it’s useful to treat it with caution.</p>
+
+<h2 id="group-distributes-its-modifiers-amongst-its-subviews"><code class="language-plaintext highlighter-rouge">Group</code> distributes its modifiers amongst its subviews</h2>
+
+<p><code class="language-plaintext highlighter-rouge">Group</code> is documented as a wrapper <code class="language-plaintext highlighter-rouge">View</code>. From the official docs (emphasis mine):</p>
+
+<blockquote>
+  <p>Use a group to collect multiple views into a single instance, without affecting the layout of those views, like an <code class="language-plaintext highlighter-rouge">HStack</code>, <code class="language-plaintext highlighter-rouge">VStack</code>, or <code class="language-plaintext highlighter-rouge">Section</code> would. After creating a group, <strong>any modifier you apply to the group affects all of that group’s members</strong>.</p>
+</blockquote>
+
+<p>Apple specifically calls out what “affects all of that group’s members” means in the next paragraph, with an accompanying code sample:</p>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kt">Group</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="n">isLoggedIn</span> <span class="p">{</span>
+        <span class="kt">WelcomeView</span><span class="p">()</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+        <span class="kt">LoginView</span><span class="p">()</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+<span class="o">.</span><span class="nf">navigationBarTitle</span><span class="p">(</span><span class="s">"Start"</span><span class="p">)</span>
+</code></pre>
+</div>
+
+<blockquote>
+  <p>The modifier applies to all members of the group — and not to the group itself. For example, if you apply <code class="language-plaintext highlighter-rouge">onAppear(perform:)</code> to the above group, it applies to all of the views produced by the if <code class="language-plaintext highlighter-rouge">isLoggedIn</code> conditional, and it executes every time <code class="language-plaintext highlighter-rouge">isLoggedIn</code> changes.</p>
+</blockquote>
+
+<p>This burned me in the past because I had a screen pattern like the (very simplified version) below:</p>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">ContentView</span><span class="p">:</span> <span class="kt">View</span> <span class="p">{</span>
+    <span class="kd">@State</span> <span class="k">var</span> <span class="nv">isLoading</span> <span class="o">=</span> <span class="kc">true</span>
+
+    <span class="k">var</span> <span class="nv">body</span><span class="p">:</span> <span class="n">some</span> <span class="kt">View</span> <span class="p">{</span>
+        <span class="kt">Group</span> <span class="p">{</span>
+            <span class="k">if</span> <span class="n">isLoading</span> <span class="p">{</span>
+                <span class="kt">ProgressView</span><span class="p">()</span>
+            <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+                <span class="kt">DataLoadedView</span><span class="p">()</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+        <span class="o">.</span><span class="n">onAppear</span> <span class="p">{</span>
+            <span class="nf">fetchData</span><span class="p">()</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    
+    <span class="kd">private</span> <span class="kd">func</span> <span class="nf">fetchData</span><span class="p">()</span> <span class="p">{</span>
+        <span class="c1">// make network request</span>
+        <span class="c1">// set `isLoading = false` in completion handler</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p>With <code class="language-plaintext highlighter-rouge">Group</code>’s documented behavior, the <code class="language-plaintext highlighter-rouge">onAppear</code> modifier is essentially distributed across the <code class="language-plaintext highlighter-rouge">Group</code>’s views:</p>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kt">Group</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="n">isLoading</span> <span class="p">{</span>
+        <span class="kt">ProgressView</span><span class="p">()</span>
+            <span class="o">.</span><span class="n">onAppear</span> <span class="p">{</span>
+                <span class="nf">fetchData</span><span class="p">()</span>
+            <span class="p">}</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+        <span class="kt">DataLoadedView</span><span class="p">()</span>
+            <span class="o">.</span><span class="n">onAppear</span> <span class="p">{</span>
+                <span class="nf">fetchData</span><span class="p">()</span>
+            <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p>The bug <em>was</em> (at the time) that <code class="language-plaintext highlighter-rouge">fetchData</code> will be called twice: once when <code class="language-plaintext highlighter-rouge">ProgressView</code> appears, and once again when <code class="language-plaintext highlighter-rouge">DataLoadedView</code> appears.</p>
+
+<p>Of course, there are many new modifiers and patterns since iOS 13 or 14 or whenever I was bitten by this (probably before the documentation was added). Regardless, after learning about this behavior it sort of makes sense. And so I learned my lesson that <code class="language-plaintext highlighter-rouge">Group</code> should not be used in this case.</p>
+
+<h2 id="whats-changed-with-group">What’s changed with <code class="language-plaintext highlighter-rouge">Group</code></h2>
+
+<p>I’d locked this knowledge away and hadn’t considered it in years. However, coding agents seem to <em>love</em> to use <code class="language-plaintext highlighter-rouge">Group</code> to write the exact buggy code pattern I just illustrated above. I was curious enough to investigate it again.</p>
+
+<p>Well it turns out that in iOS 26 and maybe even as far back as iOS 15, in most cases <code class="language-plaintext highlighter-rouge">Group</code> no longer distributes its <code class="language-plaintext highlighter-rouge">onAppear</code> or <code class="language-plaintext highlighter-rouge">task</code> calls amongst its subviews. Read on for the caveats.</p>
+
+<p>From my testing, <code class="language-plaintext highlighter-rouge">onAppear</code>, <code class="language-plaintext highlighter-rouge">onDisappear</code>, <code class="language-plaintext highlighter-rouge">task</code>, and maybe other modifiers <strong>seem to have been special-cased by Apple</strong> to work at the <code class="language-plaintext highlighter-rouge">Group</code>-level and <strong>not</strong> be distributed to subviews like they used to. Note that this means the documentation for <code class="language-plaintext highlighter-rouge">Group</code> (that I quoted above) is now incorrect.</p>
+
+<h3 id="onappear-and-task"><code class="language-plaintext highlighter-rouge">onAppear</code> and <code class="language-plaintext highlighter-rouge">task</code></h3>
+
+<p>Consider the following <code class="language-plaintext highlighter-rouge">View</code>:</p>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">ContentView</span><span class="p">:</span> <span class="kt">View</span> <span class="p">{</span>
+    <span class="kd">@State</span> <span class="k">var</span> <span class="nv">isLeft</span> <span class="o">=</span> <span class="kc">true</span>
+    <span class="k">var</span> <span class="nv">body</span><span class="p">:</span> <span class="n">some</span> <span class="kt">View</span> <span class="p">{</span>
+        <span class="kt">Group</span> <span class="p">{</span>
+            <span class="k">if</span> <span class="n">isLeft</span> <span class="p">{</span>
+                <span class="kt">Rectangle</span><span class="p">()</span><span class="o">.</span><span class="nf">fill</span><span class="p">(</span><span class="o">.</span><span class="n">red</span><span class="p">)</span><span class="o">.</span><span class="nf">frame</span><span class="p">(</span><span class="nv">width</span><span class="p">:</span> <span class="mi">50</span><span class="p">)</span>
+                    <span class="o">.</span><span class="nf">frame</span><span class="p">(</span><span class="nv">maxWidth</span><span class="p">:</span> <span class="o">.</span><span class="n">infinity</span><span class="p">,</span> <span class="nv">alignment</span><span class="p">:</span> <span class="o">.</span><span class="n">leading</span><span class="p">)</span>
+                    <span class="o">.</span><span class="n">onAppear</span> <span class="p">{</span>
+                        <span class="nf">print</span><span class="p">(</span><span class="s">"left"</span><span class="p">)</span>
+                    <span class="p">}</span>
+            <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+                <span class="kt">Rectangle</span><span class="p">()</span><span class="o">.</span><span class="nf">fill</span><span class="p">(</span><span class="o">.</span><span class="n">blue</span><span class="p">)</span><span class="o">.</span><span class="nf">frame</span><span class="p">(</span><span class="nv">width</span><span class="p">:</span> <span class="mi">50</span><span class="p">)</span>
+                    <span class="o">.</span><span class="nf">frame</span><span class="p">(</span><span class="nv">maxWidth</span><span class="p">:</span> <span class="o">.</span><span class="n">infinity</span><span class="p">,</span> <span class="nv">alignment</span><span class="p">:</span> <span class="o">.</span><span class="n">trailing</span><span class="p">)</span>
+                    <span class="o">.</span><span class="n">onAppear</span> <span class="p">{</span>
+                        <span class="nf">print</span><span class="p">(</span><span class="s">"right"</span><span class="p">)</span>
+                    <span class="p">}</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+        <span class="o">.</span><span class="n">onAppear</span> <span class="p">{</span>
+            <span class="nf">print</span><span class="p">(</span><span class="s">"group"</span><span class="p">)</span>
+            <span class="kt">Task</span> <span class="p">{</span>
+                <span class="k">try</span><span class="p">?</span> <span class="n">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">seconds</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+                <span class="n">isLeft</span><span class="o">.</span><span class="nf">toggle</span><span class="p">()</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p>According to the docs, this code should loop between the left and right rectangles. However, as of iOS 26 (and as far back as I can test, iOS 15), it runs the <code class="language-plaintext highlighter-rouge">onAppear</code> modifier once and stays showing the right blue rectangle.</p>
+
+<video src="/images/swiftui-group-onappear-demo.mp4" controls="" preload="none" poster="/images/swiftui-group-onappear-demo-poster.png" width="400"></video>
+
+<p>The console:</p>
+
+<div class="language-plaintext highlighter-rouge"><pre class="highlight"><code>left
+group
+right
+</code></pre>
+</div>
+
+<h3 id="screen-level-views">Screen-level Views</h3>
+
+<p>I stumbled on this lonely bug report from June 2020:</p>
+
+<p><a href="https://forums.swift.org/t/inconsistency-in-how-groups-onappear-and-ondisappear-are-called/37111">Inconsistency in how Group’s onAppear and onDisappear are called - Using Swift - Swift Forums</a></p>
+
+<blockquote>
+  <p>Something that I noticed today and didn’t expect it is that if a <code class="language-plaintext highlighter-rouge">Group</code> is not the root view of the screen, its <code class="language-plaintext highlighter-rouge">onAppear</code> is called per each child, while for a <code class="language-plaintext highlighter-rouge">Group</code> that is the root, the method is called once, regardless of the number of its children.</p>
+</blockquote>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">ContentView</span><span class="p">:</span> <span class="kt">View</span> <span class="p">{</span>
+    <span class="k">var</span> <span class="nv">body</span><span class="p">:</span> <span class="n">some</span> <span class="kt">View</span> <span class="p">{</span>
+        <span class="kt">Group</span> <span class="p">{</span> <span class="c1">// Group is the root of the screen, onAppear is called once</span>
+            <span class="kt">Group</span> <span class="p">{</span>  <span class="c1">// non-root view, onAppear is called once per each child</span>
+                <span class="kt">Color</span><span class="p">(</span><span class="o">.</span><span class="n">red</span><span class="p">)</span>
+                <span class="kt">Color</span><span class="p">(</span><span class="o">.</span><span class="n">yellow</span><span class="p">)</span>
+            <span class="p">}</span>
+            <span class="o">.</span><span class="n">onAppear</span> <span class="p">{</span> <span class="nf">print</span><span class="p">(</span><span class="s">".:. onAppear2"</span><span class="p">)</span> <span class="p">}</span>
+            <span class="o">.</span><span class="n">onDisappear</span> <span class="p">{</span> <span class="nf">print</span><span class="p">(</span><span class="s">".:. onDisappear2"</span><span class="p">)</span> <span class="p">}</span>
+            
+            <span class="kt">Color</span><span class="p">(</span><span class="o">.</span><span class="n">blue</span><span class="p">)</span>
+            <span class="kt">Color</span><span class="p">(</span><span class="o">.</span><span class="n">purple</span><span class="p">)</span>
+        <span class="p">}</span>
+        <span class="o">.</span><span class="n">onAppear</span> <span class="p">{</span> <span class="nf">print</span><span class="p">(</span><span class="s">".:. onAppear1"</span><span class="p">)</span> <span class="p">}</span>
+        <span class="o">.</span><span class="n">onDisappear</span> <span class="p">{</span> <span class="nf">print</span><span class="p">(</span><span class="s">".:. onDisappear1"</span><span class="p">)</span> <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+<span class="cm">/* Output:
+.:. onAppear1
+.:. onAppear2
+.:. onAppear2
+*/</span>
+</code></pre>
+</div>
+
+<p>My guess is that this was reported during iOS 13, right before iOS 14 beta.</p>
+
+<p>I tested this code as well, and it turns out the OP’s example no longer prints <code class="language-plaintext highlighter-rouge">onAppear2</code> twice on iOS 15 or iOS 26.</p>
+
+<h3 id="list">List</h3>
+
+<p>The only case I’ve found (so far) where the documented <code class="language-plaintext highlighter-rouge">onAppear</code> (and <code class="language-plaintext highlighter-rouge">task</code>) distributed-across-subviews behavior still exists is when <code class="language-plaintext highlighter-rouge">Group</code> is within a <code class="language-plaintext highlighter-rouge">List</code>:</p>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">ContentView</span><span class="p">:</span> <span class="kt">View</span> <span class="p">{</span>
+    <span class="kd">@State</span> <span class="k">var</span> <span class="nv">isLeft</span> <span class="o">=</span> <span class="kc">true</span>
+    <span class="k">var</span> <span class="nv">body</span><span class="p">:</span> <span class="n">some</span> <span class="kt">View</span> <span class="p">{</span>
+        <span class="kt">List</span> <span class="p">{</span>
+            <span class="kt">Group</span> <span class="p">{</span>
+                <span class="k">if</span> <span class="n">isLeft</span> <span class="p">{</span>
+                    <span class="kt">Rectangle</span><span class="p">()</span><span class="o">.</span><span class="nf">fill</span><span class="p">(</span><span class="o">.</span><span class="n">red</span><span class="p">)</span><span class="o">.</span><span class="nf">frame</span><span class="p">(</span><span class="nv">width</span><span class="p">:</span> <span class="mi">50</span><span class="p">)</span>
+                        <span class="o">.</span><span class="nf">frame</span><span class="p">(</span><span class="nv">maxWidth</span><span class="p">:</span> <span class="o">.</span><span class="n">infinity</span><span class="p">,</span> <span class="nv">alignment</span><span class="p">:</span> <span class="o">.</span><span class="n">leading</span><span class="p">)</span>
+                        <span class="o">.</span><span class="n">onAppear</span> <span class="p">{</span>
+                            <span class="nf">print</span><span class="p">(</span><span class="s">"left"</span><span class="p">)</span>
+                        <span class="p">}</span>
+                <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+                    <span class="kt">Rectangle</span><span class="p">()</span><span class="o">.</span><span class="nf">fill</span><span class="p">(</span><span class="o">.</span><span class="n">blue</span><span class="p">)</span><span class="o">.</span><span class="nf">frame</span><span class="p">(</span><span class="nv">width</span><span class="p">:</span> <span class="mi">50</span><span class="p">)</span>
+                        <span class="o">.</span><span class="nf">frame</span><span class="p">(</span><span class="nv">maxWidth</span><span class="p">:</span> <span class="o">.</span><span class="n">infinity</span><span class="p">,</span> <span class="nv">alignment</span><span class="p">:</span> <span class="o">.</span><span class="n">trailing</span><span class="p">)</span>
+                        <span class="o">.</span><span class="n">onAppear</span> <span class="p">{</span>
+                            <span class="nf">print</span><span class="p">(</span><span class="s">"right"</span><span class="p">)</span>
+                        <span class="p">}</span>
+                <span class="p">}</span>
+            <span class="p">}</span>
+            <span class="o">.</span><span class="n">onAppear</span> <span class="p">{</span>
+                <span class="nf">print</span><span class="p">(</span><span class="s">"group"</span><span class="p">)</span>
+                <span class="kt">Task</span> <span class="p">{</span>
+                    <span class="k">try</span><span class="p">?</span> <span class="n">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">seconds</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+                    <span class="n">isLeft</span><span class="o">.</span><span class="nf">toggle</span><span class="p">()</span>
+                <span class="p">}</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<video src="/images/swiftui-group-list-demo.mp4" controls="" preload="none" poster="/images/swiftui-group-list-demo-poster.png" width="400"></video>
+
+<p>The console:</p>
+
+<div class="language-plaintext highlighter-rouge"><pre class="highlight"><code>left
+group
+right
+group
+left
+group
+right
+... (repeats forever)
+</code></pre>
+</div>
+
+<h3 id="regular-modifiers-with-group">Regular modifiers with Group</h3>
+
+<p>As a check that <code class="language-plaintext highlighter-rouge">Group</code> still distributes its modifiers in the general case, I created a simple custom modifier that prints on <code class="language-plaintext highlighter-rouge">init</code> and applied it to the <code class="language-plaintext highlighter-rouge">Group</code>:</p>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kd">struct</span> <span class="kt">PrintModifier</span><span class="p">:</span> <span class="kt">ViewModifier</span> <span class="p">{</span>
+    <span class="nf">init</span><span class="p">()</span> <span class="p">{</span>
+        <span class="nf">print</span><span class="p">(</span><span class="s">"modifier init"</span><span class="p">)</span>
+    <span class="p">}</span>
+
+    <span class="kd">func</span> <span class="nf">body</span><span class="p">(</span><span class="nv">content</span><span class="p">:</span> <span class="kt">Content</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">some</span> <span class="kt">View</span> <span class="p">{</span>
+        <span class="n">content</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">struct</span> <span class="kt">ContentView</span><span class="p">:</span> <span class="kt">View</span> <span class="p">{</span>
+    <span class="kd">@State</span> <span class="k">var</span> <span class="nv">isLeft</span> <span class="o">=</span> <span class="kc">true</span>
+    <span class="k">var</span> <span class="nv">body</span><span class="p">:</span> <span class="n">some</span> <span class="kt">View</span> <span class="p">{</span>
+        <span class="kt">Group</span> <span class="p">{</span>
+            <span class="k">if</span> <span class="n">isLeft</span> <span class="p">{</span>
+                <span class="kt">Rectangle</span><span class="p">()</span><span class="o">.</span><span class="nf">fill</span><span class="p">(</span><span class="o">.</span><span class="n">red</span><span class="p">)</span><span class="o">.</span><span class="nf">frame</span><span class="p">(</span><span class="nv">width</span><span class="p">:</span> <span class="mi">50</span><span class="p">)</span>
+                    <span class="o">.</span><span class="nf">frame</span><span class="p">(</span><span class="nv">maxWidth</span><span class="p">:</span> <span class="o">.</span><span class="n">infinity</span><span class="p">,</span> <span class="nv">alignment</span><span class="p">:</span> <span class="o">.</span><span class="n">leading</span><span class="p">)</span>
+                    <span class="o">.</span><span class="n">onAppear</span> <span class="p">{</span>
+                        <span class="nf">print</span><span class="p">(</span><span class="s">"left"</span><span class="p">)</span>
+                    <span class="p">}</span>
+            <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+                <span class="kt">Rectangle</span><span class="p">()</span><span class="o">.</span><span class="nf">fill</span><span class="p">(</span><span class="o">.</span><span class="n">blue</span><span class="p">)</span><span class="o">.</span><span class="nf">frame</span><span class="p">(</span><span class="nv">width</span><span class="p">:</span> <span class="mi">50</span><span class="p">)</span>
+                    <span class="o">.</span><span class="nf">frame</span><span class="p">(</span><span class="nv">maxWidth</span><span class="p">:</span> <span class="o">.</span><span class="n">infinity</span><span class="p">,</span> <span class="nv">alignment</span><span class="p">:</span> <span class="o">.</span><span class="n">trailing</span><span class="p">)</span>
+                    <span class="o">.</span><span class="n">onAppear</span> <span class="p">{</span>
+                        <span class="nf">print</span><span class="p">(</span><span class="s">"right"</span><span class="p">)</span>
+                    <span class="p">}</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+        <span class="o">.</span><span class="nf">modifier</span><span class="p">(</span><span class="kt">PrintModifier</span><span class="p">())</span>
+        <span class="o">.</span><span class="n">onAppear</span> <span class="p">{</span>
+            <span class="nf">print</span><span class="p">(</span><span class="s">"group"</span><span class="p">)</span>
+            <span class="kt">Task</span> <span class="p">{</span>
+                <span class="k">try</span><span class="p">?</span> <span class="n">await</span> <span class="kt">Task</span><span class="o">.</span><span class="nf">sleep</span><span class="p">(</span><span class="nv">for</span><span class="p">:</span> <span class="o">.</span><span class="nf">seconds</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+                <span class="n">isLeft</span><span class="o">.</span><span class="nf">toggle</span><span class="p">()</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p>The console:</p>
+
+<div class="language-plaintext highlighter-rouge"><pre class="highlight"><code>modifier init
+group
+left
+modifier init
+right
+</code></pre>
+</div>
+
+<p>As we can see, <code class="language-plaintext highlighter-rouge">PrintModifier</code> is being applied to each subview independently as is documented. We’ve somewhat proven to ourselves that in the general case, <code class="language-plaintext highlighter-rouge">Group</code> still distributes modifiers.</p>
+
+<h2 id="when-is-group-useful">When is Group useful?</h2>
+
+<p>When is <code class="language-plaintext highlighter-rouge">Group</code> still the right choice?</p>
+
+<p>Honestly, not very often!</p>
+
+<h3 id="distributing-a-lot-of-modifiers-across-sibling-views">Distributing a lot of modifiers across sibling views</h3>
+
+<p>If you really really really need to apply one or more modifiers independently to a set of sibling views <strong>and</strong> you need the sibling views to stay legible to their current parent container, <code class="language-plaintext highlighter-rouge">Group</code> is the right choice.</p>
+
+<p>In the below toy example with Form:</p>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kt">Form</span> <span class="p">{</span>
+    <span class="kt">Text</span><span class="p">(</span><span class="s">"Title"</span><span class="p">)</span>
+    <span class="kt">Group</span> <span class="p">{</span>
+        <span class="kt">Text</span><span class="p">(</span><span class="s">"Subtitle"</span><span class="p">)</span>
+        <span class="kt">Text</span><span class="p">(</span><span class="s">"Description"</span><span class="p">)</span>
+    <span class="p">}</span>
+    <span class="o">.</span><span class="nf">foregroundStyle</span><span class="p">(</span><span class="o">.</span><span class="n">secondary</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p>I would prefer simply duplicating the modifier manually:</p>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kt">Form</span> <span class="p">{</span>
+    <span class="kt">Text</span><span class="p">(</span><span class="s">"Title"</span><span class="p">)</span>
+    <span class="kt">Text</span><span class="p">(</span><span class="s">"Subtitle"</span><span class="p">)</span>
+        <span class="o">.</span><span class="nf">foregroundStyle</span><span class="p">(</span><span class="o">.</span><span class="n">secondary</span><span class="p">)</span>
+    <span class="kt">Text</span><span class="p">(</span><span class="s">"Description"</span><span class="p">)</span>
+        <span class="o">.</span><span class="nf">foregroundStyle</span><span class="p">(</span><span class="o">.</span><span class="n">secondary</span><span class="p">)</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+<p>In my experience, the conditions that lead to <code class="language-plaintext highlighter-rouge">Group</code> being useful for this case are exceedingly rare. In a quick search of my current codebase, I have only a couple examples.</p>
+
+<p>This one just barely makes sense as it applies 4 modifiers to these 2 slightly different conditional subviews. Not quite large enough to justify separating out into named views; not quite small enough to duplicate the modifiers inline.</p>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="kt">Group</span> <span class="p">{</span>
+    <span class="k">switch</span> <span class="n">routeOption</span> <span class="p">{</span>
+    <span class="k">case</span> <span class="o">.</span><span class="n">departure</span><span class="p">,</span> <span class="o">.</span><span class="nv">departureOnly</span><span class="p">:</span>
+        <span class="kt">HStack</span><span class="p">(</span><span class="nv">spacing</span><span class="p">:</span> <span class="mi">3</span><span class="p">)</span> <span class="p">{</span>
+            <span class="kt">Image</span><span class="p">(</span><span class="nv">systemName</span><span class="p">:</span> <span class="s">"arrow.up.right"</span><span class="p">)</span><span class="o">.</span><span class="nf">imageScale</span><span class="p">(</span><span class="o">.</span><span class="n">small</span><span class="p">)</span><span class="o">.</span><span class="nf">bold</span><span class="p">()</span>
+            <span class="kt">Image</span><span class="p">(</span><span class="nv">systemName</span><span class="p">:</span> <span class="s">"train.side.middle.car"</span><span class="p">)</span>
+        <span class="p">}</span>
+        <span class="o">.</span><span class="nf">padding</span><span class="p">(</span><span class="o">.</span><span class="n">horizontal</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+    <span class="k">case</span> <span class="o">.</span><span class="n">arrival</span><span class="p">,</span> <span class="o">.</span><span class="nv">arrivalOnly</span><span class="p">:</span>
+        <span class="kt">HStack</span><span class="p">(</span><span class="nv">spacing</span><span class="p">:</span> <span class="mi">2</span><span class="p">)</span> <span class="p">{</span>
+            <span class="kt">Image</span><span class="p">(</span><span class="nv">systemName</span><span class="p">:</span> <span class="s">"train.side.middle.car"</span><span class="p">)</span>
+            <span class="kt">Image</span><span class="p">(</span><span class="nv">systemName</span><span class="p">:</span> <span class="s">"arrow.down.right"</span><span class="p">)</span><span class="o">.</span><span class="nf">imageScale</span><span class="p">(</span><span class="o">.</span><span class="n">small</span><span class="p">)</span><span class="o">.</span><span class="nf">bold</span><span class="p">()</span>
+        <span class="p">}</span>
+        <span class="o">.</span><span class="nf">padding</span><span class="p">(</span><span class="o">.</span><span class="n">horizontal</span><span class="p">,</span> <span class="mi">11</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+<span class="o">.</span><span class="nf">font</span><span class="p">(</span><span class="o">.</span><span class="n">caption</span><span class="p">)</span>
+<span class="o">.</span><span class="nf">foregroundStyle</span><span class="p">(</span><span class="o">.</span><span class="n">secondary</span><span class="p">)</span>
+<span class="o">.</span><span class="nf">padding</span><span class="p">(</span><span class="o">.</span><span class="n">vertical</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+<span class="o">.</span><span class="nf">background</span><span class="p">(</span><span class="kt">Material</span><span class="o">.</span><span class="n">ultraThick</span><span class="p">,</span> <span class="nv">in</span><span class="p">:</span> <span class="kt">RoundedRectangle</span><span class="p">(</span><span class="nv">cornerRadius</span><span class="p">:</span> <span class="mi">4</span><span class="p">))</span>
+</code></pre>
+</div>
+
+<h3 id="overcoming-the-10-subview-limit-no-longer-applies"><del>Overcoming the 10-subview limit</del> (no longer applies)</h3>
+
+<p>Before Swift 5.9’s variadic generics, ViewBuilder could only handle 10 non-enumerated subviews. This example is still in the <code class="language-plaintext highlighter-rouge">Group</code> docs but no longer applies:</p>
+
+<div class="language-swift highlighter-rouge"><pre class="highlight"><code><span class="c1">// No longer applies as of Swift 5.9</span>
+<span class="k">var</span> <span class="nv">body</span><span class="p">:</span> <span class="n">some</span> <span class="kt">View</span> <span class="p">{</span>
+    <span class="kt">VStack</span> <span class="p">{</span>
+        <span class="kt">Group</span> <span class="p">{</span>
+            <span class="kt">Text</span><span class="p">(</span><span class="s">"1"</span><span class="p">)</span>
+            <span class="kt">Text</span><span class="p">(</span><span class="s">"2"</span><span class="p">)</span>
+            <span class="kt">Text</span><span class="p">(</span><span class="s">"3"</span><span class="p">)</span>
+            <span class="kt">Text</span><span class="p">(</span><span class="s">"4"</span><span class="p">)</span>
+            <span class="kt">Text</span><span class="p">(</span><span class="s">"5"</span><span class="p">)</span>
+            <span class="kt">Text</span><span class="p">(</span><span class="s">"6"</span><span class="p">)</span>
+            <span class="kt">Text</span><span class="p">(</span><span class="s">"7"</span><span class="p">)</span>
+            <span class="kt">Text</span><span class="p">(</span><span class="s">"8"</span><span class="p">)</span>
+            <span class="kt">Text</span><span class="p">(</span><span class="s">"9"</span><span class="p">)</span>
+            <span class="kt">Text</span><span class="p">(</span><span class="s">"10"</span><span class="p">)</span>
+        <span class="p">}</span>
+        <span class="kt">Text</span><span class="p">(</span><span class="s">"11"</span><span class="p">)</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre>
+</div>
+
+  </article>
+
+</div>
+
+      </div>
+    </div>
+
+    <footer class="site-footer">
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">twocentstudios</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col  footer-col-1">
+        <ul class="contact-list">
+          <li><a href="mailto:chris@twocentstudios.com">chris@twocentstudios.com</a></li>
+          
+          <li>
+            <a href="https://github.com/twocentstudios">
+              <span class="icon  icon--github">
+                <svg viewBox="0 0 16 16">
+                  <path fill="#828282" d="M7.999,0.431c-4.285,0-7.76,3.474-7.76,7.761 c0,3.428,2.223,6.337,5.307,7.363c0.388,0.071,0.53-0.168,0.53-0.374c0-0.184-0.007-0.672-0.01-1.32 c-2.159,0.469-2.614-1.04-2.614-1.04c-0.353-0.896-0.862-1.135-0.862-1.135c-0.705-0.481,0.053-0.472,0.053-0.472 c0.779,0.055,1.189,0.8,1.189,0.8c0.692,1.186,1.816,0.843,2.258,0.645c0.071-0.502,0.271-0.843,0.493-1.037 C4.86,11.425,3.049,10.76,3.049,7.786c0-0.847,0.302-1.54,0.799-2.082C3.768,5.507,3.501,4.718,3.924,3.65 c0,0,0.652-0.209,2.134,0.796C6.677,4.273,7.34,4.187,8,4.184c0.659,0.003,1.323,0.089,1.943,0.261 c1.482-1.004,2.132-0.796,2.132-0.796c0.423,1.068,0.157,1.857,0.077,2.054c0.497,0.542,0.798,1.235,0.798,2.082 c0,2.981-1.814,3.637-3.543,3.829c0.279,0.24,0.527,0.713,0.527,1.437c0,1.037-0.01,1.874-0.01,2.129 c0,0.208,0.14,0.449,0.534,0.373c3.081-1.028,5.302-3.935,5.302-7.362C15.76,3.906,12.285,0.431,7.999,0.431z"/>
+                </svg>
+              </span>
+
+              <span class="username">twocentstudios</span>
+            </a>
+          </li>
+          
+
+          <li>
+            <a href="https://hackyderm.io/@twocentstudios">
+              <span class="icon">
+                <svg viewBox="0 0 24 24">
+                  <path fill="#828282" d="M21.327 8.566c0-4.339-2.843-5.61-2.843-5.61-1.433-.658-3.894-.935-6.451-.956h-.063c-2.557.021-5.016.298-6.45.956 0 0-2.843 1.272-2.843 5.61 0 .993-.019 2.181.012 3.441.103 4.243.778 8.425 4.701 9.463 1.809.479 3.362.579 4.612.51 2.268-.126 3.541-.809 3.541-.809l-.075-1.646s-1.621.511-3.441.449c-1.804-.062-3.707-.194-3.999-2.409a4.523 4.523 0 0 1-.04-.621s1.77.433 4.014.536c1.372.063 2.658-.08 3.965-.236 2.506-.299 4.688-1.843 4.962-3.254.434-2.223.398-5.424.398-5.424zm-3.353 5.59h-2.081V9.057c0-1.075-.452-1.62-1.357-1.62-1 0-1.501.647-1.501 1.927v2.791h-2.069V9.364c0-1.28-.501-1.927-1.502-1.927-.905 0-1.357.546-1.357 1.62v5.099H6.026V8.903c0-1.074.273-1.927.823-2.558.566-.631 1.307-.955 2.228-.955 1.065 0 1.872.409 2.405 1.228l.518.869.519-.869c.533-.819 1.34-1.228 2.405-1.228.92 0 1.662.324 2.228.955.549.631.822 1.484.822 2.558v5.253z"/>
+                </svg>
+              </span>
+
+              <span class="username">twocentstudios</span>
+            </a>
+          </li>
+
+          
+          <li>
+            <a href="https://twitter.com/twocentstudios">
+              <span class="icon  icon--twitter">
+                <svg viewBox="0 0 16 16">
+                  <path fill="#828282" d="M15.969,3.058c-0.586,0.26-1.217,0.436-1.878,0.515c0.675-0.405,1.194-1.045,1.438-1.809
+                  c-0.632,0.375-1.332,0.647-2.076,0.793c-0.596-0.636-1.446-1.033-2.387-1.033c-1.806,0-3.27,1.464-3.27,3.27 c0,0.256,0.029,0.506,0.085,0.745C5.163,5.404,2.753,4.102,1.14,2.124C0.859,2.607,0.698,3.168,0.698,3.767 c0,1.134,0.577,2.135,1.455,2.722C1.616,6.472,1.112,6.325,0.671,6.08c0,0.014,0,0.027,0,0.041c0,1.584,1.127,2.906,2.623,3.206 C3.02,9.402,2.731,9.442,2.433,9.442c-0.211,0-0.416-0.021-0.615-0.059c0.416,1.299,1.624,2.245,3.055,2.271 c-1.119,0.877-2.529,1.4-4.061,1.4c-0.264,0-0.524-0.015-0.78-0.046c1.447,0.928,3.166,1.469,5.013,1.469 c6.015,0,9.304-4.983,9.304-9.304c0-0.142-0.003-0.283-0.009-0.423C14.976,4.29,15.531,3.714,15.969,3.058z"/>
+                </svg>
+              </span>
+
+              <span class="username">twocentstudios</span>
+            </a>
+          </li>
+          
+        </ul>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+
+
+  </body>
+
+</html>
