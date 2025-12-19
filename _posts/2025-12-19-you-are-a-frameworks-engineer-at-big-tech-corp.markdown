@@ -40,7 +40,7 @@ You're told the underlying goal is to abstract away a lot of the complexity of F
 
 You get to work and quickly realize that this isn't going to be as easy as you thought!
 
-You're not just calling through to the existing Framework CoreUI `PaintColor` function. FrameworkUI is in BTCorp's oldest programming language. And you learn there's a new system in place in Framework UI that defers draw calls. There's a new concurrency system being tested but it's not ready yet.
+You're not just calling through to the existing Framework CoreUI `PaintColor` function. Framework UI is in BTCorp's oldest programming language. And you learn there's a new system in place in Framework UI that defers draw calls. There's a new concurrency system being tested but it's not ready yet.
 
 You dig some more and find that going down to the byte level there's some very complicated mapping you need to do to convert colors. It's no problem because you're well versed in algorithms and data structures (you passed the coding test during your interview process at BTCorp after all).
 
@@ -69,7 +69,7 @@ You start working on your 30 minute presentation for WWDM. You're told to emphas
 
 You put together the simplest example you can in your first code sample on slide 24: `PaintColor(Path.square, Color.default)`.
 
-You see nothing on the screen. Hmm... what's going on?, you think.
+You see nothing on the screen. Hmm... what's going on? you think.
 
 You start debugging. `Color.default` is an alias for `Color.blue`, the default system color. `Color.blue` doesn't show up either.
 
@@ -107,7 +107,7 @@ You ask the documentation team if you can still add a "known issue" to the Frame
 
 You record your WWDM presentation.
 
-Your presentation is lauded as one of the best at WWDM. All third-party developers are really excited about Framework UI. From what every can see, it's so much easier to paint colors on paths now. All the examples from the presentations, including yours, look like such an advancement over Framework CoreUI.
+Your presentation is lauded as one of the best at WWDM. All third-party developers are really excited about Framework UI. From what everyone can see, it's so much easier to paint colors on paths now. All the examples from the presentations, including yours, look like such an advancement over Framework CoreUI.
 
 You attend a meet-the-framework-engineers session at WWDM, where third-party developers line up for hours to ask you and your colleagues questions. You're terrified someone's going to call out your bug. Luckily, Framework UI has only been available for a few hours, so only one developer asks you about the bug. You tell them to try restarting their computer and to get back in line. By the time they get to the front, you've gone home.
 
@@ -115,7 +115,7 @@ Your next few months in the beta period after WWDM are hectic. You've been pulle
 
 You watch as Framework UI is released on time anyway. Long time third-party developers are angry they've invested time in learning it and trying to build apps with it before the beta period ends. But management still considers it a success, because the narrative among the tech press is positive and new third-party developers are onboarding at record pace. Veteran third-party developers are simply using Framework CoreUI as they always have, just like the developers inside BTCorp.
 
-Your performance review season begins, and at the meeting your manager doesn't mention anything about the `Color.blue` bug you spent months agonizing over being unable to fix. Your manager does, however, mention a peer review from the design team that states you were "hard to work with". Regardless, you weren't going to get a promotion anyway, but your manager now has a something documented to justify it.
+Your performance review season begins, and at the meeting your manager doesn't mention anything about the `Color.blue` bug you spent months agonizing over being unable to fix. Your manager does, however, mention a peer review from the design team that states you were "hard to work with". Regardless, you weren't going to get a promotion anyway, but your manager now has something documented to justify it.
 
 Your colleagues called it: it's been a few months since launch and no developer inside BTCorp has attempted to use Framework UI for production work. Most haven't even read the Getting Started page that the documentation team worked so hard on.
 
