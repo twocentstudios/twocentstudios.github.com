@@ -1,9 +1,9 @@
 ---
-title: Shinkanzen Privacy Policy
+title: Shinkansen Live Privacy Policy
 layout: standalone
 ---
 
-Shinkanzen is an iOS app created by twocentstudios.
+Shinkansen Live is an iOS app created by twocentstudios.
 
 This policy describes the data that we collect and store about you (basically none).
 
@@ -19,7 +19,7 @@ Please contact support@twocentstudios.com for any additional information.
 
 ---
 
-新幹善はtwocentstudiosによって作成されたiOSアプリです。
+新幹線ライブはtwocentstudiosによって作成されたiOSアプリです。
 
 このポリシーでは、当社が収集し、保存するお客様に関するデータ（基本的にありません）について説明します。
 
