@@ -89,6 +89,10 @@ ffmpeg -i input.mov -vf scale=800:600 output.mov
 
 # Convert to web-friendly format
 ffmpeg -i input.mov -c:v libx264 -crf 23 -c:a aac output.mp4
+
+# Create GIF from video with high quality color palette
+# Uses two-pass approach: generates custom palette, then uses it with dithering
+ffmpeg -y -ss 00:01 -t 00:09 -i input.mov -vf "fps=15,scale=443:-1:flags=lanczos,split[s0][s1];[s0]palettegen=max_colors=256:stats_mode=full[p];[s1][p]paletteuse=dither=bayer:bayer_scale=5" -loop 0 output.gif
 ```
 
 ### Optimization Commands
