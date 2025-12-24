@@ -8,7 +8,7 @@ tags: apple ios app shinkansenlive
 
 Today I'm releasing my latest iOS app: Shinkansen Live or 新幹線ライブ in Japanese.
 
-[Shinkansen Live on the App Store](TODO: app store link)
+[Shinkansen Live on the App Store](https://apps.apple.com/app/id6756808516)
 
 ![TODO app icon]()
 
@@ -22,14 +22,14 @@ Here's a quick screen capture of the main flow:
 
 ## Motivation
 
-I took a quick Shinkansen trip from Omiya (north Tokyo) to Karuizawa (Nagano) last week to do some co-working with my friends Jens and David. I had pre-purchased a reserved seat with the [Eki-net](), JR-East's Shinkansen app (on iOS, it's a web app wrapper). Similar to when I have a physical ticket (but somehow worse?) I found myself opening the app repeatedly to check my ticket's listed attributes for:
+I took a quick Shinkansen trip from Omiya (north Tokyo) to Karuizawa (Nagano) last week to do some co-working with my friends Jens and David. I had pre-purchased a reserved seat with the [Eki-net](https://www.eki-net.com/en/jreast-train-reservation/Top/Index), JR-East's Shinkansen app (on iOS, it's a web app wrapper). Similar to when I have a physical ticket (but somehow worse?) I found myself opening the app repeatedly to check my ticket's listed attributes for:
 
 - departure time: in the 30 minutes or so lead up, before I'd entered the gates.
 - train number: to cross reference and check the platform I should leave from.
 - car number: when it was time to ascend to the platform and look for where on the platform I should line up.
 - seat number: when the train pulled up and I was boarding.
 
-Both of my train apps [Eki Bright](TODO blog post) and [Eki Live](TODO blog post) have Live Activities support that I use frequently. I only ride the Shinkansen a few times a year, but while riding up to Karuizawa that day, I wondered, **couldn't I just OCR the Shinkansen ticket info from screenshot and stuff it into a Live Activity?**
+Both of my train apps [Eki Bright](/2024/07/27/eki-bright-tokyo-area-train-timetables/) and [Eki Live](/2025/06/03/eki-live-announcement/) have Live Activities support that I use frequently. I only ride the Shinkansen a few times a year, but while riding up to Karuizawa that day, I wondered, **couldn't I just OCR the Shinkansen ticket info from screenshot and stuff it into a Live Activity?**
 
 And so as soon as I arrived at Sawamura Roastery in Karuizawa, I got to work on prototyping a new app. My goal was to have a prototype by the ride home. With some extra polish it ended up taking a few more days of work.
 
@@ -79,7 +79,7 @@ Due to a technical limitation with Live Activities, I use Location Services to m
 
 ### Arrival alarm
 
-I'm a chronic sufferer of a disease called Scope Creep (this is a joke), so I couldn't help but add an optional arrival alarm feature. This feature uses the new iOS 26 [AlarmKit framework](TODO: alarm kit link).
+I'm a chronic sufferer of a disease called Scope Creep (this is a joke), so I couldn't help but add an optional arrival alarm feature. This feature uses the new iOS 26 [AlarmKit framework](https://developer.apple.com/documentation/AlarmKit).
 
 ![alarm setting in trip screen, full screen alarm screen]()
 
