@@ -2,7 +2,7 @@
 layout: post
 title: "Shinkansen Live: Scan Your Ticket, Get a Live Activity"
 date: 2025-12-24 11:53:39
-image:
+image: /images/shinkansen-v1-trip-screen.jpg
 tags: apple ios app shinkansenlive
 ---
 
@@ -10,15 +10,17 @@ Today I'm releasing my latest iOS app: Shinkansen Live or 新幹線ライブ in 
 
 [Shinkansen Live on the App Store](https://apps.apple.com/app/id6756808516)
 
-![TODO app icon]()
+{% caption_img /images/shinkansen-v1-app-icon.jpg h300 Shinkansen Live app icon %}
 
 The concept is simple: you scan your Shinkansen ticket or receipt and you can see the details of your trip in a Live Activity on your lock screen and Dynamic Island.
 
-![Scan flow in 3 panels: scanning, ticket, lock screen]()
+{% caption_img /images/shinkansen-v1-scan-flow-3panel.jpg h400 Scan flow in 3 panels: scanning, ticket, lock screen %}
 
 Here's a quick screen capture of the main flow:
 
-![TODO longer, uncut app preview video]()
+<video poster="/images/shinkansen-v1-app-preview-poster.png" controls style="max-height: 400px;">
+  <source src="/images/shinkansen-v1-app-preview.mp4" type="video/mp4">
+</video>
 
 ## Motivation
 
@@ -33,7 +35,7 @@ Both of my train apps [Eki Bright](/2024/07/27/eki-bright-tokyo-area-train-timet
 
 And so as soon as I arrived at Sawamura Roastery in Karuizawa, I got to work on prototyping a new app. My goal was to have a prototype by the ride home. With some extra polish it ended up taking a few more days of work.
 
-![TODO: photo, fireplace at sawamura]()
+{% caption_img /images/shinkansen-v1-sawamura-fireplace.jpg h400 Co-working vibes at Sawamura Roastery in Karuizawa %}
 
 ## Features
 
@@ -41,7 +43,7 @@ The structure of the app is essentially a landing screen, a processing screen, a
 
 ### Supported input formats
 
-![landing screen]()
+{% caption_img /images/shinkansen-v1-landing-screen.jpg h400 Landing screen showing input options %}
 
 My initial scope was just handling screenshots from Eki-net (JR-East's app) and SmartEX (JR-Central's app), and in retrospect this probably would have better line to draw in the sand for version 1. However, I added support for scanning physical tickets too since the app seemed like it would be *too* specialized without physical tickets, probably the majority use-case.
 
@@ -49,13 +51,13 @@ And so, you can scan your physical ticket with the camera, choose a screenshot f
 
 ### OCR and parsing
 
-![scanning]()
+{% caption_img /images/shinkansen-v1-scanning.jpg h400 Scanning a ticket with OCR in progress %}
 
 As of version 1.0, the app uses on device VisionKit to recognize text in the image and custom algorithm to do error recovery and parse out the relevant attributes from the ticket. I'll discuss the development aspects of this decision in a future post, but for now, I'll say that the merits of using OCR over multi-modal LLMs are that OCR is very fast, maintains privacy, and is accurate enough for a V1.
 
 ### Trip in-progress
 
-![trip screen]()
+{% caption_img /images/shinkansen-v1-trip-screen.jpg h400 Trip in-progress screen showing ticket details %}
 
 Once the ticket is scanned and parsed, you land on the trip screen for the remainder of your journey.
 
@@ -63,15 +65,17 @@ I recreated a facsimile of the legendary Shinkansen ticket. While doing research
 
 For the case of physical tickets, parsing is imperfect, so I wanted to ensure users could recover from minor errors like a missing time or train number. Therefore, all fields are user editable by tapping.
 
-![editing screen]()
+{% caption_img /images/shinkansen-v1-editing-screen.jpg h400 Editing screen with editable ticket fields %}
 
 I also include the input image that a user can reference in an expanded view. This makes it easier to double check values and fix mistakes.
 
-![video: expanding the photo image]()
+<video poster="/images/shinkansen-v1-expand-photo-poster.png" controls style="max-height: 400px;">
+  <source src="/images/shinkansen-v1-expand-photo.mp4" type="video/mp4">
+</video>
 
 ### Live Activity
 
-![live activity in dynamic island compact, expanded, minimal, and lock screen]()
+{% caption_img /images/shinkansen-v1-live-activity-3panel.jpg h400 Live Activity in Dynamic Island compact, expanded, and lock screen views %}
 
 Finally, the whole point of all this is to have a functional Live Activity. The Live Activity has a *before* and *during* layout. Before departure we show the departure time, train number, car number, and seat number (for reserved seats). During the trip, we show the arrival station and time.
 
@@ -81,11 +85,15 @@ Due to a technical limitation with Live Activities, I use Location Services to m
 
 I'm a chronic sufferer of a disease called Scope Creep (this is a joke), so I couldn't help but add an optional arrival alarm feature. This feature uses the new iOS 26 [AlarmKit framework](https://developer.apple.com/documentation/AlarmKit).
 
-![alarm setting in trip screen, full screen alarm screen]()
+{% caption_img /images/shinkansen-v1-alarm-2panel.jpg h400 Alarm setting in trip screen and full screen alarm notification %}
 
 ### Animations and transitions
 
 I spent a unreasonable amount of time working on the animations and transitions for this app. Since there's comparatively not a lot of screens or unique transitions to handle, it felt like a good opportunity to push the limits and make the upload experience more delightful. After all, there's not a *ton* of benefit to cost when you consider needing to download an app, and then screenshot or photo your ticket in order to get that slight benefit of not needing to unlock your phone or take your ticket out of your pocket. Hopefully some fun animations add to the motivations to get over that mental hump.
+
+{% caption_img /images/shinkansen-v1-scanning-transitions.gif h400 Scanning transitions and animations %}
+
+{% caption_img /images/shinkansen-v1-image-popup.gif h400 Image popup transition %}
 
 ## Outlook
 
