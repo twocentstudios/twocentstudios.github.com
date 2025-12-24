@@ -3,7 +3,7 @@ layout: post
 title: "Shinkansen Live: Scan Your Ticket, Get a Live Activity"
 date: 2025-12-24 11:53:39
 image: /images/shinkansen-v1-trip-screen.jpg
-tags: apple ios app shinkansenlive
+tags: ios app shinkansenlive
 ---
 
 Today I'm releasing my latest iOS app: Shinkansen Live or 新幹線ライブ in Japanese.
