@@ -18,7 +18,7 @@ In this post, I'll discuss a few of the interesting development challenges I fac
 
 I created an Xcode project myself with Xcode 26.1 (later switching to Xcode 26.2). I added the [TCA](TODO swift-composable-architecture) package.
 
-Then, I mostly set off to work prompting with Claude Code using Opus 4.5. I had it first lay out the SwiftUI View and TCA Feature without any logic. Then we brought up the rest of the infrastructure around getting the input image, doing OCR, parsing the output, and displaying the results. I'll go through more of the history later on in the post.
+Then, I mostly set off to work using Claude Code with Opus 4.5. I started by having it lay out the SwiftUI View and TCA Feature without any logic. Then I built out the rest of the infrastructure around getting the input image, doing OCR, parsing the output, and displaying the results. I'll go through more of the history later on in the post.
 
 ## OCR and parsing the ticket image
 
@@ -41,7 +41,7 @@ OCR via [VisionKit](TODO: link to framework website) alongside manual parsing ha
 - No network usage
 - Relatively mature: less risk of accuracy churn
 
-In theory, multimodal LLMs can handle OCR and understanding more variations of tickets layouts and bad lighting. In fact, while we were writing the parser, Opus 4.5 was reading the test ticket images in order to create the ground truth test expectation data.
+In theory, multimodal LLMs can handle OCR and understanding more variations of tickets layouts and bad lighting. In fact, while I was writing the parser, I used Opus 4.5 to read the test ticket images in order to create the ground truth test expectation data.
 
 My issue with prototyping with LLMs further was that they had essentially the opposite pros and cons as the VisionKit system:
 
@@ -349,7 +349,7 @@ If the system kills the app in the middle of a trip, the Live Activity in theory
 - The Live Activity continues to run.
 - The system cold launches the app in the background.
 
-At this point, we could decide to query the Live Activities framework to see if there's a Live Activity running and if so, restore the ticket model layer and UI. However, I prefer not to treat the Live Activity as the source of truth for the model layer.
+At this point, I could decide to query the Live Activities framework to see if there's a Live Activity running and if so, restore the ticket model layer and UI. However, I prefer not to treat the Live Activity as the source of truth for the model layer.
 
 I added support with the [Sharing](TODO swift-sharing) library to persist the ticket model automatically on changes. On the above flow, I use the persisted ticket model to restore the UI and Live Activity and AlarmKit state, ensuring the ticket data is still valid.
 
