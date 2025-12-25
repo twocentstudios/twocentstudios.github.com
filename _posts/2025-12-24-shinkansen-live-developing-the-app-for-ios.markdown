@@ -12,7 +12,14 @@ In this post, I'll discuss a few of the interesting development challenges I fac
 
 ## Contents
 
-* TODO
+* [Overall development strategy](#overall-development-strategy)
+* [OCR and parsing the ticket image](#ocr-and-parsing-the-ticket-image)
+* [Live Activities](#live-activities)
+* [Animations](#animations)
+* [AlarmKit](#alarmkit)
+* [Localization](#localization)
+* [Dynamic Type](#dynamic-type)
+* [VisionKit Camera](#visionkit-camera)
 
 ## Overall development strategy
 
