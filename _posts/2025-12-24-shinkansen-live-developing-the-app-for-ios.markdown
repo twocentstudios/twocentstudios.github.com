@@ -8,6 +8,8 @@ tags: apple ios app shinkansenlive
 
 In my [last post](/2025/12/24/shinkansen-live-scan-your-ticket-get-a-live-activity/) I introduced the motivation and feature set of [Shinkansen Live](https://apps.apple.com/app/id6756808516), my latest iOS app.
 
+{% caption_img /images/shinkansen-v1-app-icon.jpg h300 Shinkansen Live app icon %}
+
 In this post, I'll discuss a few of the interesting development challenges I faced during its week of development from concept to App Store release.
 
 ## Contents
