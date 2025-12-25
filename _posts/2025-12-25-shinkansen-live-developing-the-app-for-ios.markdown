@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "Shinkansen Live - Developing the App for iOS"
-date: 2025-12-24 13:41:42
+date: 2025-12-25 13:41:42
 image:
 tags: apple ios app shinkansenlive
 ---
