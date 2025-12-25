@@ -15,6 +15,10 @@ A zero-touch iOS app for navigating Tokyo's railways via Live Activities.
 
 An iOS app for viewing Tokyo-area station and train timetables.
 
+#### Shinkansen Live - [appstore](https://apps.apple.com/app/id6756808516) | [post](/2025/12/24/introducing-shinkansen-live-v1/) | [tag](https://twocentstudios.com/blog/tags/shinkansenlive)
+
+An iOS app that displays your Shinkansen ticket as a Live Activity.
+
 #### 8-bit Nails - [appstore](https://apps.apple.com/us/app/8-bit-nails/id6737764793) | [post](https://twocentstudios.com/2025/02/17/8-bit-nails-pixel-art-nail-diary/) | [tag](https://twocentstudios.com/blog/tags/8bitnails)
 
 An iOS app diary for pixel art nails.
