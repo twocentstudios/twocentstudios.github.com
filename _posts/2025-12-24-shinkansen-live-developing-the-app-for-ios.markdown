@@ -90,7 +90,7 @@ I let Claude run in its own loop for a while to see what it could and couldn't i
 
 Claude found several underlying limitations with the VisionKit setup that were unsolvable at the parser level.
 
-For example, concatenating all the text recognition objects into `[String]` was done somewhat naively by comparing y-coordinates. If a y-coordinates of objects were within a certain range, they were assumed to be on the same line. When the ticket was tilted, this strategy was interleaving text.
+For example, concatenating all the text recognition objects into `[String]` was done somewhat naively by comparing y-coordinates. If the y-coordinates of objects were within a certain range, they were assumed to be on the same line. When the ticket was tilted, this strategy was interleaving text.
 
 Additionally, some numbers and letters were just flat out being interpreted incorrectly. A `37` was read as a `30`. `CAR` was read as `CDR`.
 
@@ -164,6 +164,7 @@ struct BilingualOCRResult: Sendable, Equatable, Codable {
     let jp: [TextObservation]
     let en: [TextObservation]
 }
+```
 
 I was also previously discarding the confidence score (`0.0...1.0`) that VisionKit provides with each observation. This score was actually different in the parallel observations for English and Japanese in some cases, especially number recognition. I added the confidence score to the output so the parser could use it.
 
@@ -268,7 +269,7 @@ ProgressView(timerInterval: attributes.departureTime ... attributes.arrivalTime,
 
 As noted above, any `Text` using: `Text(Date(), style: .relative)` will expand to fill its full width.
 
-I'm frustrating just thinking about this again. I basically just banged my head against the wall until I landed on a design I felt embarrassed but comfortable shipping.
+It's frustrating just thinking about this again. I basically just banged my head against the wall until I landed on a design I felt embarrassed but comfortable shipping.
 
 #### Clamped width custom Layout
 
