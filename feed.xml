@@ -5,9 +5,121 @@
     <description>A coding blog covering iOS, Swift, and other programming topics.</description>
     <link>https://twocentstudios.com/</link>
     <atom:link href="https://twocentstudios.com/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Sat, 20 Dec 2025 01:37:53 -0600</pubDate>
-    <lastBuildDate>Sat, 20 Dec 2025 01:37:53 -0600</lastBuildDate>
+    <pubDate>Wed, 24 Dec 2025 23:04:08 -0600</pubDate>
+    <lastBuildDate>Wed, 24 Dec 2025 23:04:08 -0600</lastBuildDate>
     <generator>Jekyll v3.9.3</generator>
+    
+      <item>
+        <title>Shinkansen Live: Scan Your Ticket, Get a Live Activity</title>
+        <description>&lt;p&gt;Today I’m releasing my latest iOS app: Shinkansen Live or 新幹線ライブ in Japanese.&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://apps.apple.com/app/id6756808516&quot;&gt;Shinkansen Live on the App Store&lt;/a&gt;&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/shinkansen-v1-app-icon.jpg&quot; width=&quot;&quot; height=&quot;300&quot; alt=&quot;Shinkansen Live app icon&quot; title=&quot;Shinkansen Live app icon&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Shinkansen Live app icon&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;The concept is simple: you scan your Shinkansen ticket or receipt and you can see the details of your trip in a Live Activity on your lock screen and Dynamic Island.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/shinkansen-v1-scan-flow-3panel.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Scan flow in 3 panels: scanning, ticket, lock screen&quot; title=&quot;Scan flow in 3 panels: scanning, ticket, lock screen&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Scan flow in 3 panels: scanning, ticket, lock screen&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Here’s a quick screen capture of the main flow:&lt;/p&gt;
+
+&lt;video poster=&quot;/images/shinkansen-v1-app-preview-poster.png&quot; controls=&quot;&quot; style=&quot;max-height: 400px;&quot;&gt;
+  &lt;source src=&quot;/images/shinkansen-v1-app-preview.mp4&quot; type=&quot;video/mp4&quot; /&gt;
+&lt;/video&gt;
+
+&lt;h2 id=&quot;motivation&quot;&gt;Motivation&lt;/h2&gt;
+
+&lt;p&gt;I took a quick Shinkansen trip from Omiya (north Tokyo) to Karuizawa (Nagano) last week to do some co-working with my friends Jens and David. I had pre-purchased a reserved seat with the &lt;a href=&quot;https://www.eki-net.com/en/jreast-train-reservation/Top/Index&quot;&gt;Eki-net&lt;/a&gt;, JR-East’s Shinkansen app (on iOS, it’s a web app wrapper). Similar to when I have a physical ticket (but somehow worse?) I found myself opening the app repeatedly to check my ticket’s listed attributes for:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;departure time: in the 30 minutes or so lead up, before I’d entered the gates.&lt;/li&gt;
+  &lt;li&gt;train number: to cross reference and check the platform I should leave from.&lt;/li&gt;
+  &lt;li&gt;car number: when it was time to ascend to the platform and look for where on the platform I should line up.&lt;/li&gt;
+  &lt;li&gt;seat number: when the train pulled up and I was boarding.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Both of my train apps &lt;a href=&quot;/2024/07/27/eki-bright-tokyo-area-train-timetables/&quot;&gt;Eki Bright&lt;/a&gt; and &lt;a href=&quot;/2025/06/03/eki-live-announcement/&quot;&gt;Eki Live&lt;/a&gt; have Live Activities support that I use frequently. I only ride the Shinkansen a few times a year, but while riding up to Karuizawa that day, I wondered, &lt;strong&gt;couldn’t I just OCR the Shinkansen ticket info from screenshot and stuff it into a Live Activity?&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;And so as soon as I arrived at Sawamura Roastery in Karuizawa, I got to work on prototyping a new app. My goal was to have a prototype by the ride home. With some extra polish it ended up taking a few more days of work.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/shinkansen-v1-sawamura-fireplace.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Co-working vibes at Sawamura Roastery in Karuizawa&quot; title=&quot;Co-working vibes at Sawamura Roastery in Karuizawa&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Co-working vibes at Sawamura Roastery in Karuizawa&lt;/div&gt;&lt;/div&gt;
+
+&lt;h2 id=&quot;features&quot;&gt;Features&lt;/h2&gt;
+
+&lt;p&gt;The structure of the app is essentially a landing screen, a processing screen, and a trip-in-progress screen. The Live Activity requires its own multiple states and layouts of UI. For polish, I needed an error screen, an about screen, and a screen explaining what ticket formats are accepted.&lt;/p&gt;
+
+&lt;h3 id=&quot;supported-input-formats&quot;&gt;Supported input formats&lt;/h3&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/shinkansen-v1-landing-screen.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Landing screen showing input options&quot; title=&quot;Landing screen showing input options&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Landing screen showing input options&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;My initial scope was just handling screenshots from Eki-net (JR-East’s app) and SmartEX (JR-Central’s app), and in retrospect this probably would have better line to draw in the sand for version 1. However, I added support for scanning physical tickets too since the app seemed like it would be &lt;em&gt;too&lt;/em&gt; specialized without physical tickets, probably the majority use-case.&lt;/p&gt;
+
+&lt;p&gt;And so, you can scan your physical ticket with the camera, choose a screenshot from the Photo Library, paste an image from the system pasteboard, or create an empty ticket if you want.&lt;/p&gt;
+
+&lt;h3 id=&quot;ocr-and-parsing&quot;&gt;OCR and parsing&lt;/h3&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/shinkansen-v1-scanning.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Scanning a ticket with OCR in progress&quot; title=&quot;Scanning a ticket with OCR in progress&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Scanning a ticket with OCR in progress&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;As of version 1.0, the app uses on device VisionKit to recognize text in the image and custom algorithm to do error recovery and parse out the relevant attributes from the ticket. I’ll discuss the development aspects of this decision in a future post, but for now, I’ll say that the merits of using OCR over multi-modal LLMs are that OCR is very fast, maintains privacy, and is accurate enough for a V1.&lt;/p&gt;
+
+&lt;h3 id=&quot;trip-in-progress&quot;&gt;Trip in-progress&lt;/h3&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/shinkansen-v1-trip-screen.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Trip in-progress screen showing ticket details&quot; title=&quot;Trip in-progress screen showing ticket details&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Trip in-progress screen showing ticket details&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Once the ticket is scanned and parsed, you land on the trip screen for the remainder of your journey.&lt;/p&gt;
+
+&lt;p&gt;I recreated a facsimile of the legendary Shinkansen ticket. While doing research into ticket formats, it was surprising to see how &lt;em&gt;different&lt;/em&gt; the information layouts are depending on where and by what means they are purchased, but the aesthetic is generally the same.&lt;/p&gt;
+
+&lt;p&gt;For the case of physical tickets, parsing is imperfect, so I wanted to ensure users could recover from minor errors like a missing time or train number. Therefore, all fields are user editable by tapping.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/shinkansen-v1-editing-screen.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Editing screen with editable ticket fields&quot; title=&quot;Editing screen with editable ticket fields&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Editing screen with editable ticket fields&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;I also include the input image that a user can reference in an expanded view. This makes it easier to double check values and fix mistakes.&lt;/p&gt;
+
+&lt;video poster=&quot;/images/shinkansen-v1-expand-photo-poster.png&quot; controls=&quot;&quot; style=&quot;max-height: 400px;&quot;&gt;
+  &lt;source src=&quot;/images/shinkansen-v1-expand-photo.mp4&quot; type=&quot;video/mp4&quot; /&gt;
+&lt;/video&gt;
+
+&lt;h3 id=&quot;live-activity&quot;&gt;Live Activity&lt;/h3&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/shinkansen-v1-live-activity-3panel.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Live Activity in Dynamic Island compact, expanded, and lock screen views&quot; title=&quot;Live Activity in Dynamic Island compact, expanded, and lock screen views&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Live Activity in Dynamic Island compact, expanded, and lock screen views&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Finally, the whole point of all this is to have a functional Live Activity. The Live Activity has a &lt;em&gt;before&lt;/em&gt; and &lt;em&gt;during&lt;/em&gt; layout. Before departure we show the departure time, train number, car number, and seat number (for reserved seats). During the trip, we show the arrival station and time.&lt;/p&gt;
+
+&lt;p&gt;Due to a technical limitation with Live Activities, I use Location Services to monitor for significant location changes in the background, and use that to wake up the app and update the Live Activity when the departure time has passed. On the technical side, this means I don’t need to run a push notification server or do any other networking from the app.&lt;/p&gt;
+
+&lt;h3 id=&quot;arrival-alarm&quot;&gt;Arrival alarm&lt;/h3&gt;
+
+&lt;p&gt;I’m a chronic sufferer of a disease called Scope Creep (this is a joke), so I couldn’t help but add an optional arrival alarm feature. This feature uses the new iOS 26 &lt;a href=&quot;https://developer.apple.com/documentation/AlarmKit&quot;&gt;AlarmKit framework&lt;/a&gt;.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/shinkansen-v1-alarm-2panel.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Alarm setting in trip screen and full screen alarm notification&quot; title=&quot;Alarm setting in trip screen and full screen alarm notification&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Alarm setting in trip screen and full screen alarm notification&lt;/div&gt;&lt;/div&gt;
+
+&lt;h3 id=&quot;animations-and-transitions&quot;&gt;Animations and transitions&lt;/h3&gt;
+
+&lt;p&gt;I spent a unreasonable amount of time working on the animations and transitions for this app. Since there’s comparatively not a lot of screens or unique transitions to handle, it felt like a good opportunity to push the limits and make the upload experience more delightful. After all, there’s not a &lt;em&gt;ton&lt;/em&gt; of benefit to cost when you consider needing to download an app, and then screenshot or photo your ticket in order to get that slight benefit of not needing to unlock your phone or take your ticket out of your pocket. Hopefully some fun animations add to the motivations to get over that mental hump.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/shinkansen-v1-scanning-transitions.gif&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Scanning transitions and animations&quot; title=&quot;Scanning transitions and animations&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Scanning transitions and animations&lt;/div&gt;&lt;/div&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/shinkansen-v1-image-popup.gif&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Image popup transition&quot; title=&quot;Image popup transition&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Image popup transition&lt;/div&gt;&lt;/div&gt;
+
+&lt;h2 id=&quot;outlook&quot;&gt;Outlook&lt;/h2&gt;
+
+&lt;p&gt;Shinkansen Live is free on v1.0 release. I have no idea whether the App Store listing will get views, whether the listing will convert to downloads, whether the idea will resonate with people to try, and whether any one-time users will keep the app on their devices and remember to use it. I don’t use the Shinkansen enough to estimate this well.&lt;/p&gt;
+
+&lt;p&gt;Regardless, I’m glad the app exists now. I hope it saves at least a few people that little extra friction in an otherwise smooth Shinkansen journey.&lt;/p&gt;
+</description>
+        <pubDate>Wed, 24 Dec 2025 05:53:39 -0600</pubDate>
+        <link>https://twocentstudios.com/2025/12/24/introducing-shinkansen-live-v1/</link>
+        <guid isPermaLink="true">https://twocentstudios.com/2025/12/24/introducing-shinkansen-live-v1/</guid>
+        
+        <category>ios</category>
+        
+        <category>app</category>
+        
+        <category>shinkansenlive</category>
+        
+        
+      </item>
     
       <item>
         <title>You Are a Frameworks Engineer at Big Tech Corp</title>
@@ -3600,160 +3712,6 @@ Last Exception Backtrace:
         <category>vapor</category>
         
         <category>technicolor</category>
-        
-        
-      </item>
-    
-      <item>
-        <title>Reintroducing Technicolor: Binge Watch with Friends Over Space and Time</title>
-        <description>&lt;p&gt;Although it’s still in beta, I think it’s a good time to reintroduce my web app side project called Technicolor.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/technicolor-beta-icon.png&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Technicolor beta app icon&quot; title=&quot;Technicolor beta app icon&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Technicolor beta app icon&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;Technicolor is a chat app tailored for watching TV shows with friends asynchronously. I’ve found it to be a great way to stay in touch with friends in other cities/states/countries.&lt;/p&gt;
-
-&lt;p&gt;The current version of Technicolor is a native SwiftUI app available on iOS 17.4+ devices and macOS.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/technicolor-beta-overview.png&quot; width=&quot;800&quot; height=&quot;&quot; alt=&quot;Technicolor app overview showing dashboard, room interface (redacted), and media inspector screens&quot; title=&quot;Technicolor app overview showing dashboard, room interface (redacted), and media inspector screens&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Technicolor app overview showing dashboard, room interface (redacted), and media inspector screens&lt;/div&gt;&lt;/div&gt;
-
-&lt;h2 id=&quot;how-it-works&quot;&gt;How it works&lt;/h2&gt;
-
-&lt;p&gt;Technicolor is a multi-player experience.&lt;/p&gt;
-
-&lt;ol&gt;
-  &lt;li&gt;&lt;strong&gt;Gather some friends&lt;/strong&gt;: Technicolor is optimized for IRL close friends. A group of 2-4 friends is most optimal.&lt;/li&gt;
-  &lt;li&gt;&lt;strong&gt;Choose a TV show to watch&lt;/strong&gt;: The best picks are shows that you can imagine generating a lot of reactions or hot takes, but choosing the right show is more art than science in my experience so far. Technicolor doesn’t embed/include media, so all members must have access to a streaming service or file-based media.&lt;/li&gt;
-  &lt;li&gt;&lt;strong&gt;Create a Room&lt;/strong&gt;: Each episode discussion lives in its own chat room. Technicolor uses &lt;a href=&quot;https://www.themoviedb.org/&quot;&gt;TMDB&lt;/a&gt; as its media metadata provider.&lt;/li&gt;
-  &lt;li&gt;&lt;strong&gt;Watch the episode on your own schedule&lt;/strong&gt;: Each Room member watches the episode and leaves comments tagged with the timestamp. If you watch first, you lay the foundation for discussion. If you watch later, you’re often replying to existing comments. It’s a unique experience each way.&lt;/li&gt;
-  &lt;li&gt;&lt;strong&gt;Mark as watched&lt;/strong&gt;: Tap the “Mark as Watched” button to alert other members via push notification that you’ve finished watching so they can read your comments.&lt;/li&gt;
-  &lt;li&gt;&lt;strong&gt;Read and reply&lt;/strong&gt;: Respond to comments from other members. Keep the discussion going for as many turns as you’d like.&lt;/li&gt;
-  &lt;li&gt;&lt;strong&gt;Move onto the next episode&lt;/strong&gt;: Technicolor is media-aware and has helpers for quickly creating a Room for the next episode in the current or next season.&lt;/li&gt;
-&lt;/ol&gt;
-
-&lt;h2 id=&quot;main-features&quot;&gt;Main features&lt;/h2&gt;
-
-&lt;h3 id=&quot;navigate-your-watchlist-in-the-dashboard&quot;&gt;Navigate your watchlist in the Dashboard&lt;/h3&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/technicolor-beta-dashboard.png&quot; width=&quot;600&quot; height=&quot;&quot; alt=&quot;Technicolor Dashboard showing active rooms organized by TV show&quot; title=&quot;Technicolor Dashboard showing active rooms organized by TV show&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Technicolor Dashboard showing active rooms organized by TV show&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;Manage your watchlist on the Dashboard screen. The dashboard intelligently manages active Rooms so you have quick access to episodes you need to watch and those you need to read comments for.&lt;/p&gt;
-
-&lt;p&gt;Rooms are grouped logically by TV show and members.&lt;/p&gt;
-
-&lt;p&gt;Technicolor also supports movie watching groups. All movies watched by the same members are grouped in one section.&lt;/p&gt;
-
-&lt;p&gt;It’s easy to create the next episode by tapping the more button and choosing “Create Room for S03E01”.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/technicolor-beta-create-next-room.png&quot; width=&quot;600&quot; height=&quot;&quot; alt=&quot;Create Room for next episode popup&quot; title=&quot;Create Room for next episode popup&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Create Room for next episode popup&lt;/div&gt;&lt;/div&gt;
-
-&lt;h3 id=&quot;leave-comments-in-a-room&quot;&gt;Leave comments in a Room&lt;/h3&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/technicolor-beta-room-interface.png&quot; width=&quot;600&quot; height=&quot;&quot; alt=&quot;Room interface showing timestamped comments (redacted)&quot; title=&quot;Room interface showing timestamped comments (redacted)&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Room interface showing timestamped comments (redacted)&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;Comments in a Room are grouped into mini-threads by timestamp.&lt;/p&gt;
-
-&lt;p&gt;There’s a custom control for selecting a timestamp by tapping and dragging like a video scrubber.&lt;/p&gt;
-
-&lt;video src=&quot;/images/technicolor-beta-timestamp-control.mov&quot; controls=&quot;&quot; preload=&quot;none&quot; poster=&quot;/images/technicolor-beta-timestamp-control-poster.png&quot; height=&quot;600&quot;&gt;&lt;/video&gt;
-
-&lt;p&gt;Tap the info button to see a quick overview of metadata about the episode via TMDB.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/technicolor-beta-info-button.png&quot; width=&quot;600&quot; height=&quot;&quot; alt=&quot;Episode info screen showing metadata from TMDB&quot; title=&quot;Episode info screen showing metadata from TMDB&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Episode info screen showing metadata from TMDB&lt;/div&gt;&lt;/div&gt;
-
-&lt;h3 id=&quot;start-a-new-show&quot;&gt;Start a new show&lt;/h3&gt;
-
-&lt;p&gt;There’s a flow for adding your first Room for a show. Search for a TV Show, Movie, or enter a custom title. Then select which friends you’ll watch with.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/technicolor-beta-new-room-search.png&quot; width=&quot;600&quot; height=&quot;&quot; alt=&quot;New Room search screen showing Breaking Bad search results&quot; title=&quot;New Room search screen showing Breaking Bad search results&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;New Room search screen showing Breaking Bad search results&lt;/div&gt;&lt;/div&gt;
-
-&lt;h3 id=&quot;friend-management&quot;&gt;Friend management&lt;/h3&gt;
-
-&lt;p&gt;Technicolor has a full mutual-friend management system. You can only create new Rooms with users you have a mutual friendship with (or are already in an existing group with).&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/technicolor-beta-me-screen.png&quot; width=&quot;600&quot; height=&quot;&quot; alt=&quot;Me screen showing friendship management and settings&quot; title=&quot;Me screen showing friendship management and settings&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Me screen showing friendship management and settings&lt;/div&gt;&lt;/div&gt;
-
-&lt;h3 id=&quot;invites&quot;&gt;Invites&lt;/h3&gt;
-
-&lt;p&gt;In this beta phase, Technicolor uses an invite system to control new user sign-ups. A user can create unlimited invite codes to invite their IRL friends.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/technicolor-beta-invites.png&quot; width=&quot;600&quot; height=&quot;&quot; alt=&quot;Invite screen for generating invite codes and checking redemption status&quot; title=&quot;Invite screen for generating invite codes and checking redemption status&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Invite screen for generating invite codes and checking redemption status&lt;/div&gt;&lt;/div&gt;
-
-&lt;h2 id=&quot;limitations&quot;&gt;Limitations&lt;/h2&gt;
-
-&lt;h3 id=&quot;async-only&quot;&gt;Async-only&lt;/h3&gt;
-
-&lt;p&gt;This native-first version of Technicolor follows a few other variants I’ve created and used over the years (see the History section below).&lt;/p&gt;
-
-&lt;p&gt;In earlier versions, Technicolor could operate as both a live-streaming, synchronous client in addition to a async client. I found that live-streaming support, although kind of cool, didn’t really make sense in the timestamp marked format. Normal chat apps work fine since everyone is synced and reading/writing comments in real time. There’s also not much reason to keep the history around since everyone has already caught up on the comments.&lt;/p&gt;
-
-&lt;p&gt;For this reason, and to keep implementation complexity low, I’ve left out Websocket support. Optimizing the UI and UX for asynchronous makes things much simpler to use, explain, and maintain.&lt;/p&gt;
-
-&lt;h3 id=&quot;apple-platforms-only&quot;&gt;Apple platforms-only&lt;/h3&gt;
-
-&lt;p&gt;&lt;em&gt;Most&lt;/em&gt; of my friends are iOS/macOS users, and since I am an iOS specialist, I’ve decided to only target Apple platforms for now.&lt;/p&gt;
-
-&lt;p&gt;I’m considering a web version for the future to include my Android/Windows friends. But at the moment, it’s already a lot to fill out the feature set and polish the UX for a non-revenue-generating side project.&lt;/p&gt;
-
-&lt;h2 id=&quot;the-future-of-technicolor&quot;&gt;The future of Technicolor&lt;/h2&gt;
-
-&lt;p&gt;I’m planning to do beta testing with my close friends for a while until all the primary flows of the app feel production ready.&lt;/p&gt;
-
-&lt;p&gt;I still have plenty of unimplemented ideas that could improve the commenting-while-watching flow.&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;There should be a timer mode that automatically counts up while the episode is running, so you don’t have to choose timestamps manually as often.&lt;/li&gt;
-  &lt;li&gt;The TMDB episode detail screen should also load the list of actors and characters in an episode for easy reference. Bonus points for being able to @-mention a character/actor in the chat box with autocomplete support.&lt;/li&gt;
-  &lt;li&gt;I’ve implemented subtitle fetching support on the backend, but haven’t thought through exactly how to surface this info in the app. You could optionally attach a line from the subtitles to a new comment. Or subtitles could automatically appear in line near timestamps automatically.&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;I have reservations about releasing a social network to the general public due to the amount of moderation required. Technicolor is closer to a private chat app than a social network. And with its current user relationship model it’s probably safe enough and niche enough that bad actors can’t wreak too much havoc. But I’d still probably need to implement message reporting, an admin dashboard for moderation, and some more safeguards around spamming. Being iOS/macOS-only also helps ensure that spam is less prevalent than it otherwise might be.&lt;/p&gt;
-
-&lt;p&gt;I could keep the invite system to both limit the growth rate, prevent abuse, and contribute to successful user onboarding.&lt;/p&gt;
-
-&lt;p&gt;I’d probably need to harden the backend API a little more, maybe put Cloudflare in front of it. The Fly.io instance currently goes to sleep when there’s no activity to save money, so I could choose to keep it on. The machine specs are very weak, so I could beef those up as well to ensure my users see the theoretical speed of Swift on the server.&lt;/p&gt;
-
-&lt;h2 id=&quot;a-brief-history-of-technicolor&quot;&gt;A brief history of Technicolor&lt;/h2&gt;
-
-&lt;p&gt;I first wrote about Technicolor back in 2013 in &lt;a href=&quot;/2014/01/26/fall-2013-project-wrap-up/#:~:text=to%20show%20though.-,Technicolor%20TV,-Status%3A%20Under%20Infrequent&quot;&gt;a post about my side projects&lt;/a&gt;.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/technicolor-3.png&quot; width=&quot;600&quot; height=&quot;&quot; alt=&quot;Original Technicolor web app dashboard&quot; title=&quot;Original Technicolor web app dashboard&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Original Technicolor web app dashboard&lt;/div&gt;&lt;/div&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/technicolor-4.png&quot; width=&quot;600&quot; height=&quot;&quot; alt=&quot;Original Technicolor room interface&quot; title=&quot;Original Technicolor room interface&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Original Technicolor room interface&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;The short version is that I moved from Chicago to New York and still wanted a way to watch TV shows with my Chicago friends. We’d still regularly get on video calls for live stream watching, but for other shows we started emailing each other with timestamped comments. These emails started to get unwieldy, and I posited that a simple web app could improve the watching experience while also facilitating episode management outside an email client.&lt;/p&gt;
-
-&lt;p&gt;The first version was implemented as a Ruby on Rails app deployed to Heroku and vending HTML and simple JavaScript. It was browser-only and not well-optimized for mobile devices (at the time, I didn’t own a dedicated TV set and watched most shows on my computer).&lt;/p&gt;
-
-&lt;p&gt;After the initial short development period, Technicolor worked well enough that I didn’t need to do much active development. Additionally, the code I wrote as a hobbyist Rails/JS-dev had already reached the point of complexity where it was no longer easy or safe to make even minor changes.&lt;/p&gt;
-
-&lt;p&gt;In late-2017 I moved to Japan and was motivated again to revive the side project as mobile first. I also wanted to explore a different backend architecture that was type-safe. I briefly started an Elixir backend, and although I already had a little experience with it, it soon became clear that it was too bespoke, especially for a side project I only had occasional time to devote to.&lt;/p&gt;
-
-&lt;p&gt;Swift on the server was starting to get some buzz, and some exploration with Vapor made it seem like there were theoretical merits to having a unified language for back-end and front-end development.&lt;/p&gt;
-
-&lt;p&gt;I started chipping away at development again (while still using the legacy web-app version), but I fell into side-project hell where each time I’d have the motivation to work on it, I’d spend the entire day updating Vapor, migrating Swift, changing hosting providers, or converting to the latest SwiftUI APIs. There was very little forward progress.&lt;/p&gt;
-
-&lt;p&gt;I also fell into various scope-creep traps. Adding the invite system. Adding full mutual friendship support and blocking. My previous episode data provider TVDB switched to a paid-only API, so I descoped that and moved to a Room system that had no media linking.&lt;/p&gt;
-
-&lt;p&gt;Heroku’s free tier was discontinued in 2022, and with it the legacy version of Technicolor went offline.&lt;/p&gt;
-
-&lt;p&gt;Coming off some headwinds with &lt;a href=&quot;/2025/06/22/vinylogue-swift-rewrite/&quot;&gt;my last rewrite experience&lt;/a&gt;, I finally decided to check the status of my codebase after over two years of dormancy. As I suspected, Claude Code made quick work of updating all my iOS code to my preferred architecture and the latest APIs. Unfortunately, the Vapor framework was a lot further behind the Swift 6 migration than I’d hoped, but still has reasonable support for most bread-and-butter web app capabilities.&lt;/p&gt;
-
-&lt;p&gt;I got somewhat lost in the scope creep flow state, tearing through the implementation of all the features that had been rotting on my TODO list for a literal decade. On the user-facing side, I’m especially proud of the very streamlined dashboard layout and the push notifications support (the impetus of the mobile-first rewrite in the first place). On the development tooling side, I’m proud of having a comprehensive server-side test suite and a custom release wizard script that prepares and submits both iOS and macOS versions of the app.&lt;/p&gt;
-
-&lt;h2 id=&quot;tech-stack-details&quot;&gt;Tech stack details&lt;/h2&gt;
-
-&lt;p&gt;As mentioned above, Technicolor’s backend is written using the &lt;a href=&quot;https://vapor.codes/&quot;&gt;Swift Vapor&lt;/a&gt; framework. It’s hosted on &lt;a href=&quot;https://fly.io/&quot;&gt;Fly.io&lt;/a&gt;. The client is an iOS target written in Swift and SwiftUI and supporting iOS 17+. There’s technically a native macOS target via Mac Catalyst, but it actually looks and functions worse than the “Designed for iPad” version, so I’m probably going to deprecate the Mac Catalyst version.&lt;/p&gt;
-
-&lt;p&gt;&lt;del&gt;I’ll do a deeper dive into the tech stack in a future post because I think there’s at least a few interesting and unique points to the architecture.&lt;/del&gt; I go into the technical details in the next post: &lt;a href=&quot;/2025/08/04/full-stack-swift-technicolor-technical-architecture/&quot;&gt;Full-Stack Swift: The Technical Architecture of Technicolor&lt;/a&gt;.&lt;/p&gt;
-
-</description>
-        <pubDate>Fri, 25 Jul 2025 09:00:00 -0500</pubDate>
-        <link>https://twocentstudios.com/2025/07/25/reintroducing-technicolor-binge-watch-with-friends-over-space-and-time/</link>
-        <guid isPermaLink="true">https://twocentstudios.com/2025/07/25/reintroducing-technicolor-binge-watch-with-friends-over-space-and-time/</guid>
-        
-        <category>technicolor</category>
-        
-        <category>app</category>
         
         
       </item>

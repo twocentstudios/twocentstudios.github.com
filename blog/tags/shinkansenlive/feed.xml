@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>twocentstudios</title>
+    <description>A coding blog covering iOS, Swift, and other programming topics.</description>
+    <link>https://twocentstudios.com/blog/tags/shinkansenlive/index.html</link>
+    <atom:link href="https://twocentstudios.com/blog/tags/shinkansenlive/feed.xml" rel="self" type="application/rss+xml"/>
+    <pubDate>Wed, 24 Dec 2025 23:04:08 -0600</pubDate>
+    <lastBuildDate>Wed, 24 Dec 2025 23:04:08 -0600</lastBuildDate>
+    <generator>Jekyll v3.9.3</generator>
+    
+      <item>
+        <title>Shinkansen Live: Scan Your Ticket, Get a Live Activity</title>
+        <description>&lt;p&gt;Today I’m releasing my latest iOS app: Shinkansen Live or 新幹線ライブ in Japanese.&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://apps.apple.com/app/id6756808516&quot;&gt;Shinkansen Live on the App Store&lt;/a&gt;&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/shinkansen-v1-app-icon.jpg&quot; width=&quot;&quot; height=&quot;300&quot; alt=&quot;Shinkansen Live app icon&quot; title=&quot;Shinkansen Live app icon&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Shinkansen Live app icon&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;The concept is simple: you scan your Shinkansen ticket or receipt and you can see the details of your trip in a Live Activity on your lock screen and Dynamic Island.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/shinkansen-v1-scan-flow-3panel.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Scan flow in 3 panels: scanning, ticket, lock screen&quot; title=&quot;Scan flow in 3 panels: scanning, ticket, lock screen&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Scan flow in 3 panels: scanning, ticket, lock screen&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Here’s a quick screen capture of the main flow:&lt;/p&gt;
+
+&lt;video poster=&quot;/images/shinkansen-v1-app-preview-poster.png&quot; controls=&quot;&quot; style=&quot;max-height: 400px;&quot;&gt;
+  &lt;source src=&quot;/images/shinkansen-v1-app-preview.mp4&quot; type=&quot;video/mp4&quot; /&gt;
+&lt;/video&gt;
+
+&lt;h2 id=&quot;motivation&quot;&gt;Motivation&lt;/h2&gt;
+
+&lt;p&gt;I took a quick Shinkansen trip from Omiya (north Tokyo) to Karuizawa (Nagano) last week to do some co-working with my friends Jens and David. I had pre-purchased a reserved seat with the &lt;a href=&quot;https://www.eki-net.com/en/jreast-train-reservation/Top/Index&quot;&gt;Eki-net&lt;/a&gt;, JR-East’s Shinkansen app (on iOS, it’s a web app wrapper). Similar to when I have a physical ticket (but somehow worse?) I found myself opening the app repeatedly to check my ticket’s listed attributes for:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;departure time: in the 30 minutes or so lead up, before I’d entered the gates.&lt;/li&gt;
+  &lt;li&gt;train number: to cross reference and check the platform I should leave from.&lt;/li&gt;
+  &lt;li&gt;car number: when it was time to ascend to the platform and look for where on the platform I should line up.&lt;/li&gt;
+  &lt;li&gt;seat number: when the train pulled up and I was boarding.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Both of my train apps &lt;a href=&quot;/2024/07/27/eki-bright-tokyo-area-train-timetables/&quot;&gt;Eki Bright&lt;/a&gt; and &lt;a href=&quot;/2025/06/03/eki-live-announcement/&quot;&gt;Eki Live&lt;/a&gt; have Live Activities support that I use frequently. I only ride the Shinkansen a few times a year, but while riding up to Karuizawa that day, I wondered, &lt;strong&gt;couldn’t I just OCR the Shinkansen ticket info from screenshot and stuff it into a Live Activity?&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;And so as soon as I arrived at Sawamura Roastery in Karuizawa, I got to work on prototyping a new app. My goal was to have a prototype by the ride home. With some extra polish it ended up taking a few more days of work.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/shinkansen-v1-sawamura-fireplace.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Co-working vibes at Sawamura Roastery in Karuizawa&quot; title=&quot;Co-working vibes at Sawamura Roastery in Karuizawa&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Co-working vibes at Sawamura Roastery in Karuizawa&lt;/div&gt;&lt;/div&gt;
+
+&lt;h2 id=&quot;features&quot;&gt;Features&lt;/h2&gt;
+
+&lt;p&gt;The structure of the app is essentially a landing screen, a processing screen, and a trip-in-progress screen. The Live Activity requires its own multiple states and layouts of UI. For polish, I needed an error screen, an about screen, and a screen explaining what ticket formats are accepted.&lt;/p&gt;
+
+&lt;h3 id=&quot;supported-input-formats&quot;&gt;Supported input formats&lt;/h3&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/shinkansen-v1-landing-screen.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Landing screen showing input options&quot; title=&quot;Landing screen showing input options&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Landing screen showing input options&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;My initial scope was just handling screenshots from Eki-net (JR-East’s app) and SmartEX (JR-Central’s app), and in retrospect this probably would have better line to draw in the sand for version 1. However, I added support for scanning physical tickets too since the app seemed like it would be &lt;em&gt;too&lt;/em&gt; specialized without physical tickets, probably the majority use-case.&lt;/p&gt;
+
+&lt;p&gt;And so, you can scan your physical ticket with the camera, choose a screenshot from the Photo Library, paste an image from the system pasteboard, or create an empty ticket if you want.&lt;/p&gt;
+
+&lt;h3 id=&quot;ocr-and-parsing&quot;&gt;OCR and parsing&lt;/h3&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/shinkansen-v1-scanning.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Scanning a ticket with OCR in progress&quot; title=&quot;Scanning a ticket with OCR in progress&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Scanning a ticket with OCR in progress&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;As of version 1.0, the app uses on device VisionKit to recognize text in the image and custom algorithm to do error recovery and parse out the relevant attributes from the ticket. I’ll discuss the development aspects of this decision in a future post, but for now, I’ll say that the merits of using OCR over multi-modal LLMs are that OCR is very fast, maintains privacy, and is accurate enough for a V1.&lt;/p&gt;
+
+&lt;h3 id=&quot;trip-in-progress&quot;&gt;Trip in-progress&lt;/h3&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/shinkansen-v1-trip-screen.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Trip in-progress screen showing ticket details&quot; title=&quot;Trip in-progress screen showing ticket details&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Trip in-progress screen showing ticket details&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Once the ticket is scanned and parsed, you land on the trip screen for the remainder of your journey.&lt;/p&gt;
+
+&lt;p&gt;I recreated a facsimile of the legendary Shinkansen ticket. While doing research into ticket formats, it was surprising to see how &lt;em&gt;different&lt;/em&gt; the information layouts are depending on where and by what means they are purchased, but the aesthetic is generally the same.&lt;/p&gt;
+
+&lt;p&gt;For the case of physical tickets, parsing is imperfect, so I wanted to ensure users could recover from minor errors like a missing time or train number. Therefore, all fields are user editable by tapping.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/shinkansen-v1-editing-screen.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Editing screen with editable ticket fields&quot; title=&quot;Editing screen with editable ticket fields&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Editing screen with editable ticket fields&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;I also include the input image that a user can reference in an expanded view. This makes it easier to double check values and fix mistakes.&lt;/p&gt;
+
+&lt;video poster=&quot;/images/shinkansen-v1-expand-photo-poster.png&quot; controls=&quot;&quot; style=&quot;max-height: 400px;&quot;&gt;
+  &lt;source src=&quot;/images/shinkansen-v1-expand-photo.mp4&quot; type=&quot;video/mp4&quot; /&gt;
+&lt;/video&gt;
+
+&lt;h3 id=&quot;live-activity&quot;&gt;Live Activity&lt;/h3&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/shinkansen-v1-live-activity-3panel.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Live Activity in Dynamic Island compact, expanded, and lock screen views&quot; title=&quot;Live Activity in Dynamic Island compact, expanded, and lock screen views&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Live Activity in Dynamic Island compact, expanded, and lock screen views&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Finally, the whole point of all this is to have a functional Live Activity. The Live Activity has a &lt;em&gt;before&lt;/em&gt; and &lt;em&gt;during&lt;/em&gt; layout. Before departure we show the departure time, train number, car number, and seat number (for reserved seats). During the trip, we show the arrival station and time.&lt;/p&gt;
+
+&lt;p&gt;Due to a technical limitation with Live Activities, I use Location Services to monitor for significant location changes in the background, and use that to wake up the app and update the Live Activity when the departure time has passed. On the technical side, this means I don’t need to run a push notification server or do any other networking from the app.&lt;/p&gt;
+
+&lt;h3 id=&quot;arrival-alarm&quot;&gt;Arrival alarm&lt;/h3&gt;
+
+&lt;p&gt;I’m a chronic sufferer of a disease called Scope Creep (this is a joke), so I couldn’t help but add an optional arrival alarm feature. This feature uses the new iOS 26 &lt;a href=&quot;https://developer.apple.com/documentation/AlarmKit&quot;&gt;AlarmKit framework&lt;/a&gt;.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/shinkansen-v1-alarm-2panel.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Alarm setting in trip screen and full screen alarm notification&quot; title=&quot;Alarm setting in trip screen and full screen alarm notification&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Alarm setting in trip screen and full screen alarm notification&lt;/div&gt;&lt;/div&gt;
+
+&lt;h3 id=&quot;animations-and-transitions&quot;&gt;Animations and transitions&lt;/h3&gt;
+
+&lt;p&gt;I spent a unreasonable amount of time working on the animations and transitions for this app. Since there’s comparatively not a lot of screens or unique transitions to handle, it felt like a good opportunity to push the limits and make the upload experience more delightful. After all, there’s not a &lt;em&gt;ton&lt;/em&gt; of benefit to cost when you consider needing to download an app, and then screenshot or photo your ticket in order to get that slight benefit of not needing to unlock your phone or take your ticket out of your pocket. Hopefully some fun animations add to the motivations to get over that mental hump.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/shinkansen-v1-scanning-transitions.gif&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Scanning transitions and animations&quot; title=&quot;Scanning transitions and animations&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Scanning transitions and animations&lt;/div&gt;&lt;/div&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/shinkansen-v1-image-popup.gif&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Image popup transition&quot; title=&quot;Image popup transition&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Image popup transition&lt;/div&gt;&lt;/div&gt;
+
+&lt;h2 id=&quot;outlook&quot;&gt;Outlook&lt;/h2&gt;
+
+&lt;p&gt;Shinkansen Live is free on v1.0 release. I have no idea whether the App Store listing will get views, whether the listing will convert to downloads, whether the idea will resonate with people to try, and whether any one-time users will keep the app on their devices and remember to use it. I don’t use the Shinkansen enough to estimate this well.&lt;/p&gt;
+
+&lt;p&gt;Regardless, I’m glad the app exists now. I hope it saves at least a few people that little extra friction in an otherwise smooth Shinkansen journey.&lt;/p&gt;
+</description>
+        <pubDate>Wed, 24 Dec 2025 05:53:39 -0600</pubDate>
+        <link>https://twocentstudios.com/2025/12/24/introducing-shinkansen-live-v1/</link>
+        <guid isPermaLink="true">https://twocentstudios.com/2025/12/24/introducing-shinkansen-live-v1/</guid>
+        
+        <category>ios</category>
+        
+        <category>app</category>
+        
+        <category>shinkansenlive</category>
+        
+        
+      </item>
+    
+  </channel>
+</rss>
