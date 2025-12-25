@@ -6,7 +6,7 @@ image:
 tags: apple ios app shinkansenlive
 ---
 
-In my [last post]() I introduced the motivation and feature set of [Shinkansen Live](TODO app store link), my latest iOS app.
+In my [last post](/2025/12/24/shinkansen-live-scan-your-ticket-get-a-live-activity/) I introduced the motivation and feature set of [Shinkansen Live](https://apps.apple.com/app/id6756808516), my latest iOS app.
 
 In this post, I'll discuss a few of the interesting development challenges I faced during its week of development from concept to App Store release.
 
@@ -16,7 +16,7 @@ In this post, I'll discuss a few of the interesting development challenges I fac
 
 ## Overall development strategy
 
-I created an Xcode project myself with Xcode 26.1 (later switching to Xcode 26.2). I added the [TCA](TODO swift-composable-architecture) package.
+I created an Xcode project myself with Xcode 26.1 (later switching to Xcode 26.2). I added the [TCA](https://github.com/pointfreeco/swift-composable-architecture) package.
 
 Then, I mostly set off to work using Claude Code with Opus 4.5. I started by having it lay out the SwiftUI View and TCA Feature without any logic. Then I built out the rest of the infrastructure around getting the input image, doing OCR, parsing the output, and displaying the results. I'll go through more of the history later on in the post.
 
@@ -32,7 +32,7 @@ In theory, it'd be reasonable to limit the app's input space to app screenshots 
 
 ### Why OCR? Why not multi-modal LLMs?
 
-OCR via [VisionKit](TODO: link to framework website) alongside manual parsing has a lot of upsides:
+OCR via [VisionKit](https://developer.apple.com/documentation/visionkit) alongside manual parsing has a lot of upsides:
 
 - Free for user & developer
 - Fast
@@ -138,7 +138,7 @@ extension CGImagePropertyOrientation {
 
 ### Levenshtein distance
 
-Like our previous example of `CDR` instead of `CAR`, VisionKit was reading strings like `TOKIO` instead of `TOKYO`. For these parts, I figured calculating [Levenshtein distance](TODO: wikipedia page) from known strings was the right strategy. The Shinkansen system is large but not so large that I couldn't ingest the station name values and the other known strings like `JAN`, `FEB`, etc.
+Like our previous example of `CDR` instead of `CAR`, VisionKit was reading strings like `TOKIO` instead of `TOKYO`. For these parts, I figured calculating [Levenshtein distance](https://en.wikipedia.org/wiki/Levenshtein_distance) from known strings was the right strategy. The Shinkansen system is large but not so large that I couldn't ingest the station name values and the other known strings like `JAN`, `FEB`, etc.
 
 One strategy I haven't tested yet is using `VNRecognizeTextRequest.customWords` with the full dictionary of station names, etc. to see if that eliminates the need for using Levenshtein distance at all.
 
@@ -351,7 +351,7 @@ If the system kills the app in the middle of a trip, the Live Activity in theory
 
 At this point, I could decide to query the Live Activities framework to see if there's a Live Activity running and if so, restore the ticket model layer and UI. However, I prefer not to treat the Live Activity as the source of truth for the model layer.
 
-I added support with the [Sharing](TODO swift-sharing) library to persist the ticket model automatically on changes. On the above flow, I use the persisted ticket model to restore the UI and Live Activity and AlarmKit state, ensuring the ticket data is still valid.
+I added support with the [Sharing](https://github.com/pointfreeco/swift-sharing) library to persist the ticket model automatically on changes. On the above flow, I use the persisted ticket model to restore the UI and Live Activity and AlarmKit state, ensuring the ticket data is still valid.
 
 ### Handling dismissal
 
@@ -415,7 +415,7 @@ I created a custom drag gesture with rubberbanding that allows the user to drag 
 
 ## AlarmKit
 
-[AlarmKit]() is new in iOS 26 and I thought it might be a good fit for Shinkansen Live's use case.
+[AlarmKit](https://developer.apple.com/documentation/alarmkit) is new in iOS 26 and I thought it might be a good fit for Shinkansen Live's use case.
 
 The integration was mostly straightforward, but it added another layer of complexity to the reducer implementation to ensure that it was added, changed, and removed for all the relevant cases:
 
