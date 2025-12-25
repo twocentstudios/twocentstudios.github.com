@@ -33,7 +33,7 @@ The most difficult part of getting this app to production was the ticket OCR & p
 
 My initial thought during the prototyping stage was to target only the "ticket" screenshot from Eki-net you get after purchase. It looks something like this:
 
-![TODO: eki-net ticket screenshot]()
+{% caption_img /images/shinkansen-v1-example-ekinet.jpg h400 Example Eki-net ticket screenshot %}
 
 In theory, it'd be reasonable to limit the app's input space to app screenshots from Eki-net (JR-East) and SmartEX (JR-central). Even including web browser screenshots wouldn't be that much more burden on an OCR-based system. But later on in the project when I'd decided I was happy enough with the prototype that I wanted to target a production release on the App Store, I started thinking about how it would make marketing much harder to say "only works on screenshots" and not physical tickets.
 
@@ -151,9 +151,9 @@ One strategy I haven't tested yet is using `VNRecognizeTextRequest.customWords` 
 
 ### English and Japanese mode OCR
 
-For some background, tickets can be printed in an "English" variant that includes a mix of English and Japanese text. If you buy from a ticket vending machine and complete the purchase in English mode, it'll print an English ticket. Similarly, if you buy from a human ticket vendor at the counter, they will print your ticket in English variant if you speak English to them. 
+For some background, tickets can be printed in an "English" variant that includes a mix of English and Japanese text. If you buy from a ticket vending machine and complete the purchase in English mode, it'll print an English ticket. Similarly, if you buy from a human ticket vendor at the counter, they will print your ticket in English variant if you speak English to them.
 
-![TODO example of an english ticket]()
+{% caption_img /images/shinkansen-v1-example-english-ticket.jpg h400 Example of an English variant Shinkansen ticket %}
 
 At the VisionKit layer, I was first using `VNRecognizeTextRequest` in Japanese-mode only.
 
@@ -190,9 +190,9 @@ struct TextObservation: Equatable, Sendable, Codable {
 
 At this point in the development of the parser, I was pretty certain reading photos of tickets was never going to be reach 100% accuracy for every field.
 
-I took a break from working on the parser to implement editing for every field in the ticket UI. This meant that users could manually recover from parsing errors and omissions. 
+I took a break from working on the parser to implement editing for every field in the ticket UI. This meant that users could manually recover from parsing errors and omissions.
 
-![TODO: field editing UI for one field]()
+{% caption_img /images/shinkansen-v1-editing-screen.jpg h400 Editing screen with editable ticket fields %}
 
 Not needing to reach 100% accuracy in the parser while still ensuring the user gets value out of the system as a whole opened up a more reasonable strategy for the parser.
 
@@ -217,7 +217,7 @@ At a certain point all the tests were passing and as much as I wanted to keep fi
 
 During development I had to keep reminding myself that the whole point of this endeavor was to have a slick Live Activity.
 
-![several live activity configurations]()
+{% caption_img /images/shinkansen-v1-live-activity-3panel.jpg h400 Live Activity in Dynamic Island compact, expanded, and lock screen views %}
 
 My design process was quick and to-the-point: 
 
@@ -227,11 +227,11 @@ My design process was quick and to-the-point:
 
 In lock screen and expanded contexts, you can *mostly* display everything you want. The challenge is in aesthetics and visual hierarchy like in any design.
 
-![lock screen live activity]()
+{% caption_img /images/shinkansen-v1-lockscreen-live-activity.jpg h400 Lock screen Live Activity showing trip details %}
 
 When dealing with the compact and minimal contexts, you really do only have the equivalent of about 6 very small characters to work with, and 2 lines if you want to push your luck. If you try to fill the entire available space of the Dynamic Island on either side, you'll lose the system clock which is no go for my use case.
 
-![compact live activity]()
+{% caption_img /images/shinkansen-v1-compact-live-activity.jpg h400 Compact Live Activity in Dynamic Island %}
 
 When I thought about it, the most important of all the contexts was the compact leading and trailing in the *before* trip phase. This is when the information is most needed at a glance.
 
@@ -376,15 +376,23 @@ At the bare minimum, I usually try to use a default opacity transition for root 
 
 For Shinkansen Live, I added a little bit of extra scale effect to the usual opacity transition of the initial screen, both on cold launch and when returning from the trip screen.
 
-![initial screen transition in normal speed]()
+<video controls loop style="max-height: 400px;">
+  <source src="/images/shinkansen-v1-initial-transition.mp4" type="video/mp4">
+</video>
 
-![initial screen transition in slowmo]()
+<video controls loop style="max-height: 400px;">
+  <source src="/images/shinkansen-v1-initial-transition-slowmo.mp4" type="video/mp4">
+</video>
 
 For the trip screen, I first animated the card down from the top with some scale and opacity, then fade in the other sections with some scale.
 
-![trip screen transition in normal speed]()
+<video controls loop style="max-height: 400px;">
+  <source src="/images/shinkansen-v1-trip-transition.mp4" type="video/mp4">
+</video>
 
-![trip screen transition in slowmo]()
+<video controls loop style="max-height: 400px;">
+  <source src="/images/shinkansen-v1-trip-transition-slowmo.mp4" type="video/mp4">
+</video>
 
 ### Scanning animation
 
@@ -396,9 +404,13 @@ This animation serves a few purposes in my opinion:
 - Buys time for the parser to do its job.
 - Feels fun and playful in a way that is motivating for users to want to go through the trouble of submitting their ticket image.
 
-![loading screen transition in normal speed]()
+<video controls loop style="max-height: 400px;">
+  <source src="/images/shinkansen-v1-scanning-transition.mp4" type="video/mp4">
+</video>
 
-![loading screen transition in slowmo]()
+<video controls loop style="max-height: 400px;">
+  <source src="/images/shinkansen-v1-scanning-transition-slowmo.mp4" type="video/mp4">
+</video>
 
 ### Ticket image modal animation
 
@@ -408,9 +420,13 @@ As my last big task, I added support for showing the original image inline with 
 
 This setup uses `matchedGeometryEffect` and was a nightmare to work through. In the end it's not perfect, but the speed conceals some of the jankiness. `matchedGeometryEffect` has a lot of undocumented incompatibilities with other modifiers, so it was just hours upon hours of reordering modifiers and building and running to check what had changed. I came out of the experience with little new demonstrably true observations I can share here, unfortunately.
 
-![image transition in normal speed]()
+<video controls loop style="max-height: 400px;">
+  <source src="/images/shinkansen-v1-image-transition.mp4" type="video/mp4">
+</video>
 
-![image transition in slowmo]()
+<video controls loop style="max-height: 400px;">
+  <source src="/images/shinkansen-v1-image-transition-slowmo.mp4" type="video/mp4">
+</video>
 
 ### Card dragging
 
@@ -418,11 +434,15 @@ Whenever there's a card-looking UI on screen, I want it to be interactable even 
 
 I created a custom drag gesture with rubberbanding that allows the user to drag the ticket a little bit in any direction. When released, it snaps back with a custom haptic that mirrors the visual.
 
-![pull and drag the ticket]()
+<video controls loop style="max-height: 400px;">
+  <source src="/images/shinkansen-v1-card-drag.mp4" type="video/mp4">
+</video>
 
 ## AlarmKit
 
 [AlarmKit](https://developer.apple.com/documentation/alarmkit) is new in iOS 26 and I thought it might be a good fit for Shinkansen Live's use case.
+
+{% caption_img /images/shinkansen-v1-alarm-2panel.jpg h400 Alarm setting in trip screen and full screen alarm notification %}
 
 The integration was mostly straightforward, but it added another layer of complexity to the reducer implementation to ensure that it was added, changed, and removed for all the relevant cases:
 
@@ -448,11 +468,11 @@ One of my favorite usages for coding agents is doing Localization setup. Note I'
 
 ```swift
 Button(
-	String(
-		localized: "loaded.arrival-alert.status.minutes-before", 
-		defaultValue: "\(mins) min before", 
-		comment: "Status showing minutes before arrival (for menu items)"
-	)
+    String(
+        localized: "loaded.arrival-alert.status.minutes-before",
+        defaultValue: "\(mins) min before",
+        comment: "Status showing minutes before arrival (for menu items)"
+    )
 ) { ... }
 ```
 
@@ -462,9 +482,9 @@ The initial conversion uses a custom markdown document with some basic rules. It
 
 The app still lays out pretty well with most levels of Dynamic Type. I only use semantic font qualifiers. All content is in a scroll view that's usually fixed.
 
-![several sizes of the main screen with dynamic type]()
+{% caption_img /images/shinkansen-v1-dynamic-type-landing.jpg h400 Landing screen with various Dynamic Type sizes %}
 
-![several sizes of the ticket screen with dynamic type]()
+{% caption_img /images/shinkansen-v1-dynamic-type-trip.jpg h400 Trip screen with various Dynamic Type sizes %}
 
 ## VisionKit Camera
 
