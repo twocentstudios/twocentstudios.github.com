@@ -2,11 +2,11 @@
 layout: post
 title: "Shinkansen Live - Developing the App for iOS"
 date: 2025-12-25 13:41:42
-image:
+image: /images/shinkansen-v1-live-activity-3panel.jpg
 tags: apple ios app shinkansenlive
 ---
 
-In my [last post](/2025/12/24/shinkansen-live-scan-your-ticket-get-a-live-activity/) I introduced the motivation and feature set of [Shinkansen Live](https://apps.apple.com/app/id6756808516), my latest iOS app.
+In my [last post](/2025/12/24/shinkansen-live-scan-your-ticket-get-a-live-activity/) I introduced the motivation and feature set of [Shinkansen Live](https://apps.apple.com/app/id6756808516), my latest iOS app. I encourage you to read that one first to learn about what the app does.
 
 {% caption_img /images/shinkansen-v1-app-icon.jpg h300 Shinkansen Live app icon %}
 
@@ -25,9 +25,11 @@ In this post, I'll discuss a few of the interesting development challenges I fac
 
 ## Overall development strategy
 
-I created an Xcode project myself with Xcode 26.1 (later switching to Xcode 26.2). I added the [TCA](https://github.com/pointfreeco/swift-composable-architecture) package.
+I created an Xcode project myself with Xcode 26.1 (later switching to Xcode 26.2), then added the [TCA](https://github.com/pointfreeco/swift-composable-architecture) package.
 
-Then, I mostly set off to work using Claude Code with Opus 4.5. I started by having it lay out the SwiftUI View and TCA Feature without any logic. Then I built out the rest of the infrastructure around getting the input image, doing OCR, parsing the output, and displaying the results. I'll go through more of the history later on in the post.
+Then, I set off to work using Claude Code with Opus 4.5. I started by having it lay out the SwiftUI View and TCA Feature without any logic. Then I built out the rest of the infrastructure around getting the input image, doing OCR, parsing the output, and displaying the results. I'll go through more of the history later on in the post.
+
+{% caption_img /images/shinkansen-v1-early-layouts-4panel.jpg h400 Early view layouts during initial development %}
 
 ## OCR and parsing the ticket image
 
@@ -104,6 +106,36 @@ For example, concatenating all the text recognition objects into `[String]` was 
 Additionally, some numbers and letters were just flat out being interpreted incorrectly. A `37` was read as a `30`. `CAR` was read as `CDR`.
 
 Off running on its own, Claude was trying to special case as much of these failure cases it could to get the tests passing.
+
+{% caption_img /images/shinkansen-v1-test-ticket-04.jpg h400 Example test ticket image that produced the Japanese-only VisionKit parsing output shown below %}
+
+```
+CC制
+東
+3月18日（
+はくたから5り考
+¥3,380
+新幹線特急券
+京
+→
+8:41発）
+軽井
+（9:4着）
+7号車
+3番B席
+R001
+2025.-3.18東京北乗FN7（2－）
+50159-01
+沢
+0
+```
+
+Comparing some of the fields, you can see the OCR output taken naively is not great:
+
+- The departure time is there but the arrival time is `9:4` instead of `9:43`. 
+- The arrival station's `軽井` and `沢` are split up and should be `軽井沢`.
+- The departure station's `東` and `京` are split up and should be `東京`.
+- The train name and number are a mess: `はくたから5り考` instead of `はくたか 555号`
 
 ### Using spatial data
 
@@ -217,7 +249,7 @@ At a certain point all the tests were passing and as much as I wanted to keep fi
 
 ## Live Activities
 
-During development I had to keep reminding myself that the whole point of this endeavor was to have a slick Live Activity.
+During development I had to keep reminding myself that the whole point of this endeavor was to have a slick (read: *useful*) Live Activity.
 
 {% caption_img /images/shinkansen-v1-live-activity-3panel.jpg h400 Live Activity in Dynamic Island compact, expanded, and lock screen views %}
 
@@ -249,7 +281,7 @@ I have a couple guidelines and tips I follow for Live Activities.
 
 #### Use non-semantic font sizes for compact and minimal
 
-The system ignores Dynamic Type settings in the compact and minimal Dynamic Island contexts. Using point sizes directly gives more flexibility while designing.
+The system ignores Dynamic Type settings in the compact and minimal Dynamic Island contexts. Using point sizes directly gives more flexibility while designing in the very limited space.
 
 In the lock screen and expanded contexts, there's limited Dynamic Type support (4-levels total), so it's still worth using semantic fonts as usual (e.g. `.headline`, `.title3`).
 
@@ -274,6 +306,14 @@ HStack(spacing: 4) {
 ProgressView(timerInterval: attributes.departureTime ... attributes.arrivalTime, countsDown: false)
     .progressViewStyle(.linear)
     .labelsHidden()
+   
+// `60:00`
+Text(
+     timerInterval: (Date.now)...(Date(timeIntervalSinceNow: 60*60)),
+     pauseTime: Date(timeIntervalSinceNow: 60*60),
+     countsDown: true,
+     showsHours: false
+)
 ```
 
 As noted above, any `Text` using: `Text(Date(), style: .relative)` will expand to fill its full width.
@@ -462,7 +502,7 @@ A last minute annoyance with AlarmKit was testing localization: I [found a bug](
 
 ## Localization
 
-One of my favorite usages for coding agents is doing Localization setup. Note I'm very specifically **not** talking about LLMs doing the actual translation, but instead:
+One of my favorite usages for coding agents is doing Localization setup. Note I'm specifically *not* talking about LLMs doing the actual translation, but instead:
 
 - doing the initial conversion from inline strings to string keys e.g, `loaded.end-journey-button`.
 - adding localizer comments to each string key e.g. `Button to end the current journey`.
@@ -492,3 +532,8 @@ The app still lays out pretty well with most levels of Dynamic Type. I only use 
 
 I'm using `VNDocumentCameraViewController` as the integrated camera view for scanning. The UX is a little weird because there's no way to limit the input (output?) to one photo. The result is the user can take a bunch of photos of their ticket before they tap "Done" and the app will only read the first.
 
+## Conclusion
+
+Part of the appeal of this idea is that the scope could only creep so much. I honestly didn't leave much on the TODO list for a version 1.1 besides endless optimization potential for the parser.
+
+As usual this post was brain-dump style. If there's any part you connected with and would like me to explore further, feel free to give me a shout.
