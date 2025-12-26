@@ -532,6 +532,22 @@ The app still lays out pretty well with most levels of Dynamic Type. I only use 
 
 I'm using `VNDocumentCameraViewController` as the integrated camera view for scanning. The UX is a little weird because there's no way to limit the input (output?) to one photo. The result is the user can take a bunch of photos of their ticket before they tap "Done" and the app will only read the first.
 
+## Project stats
+
+### By the numbers
+
+- Development time: **~6 days** including App Store materials
+- Lines of Swift (excluding tests, static data, etc.): **8,388**
+
+### Daily Devlog
+
+- Dec 16, 2025 — Initial layout & OCR foundation
+- Dec 17, 2025 — Live Activities, AlarmKit, failure states
+- Dec 18, 2025 — Bilingual OCR, loading animation, app icon, localization
+- Dec 19, 2025 - Parser rewrite, settings view
+- Dec 20, 2025 — Polish, persistence, supported formats view, App Store prep
+- Dec 23, 2025 — Ticket image modal, App Store materials, v1.0 Release
+
 ## Conclusion
 
 Part of the appeal of this idea is that the scope could only creep so much. I honestly didn't leave much on the TODO list for a version 1.1 besides endless optimization potential for the parser.
