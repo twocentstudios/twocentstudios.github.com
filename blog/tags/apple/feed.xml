@@ -5,9 +5,591 @@
     <description>A coding blog covering iOS, Swift, and other programming topics.</description>
     <link>https://twocentstudios.com/blog/tags/apple/index.html</link>
     <atom:link href="https://twocentstudios.com/blog/tags/apple/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Thu, 25 Dec 2025 01:00:58 -0600</pubDate>
-    <lastBuildDate>Thu, 25 Dec 2025 01:00:58 -0600</lastBuildDate>
+    <pubDate>Fri, 26 Dec 2025 04:45:41 -0600</pubDate>
+    <lastBuildDate>Fri, 26 Dec 2025 04:45:41 -0600</lastBuildDate>
     <generator>Jekyll v3.9.3</generator>
+    
+      <item>
+        <title>Shinkansen Live - Developing the App for iOS</title>
+        <description>&lt;p&gt;In my &lt;a href=&quot;/2025/12/24/shinkansen-live-scan-your-ticket-get-a-live-activity/&quot;&gt;last post&lt;/a&gt; I introduced the motivation and feature set of &lt;a href=&quot;https://apps.apple.com/app/id6756808516&quot;&gt;Shinkansen Live&lt;/a&gt;, my latest iOS app. I encourage you to read that one first to learn about what the app does.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/shinkansen-v1-app-icon.jpg&quot; width=&quot;&quot; height=&quot;300&quot; alt=&quot;Shinkansen Live app icon&quot; title=&quot;Shinkansen Live app icon&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Shinkansen Live app icon&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;In this post, I’ll discuss a few of the interesting development challenges I faced during its week of development from concept to App Store release.&lt;/p&gt;
+
+&lt;h2 id=&quot;contents&quot;&gt;Contents&lt;/h2&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;a href=&quot;#overall-development-strategy&quot;&gt;Overall development strategy&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;#ocr-and-parsing-the-ticket-image&quot;&gt;OCR and parsing the ticket image&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;#live-activities&quot;&gt;Live Activities&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;#animations&quot;&gt;Animations&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;#alarmkit&quot;&gt;AlarmKit&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;#localization&quot;&gt;Localization&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;#dynamic-type&quot;&gt;Dynamic Type&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;#visionkit-camera&quot;&gt;VisionKit Camera&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&quot;overall-development-strategy&quot;&gt;Overall development strategy&lt;/h2&gt;
+
+&lt;p&gt;I created an Xcode project myself with Xcode 26.1 (later switching to Xcode 26.2), then added the &lt;a href=&quot;https://github.com/pointfreeco/swift-composable-architecture&quot;&gt;TCA&lt;/a&gt; package.&lt;/p&gt;
+
+&lt;p&gt;Then, I set off to work using Claude Code with Opus 4.5. I started by having it lay out the SwiftUI View and TCA Feature without any logic. Then I built out the rest of the infrastructure around getting the input image, doing OCR, parsing the output, and displaying the results. I’ll go through more of the history later on in the post.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/shinkansen-v1-early-layouts-4panel.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Early view layouts during initial development&quot; title=&quot;Early view layouts during initial development&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Early view layouts during initial development&lt;/div&gt;&lt;/div&gt;
+
+&lt;h2 id=&quot;ocr-and-parsing-the-ticket-image&quot;&gt;OCR and parsing the ticket image&lt;/h2&gt;
+
+&lt;p&gt;The most difficult part of getting this app to production was the ticket OCR &amp;amp; parsing system. This system went through the most churn over the week, partially due to expanding scope and partially due to my expanding understanding of the problem space.&lt;/p&gt;
+
+&lt;p&gt;My initial thought during the prototyping stage was to target only the “ticket” screenshot from Eki-net you get after purchase. It looks something like this:&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/shinkansen-v1-example-ekinet.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Example Eki-net ticket screenshot&quot; title=&quot;Example Eki-net ticket screenshot&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Example Eki-net ticket screenshot&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;In theory, it’d be reasonable to limit the app’s input space to app screenshots from Eki-net (JR-East) and SmartEX (JR-central). Even including web browser screenshots wouldn’t be that much more burden on an OCR-based system. But later on in the project when I’d decided I was happy enough with the prototype that I wanted to target a production release on the App Store, I started thinking about how it would make marketing much harder to say “only works on screenshots” and not physical tickets.&lt;/p&gt;
+
+&lt;h3 id=&quot;why-ocr-why-not-multi-modal-llms&quot;&gt;Why OCR? Why not multi-modal LLMs?&lt;/h3&gt;
+
+&lt;p&gt;OCR via &lt;a href=&quot;https://developer.apple.com/documentation/visionkit&quot;&gt;VisionKit&lt;/a&gt; alongside manual parsing has a lot of upsides:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Free for user &amp;amp; developer&lt;/li&gt;
+  &lt;li&gt;Fast&lt;/li&gt;
+  &lt;li&gt;Multilingual&lt;/li&gt;
+  &lt;li&gt;Privacy baked in&lt;/li&gt;
+  &lt;li&gt;No network usage&lt;/li&gt;
+  &lt;li&gt;Relatively mature: less risk of accuracy churn&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;In theory, multimodal LLMs can handle OCR and understanding more variations of tickets layouts and bad lighting. In fact, while I was writing the parser, I used Opus 4.5 to read the test ticket images in order to create the ground truth test expectation data.&lt;/p&gt;
+
+&lt;p&gt;My issue with prototyping with LLMs further was that they had essentially the opposite pros and cons as the VisionKit system:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Unknown, but some ongoing cost (meaning I’d need to come up with a monetization strategy before release)&lt;/li&gt;
+  &lt;li&gt;Unknown which level of model would correctly balance accuracy, cost, and speed over the short term.&lt;/li&gt;
+  &lt;li&gt;Requires network access&lt;/li&gt;
+  &lt;li&gt;Requires sending photo data off device (not hugely private, but still)&lt;/li&gt;
+  &lt;li&gt;Different outputs for the same input&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;What I didn’t explore directly was using the Apple Foundation model at the &lt;em&gt;parsing&lt;/em&gt; layer. The current Apple Foundation model in iOS 26 has no image input API, but I could perhaps prompt it to take the raw output of the VisionKit model and try to make sense of it. My instinct is that this would be a waste of time, but still worth keeping on the table.&lt;/p&gt;
+
+&lt;h3 id=&quot;overall-strategy&quot;&gt;Overall strategy&lt;/h3&gt;
+
+&lt;p&gt;While working on this, I honestly wasn’t thinking strictly in terms of prototype &amp;amp; production. From the first spark of idea I had an understanding of what the overall UX flow of the app would be. It was mostly getting to an answer of “is this feasible to productionize in a couple days?” while still being flexible on the scope of what &lt;em&gt;production-ready&lt;/em&gt; meant.&lt;/p&gt;
+
+&lt;p&gt;That meant that I started by adding my ticket screenshot to the project, giving Claude my overall strategy, and having Claude create the OCR &amp;amp; parser system that output results directly into the UI.&lt;/p&gt;
+
+&lt;h3 id=&quot;ocr-prototype&quot;&gt;OCR prototype&lt;/h3&gt;
+
+&lt;p&gt;The first prototype parser supported just the two screenshots I had of Eki-net tickets (one from the morning of my trip; another from a similar trip a few months ago).&lt;/p&gt;
+
+&lt;p&gt;The implementation set up a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;VNRecognizeTextRequest&lt;/code&gt; in Japanese language mode, read out the highest ranking results into several lines of text (&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;[String]&lt;/code&gt;), then fed that to Claude’s homegrown parser that pulled the ticket attributes out of that glob of text mostly using regex.&lt;/p&gt;
+
+&lt;p&gt;Since the input was from a perfectly legible screenshot, there was no issues with the VisionKit part nor the parser.&lt;/p&gt;
+
+&lt;h3 id=&quot;ocr-for-real-shinkansen-ticket-images&quot;&gt;OCR for real Shinkansen ticket images&lt;/h3&gt;
+
+&lt;p&gt;As soon as I tested the system on a real Shinkansen ticket in a photo, the system fell apart.&lt;/p&gt;
+
+&lt;p&gt;I searched through my personal Photo library for as many Shinkansen tickets as I could find. I googled for more. I started with 4 images (and later in development I ended up with about 10 images).&lt;/p&gt;
+
+&lt;p&gt;At first I was simply trying to naively patch out the parser with Claude. To do this, I set up a unit test system where I’d do the VisionKit request for each image once and write the resulting &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;[String]&lt;/code&gt; data structure to disk. Then each unit test would read that data in, run the parser, and compare the expected ticket structure to the test result.&lt;/p&gt;
+
+&lt;p&gt;Unintuitively, the standard Swift Testing unit test setup was actually the less efficient way to iterate on this. Claude was having a lot of trouble reading the detailed test failure information after it ran xcodebuild in the command line. Each build &amp;amp; run &amp;amp; test iteration needed to boot up a fresh simulator, install the app, run the test, then tear down the simulator.&lt;/p&gt;
+
+&lt;p&gt;Instead, a built a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;@main&lt;/code&gt; App-based test harness that:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;temporarily disabled the real UI.&lt;/li&gt;
+  &lt;li&gt;ran the test code on &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;onAppear&lt;/code&gt;.&lt;/li&gt;
+  &lt;li&gt;printed the test results via &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;print&lt;/code&gt; statements.&lt;/li&gt;
+  &lt;li&gt;called &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;exit(0)&lt;/code&gt; when finished.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;For quickly prototyping, iterating, and understanding the scope of the problem space, this solved all the issues with the Swift Testing setup. The same booted simulator was reused on each run. &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;DerivedData&lt;/code&gt; and build artifacts were reused, so builds were fast. Claude had no trouble reading print statements from the console output.&lt;/p&gt;
+
+&lt;p&gt;I let Claude run in its own loop for a while to see what it could and couldn’t improve with the parser based on the limitations of our system.&lt;/p&gt;
+
+&lt;p&gt;Claude found several underlying limitations with the VisionKit setup that were unsolvable at the parser level.&lt;/p&gt;
+
+&lt;p&gt;For example, concatenating all the text recognition objects into &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;[String]&lt;/code&gt; was done somewhat naively by comparing y-coordinates. If the y-coordinates of objects were within a certain range, they were assumed to be on the same line. When the ticket was tilted, this strategy was interleaving text.&lt;/p&gt;
+
+&lt;p&gt;Additionally, some numbers and letters were just flat out being interpreted incorrectly. A &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;37&lt;/code&gt; was read as a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;30&lt;/code&gt;. &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CAR&lt;/code&gt; was read as &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CDR&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;Off running on its own, Claude was trying to special case as much of these failure cases it could to get the tests passing.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/shinkansen-v1-test-ticket-04.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Example test ticket image that produced the Japanese-only VisionKit parsing output shown below&quot; title=&quot;Example test ticket image that produced the Japanese-only VisionKit parsing output shown below&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Example test ticket image that produced the Japanese-only VisionKit parsing output shown below&lt;/div&gt;&lt;/div&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;CC制
+東
+3月18日（
+はくたから5り考
+¥3,380
+新幹線特急券
+京
+→
+8:41発）
+軽井
+（9:4着）
+7号車
+3番B席
+R001
+2025.-3.18東京北乗FN7（2－）
+50159-01
+沢
+0
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Comparing some of the fields, you can see the OCR output taken naively is not great:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;The departure time is there but the arrival time is &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;9:4&lt;/code&gt; instead of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;9:43&lt;/code&gt;.&lt;/li&gt;
+  &lt;li&gt;The arrival station’s &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;軽井&lt;/code&gt; and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;沢&lt;/code&gt; are split up and should be &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;軽井沢&lt;/code&gt;.&lt;/li&gt;
+  &lt;li&gt;The departure station’s &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;東&lt;/code&gt; and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;京&lt;/code&gt; are split up and should be &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;東京&lt;/code&gt;.&lt;/li&gt;
+  &lt;li&gt;The train name and number are a mess: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;はくたから5り考&lt;/code&gt; instead of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;はくたか 555号&lt;/code&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;using-spatial-data&quot;&gt;Using spatial data&lt;/h3&gt;
+
+&lt;p&gt;The OCR part of the system was trying to abstract away the spatial parts from the parser. Looking at the raw data, my intuition was that the spacial data could be useful within the parsing layer. Instead of passing &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;[String]&lt;/code&gt; between layers, I was now passing:&lt;/p&gt;
+
+&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;TextObservation&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Equatable&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Sendable&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;text&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;x&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Double&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;y&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Double&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;width&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Double&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;height&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Double&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Each field parser within the parsing system could decide for itself how to use the spacial data. This is especially useful considering how important &lt;em&gt;anchor values&lt;/em&gt; are. For example “発” (indicating a departure time) and “→” (indicating the station to the left is the departure station).&lt;/p&gt;
+
+&lt;p&gt;This improved things a bit for 5 ticket images, but after adding another 5 and going all in on English ticket support, there were plenty more edge cases to consider.&lt;/p&gt;
+
+&lt;h3 id=&quot;transforms&quot;&gt;Transforms&lt;/h3&gt;
+
+&lt;p&gt;Only after seeing some wonky positioning of the text boxes in my loading animation (see below), I realized that I wasn’t accounting for the image transform properly when converting the input &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;UIImage&lt;/code&gt; to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CGImage&lt;/code&gt; as input to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;VNRecognizeTextRequest&lt;/code&gt;.&lt;/p&gt;
+
+&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;extension&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;CGImagePropertyOrientation&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;nf&quot;&gt;init&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;_&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;uiOrientation&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;UIImage&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Orientation&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;switch&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;uiOrientation&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;up&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;up&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;upMirrored&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;upMirrored&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;down&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;down&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;downMirrored&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;downMirrored&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;left&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;left&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;leftMirrored&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;leftMirrored&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;right&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;right&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;rightMirrored&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rightMirrored&lt;/span&gt;
+        &lt;span class=&quot;kd&quot;&gt;@unknown&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;default&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;up&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;h3 id=&quot;levenshtein-distance&quot;&gt;Levenshtein distance&lt;/h3&gt;
+
+&lt;p&gt;Like our previous example of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CDR&lt;/code&gt; instead of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CAR&lt;/code&gt;, VisionKit was reading strings like &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;TOKIO&lt;/code&gt; instead of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;TOKYO&lt;/code&gt;. For these parts, I figured calculating &lt;a href=&quot;https://en.wikipedia.org/wiki/Levenshtein_distance&quot;&gt;Levenshtein distance&lt;/a&gt; from known strings was the right strategy. The Shinkansen system is large but not so large that I couldn’t ingest the station name values and the other known strings like &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;JAN&lt;/code&gt;, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;FEB&lt;/code&gt;, etc.&lt;/p&gt;
+
+&lt;p&gt;One strategy I haven’t tested yet is using &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;VNRecognizeTextRequest.customWords&lt;/code&gt; with the full dictionary of station names, etc. to see if that eliminates the need for using Levenshtein distance at all.&lt;/p&gt;
+
+&lt;h3 id=&quot;english-and-japanese-mode-ocr&quot;&gt;English and Japanese mode OCR&lt;/h3&gt;
+
+&lt;p&gt;For some background, tickets can be printed in an “English” variant that includes a mix of English and Japanese text. If you buy from a ticket vending machine and complete the purchase in English mode, it’ll print an English ticket. Similarly, if you buy from a human ticket vendor at the counter, they will print your ticket in English variant if you speak English to them.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/shinkansen-v1-example-english-ticket.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Example of an English variant Shinkansen ticket&quot; title=&quot;Example of an English variant Shinkansen ticket&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Example of an English variant Shinkansen ticket&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;At the VisionKit layer, I was first using &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;VNRecognizeTextRequest&lt;/code&gt; in Japanese-mode only.&lt;/p&gt;
+
+&lt;p&gt;I tried expanding a single instance to include both English and Japanese text. But checking the raw results, a dual language setup severely impaired its abilities.&lt;/p&gt;
+
+&lt;p&gt;For a while, I had a dual parsing system that would check for a few English strings, and if any were found, it would assume the ticket was an “English ticket” and run a separate English &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;VNRecognizeTextRequest&lt;/code&gt; and return those results. This didn’t work well for a few reasons:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;The Japanese &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;VNRecognizeTextRequest&lt;/code&gt; was surprisingly bad at reading numbers compared to the English one.&lt;/li&gt;
+  &lt;li&gt;Deciding at the VisionKit layer which text results should come from the English request didn’t make a lot of sense conceptually if I wanted to keep the majority of the logic in the parser layer.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Therefore, I decided to run both the English and Japanese &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;VNRecognizeTextRequest&lt;/code&gt;s on every input and provide all the results to the parser.&lt;/p&gt;
+
+&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;BilingualOCRResult&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Sendable&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Equatable&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Codable&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;jp&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;TextObservation&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;en&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;TextObservation&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;I was also previously discarding the confidence score (&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;0.0...1.0&lt;/code&gt;) that VisionKit provides with each observation. This score was actually different in the parallel observations for English and Japanese in some cases, especially number recognition. I added the confidence score to the output so the parser could use it.&lt;/p&gt;
+
+&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;TextObservation&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Equatable&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Sendable&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Codable&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;text&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;x&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Double&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;y&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Double&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;width&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Double&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;height&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Double&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;confidence&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Float&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;h3 id=&quot;unparseable-fields-fallback-ux&quot;&gt;Unparseable fields fallback UX&lt;/h3&gt;
+
+&lt;p&gt;At this point in the development of the parser, I was pretty certain reading photos of tickets was never going to be reach 100% accuracy for every field.&lt;/p&gt;
+
+&lt;p&gt;I took a break from working on the parser to implement editing for every field in the ticket UI. This meant that users could manually recover from parsing errors and omissions.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/shinkansen-v1-editing-screen.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Editing screen with editable ticket fields&quot; title=&quot;Editing screen with editable ticket fields&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Editing screen with editable ticket fields&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Not needing to reach 100% accuracy in the parser while still ensuring the user gets value out of the system as a whole opened up a more reasonable strategy for the parser.&lt;/p&gt;
+
+&lt;h3 id=&quot;defense-in-depth-parsing-system&quot;&gt;Defense-in-depth parsing system&lt;/h3&gt;
+
+&lt;p&gt;After tweaking more and more of the VisionKit layer, I had to regenerate the VisionKit output test data for each test ticket image, and then essentially rewrite the parser layer.&lt;/p&gt;
+
+&lt;p&gt;This time, the strategy was to:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Pass in the full English and Japanese results including relative x and y coordinates to each field.&lt;/li&gt;
+  &lt;li&gt;Create a sub-parser dedicated to each field of the ticket that needed to be parsed.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Within each sub-parser, my strategy was to start with the best case scenario of input data quality, then step-by-step keep loosening the guidelines to account for more unideal cases that had come up in the test data, then finally falling back to returning &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;nil&lt;/code&gt; for that field.&lt;/p&gt;
+
+&lt;h3 id=&quot;ocr-testing-system&quot;&gt;OCR testing system&lt;/h3&gt;
+
+&lt;p&gt;Claude iterated on the field parser implementations for an hour or two, one at a time, checking the test output to ensure there were no regressions along the way.&lt;/p&gt;
+
+&lt;p&gt;At a certain point all the tests were passing and as much as I wanted to keep finding test data and tweaking the parser, I knew I had to move on.&lt;/p&gt;
+
+&lt;h2 id=&quot;live-activities&quot;&gt;Live Activities&lt;/h2&gt;
+
+&lt;p&gt;During development I had to keep reminding myself that the whole point of this endeavor was to have a slick (read: &lt;em&gt;useful&lt;/em&gt;) Live Activity.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/shinkansen-v1-live-activity-3panel.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Live Activity in Dynamic Island compact, expanded, and lock screen views&quot; title=&quot;Live Activity in Dynamic Island compact, expanded, and lock screen views&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Live Activity in Dynamic Island compact, expanded, and lock screen views&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;My design process was quick and to-the-point:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;list out all the Live Activity contexts: lock screen, dynamic island compact leading, compact trailing, minimal, and expanded.&lt;/li&gt;
+  &lt;li&gt;consider all the ticket info I had available from the parser output.&lt;/li&gt;
+  &lt;li&gt;consider all of the above for the “before” and “during” trip phases (if I knew I had more accurate control over Live Activity update timing, I might have divided these phases up even further).&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;In lock screen and expanded contexts, you can &lt;em&gt;mostly&lt;/em&gt; display everything you want. The challenge is in aesthetics and visual hierarchy like in any design.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/shinkansen-v1-lockscreen-live-activity.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Lock screen Live Activity showing trip details&quot; title=&quot;Lock screen Live Activity showing trip details&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Lock screen Live Activity showing trip details&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;When dealing with the compact and minimal contexts, you really do only have the equivalent of about 6 very small characters to work with, and 2 lines if you want to push your luck. If you try to fill the entire available space of the Dynamic Island on either side, you’ll lose the system clock which is no go for my use case.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/shinkansen-v1-compact-live-activity.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Compact Live Activity in Dynamic Island&quot; title=&quot;Compact Live Activity in Dynamic Island&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Compact Live Activity in Dynamic Island&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;When I thought about it, the most important of all the contexts was the compact leading and trailing in the &lt;em&gt;before&lt;/em&gt; trip phase. This is when the information is most needed at a glance.&lt;/p&gt;
+
+&lt;p&gt;I stacked in departure time and train number in the compact leading. This information is used to decide when to go to the platform and which platform to go to.&lt;/p&gt;
+
+&lt;p&gt;I stacked the car and seat number in the compact trailing. These are used to decide where to line up on the platform and of course where you’ll sit.&lt;/p&gt;
+
+&lt;h3 id=&quot;view-guidelines-and-tips&quot;&gt;View guidelines and tips&lt;/h3&gt;
+
+&lt;p&gt;Designing for Live Activities is painful. There are significantly more constraints to the SwiftUI View system than in normal app contexts. Most are undocumented. Some quirks can be teased out in the SwiftUI Preview if you’re lucky. Others only appear on the simulator or a real device.&lt;/p&gt;
+
+&lt;p&gt;I have a couple guidelines and tips I follow for Live Activities.&lt;/p&gt;
+
+&lt;h4 id=&quot;use-non-semantic-font-sizes-for-compact-and-minimal&quot;&gt;Use non-semantic font sizes for compact and minimal&lt;/h4&gt;
+
+&lt;p&gt;The system ignores Dynamic Type settings in the compact and minimal Dynamic Island contexts. Using point sizes directly gives more flexibility while designing in the very limited space.&lt;/p&gt;
+
+&lt;p&gt;In the lock screen and expanded contexts, there’s limited Dynamic Type support (4-levels total), so it’s still worth using semantic fonts as usual (e.g. &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.headline&lt;/code&gt;, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.title3&lt;/code&gt;).&lt;/p&gt;
+
+&lt;h4 id=&quot;for-dynamically-updating-times-prepare-to-spend-a-lot-of-time-in-trial-and-error&quot;&gt;For dynamically updating times, prepare to spend a lot of time in trial and error&lt;/h4&gt;
+
+&lt;p&gt;Maybe someday I’ll write a full explainer post on which countdown-style &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Text&lt;/code&gt; fields are supported. In short, if you want dynamically updated fields in any part of your Live Activity, your formatting options are limited and underdocumented.&lt;/p&gt;
+
+&lt;p&gt;A couple configurations I used:&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;// `44 min, 23 sec` or `1 hr, 52 min`
+Text(attributes.departureTime, style: .relative)
+
+// Centers `Departing in N min, M, sec` due to `.relative`&apos;s implicit `maxWidth: .infinity`
+HStack(spacing: 4) {
+    Text(String(localized: &quot;widget.departing-in&quot;, comment: &quot;Footer label shown before departure&quot;))
+        .frame(maxWidth: .infinity, alignment: .trailing)
+    Text(attributes.departureTime, style: .relative)
+}
+
+// Linear progress view with no label
+ProgressView(timerInterval: attributes.departureTime ... attributes.arrivalTime, countsDown: false)
+    .progressViewStyle(.linear)
+    .labelsHidden()
+   
+// `60:00`
+Text(
+     timerInterval: (Date.now)...(Date(timeIntervalSinceNow: 60*60)),
+     pauseTime: Date(timeIntervalSinceNow: 60*60),
+     countsDown: true,
+     showsHours: false
+)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;As noted above, any &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Text&lt;/code&gt; using: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Text(Date(), style: .relative)&lt;/code&gt; will expand to fill its full width.&lt;/p&gt;
+
+&lt;p&gt;It’s frustrating just thinking about this again. I basically just banged my head against the wall until I landed on a design I felt embarrassed but comfortable shipping.&lt;/p&gt;
+
+&lt;h4 id=&quot;clamped-width-custom-layout&quot;&gt;Clamped width custom Layout&lt;/h4&gt;
+
+&lt;p&gt;I use this custom &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Layout&lt;/code&gt; judiciously in the Dynamic Island.&lt;/p&gt;
+
+&lt;p&gt;It makes the underlying view’s frame collapse to fit its ideal width, but clamped to a maximum value.&lt;/p&gt;
+
+&lt;p&gt;I want the compact or minimal context to be as narrow as possible. I want short input text to result in a very narrow Dynamic Island layout. I want longer input not to expand beyond a certain width; and even more, I want to use the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;minimumScaleFactor&lt;/code&gt; modifier to further shrink the text size once that maximum width is reached.&lt;/p&gt;
+
+&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;private&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;SingleViewClampedWidthLayout&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Layout&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;maxWidth&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;CGFloat&lt;/span&gt;
+
+    &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;sizeThatFits&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;proposal&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ProposedViewSize&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;subviews&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Subviews&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;cache&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;inout&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Void&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;CGSize&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;guard&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;subview&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;subviews&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;first&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;else&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;zero&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;idealWidth&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;subview&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;sizeThatFits&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;init&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;width&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;nil&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;height&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;proposal&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;height&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;width&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;width&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;min&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;idealWidth&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;maxWidth&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;subview&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;sizeThatFits&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;init&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;width&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;width&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;height&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;proposal&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;height&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+    &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;placeSubviews&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;bounds&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;CGRect&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;proposal&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ProposedViewSize&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;subviews&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Subviews&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;cache&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;inout&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Void&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;guard&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;subview&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;subviews&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;first&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;else&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;subview&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;place&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;at&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;bounds&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;origin&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;proposal&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;init&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;bounds&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;size&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;kd&quot;&gt;private&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ClampedWidth&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ViewModifier&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;maxWidth&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;CGFloat&lt;/span&gt;
+
+    &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;body&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;content&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Content&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;some&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;View&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;kt&quot;&gt;SingleViewClampedWidthLayout&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;maxWidth&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;maxWidth&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;n&quot;&gt;content&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;kd&quot;&gt;extension&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;View&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;@ViewBuilder&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;clamped&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;maxWidth&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;CGFloat&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;some&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;View&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;nf&quot;&gt;modifier&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;ClampedWidth&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;maxWidth&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;maxWidth&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;h3 id=&quot;updating-in-background&quot;&gt;Updating in background&lt;/h3&gt;
+
+&lt;p&gt;Live Activities can usually only be updated via remote Push Notification. But if your app gets a chance to wake up and run in the background, it can also issue updates to the Live Activity.&lt;/p&gt;
+
+&lt;p&gt;One of the few reliable ways to have your app woken up in the background regularly is to use significant location updates from Core Location. In order to have your app get background time you need to:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Be approved by the user for &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Always&lt;/code&gt; Location Services permission.&lt;/li&gt;
+  &lt;li&gt;Be approved by the user for &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;WhenInUse&lt;/code&gt; Location Services permission AND one of the following
+    &lt;ul&gt;
+      &lt;li&gt;Have an active Live Activity OR&lt;/li&gt;
+      &lt;li&gt;Start a CLBackgroundActivitySession (that essentially creates a default Live Activity)&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;In the case of Shinkansen Live, I have two phases for the Live Activity:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;before the train departs&lt;/li&gt;
+  &lt;li&gt;after the train departs&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;The time of that change over is pretty reliably scheduled. But Live Activities have no update schedule like Widgets do (for some reason).&lt;/p&gt;
+
+&lt;p&gt;To update the Live Activity after the train departs I could:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Have the user tap a button in the lock screen or expanded Live Activity that triggers an intent to wake up the app in the background and update the Live Activity.&lt;/li&gt;
+  &lt;li&gt;Hope the user opens the app on their own.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Both of these options are unideal, so instead I ask for &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;WhenInUse&lt;/code&gt; Location Services permission and start a monitoring for significant locations. One of these will be fired not long after the train departs (within about 1km or 5 minutes). That trigger will open the app in the background, update the Live Activity based on the current time, then go back to sleep.&lt;/p&gt;
+
+&lt;h3 id=&quot;persisting-the-trip&quot;&gt;Persisting the trip&lt;/h3&gt;
+
+&lt;p&gt;There’s an edge case I wanted to handle with the Live Activity lifetime.&lt;/p&gt;
+
+&lt;p&gt;If the system kills the app in the middle of a trip, the Live Activity in theory should continue uninterrupted since it’s an App Extension. But in the case of Shinkansen Live, I’m expecting to update the Live Activity while the app is backgrounded. This means there’s a potential flow where:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;The app is in the background with the Live Activity running.&lt;/li&gt;
+  &lt;li&gt;The app is killed by the system.&lt;/li&gt;
+  &lt;li&gt;The Live Activity continues to run.&lt;/li&gt;
+  &lt;li&gt;The system cold launches the app in the background.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;At this point, I could decide to query the Live Activities framework to see if there’s a Live Activity running and if so, restore the ticket model layer and UI. However, I prefer not to treat the Live Activity as the source of truth for the model layer.&lt;/p&gt;
+
+&lt;p&gt;I added support with the &lt;a href=&quot;https://github.com/pointfreeco/swift-sharing&quot;&gt;Sharing&lt;/a&gt; library to persist the ticket model automatically on changes. On the above flow, I use the persisted ticket model to restore the UI and Live Activity and AlarmKit state, ensuring the ticket data is still valid.&lt;/p&gt;
+
+&lt;h3 id=&quot;handling-dismissal&quot;&gt;Handling dismissal&lt;/h3&gt;
+
+&lt;p&gt;One final bit of UX that’s not mission critical but is very user friendly is to respond to user-initiated Live Activity dismissals from the lock screen. If the user swipes from right to left on your Live Activity, the system dismisses it. When your app next runs, it will receive an update from &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Activity.activityStateUpdates&lt;/code&gt; stream (if you’re monitoring it).&lt;/p&gt;
+
+&lt;p&gt;If the app detects a user-initiated dismissal, I consider that their trip has ended, clear the ticket, and go back to the app home screen. There’s an argument that it’d be safer to simply toggle the Live Activity, but since my app’s only purpose is to show a Live Activity, I don’t think it makes sense to build in more complexity to keep multiple states.&lt;/p&gt;
+
+&lt;h2 id=&quot;animations&quot;&gt;Animations&lt;/h2&gt;
+
+&lt;p&gt;The focused nature of this app allowed me a bit more breathing room to experiment with custom screen transitions and multi-stage animations.&lt;/p&gt;
+
+&lt;h3 id=&quot;root-level-transitions&quot;&gt;Root level transitions&lt;/h3&gt;
+
+&lt;p&gt;At the bare minimum, I usually try to use a default opacity transition for root level views when they aren’t covered by system transitions like a navigation push or sheet presentation.&lt;/p&gt;
+
+&lt;p&gt;For Shinkansen Live, I added a little bit of extra scale effect to the usual opacity transition of the initial screen, both on cold launch and when returning from the trip screen.&lt;/p&gt;
+
+&lt;video controls=&quot;&quot; loop=&quot;&quot; style=&quot;max-height: 400px;&quot;&gt;
+  &lt;source src=&quot;/images/shinkansen-v1-initial-transition.mp4&quot; type=&quot;video/mp4&quot; /&gt;
+&lt;/video&gt;
+
+&lt;video controls=&quot;&quot; loop=&quot;&quot; style=&quot;max-height: 400px;&quot;&gt;
+  &lt;source src=&quot;/images/shinkansen-v1-initial-transition-slowmo.mp4&quot; type=&quot;video/mp4&quot; /&gt;
+&lt;/video&gt;
+
+&lt;p&gt;For the trip screen, I first animated the card down from the top with some scale and opacity, then fade in the other sections with some scale.&lt;/p&gt;
+
+&lt;video controls=&quot;&quot; loop=&quot;&quot; style=&quot;max-height: 400px;&quot;&gt;
+  &lt;source src=&quot;/images/shinkansen-v1-trip-transition.mp4&quot; type=&quot;video/mp4&quot; /&gt;
+&lt;/video&gt;
+
+&lt;video controls=&quot;&quot; loop=&quot;&quot; style=&quot;max-height: 400px;&quot;&gt;
+  &lt;source src=&quot;/images/shinkansen-v1-trip-transition-slowmo.mp4&quot; type=&quot;video/mp4&quot; /&gt;
+&lt;/video&gt;
+
+&lt;h3 id=&quot;scanning-animation&quot;&gt;Scanning animation&lt;/h3&gt;
+
+&lt;p&gt;The most fun was doing the scanning animation. Once the selected image is downloaded and displayable, I animate it in with a bit of 3D effect. Then I use the coordinate results of the text observations to animate those boxes onto the image.&lt;/p&gt;
+
+&lt;p&gt;This animation serves a few purposes in my opinion:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Visually expresses to the user what the app is actually doing.&lt;/li&gt;
+  &lt;li&gt;Buys time for the parser to do its job.&lt;/li&gt;
+  &lt;li&gt;Feels fun and playful in a way that is motivating for users to want to go through the trouble of submitting their ticket image.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;video controls=&quot;&quot; loop=&quot;&quot; style=&quot;max-height: 400px;&quot;&gt;
+  &lt;source src=&quot;/images/shinkansen-v1-scanning-transition.mp4&quot; type=&quot;video/mp4&quot; /&gt;
+&lt;/video&gt;
+
+&lt;video controls=&quot;&quot; loop=&quot;&quot; style=&quot;max-height: 400px;&quot;&gt;
+  &lt;source src=&quot;/images/shinkansen-v1-scanning-transition-slowmo.mp4&quot; type=&quot;video/mp4&quot; /&gt;
+&lt;/video&gt;
+
+&lt;h3 id=&quot;ticket-image-modal-animation&quot;&gt;Ticket image modal animation&lt;/h3&gt;
+
+&lt;p&gt;My final bit of (self) user testing made me realize that even though I’d built in a way to update ticket values that were missing or erroneously parsed, I had no in-app UI for actually doing the field checking. Depending on their input source, the user would have to hold up their physical ticket next to the app’s virtual ticket to double check the fields. Or if they’d used a screenshot, they’d have to flip back and forth between Photos app.&lt;/p&gt;
+
+&lt;p&gt;As my last big task, I added support for showing the original image inline with the ticket in a modal overlay.&lt;/p&gt;
+
+&lt;p&gt;This setup uses &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;matchedGeometryEffect&lt;/code&gt; and was a nightmare to work through. In the end it’s not perfect, but the speed conceals some of the jankiness. &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;matchedGeometryEffect&lt;/code&gt; has a lot of undocumented incompatibilities with other modifiers, so it was just hours upon hours of reordering modifiers and building and running to check what had changed. I came out of the experience with little new demonstrably true observations I can share here, unfortunately.&lt;/p&gt;
+
+&lt;video controls=&quot;&quot; loop=&quot;&quot; style=&quot;max-height: 400px;&quot;&gt;
+  &lt;source src=&quot;/images/shinkansen-v1-image-transition.mp4&quot; type=&quot;video/mp4&quot; /&gt;
+&lt;/video&gt;
+
+&lt;video controls=&quot;&quot; loop=&quot;&quot; style=&quot;max-height: 400px;&quot;&gt;
+  &lt;source src=&quot;/images/shinkansen-v1-image-transition-slowmo.mp4&quot; type=&quot;video/mp4&quot; /&gt;
+&lt;/video&gt;
+
+&lt;h3 id=&quot;card-dragging&quot;&gt;Card dragging&lt;/h3&gt;
+
+&lt;p&gt;Whenever there’s a card-looking UI on screen, I want it to be interactable even if there’s no real gesture that makes sense.&lt;/p&gt;
+
+&lt;p&gt;I created a custom drag gesture with rubberbanding that allows the user to drag the ticket a little bit in any direction. When released, it snaps back with a custom haptic that mirrors the visual.&lt;/p&gt;
+
+&lt;video controls=&quot;&quot; loop=&quot;&quot; style=&quot;max-height: 400px;&quot;&gt;
+  &lt;source src=&quot;/images/shinkansen-v1-card-drag.mp4&quot; type=&quot;video/mp4&quot; /&gt;
+&lt;/video&gt;
+
+&lt;h2 id=&quot;alarmkit&quot;&gt;AlarmKit&lt;/h2&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://developer.apple.com/documentation/alarmkit&quot;&gt;AlarmKit&lt;/a&gt; is new in iOS 26 and I thought it might be a good fit for Shinkansen Live’s use case.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/shinkansen-v1-alarm-2panel.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Alarm setting in trip screen and full screen alarm notification&quot; title=&quot;Alarm setting in trip screen and full screen alarm notification&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Alarm setting in trip screen and full screen alarm notification&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;The integration was mostly straightforward, but it added another layer of complexity to the reducer implementation to ensure that it was added, changed, and removed for all the relevant cases:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Arrival time exists or doesn’t exist.&lt;/li&gt;
+  &lt;li&gt;Arrival time is updated manually by the user.&lt;/li&gt;
+  &lt;li&gt;System time is too close to arrival time to set an alarm.&lt;/li&gt;
+  &lt;li&gt;Journey is ended by the user before arrival time.&lt;/li&gt;
+  &lt;li&gt;Live Activity is dismissed from the lock screen.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;And more.&lt;/p&gt;
+
+&lt;h3 id=&quot;permission-dialog&quot;&gt;Permission dialog&lt;/h3&gt;
+
+&lt;p&gt;A last minute annoyance with AlarmKit was testing localization: I &lt;a href=&quot;https://hachyderm.io/@twocentstudios/115740319076548675&quot;&gt;found a bug&lt;/a&gt; where the localized text for the AlarmKit permissions dialog was not being used on iOS 26.0. But the bug was fixed for iOS 26.1. And no, the bug nor the fix were mentioned in any official SDK release notes.&lt;/p&gt;
+
+&lt;h2 id=&quot;localization&quot;&gt;Localization&lt;/h2&gt;
+
+&lt;p&gt;One of my favorite usages for coding agents is doing Localization setup. Note I’m specifically &lt;em&gt;not&lt;/em&gt; talking about LLMs doing the actual translation, but instead:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;doing the initial conversion from inline strings to string keys e.g, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;loaded.end-journey-button&lt;/code&gt;.&lt;/li&gt;
+  &lt;li&gt;adding localizer comments to each string key e.g. &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Button to end the current journey&lt;/code&gt;.&lt;/li&gt;
+  &lt;li&gt;maintaining default values for when string interpolations are required e.g.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kt&quot;&gt;Button&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
+    &lt;span class=&quot;kt&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
+        &lt;span class=&quot;nv&quot;&gt;localized&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;loaded.arrival-alert.status.minutes-before&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;defaultValue&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;mins&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;s&quot;&gt; min before&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+        &lt;span class=&quot;nv&quot;&gt;comment&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;Status showing minutes before arrival (for menu items)&quot;&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;...&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;The initial conversion uses a custom markdown document with some basic rules. It takes about an hour for the first run and then a few more passes with a human in the loop to ensure the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;xcstrings&lt;/code&gt; file is clean.&lt;/p&gt;
+
+&lt;h2 id=&quot;dynamic-type&quot;&gt;Dynamic Type&lt;/h2&gt;
+
+&lt;p&gt;The app still lays out pretty well with most levels of Dynamic Type. I only use semantic font qualifiers. All content is in a scroll view that’s usually fixed.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/shinkansen-v1-dynamic-type-landing.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Landing screen with various Dynamic Type sizes&quot; title=&quot;Landing screen with various Dynamic Type sizes&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Landing screen with various Dynamic Type sizes&lt;/div&gt;&lt;/div&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/shinkansen-v1-dynamic-type-trip.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Trip screen with various Dynamic Type sizes&quot; title=&quot;Trip screen with various Dynamic Type sizes&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Trip screen with various Dynamic Type sizes&lt;/div&gt;&lt;/div&gt;
+
+&lt;h2 id=&quot;visionkit-camera&quot;&gt;VisionKit Camera&lt;/h2&gt;
+
+&lt;p&gt;I’m using &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;VNDocumentCameraViewController&lt;/code&gt; as the integrated camera view for scanning. The UX is a little weird because there’s no way to limit the input (output?) to one photo. The result is the user can take a bunch of photos of their ticket before they tap “Done” and the app will only read the first.&lt;/p&gt;
+
+&lt;h2 id=&quot;conclusion&quot;&gt;Conclusion&lt;/h2&gt;
+
+&lt;p&gt;Part of the appeal of this idea is that the scope could only creep so much. I honestly didn’t leave much on the TODO list for a version 1.1 besides endless optimization potential for the parser.&lt;/p&gt;
+
+&lt;p&gt;As usual this post was brain-dump style. If there’s any part you connected with and would like me to explore further, feel free to give me a shout.&lt;/p&gt;
+</description>
+        <pubDate>Thu, 25 Dec 2025 07:41:42 -0600</pubDate>
+        <link>https://twocentstudios.com/2025/12/25/shinkansen-live-developing-the-app-for-ios/</link>
+        <guid isPermaLink="true">https://twocentstudios.com/2025/12/25/shinkansen-live-developing-the-app-for-ios/</guid>
+        
+        <category>apple</category>
+        
+        <category>ios</category>
+        
+        <category>app</category>
+        
+        <category>shinkansenlive</category>
+        
+        
+      </item>
     
       <item>
         <title>You Are a Frameworks Engineer at Big Tech Corp</title>
@@ -3921,576 +4503,6 @@ fly ssh sftp get /data/db.sqlite ./backup-&lt;span class=&quot;k&quot;&gt;$(&lt;
         <category>debugging</category>
         
         <category>apple</category>
-        
-        
-      </item>
-    
-      <item>
-        <title>Rewriting a 12 Year Old Objective-C iOS App with Claude Code</title>
-        <description>&lt;p&gt;Last week, I rewrote my iOS app &lt;a href=&quot;https://itunes.apple.com/us/app/vinylogue-for-last.fm/id617471119?ls=1&amp;amp;mt=8&quot;&gt;Vinylogue&lt;/a&gt; to Swift and SwiftUI with the help of &lt;a href=&quot;https://www.anthropic.com/claude-code&quot;&gt;Claude Code&lt;/a&gt;. I originally created Vinylogue &lt;a href=&quot;/2013/04/03/the-making-of-vinylogue/&quot;&gt;back in 2013&lt;/a&gt; targeting iOS 6. Recently, I’ve been wanting to try out Claude Code, and I decided updating Vinylogue would be a good test project for it.&lt;/p&gt;
-
-&lt;p&gt;TL;DR: Using Claude Code made this rewrite super fun and productive and was absolutely worth the $20, even considering the time I spent learning the limitations of the tool and how it’s still relatively unoptimized for Apple platforms development.&lt;/p&gt;
-
-&lt;h2 id=&quot;table-of-contents&quot;&gt;Table of Contents&lt;/h2&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;Overview&lt;/li&gt;
-  &lt;li&gt;The goal of the rewrite&lt;/li&gt;
-  &lt;li&gt;A walkthrough of my daily accomplishments and phases of the rewrite&lt;/li&gt;
-  &lt;li&gt;Specifics of working with Claude Code including:
-    &lt;ul&gt;
-      &lt;li&gt;Lessons learned&lt;/li&gt;
-      &lt;li&gt;Genres of tasks I used it for&lt;/li&gt;
-      &lt;li&gt;What I want to try next time&lt;/li&gt;
-      &lt;li&gt;Lots of stray observations&lt;/li&gt;
-    &lt;/ul&gt;
-  &lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h2 id=&quot;overview&quot;&gt;Overview&lt;/h2&gt;
-
-&lt;p&gt;Vinylogue is an app that shows you and your friends’ last.fm album listening history for “this week in history”; i.e. if it’s the first week in June 2025, it shows the first week in June 2024, 2023, etc.&lt;/p&gt;
-
-&lt;p&gt;It has three main screens: a users list, the weekly albums list, and an album detail view. There’s also various screens for settings, onboarding, user list editing, etc.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/vinylogue-v2-main-screens.jpg&quot; width=&quot;&quot; height=&quot;500&quot; alt=&quot;Vinylogue v2.0 main screens: Users List, Weekly Albums, and Album Detail&quot; title=&quot;Vinylogue v2.0 main screens: Users List, Weekly Albums, and Album Detail&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Vinylogue v2.0 main screens: Users List, Weekly Albums, and Album Detail&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;If you happen to be an active &lt;a href=&quot;https://last.fm&quot;&gt;Last.fm&lt;/a&gt; user, give the app a spin by &lt;a href=&quot;https://itunes.apple.com/us/app/vinylogue-for-last.fm/id617471119?ls=1&amp;amp;mt=8&quot;&gt;downloading it from the App Store&lt;/a&gt;. And it’s been &lt;a href=&quot;https://github.com/twocentstudios/vinylogue&quot;&gt;open source on GitHub since v1.0&lt;/a&gt;.&lt;/p&gt;
-
-&lt;p&gt;Overall, the experience of rewriting the app was a lot of fun with Claude Code. Even with the learning curve and my non-optimal device environment, the amount of progress I made was exponentially higher than I could have alone. As much as I’ve considered rewriting the app in Swift over the years, I could never justify it; the app still worked well enough, has very few active users, and makes no money.&lt;/p&gt;
-
-&lt;p&gt;Using Claude Code to automate a lot of tedious work of porting the data models, dominant color algorithm, and data migration code left me with an unusual abundance of time and energy to focus on the parts I was interested in: ensuring the visual design matched exactly; improving caching and pre-caching behavior, improving the friend management UX, and reworking the chart year navigation.&lt;/p&gt;
-
-&lt;video src=&quot;/images/vinylogue-v2-dominant-color-demo.mp4&quot; controls=&quot;&quot; preload=&quot;none&quot; poster=&quot;/images/vinylogue-v2-dominant-color-demo-poster.jpg&quot; height=&quot;720&quot;&gt;&lt;/video&gt;
-
-&lt;video src=&quot;/images/vinylogue-v2-chart-year-navigation.mp4&quot; controls=&quot;&quot; preload=&quot;none&quot; poster=&quot;/images/vinylogue-v2-chart-year-navigation-poster.jpg&quot; height=&quot;720&quot;&gt;&lt;/video&gt;
-
-&lt;p&gt;I could have probably stopped at day 3 and had pretty close feature parity, but I was having so much fun challenging Claude that I started experimenting with more robust architectures. I migrated the entire codebase to the &lt;a href=&quot;https://www.pointfree.co&quot;&gt;Point-Free co.&lt;/a&gt; Modern Swift-UI architecture using &lt;a href=&quot;https://github.com/pointfreeco/swift-dependencies&quot;&gt;swift-dependencies&lt;/a&gt; and &lt;a href=&quot;https://github.com/pointfreeco/swift-sharing&quot;&gt;swift-sharing&lt;/a&gt; using their open source &lt;a href=&quot;https://github.com/pointfreeco/syncups&quot;&gt;SyncUps&lt;/a&gt; codebase as a template.&lt;/p&gt;
-
-&lt;p&gt;The SyncUps architecture unlocked the ability to have Claude follow a &lt;a href=&quot;https://blog.winsmith.de/english/ios/2020/04/14/xcuitest-screenshots.html&quot;&gt;blog post&lt;/a&gt; I found about using UITests to automatically generate screenshots for the App Store. A few years ago, App Store review started clamping down on use of copyrighted images in App Store screenshots, and I’d have to manually add a pixelation filter to each image before uploading. It was easier to work with Claude to incorporate the pixelation filter as an option in the app code than to do that work manually.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/vinylogue-v2-pixelated-weekly-chart.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Pixelated version of the weekly album chart view showing privacy-protected album covers&quot; title=&quot;Pixelated version of the weekly album chart view showing privacy-protected album covers&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Pixelated version of the weekly album chart view showing privacy-protected album covers&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;I got so carried away that I did plenty more refactorings to have Claude look for duplicate SwiftUI View code that could be extracted and reused across multiple screen-level Views. I had it make a few proposals for how it’d be best to reorganize the project’s folder structure. I never had to get into the weeds refactoring and burn brain cycles, so I almost always felt fresh to use my mental energy on the higher-level planning.&lt;/p&gt;
-
-&lt;p&gt;In the end, I’m actually much more proud of the cleanliness of the Vinylogue codebase than my other codebases I’ve worked on this year. It’s not that I couldn’t spend a few days pushing files around in those other codebases, but since I’m an indie dev, I’m not getting paid for that and it’s hard to justify doing that work when I could be doing marketing.&lt;/p&gt;
-
-&lt;p&gt;Over the past few months, I’ve been using the ChatGPT app with its less intrusive Xcode integration to do some selective coding work using o3 and o4-mini. Although Claude Sonnet is seemingly not as “smart” as several other frontier models, Claude Code unlocked a new level of usefulness for me due to:&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;Its ability to view the xcodebuild output and fix its own syntax errors.&lt;/li&gt;
-  &lt;li&gt;Its ability to plan, create its own TODO lists, and methodically execute on its plan.&lt;/li&gt;
-  &lt;li&gt;Its ability to quickly navigate around my codebase with various amounts of guidance by me.&lt;/li&gt;
-  &lt;li&gt;Its ability to incorporate documentation and other context.&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;The above abilities increased the scope of net-positive productive use cases for LLM-assisted coding. The amount, accuracy, and complexity of code that an LLM writes needs to be surprisingly high to justify me copying and pasting code from a chat interface or manually applying (often broken) diffs. When the time and effort cost for me, the developer, goes to zero for making changes, suddenly both 1-line changes and multi-file refactors with ample opportunity for syntax errors are both productive use-cases.&lt;/p&gt;
-
-&lt;p&gt;Those are my overall thoughts about the experience. Before I dig into the meat of this post, here are some quick stats about the rewrite:&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;&lt;strong&gt;$353&lt;/strong&gt; - theoretical spend on Claude Code if I had used the API&lt;/li&gt;
-  &lt;li&gt;&lt;strong&gt;$20&lt;/strong&gt; - actual spend on Anthropic Pro subscription&lt;/li&gt;
-  &lt;li&gt;&lt;strong&gt;+11,275 −8,249&lt;/strong&gt; - total lines changed in the &lt;a href=&quot;https://github.com/twocentstudios/vinylogue/pull/5&quot;&gt;v2.0 pull request&lt;/a&gt;&lt;/li&gt;
-  &lt;li&gt;&lt;strong&gt;5,609&lt;/strong&gt; - lines of Swift code (excluding tests)&lt;/li&gt;
-  &lt;li&gt;&lt;strong&gt;52&lt;/strong&gt; - Swift files (excluding tests)&lt;/li&gt;
-  &lt;li&gt;&lt;strong&gt;7&lt;/strong&gt; - calendar days of work from first commit to App Store submission&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/vinylogue-v2-vibemeter-spend.png&quot; width=&quot;&quot; height=&quot;300&quot; alt=&quot;Theoretical spend calculated via VibeMeter app&quot; title=&quot;Theoretical spend calculated via VibeMeter app&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Theoretical spend calculated via VibeMeter app&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;&lt;strong&gt;As a quick disclaimer&lt;/strong&gt;, LLMs and the developer tools space is moving so fast that a lot of these observations will be immediately dated. For reference, the app/tool versions I used in this post:&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;Claude Code v1.0.31&lt;/li&gt;
-  &lt;li&gt;Sonnet 4&lt;/li&gt;
-  &lt;li&gt;Xcode 16.5&lt;/li&gt;
-  &lt;li&gt;iOS 18.5&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h2 id=&quot;goal-of-the-rewrite&quot;&gt;Goal of the Rewrite&lt;/h2&gt;
-
-&lt;p&gt;In early 2013, I was in another period of indie dev between full-time jobs. I was churning through a few app ideas, learning a lot but biting off more than I could chew and not releasing anything. I got some inspiration after I started using an app called &lt;a href=&quot;https://timehop.com&quot;&gt;Timehop&lt;/a&gt;, the first service of its kind that aggregated your past social media activity in what Facebook would later popularize as “This Day in History”. I was an avid Last.fm user, and by that time Last.fm had already become a niche service, so I decided it would be fun to make a Timehop-for-Last.fm. I developed the “feature-complete” v1.1 app in 5 weeks.&lt;/p&gt;
-
-&lt;p&gt;I wrote a &lt;a href=&quot;/2013/04/03/the-making-of-vinylogue/&quot;&gt;very detailed blog post&lt;/a&gt; about the design and development of the app. The Timehop team found that post and hired me as an iOS contractor for a few months before I moved from Chicago to New York to join the team full-time.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/vinylogue-v1-main-screens.jpg&quot; width=&quot;&quot; height=&quot;500&quot; alt=&quot;Vinylogue v1.1 main screens: Users List, Weekly Albums, and Album Detail&quot; title=&quot;Vinylogue v1.1 main screens: Users List, Weekly Albums, and Album Detail&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Vinylogue v1.1 main screens: Users List, Weekly Albums, and Album Detail&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;The fact that this app got me my first &lt;em&gt;real&lt;/em&gt; iOS developer role makes Vinylogue significant and nostalgic for me.&lt;/p&gt;
-
-&lt;p&gt;I’ve done my best to make the few changes required over the years to ensure the app still works in modern iOS versions on modern devices. But the fact that’s it’s Objective-C with a very opinionated reactive architecture made it so the cost of developing new features was always too high.&lt;/p&gt;
-
-&lt;p&gt;Regardless, I’ve continued to check the app weekly and use it as a nice reminder to listen back to albums I haven’t revisited in a while.&lt;/p&gt;
-
-&lt;p&gt;Based on glowing reviews around the internet, I’ve been wanting to try Claude Code, but hesitated because:&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;The pay-per-token model felt unideal to me; I didn’t want to pay an unbounded amount to get burned learning a tool that in the end didn’t make me any more productive&lt;/li&gt;
-  &lt;li&gt;My current projects were not ideal for intensive LLM-assisted coding - I figured I probably wouldn’t learn how to use Claude Code effectively without a more greenfield project&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;Vinylogue popped into my head as a great test project: it was greenfield, but had a complete product spec, design spec, and reference codebase to draw from. There was no deadline, no external code-quality bar to hit, and if it wasn’t working out, I could give up any time and still have the same tried-and-true codebase around for the foreseeable future.&lt;/p&gt;
-
-&lt;p&gt;So &lt;strong&gt;the goal starting out&lt;/strong&gt; was:&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;learn Claude Code as a tool&lt;/li&gt;
-  &lt;li&gt;determine what kinds of tasks and projects Claude Code could be useful for&lt;/li&gt;
-  &lt;li&gt;update Vinylogue to modern Swift and SwiftUI while making a few small improvements&lt;/li&gt;
-  &lt;li&gt;leave the door open for new feature work in the future&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h2 id=&quot;project-daily-summary&quot;&gt;Project daily summary&lt;/h2&gt;
-
-&lt;p&gt;Below is a graph with the high-level breakdown of code changes over the week.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/vinylogue-v2-swift-lines-graph.png&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Lines of Swift code added and removed during the rewrite, grouped by 5-hour time blocks&quot; title=&quot;Lines of Swift code added and removed during the rewrite, grouped by 5-hour time blocks&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Lines of Swift code added and removed during the rewrite, grouped by 5-hour time blocks&lt;/div&gt;&lt;/div&gt;
-
-&lt;h3 id=&quot;day-1-scaffolding&quot;&gt;Day 1: Scaffolding&lt;/h3&gt;
-
-&lt;p&gt;&lt;a href=&quot;https://github.com/twocentstudios/vinylogue/tree/2c4843b4f8aec49e30f8c6c4230bdcb2cdf6fddc&quot;&gt;End of day 1 - commit 2c4843b&lt;/a&gt;&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/vinylogue-v2-day1-progress.jpg&quot; width=&quot;&quot; height=&quot;500&quot; alt=&quot;Screenshots of the app after day 1: basic scaffolding and initial SwiftUI implementation&quot; title=&quot;Screenshots of the app after day 1: basic scaffolding and initial SwiftUI implementation&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Screenshots of the app after day 1: basic scaffolding and initial SwiftUI implementation&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;As you can see from the above graph, Claude Code cranked out the foundation of the project on the first day. Due to the usage limitations of the Anthropic Pro subscription, I could only use it for about 1 hour every 5 hours. So even though the first day represented the most code written, it was only about 4 hours of usage total. I was doing work on other projects and eating and doing chores in the downtime.&lt;/p&gt;
-
-&lt;p&gt;My goal for the first day was simply to get a feel for Claude Code and see what it was capable of. I wanted to see what its tendencies were when it had little direction. I gave Claude Code &lt;a href=&quot;https://github.com/twocentstudios/vinylogue/blob/cb1ad8350870cf2c6643f4f90daeb0148b707ef7/Planning/PRD.md&quot;&gt;a spec that OpenAI’s o3 had written&lt;/a&gt; based on the Objective-C codebase and screenshots of the current version, but Claude basically threw that out and &lt;a href=&quot;https://github.com/twocentstudios/vinylogue/blob/9902e4f5d313c6ffb5f0fd6191979c78fdac87c4/Planning/PRD.md&quot;&gt;wrote its own spec&lt;/a&gt; before starting to crank through the &lt;a href=&quot;https://github.com/twocentstudios/vinylogue/blob/9902e4f5d313c6ffb5f0fd6191979c78fdac87c4/Planning/sprint-00.md&quot;&gt;8 sprints worth of TODOs&lt;/a&gt;. I was intentionally not providing any input on design or architecture. After it worked through a sprint, I’d give the code a once over, but mostly commit it to the working branch.&lt;/p&gt;
-
-&lt;p&gt;It felt very productive, but this was essentially just a more advanced version of scaffolding (something my friend Jens compared to Ruby on Rails’ scaffold command). Over the course of the week, this version of the code would be the clay I’d be molding and detailing to get to the final form.&lt;/p&gt;
-
-&lt;p&gt;Claude Code had defaulted to what I’d consider an iOS 16 SwiftUI architecture. It used a mix of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;@Environment&lt;/code&gt; and singletons for services, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;@StateObject&lt;/code&gt; with &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;@ObservableObject&lt;/code&gt; and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;@Published&lt;/code&gt; properties for ViewModel-ish objects. It had strewn about &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;UserDefaults&lt;/code&gt; calls and wasn’t particularly consistent about any other architecture decision. It ignored all my instructions about styling and tried to support dark mode, dynamic type, random accessibility attributes.&lt;/p&gt;
-
-&lt;p&gt;But it mostly worked! Especially convenient for me was the reams of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Codable&lt;/code&gt; objects, parsing, and API client code required to do the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;weekly chart list -&amp;gt; weekly chart -&amp;gt; list of albums&lt;/code&gt; data transformation from the Last.fm API. All that worked out of the box, even if I did spend some time later in the week optimizing the caching and pre-caching.&lt;/p&gt;
-
-&lt;p&gt;I learned a lot on this first day. And having so much of the foundational code out of the way without much mental energy expended increased my appetite for the scope of the rewrite.&lt;/p&gt;
-
-&lt;h3 id=&quot;day-2-styling--core-ux&quot;&gt;Day 2: Styling &amp;amp; Core UX&lt;/h3&gt;
-
-&lt;p&gt;&lt;a href=&quot;https://github.com/twocentstudios/vinylogue/tree/03d763a&quot;&gt;End of day 2 - commit 03d763a&lt;/a&gt;&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/vinylogue-v2-day2-progress.jpg&quot; width=&quot;&quot; height=&quot;500&quot; alt=&quot;Screenshots of the app after day 2: improved styling and core UX implementation&quot; title=&quot;Screenshots of the app after day 2: improved styling and core UX implementation&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Screenshots of the app after day 2: improved styling and core UX implementation&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;The second day was mostly about styling and cleanup and small bug fixes. After a couple tries, I gave up on having Claude Code try to faithfully recreate the styling 1-to-1. Without a feedback loop in place for it to view the visual results of its code, I suspect it was a fool’s errand. Instead, I spent a little time creating color and font helpers, then using them in the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;UsersListView&lt;/code&gt; to lay it out exactly as I wanted.&lt;/p&gt;
-
-&lt;p&gt;From there, Claude was mostly capable of using that view’s styling to get the auxiliary views like the settings view and edit friends view to 98% correct and using all the standardized helper functions.&lt;/p&gt;
-
-&lt;p&gt;The edit friends view in particular was more complicated than it used to be in v1.3.1, so I spent some time fixing some of Claude’s scaffolding bugs and deciding exactly how the UX should be.&lt;/p&gt;
-
-&lt;p&gt;I also had Claude Code do a Swift Concurrency audit and I helped it migrate the codebase to strict Swift 6 mode.&lt;/p&gt;
-
-&lt;h3 id=&quot;day-3-ui--ux-focus&quot;&gt;Day 3: UI &amp;amp; UX focus&lt;/h3&gt;
-
-&lt;p&gt;Day 3 I continued hand-polishing the UI for the most important screens. I implemented the overscroll year-navigation mechanism in a SwiftUI Preview, then had Claude Code help me copy it into the View and wire it up.&lt;/p&gt;
-
-&lt;p&gt;I was also finding new excuses to push the scope. I integrated &lt;a href=&quot;https://github.com/pointfreeco/swift-dependencies&quot;&gt;swift-dependencies&lt;/a&gt;, double-checked the loading and error states, and added haptic feedback.&lt;/p&gt;
-
-&lt;p&gt;This is the day that I &lt;em&gt;could&lt;/em&gt; have buckled in and focused on finishing up the v2 rewrite to be functionally equivalent to v1, including its warts. I could have left the code quality in a somewhat embarrassing state. But at this point I still had lots of energy and motivation. Stopping here would have felt like leaving too much low hanging fruit.&lt;/p&gt;
-
-&lt;h3 id=&quot;day-4-circling-back&quot;&gt;Day 4: Circling back&lt;/h3&gt;
-
-&lt;p&gt;I finally got around to matching the visual style of the v1 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;AlbumDetailView&lt;/code&gt;. This includes porting the &lt;a href=&quot;https://github.com/twocentstudios/vinylogue/blob/906c1ce86c8bdb926db6dcb0eada664b80fb8743/Vinylogue/Core/Infrastructure/ColorExtraction.swift&quot;&gt;custom dominant color algorithm&lt;/a&gt; from &lt;a href=&quot;https://github.com/twocentstudios/vinylogue/blob/5409d38a061770c0f84325ca7e0e7dccbe8d587f/vinylogue/UIImage%2BTCSImageRepresentativeColors.m&quot;&gt;v1&lt;/a&gt;. At first, Claude Code took a shortcut and used the average color CIFilter. I forced it to convert my Objective-C code line-by-line, and it did a great job besides using an erroneous color space value that took about 5-10 minutes to track down.&lt;/p&gt;
-
-&lt;p&gt;V1 did not have any sort of precaching system, so album images always appeared to load very slowly (mostly due to a limitation in the Last.fm API). On day 4 I added data and image precaching so that navigating between years would be seamless.&lt;/p&gt;
-
-&lt;p&gt;I finally tested the important v1 data migration code (for the current user and friends), and it turns out Claude had failed miserably. To be fair, the NSCoding implementation is not as straightforward as Codable, so it took some guidance from me, along with a test plist file, in order to get it working.&lt;/p&gt;
-
-&lt;h3 id=&quot;day-5-architecture-and-screenshot-automation&quot;&gt;Day 5: Architecture and screenshot automation&lt;/h3&gt;
-
-&lt;p&gt;Being an indie dev responsible for releasing apps and updates means lots of overhead in creating App Store screenshots and marketing info. I wanted to experiment with using UITests to generate screenshots, but a big blocker to this was ensuring I could inject mock data so that screenshots wouldn’t change each time I ran the process. This led to me finding my swift-dependencies implementation was unideal (read: working, but incorrect).&lt;/p&gt;
-
-&lt;p&gt;So I took on another side-quest of refactoring the app architecture, inspired by the &lt;a href=&quot;https://github.com/pointfreeco/syncups&quot;&gt;Point-Free co. SyncUps app&lt;/a&gt;. Feeding this codebase to Claude Code and having it make the first pass got me to about 80% refactored. Formalizing the rules and having it take another pass got it to 90%. Doing the final audit for the last few problem classes got it to 100%. It was kind of amazing to be able to stay at a high level of abstraction and see what a given architecture looks like for your codebase. I could have thrown this refactor out with no harm done, but it accomplished my goals and felt like it made the codebase more maintainable. Spending a little extra time formalizing my adapted architecture rules on a relatively simple codebase opens up the possibility of using this codebase as a template for refactoring my other, more messy codebases.&lt;/p&gt;
-
-&lt;p&gt;With the architecture refactoring complete, it was now possible to have Claude Code finish up the automated App Store screenshotting code. I used Perplexity to research all the prior art, found &lt;a href=&quot;https://blog.winsmith.de/english/ios/2020/04/14/xcuitest-screenshots.html&quot;&gt;this blog post&lt;/a&gt;, fed the blog post to Claude, and had it follow the blog post step-by-step to create a custom bash script, UITest, and modifications to my top-level &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;App&lt;/code&gt;.&lt;/p&gt;
-
-&lt;p&gt;I’d already considered automated screenshotting a stretch goal, but I wanted to push even further. I added a toggle-able pixelate filter to all the album images so I’d have a set of screenshots available for App Store use and external advertising, all without me needing to open Pixelamator. This was quick and straightforward now that the new architecture was in place and because NukeUI has a great image processing pipeline feature that can run CIFilters.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/vinylogue-v2-pixelated-comparison.jpg&quot; width=&quot;&quot; height=&quot;500&quot; alt=&quot;Comparison of non-pixelated and pixelated versions of the weekly album charts for App Store compliance&quot; title=&quot;Comparison of non-pixelated and pixelated versions of the weekly album charts for App Store compliance&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Comparison of non-pixelated and pixelated versions of the weekly album charts for App Store compliance&lt;/div&gt;&lt;/div&gt;
-
-&lt;h3 id=&quot;days-6--7-prepare-for-app-store&quot;&gt;Days 6 &amp;amp; 7: Prepare for App Store&lt;/h3&gt;
-
-&lt;p&gt;By day 6, the app was feeling super polished. I was a little worried about the migration from v1.0 still since you only get one shot at that, so I spent some more time manually testing it.&lt;/p&gt;
-
-&lt;p&gt;Since this app is open source, I cleaned up the project folder, rewrote the README, and prepared the marketing images.&lt;/p&gt;
-
-&lt;p&gt;Uploading to the App Store, I found that a few of the v1 xcodeproj settings had not been properly migrated to the xcodegen project.yml file. I needed to disable iPad support and force portrait orientation and add the non-exempt encryption plist setting. Claude Code could do all that with loose prompting; I never needed to look up the key names or dig into the xcodegen docs.&lt;/p&gt;
-
-&lt;p&gt;At the last minute, I found an issue with image caching that I’d missed (I thought I had disabled both data and image precaching for &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;DEBUG&lt;/code&gt; builds only, but in fact the image cache had been misconfigured the whole time).&lt;/p&gt;
-
-&lt;p&gt;Finally, I uploaded a build to the App Store, submitted it, and it was approved and released the next morning.&lt;/p&gt;
-
-&lt;p&gt;Claude Code helped me create a Release on GitHub by uploading images. It even looked through my old versions’ screenshots and created a Release for those versions too.&lt;/p&gt;
-
-&lt;h2 id=&quot;most-interesting-parts-of-v20&quot;&gt;Most interesting parts of v2.0&lt;/h2&gt;
-
-&lt;p&gt;The v2 Swift rewrite is intentionally nearly identical to the Objective-C v1. However, there are a few user-facing and under-the-hood parts I’d like to highlight.&lt;/p&gt;
-
-&lt;h3 id=&quot;overscroll-year-navigation-paradigm&quot;&gt;Overscroll year navigation paradigm&lt;/h3&gt;
-
-&lt;p&gt;The weekly album chart view in v1 had a unique left/right button/slider paradigm for navigating between years. Honestly, it was kind of strange, but I always liked how it gave the app some extra personality.&lt;/p&gt;
-
-&lt;video src=&quot;/images/vinylogue-v1-year-navigation.mp4&quot; controls=&quot;&quot; preload=&quot;none&quot; poster=&quot;/images/vinylogue-v1-year-navigation-poster.jpg&quot; height=&quot;720&quot;&gt;&lt;/video&gt;
-
-&lt;p&gt;In my original &lt;a href=&quot;/2013/04/03/the-making-of-vinylogue/&quot;&gt;blog post&lt;/a&gt;, I actually mentioned how my first sketches planned for year navigation to be at the top and bottom edges.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/vinylogue-wireframe.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Original notebook sketch showing the planned top/bottom year navigation design from 2013&quot; title=&quot;Original notebook sketch showing the planned top/bottom year navigation design from 2013&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Original notebook sketch showing the planned top/bottom year navigation design from 2013&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;At the time, I gave up on the top/bottom paradigm because it felt strange as section header/footer for years with few albums, and there was no concept of safe areas yet.&lt;/p&gt;
-
-&lt;p&gt;I decided to cash out some of my excess mental energy for v2 to try to update the year navigation paradigm, actually forgetting that the top and bottom buttons were what I’d originally planned over a decade ago.&lt;/p&gt;
-
-&lt;video src=&quot;/images/vinylogue-v2-chart-year-navigation.mp4&quot; controls=&quot;&quot; preload=&quot;none&quot; poster=&quot;/images/vinylogue-v2-chart-year-navigation-poster.jpg&quot; height=&quot;720&quot;&gt;&lt;/video&gt;
-
-&lt;p&gt;I think it turned out alright! It’s non-standard UX, but I feel like it’s unique in the same way the v1 implementation was.&lt;/p&gt;
-
-&lt;p&gt;I’ll note the standard Apple refresh control triggers the refresh immediately once you hit the overscroll threshold, but mine requires you to release above the threshold in order to trigger the navigation.&lt;/p&gt;
-
-&lt;h3 id=&quot;dominant-color-album-detail-animation&quot;&gt;Dominant color album detail animation&lt;/h3&gt;
-
-&lt;p&gt;I remember during v1 development that the album detail view animation was a happy accident due to the dominant color and album image loading being unoptimized.&lt;/p&gt;
-
-&lt;p&gt;I made sure to faithfully port the dominant color algorithm and set up the SwiftUI View so that the animation always triggers consistently, even though the more robust image precaching means that the image is pre-loaded 99% of the time.&lt;/p&gt;
-
-&lt;video src=&quot;/images/vinylogue-v2-dominant-color-demo.mp4&quot; controls=&quot;&quot; preload=&quot;none&quot; poster=&quot;/images/vinylogue-v2-dominant-color-demo-poster.jpg&quot; height=&quot;720&quot;&gt;&lt;/video&gt;
-
-&lt;p&gt;The last small piece was ensuring that the back button (missing in v1, but returning in v2) also changed its tint color to match the rest of the text on the screen. I accomplished this with a custom &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;PreferenceKey&lt;/code&gt;.&lt;/p&gt;
-
-&lt;h3 id=&quot;caching-and-pre-caching&quot;&gt;Caching and pre-caching&lt;/h3&gt;
-
-&lt;p&gt;As mentioned before, I never got around to optimizing the caching and pre-caching behavior of data and images in v1. The Last.fm API is unchanged in the last decade, but average internet speeds and disk sizes means that I don’t feel as hesitant to pre-cache data to ensure browsing your listening history is seamless.&lt;/p&gt;
-
-&lt;h3 id=&quot;legacy-data-migration&quot;&gt;Legacy data migration&lt;/h3&gt;
-
-&lt;p&gt;I hate when companies release an app major version update and put the icing on the cake by force logging you out. I know I don’t have many users, but I still feel obligated to treat them with respect and migrate the small amount of unique local data they’ve entrusted with the app.&lt;/p&gt;
-
-&lt;p&gt;Honestly, this data migration was one of the biggest discouraging factors in me not taking on this rewriting project in the past. I knew unraveling the NSCoding implementation would be a tedious, thankless task. Although Claude Code could not one-shot it, working with it made this task bearable, and I’m glad I did it.&lt;/p&gt;
-
-&lt;h3 id=&quot;vinyl-loading-spinner&quot;&gt;Vinyl loading spinner&lt;/h3&gt;
-
-&lt;p&gt;The vinyl loading spinner is a small flourish, and honestly not even that present anymore now that there’s much more precaching, but I’m still happy to have it scattered around the app.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/vinylogue-v2-vinyl-loading-spinner.gif&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Vinyl loading spinner animation showing the rotating record effect&quot; title=&quot;Vinyl loading spinner animation showing the rotating record effect&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Vinyl loading spinner animation showing the rotating record effect&lt;/div&gt;&lt;/div&gt;
-
-&lt;h3 id=&quot;automated-app-store-screenshots&quot;&gt;Automated App Store screenshots&lt;/h3&gt;
-
-&lt;p&gt;Automating App Store screenshots was arguably unnecessary for an app with only 3 screens and no localization. But as a test for Claude Code, it was a resounding success. I’ll absolutely be referencing this implementation for my other apps in the near future.&lt;/p&gt;
-
-&lt;h3 id=&quot;under-the-hood&quot;&gt;Under the hood&lt;/h3&gt;
-
-&lt;p&gt;Finally, I got a chance to shore up my skills in implementing modern Swift concurrency, swift-sharing, and swift-dependencies in a low-stakes environment. I see this as a mirror to implementing ReactiveCocoa in v1 all those years ago, and then using that knowledge in production on the Timehop app.&lt;/p&gt;
-
-&lt;h2 id=&quot;working-with-claude-code&quot;&gt;Working with Claude Code&lt;/h2&gt;
-
-&lt;p&gt;I want to devote a section to braindumping all my impressions of Claude Code, both for readers and for future me. I imagine looking back on this in even a year will be nostalgic.&lt;/p&gt;
-
-&lt;h3 id=&quot;lessons-learned&quot;&gt;Lessons learned&lt;/h3&gt;
-
-&lt;p&gt;Note: most of these are general and some are specific to iOS and Apple Platforms development&lt;/p&gt;
-
-&lt;h4 id=&quot;ignore-all-lessons&quot;&gt;Ignore all lessons&lt;/h4&gt;
-
-&lt;p&gt;The first lesson is to ignore all lessons. Obviously this is tongue-in-cheek, but what I mean is that I’m glad I didn’t try to optimize my usage of Claude Code out of the gate. It was much better to use it with its defaults, push it hard to find its limits, then incorporate tips &amp;amp; tricks I’d found through osmosis &lt;em&gt;after&lt;/em&gt; I’d felt the pain those tips were meant to address.&lt;/p&gt;
-
-&lt;p&gt;Keep the below lessons in mind, but if you’re just getting started with Claude Code, don’t try to follow them all at once.&lt;/p&gt;
-
-&lt;h4 id=&quot;add-the---quiet-flag-to-xcodebuild-with-building-and-testing&quot;&gt;Add the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;--quiet&lt;/code&gt; flag to xcodebuild with building and testing&lt;/h4&gt;
-
-&lt;p&gt;Claude Code already knows about xcodebuild and most of its options. But if you let xcodebuild run without &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;--quiet&lt;/code&gt;, Claude Code will read all the useless output, quickly overflowing its context window, especially when the build fails.&lt;/p&gt;
-
-&lt;h4 id=&quot;compact-context-before-you-need-to&quot;&gt;Compact context before you need to&lt;/h4&gt;
-
-&lt;p&gt;Claude Code will show you in the bottom UI how close it is to filling up its context window. Once it hits that limit, it’ll automatically run &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;/compact&lt;/code&gt; for you regardless of where it’s at executing your latest instructions. This is fine when you’re getting started and learning. But it’s better to keep an eye on the context window usage and proactively either &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;/compact&lt;/code&gt; with additional instructions on what it should focus on during the compact, or even &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;/clear&lt;/code&gt; to start a new session with a known set of context (i.e. &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLAUDE.md&lt;/code&gt;).&lt;/p&gt;
-
-&lt;p&gt;Early in development, I was strategically compacting a lot. But once the project was more mature, I used &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;/clear&lt;/code&gt; much more liberally since I was hopping around the codebase and working on lots of different, smaller concerns.&lt;/p&gt;
-
-&lt;h4 id=&quot;use-the-project-root-claudemd-for-important-workflow-instructions&quot;&gt;Use the project root CLAUDE.md for important workflow instructions&lt;/h4&gt;
-
-&lt;p&gt;Since these instructions will get read in each time you &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;/compact&lt;/code&gt; or &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;/clear&lt;/code&gt; its good to have the most important instructions about your workflow in here. For me, this included which simulator and os version to use in &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;xcodebuild&lt;/code&gt;, always using the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;--quiet&lt;/code&gt; flag, always running &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;xcodegen&lt;/code&gt; if files were added, always building and testing before returning control back to me, etc.&lt;/p&gt;
-
-&lt;p&gt;In my code source root one folder down, I put another &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLAUDE.md&lt;/code&gt; that was more focused on the codebase itself. Later on, within each subfolder of the source, I had Claude Code generate its own short &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLAUDE.md&lt;/code&gt; files summarizing the important parts of the code that existed in those folders. For example, the &lt;a href=&quot;https://github.com/twocentstudios/vinylogue/blob/master/Vinylogue/Features/CLAUDE.md&quot;&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;/Features&lt;/code&gt;&lt;/a&gt; directory contains architecture rules about creating new Views and Stores that are only relevant when working in that parent folder.&lt;/p&gt;
-
-&lt;h4 id=&quot;use--to-point-claude-code-directly-to-files-youre-working-with&quot;&gt;Use &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;@&lt;/code&gt; to point Claude Code directly to files you’re working with&lt;/h4&gt;
-
-&lt;p&gt;This is a bit of a tradeoff, but if you already know the exact file you need Claude to work on, then just use &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;@&lt;/code&gt; to reference it. In the Claude Code UI, you’ll see the fuzzy file picker pop up. Of course, Claude Code can use bash tools to find any symbol references, but this takes it a couple extra steps and uses up a little bit of extra context. Hard to say whether the tradeoff is worth it, so experiment and see what works best for you.&lt;/p&gt;
-
-&lt;p&gt;Optionally, depending on the scope of your request, you can also ask Claude Code to spin up a subagent to find all the required files and symbol references and pass them back to the main agent. That keeps the main agent context’s clean while also unburdening you to need to do all the context gathering yourself.&lt;/p&gt;
-
-&lt;h4 id=&quot;learn-the-proper-usage-of-plan-mode&quot;&gt;Learn the proper usage of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;plan&lt;/code&gt; mode&lt;/h4&gt;
-
-&lt;p&gt;Shift+Tab toggles &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;plan&lt;/code&gt; mode (you’ll see it in the bottom UI). Although Claude Code defaults to doing a least a little planning for every request by creating a little TODO list before it dives into code, by entering &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;plan&lt;/code&gt; mode you can ensure it spends more time thinking and writing, then waiting for your approval before making &lt;em&gt;any&lt;/em&gt; code changes.&lt;/p&gt;
-
-&lt;p&gt;You’ll need to experiment yourself of when this extra step feels warranted. Maybe try overusing it at first until you start to instinctually understand when it feels like overkill.&lt;/p&gt;
-
-&lt;p&gt;I didn’t start using &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;plan&lt;/code&gt; mode until later in the development of v2. I found it useful, but mostly because I also understood the kinds of requests (both the inherent scope of the task &lt;em&gt;and&lt;/em&gt; the amount of context and explanation I gave for the task) that caused Claude Code to fail when it immediately jumped into coding.&lt;/p&gt;
-
-&lt;h4 id=&quot;warp-was-not-a-convenient-terminal-to-use-with-claude-code&quot;&gt;Warp was not a convenient terminal to use with Claude Code&lt;/h4&gt;
-
-&lt;p&gt;I started using &lt;a href=&quot;https://www.warp.dev&quot;&gt;Warp&lt;/a&gt; a few years back as my daily driver. I never really used its built in LLM features that much, but I liked its overall setup and usability for my limited purposes.&lt;/p&gt;
-
-&lt;p&gt;However, Warp was not particularly well suited as a driver for Claude Code. There were a lot of scrolling bugs and overall it just felt like the two were fighting each other. (Note: Warp just released their own coding agent as Warp v2.0).&lt;/p&gt;
-
-&lt;p&gt;I started using &lt;a href=&quot;https://ghostty.org&quot;&gt;Ghostty&lt;/a&gt; towards the end of development and its simplicity has worked well with Claude Code so far.&lt;/p&gt;
-
-&lt;h4 id=&quot;the-anthropic-pro-plans-limits-are-fine-for-starting-out&quot;&gt;The Anthropic Pro plan’s limits are fine for starting out&lt;/h4&gt;
-
-&lt;p&gt;As mentioned earlier, at the beginning of development, Claude Code was cranking so hard that I was burning through my 5-hour usage limits in 60-90 minutes.&lt;/p&gt;
-
-&lt;p&gt;This meant a lot of waiting at first, but overall, I don’t think this was a bad thing. Getting feedback on how hard I was pushing it gave me natural feedback about how to manage its context window (e.g. how &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;xcodebuild&lt;/code&gt; without &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;--quiet&lt;/code&gt; was overflowing the context window).&lt;/p&gt;
-
-&lt;p&gt;After the 2nd day, I either stopped hitting the usage limits or would only hit them near the end of a 5-hour window. Partially because I was working more on my own, partially because there was just less code for it to write or the scope of changes was smaller.&lt;/p&gt;
-
-&lt;p&gt;Eventually I may upgrade to Max, if only to test out the Opus model. But for now, I recommend the Pro tier as fine for beginners to learn the tool.&lt;/p&gt;
-
-&lt;h4 id=&quot;be-proactive-in-creating-feedback-loops-for-claude-code&quot;&gt;Be proactive in creating feedback loops for Claude Code&lt;/h4&gt;
-
-&lt;p&gt;One of Claude Code’s biggest strengths is its ability to use feedback loops to turn unsuccessful one-shot prompts into successful many-shot tasks with the help of tools. When Claude Code can make an attempt at solving a problem and see the results, it’s way more likely to be successful in accomplishing the original task without needing a human in the loop.&lt;/p&gt;
-
-&lt;p&gt;Claude Code’s ability to use &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;xcodebuild&lt;/code&gt; was a game-changer for me, turning an imperfect model into a workhorse. For multi-file refactors, it could usually get the project building again after 1 or 2 attempts without needing to bother me for its predictable mistakes like misspelling a function name or using some older syntax or forgetting to update a file.&lt;/p&gt;
-
-&lt;p&gt;Giving Claude Code (a natively probabilistic tool) the ability to use the Swift compiler (a natively deterministic tool) provides the best of both worlds.&lt;/p&gt;
-
-&lt;p&gt;I’ve yet to find a clean way to have Claude Code iterate on UI the way humans do with the iOS simulator and SwiftUI Previews. Automating the App Store screenshots with UITests may have been the first step in accomplishing that (or at least that’s one potential strategy).&lt;/p&gt;
-
-&lt;p&gt;The point is that connecting feedback loops for Claude – either on the input side or the output side – is remarkably powerful in leveling up the base model’s capabilities to accomplish your task.&lt;/p&gt;
-
-&lt;h4 id=&quot;be-proactive-in-finding-ways-to-serve-documentation-to-claude-code&quot;&gt;Be proactive in finding ways to serve documentation to Claude Code&lt;/h4&gt;
-
-&lt;p&gt;Speaking of the input side, later on in my development I automated a way for Claude Code to look up documentation for the Swift Packages I used by moving my derived data directory to the project folder and pointing it to the checkouts/sources folder of each key dependency I use where it could find the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.docc&lt;/code&gt; documentation bundle.&lt;/p&gt;
-
-&lt;p&gt;I added the following to the project source level CLAUDE.md:&lt;/p&gt;
-
-&lt;div class=&quot;language-markdown highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;gu&quot;&gt;## Swift Package Dependencies&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;
--&lt;/span&gt; &lt;span class=&quot;gs&quot;&gt;**Nuke**&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;  -&lt;/span&gt; Advanced image loading and caching framework with powerful performance optimizations
-&lt;span class=&quot;p&quot;&gt;  -&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;Documentation&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;](&lt;/span&gt;&lt;span class=&quot;sx&quot;&gt;DerivedData/Vinylogue/SourcePackages/checkouts/Nuke/Documentation/Nuke.docc/&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;gs&quot;&gt;**NukeUI**&lt;/span&gt; (part of Nuke)
-&lt;span class=&quot;p&quot;&gt;  -&lt;/span&gt; SwiftUI components for declarative image loading with LazyImage and FetchImage
-&lt;span class=&quot;p&quot;&gt;  -&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;Documentation&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;](&lt;/span&gt;&lt;span class=&quot;sx&quot;&gt;DerivedData/Vinylogue/SourcePackages/checkouts/Nuke/Documentation/NukeUI.docc/&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;gs&quot;&gt;**Sharing**&lt;/span&gt; (Point-Free)
-&lt;span class=&quot;p&quot;&gt;  -&lt;/span&gt; Type-safe shared state management library for global app state persistence
-&lt;span class=&quot;p&quot;&gt;  -&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;Documentation&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;](&lt;/span&gt;&lt;span class=&quot;sx&quot;&gt;DerivedData/Vinylogue/SourcePackages/checkouts/swift-sharing/Sources/Sharing/Documentation.docc/&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;gs&quot;&gt;**Dependencies**&lt;/span&gt; (Point-Free)
-&lt;span class=&quot;p&quot;&gt;  -&lt;/span&gt; Dependency injection framework for testable and modular Swift applications
-&lt;span class=&quot;p&quot;&gt;  -&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;Documentation&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;](&lt;/span&gt;&lt;span class=&quot;sx&quot;&gt;DerivedData/Vinylogue/SourcePackages/checkouts/swift-dependencies/Sources/Dependencies/Documentation.docc/&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-  
-&lt;span class=&quot;gu&quot;&gt;## Code Architecture Reference&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;
--&lt;/span&gt; Point-Free Co. SyncUps
-&lt;span class=&quot;p&quot;&gt;    -&lt;/span&gt; https://uithub.com/pointfreeco/syncups?accept=text/html&amp;amp;maxTokens=50000&amp;amp;ext=swift
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;I’m still trying to find a clever way to give Claude Code native access to the latest Apple Frameworks documentation. One option is &lt;a href=&quot;https://steipete.me/posts/llm-codes-transform-developer-docs&quot;&gt;llm.codes&lt;/a&gt;. I’ve also used the &lt;a href=&quot;https://www.diabrowser.com/&quot;&gt;Dia&lt;/a&gt; to automatically convert a loaded Apple docs page to markdown before copying it into the Claude Code prompt manually.&lt;/p&gt;
-
-&lt;h4 id=&quot;periodically-ask-claude-code-for-solicited-code-audits&quot;&gt;Periodically ask Claude Code for solicited code audits&lt;/h4&gt;
-
-&lt;p&gt;Claude Code will not proactively audit your code through any particular lens. It’s good to remember that you can ask it specifically to do a full walkthrough of your (small?) codebase looking for improvements. This could be a security audit, accessibility audit, code re-use audit, dynamic type audit, Swift concurrency audit, etc.&lt;/p&gt;
-
-&lt;p&gt;You can also ask it to do several audits in parallel through subagents. Or, have multiple subagents do the &lt;em&gt;same&lt;/em&gt; audit type and have the main agent gather the results.&lt;/p&gt;
-
-&lt;h4 id=&quot;periodically-have-claude-code-run--warn-long-function-bodies-and-fix-warnings&quot;&gt;Periodically have Claude Code run &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;-warn-long-function-bodies&lt;/code&gt; and fix warnings&lt;/h4&gt;
-
-&lt;p&gt;While developing with Swift, for as long as I can remember, there have been cases where I unintentionally introduce a stray statement that strains the Swift compiler on each build and I only notice it a couple days later when it’s too late.&lt;/p&gt;
-
-&lt;p&gt;Keeping the &lt;a href=&quot;https://github.com/fastred/Optimizing-Swift-Build-Times/blob/18f7052834d17040c66c848e28dcc9431c9d60fe/README.md#type-checking-of-functions-and-expressions&quot;&gt;-warn-long-function-bodies&lt;/a&gt; compiler flag on during development is one way to get notified about this early and often, but it can also be annoying due to the non-deterministic nature of build times.&lt;/p&gt;
-
-&lt;p&gt;It’s quick and easy to ask Claude Code to add this build flag with ~200ms as the threshold, build the project, check for warnings, and automatically fix them. Then have it clean up and revert the build flag once it’s done.&lt;/p&gt;
-
-&lt;h4 id=&quot;the-bar-for-automating-things-is-way-lower-with-claude-code&quot;&gt;The bar for automating things is way lower with Claude Code&lt;/h4&gt;
-
-&lt;p&gt;I consider it a personal failing, but I’ve always had an aversion to learning bash scripting. There’s lots of different rules of thumb about when you as a developer should dedicate time to automating a manual process. For me, that rule was basically never. It always felt like too much a burden to not only write, but to maintain automation when it inevitably breaks.&lt;/p&gt;
-
-&lt;p&gt;With Claude Code, my outlook on automation has completely changed. LLMs in general are just way better at writing one-file scripts than they are at writing sprawling applications. It’s simply much faster to ask Claude Code to bang off a script to automate a task. Even for one-off tasks.&lt;/p&gt;
-
-&lt;p&gt;The &lt;a href=&quot;https://github.com/twocentstudios/vinylogue/blob/906c1ce86c8bdb926db6dcb0eada664b80fb8743/generate-app-store-screenshots.zsh&quot;&gt;script&lt;/a&gt; Claude Code wrote to automate my App Store screenshots is just one example. I also had it write a one-off script to generate the graphs earlier in this blog post.&lt;/p&gt;
-
-&lt;h4 id=&quot;continue-using-your-existing-developer-tools-alongside-claude-code&quot;&gt;Continue using your existing developer tools alongside Claude Code&lt;/h4&gt;
-
-&lt;p&gt;See how well Claude Code works with your existing developer tools and workflow before introducing anything new.&lt;/p&gt;
-
-&lt;p&gt;I found keeping GitHub Desktop as my code review tool for Claude Code’s various excursions worked great. I could keep an eye on the git staging area and selectively commit files the same way I do when I’m developing on my own.&lt;/p&gt;
-
-&lt;p&gt;I used Perplexity, Google search, and the ChatGPT app to do various research and context gathering outside of Claude Code. Each felt like it covered certain limitations of Claude Code, whether it be the model or the UI.&lt;/p&gt;
-
-&lt;p&gt;And of course, using Xcode for my own editing, building, browsing, testing, and simulator running workflows was familiar (and predictably painful).&lt;/p&gt;
-
-&lt;p&gt;I’d say keep an awareness of friction points in your workflow and gradually address them one-by-one. I had plenty of time and mental energy to think about my tooling while Claude Code was doing the grunt work of refactoring and pushing files around for me.&lt;/p&gt;
-
-&lt;h3 id=&quot;the-kinds-of-tasks-i-used-claude-code-for&quot;&gt;The kinds of tasks I used Claude Code for&lt;/h3&gt;
-
-&lt;h4 id=&quot;scaffolding&quot;&gt;Scaffolding&lt;/h4&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;&lt;a href=&quot;https://github.com/twocentstudios/vinylogue/commit/bffa00c&quot;&gt;bffa00c - “lastfm client and tests”&lt;/a&gt;&lt;/li&gt;
-  &lt;li&gt;&lt;a href=&quot;https://github.com/twocentstudios/vinylogue/commit/88bbc1e&quot;&gt;88bbc1e - “onboarding and migration”&lt;/a&gt;&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;At the start of a new project or feature, you can use Claude Code as a way to get smarter scaffolding for a project. It’s dangerous though if you think of this code as shippable code instead of scaffolding. You really do have to maintain the discipline to continue to build off of the generated code, test it, polish it, iterate on it.&lt;/p&gt;
-
-&lt;p&gt;More concretely, Claude Code seems to be pretty great at creating &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Codable&lt;/code&gt; models, especially if you give it an example json file. Networking clients too since there’s presumably plenty of examples in its training data.&lt;/p&gt;
-
-&lt;h4 id=&quot;targeted-refactoring&quot;&gt;Targeted refactoring&lt;/h4&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;&lt;a href=&quot;https://github.com/twocentstudios/vinylogue/commit/2de5aa8&quot;&gt;2de5aa8 - “Refactor Album to UserChartAlbum”&lt;/a&gt;&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;One example of a targeted refactoring I did was at the very end of the project. I previously had an &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Album&lt;/code&gt; struct that was using lots of optionals to express different levels of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;loaded&lt;/code&gt;.&lt;/p&gt;
-
-&lt;p&gt;I did my own bit of planning up front to devise exactly how I wanted &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Album&lt;/code&gt; to be structured to express being partially and fully loaded. Along the way, I realized that &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Album&lt;/code&gt; was also being mutated with some specialization based on &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;WeeklyChart&lt;/code&gt; it was originally fetched with. So it wasn’t really independent &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Album&lt;/code&gt; whose information could be shared across years. This could have been a source of subtle bugs, especially with caching.&lt;/p&gt;
-
-&lt;p&gt;I gave Claude Code that revised structure, now &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;UserChartAlbum&lt;/code&gt;, and told it to refactor the codebase to use it. Of course, doing this kind of refactor is much safer with static typing and a compiler helping you out as a human, but Claude Code knocked this out in a couple minutes, also using the compiler to help itself.&lt;/p&gt;
-
-&lt;h4 id=&quot;pushing-code-around&quot;&gt;Pushing code around&lt;/h4&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;&lt;a href=&quot;https://github.com/twocentstudios/vinylogue/commit/32aef1b&quot;&gt;32aef1b - “don’t pass whole model”&lt;/a&gt;&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;Another type of refactoring is pushing variables and functions around between classes that sit at the boundaries of one another. Or extracting a class’s method into a pure static func.&lt;/p&gt;
-
-&lt;p&gt;I used this kind of refactor a lot for extracting SwiftUI Views. Also for migrating &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;@State&lt;/code&gt; vars from Views into &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;@Observable&lt;/code&gt; classes. These are particularly error prone to do as a human because the Swift compiler completely gives up on providing useful error messages when you’ve misspelled something in a View body.&lt;/p&gt;
-
-&lt;h4 id=&quot;deconstructing-swiftui-views-to-satisfy-the-swift-compiler&quot;&gt;Deconstructing SwiftUI Views to satisfy the Swift compiler&lt;/h4&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;&lt;a href=&quot;https://github.com/twocentstudios/vinylogue/commit/809625f&quot;&gt;809625f - “refactor WeeklyAlbumsView for compilation times”&lt;/a&gt;&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;There’s a natural tension when writing SwiftUI where &lt;em&gt;writing&lt;/em&gt; Views is generally easier when working inside one big View. But this makes both the compiler and the runtime unhappy (performance suffers). When iterating on the presentation and structure of Views, it’s disruptive to have to keep extracting variables and thinking up names for each sub View instance.&lt;/p&gt;
-
-&lt;p&gt;Claude Code is really great as a solution to this problem because both extracting and recombining Views is incredibly cheap.&lt;/p&gt;
-
-&lt;h4 id=&quot;following-architecture-rules&quot;&gt;Following architecture rules&lt;/h4&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;&lt;a href=&quot;https://github.com/twocentstudios/vinylogue/commit/2bf6da1&quot;&gt;2bf6da1 - “Migrate to point-free style”&lt;/a&gt;&lt;/li&gt;
-  &lt;li&gt;&lt;a href=&quot;https://github.com/twocentstudios/vinylogue/commit/bc3aa42&quot;&gt;bc3aa42 - “Migrate onboarding, settings, weekly albums, album detail”&lt;/a&gt;&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;After my big architecture refactor, I &lt;a href=&quot;https://github.com/twocentstudios/vinylogue/blob/906c1ce86c8bdb926db6dcb0eada664b80fb8743/Vinylogue/Features/CLAUDE.md#store-creation-and-navigation-rules&quot;&gt;created a set of rules&lt;/a&gt; in the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLAUDE.md&lt;/code&gt; file in the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Features&lt;/code&gt; subdirectory that holds my SwiftUI Views and Stores (&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Store&lt;/code&gt; being an alias for &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ViewModel&lt;/code&gt; or &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;@Observable&lt;/code&gt; class). For example, for sheet-based navigation:&lt;/p&gt;
-
-&lt;div class=&quot;language-markdown highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;gu&quot;&gt;### Sheet-Based Navigation&lt;/span&gt;
-&lt;span class=&quot;gs&quot;&gt;**Pattern**&lt;/span&gt;: Parent stores create optional child stores for modal presentations
-
-&lt;span class=&quot;gs&quot;&gt;**Rules**&lt;/span&gt;:
-&lt;span class=&quot;p&quot;&gt;1.&lt;/span&gt; &lt;span class=&quot;gs&quot;&gt;**Parent Store**&lt;/span&gt;: Creates optional child store property (&lt;span class=&quot;sb&quot;&gt;`var childStore: ChildStore?`&lt;/span&gt;)
-&lt;span class=&quot;p&quot;&gt;2.&lt;/span&gt; &lt;span class=&quot;gs&quot;&gt;**Parent Store**&lt;/span&gt;: Provides method to create child store (&lt;span class=&quot;sb&quot;&gt;`func showChild() { childStore = ChildStore() }`&lt;/span&gt;)
-&lt;span class=&quot;p&quot;&gt;3.&lt;/span&gt; &lt;span class=&quot;gs&quot;&gt;**Parent View**&lt;/span&gt;: Uses &lt;span class=&quot;sb&quot;&gt;`sheet(item: $store.childStore)`&lt;/span&gt; modifier
-&lt;span class=&quot;p&quot;&gt;4.&lt;/span&gt; &lt;span class=&quot;gs&quot;&gt;**Child View**&lt;/span&gt;: Accepts store as parameter (&lt;span class=&quot;sb&quot;&gt;`@Bindable var store: ChildStore`&lt;/span&gt;)
-&lt;span class=&quot;p&quot;&gt;5.&lt;/span&gt; &lt;span class=&quot;gs&quot;&gt;**Child Store**&lt;/span&gt;: Must conform to &lt;span class=&quot;sb&quot;&gt;`Identifiable`&lt;/span&gt; (class identity-based)
-&lt;span class=&quot;p&quot;&gt;6.&lt;/span&gt; &lt;span class=&quot;gs&quot;&gt;**Dependency Injection**&lt;/span&gt;: Use &lt;span class=&quot;sb&quot;&gt;`withDependencies(from: self)` only if parent has `@Dependency`&lt;/span&gt; vars
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;Whenever Claude Code starts work on a new screen in the future, it will read these rules and examples in the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLAUDE.md&lt;/code&gt; and follow them when structuring the new screen.&lt;/p&gt;
-
-&lt;h4 id=&quot;copying-over-styling&quot;&gt;Copying over styling&lt;/h4&gt;
-
-&lt;p&gt;My environment isn’t set up yet to give Claude Code all the tools it needs to properly iterate on a visual design. But after I created the exact visual design for a screen in SwiftUI, it had no problem copying over those design elements to other Views.&lt;/p&gt;
-
-&lt;h4 id=&quot;removing-a-secrets-file-in-git-history&quot;&gt;Removing a Secrets file in git history&lt;/h4&gt;
-
-&lt;p&gt;When doing a folder structure refactoring near the end of the project, I moved the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Secrets.swift&lt;/code&gt; file that has my Last.fm API key in plain text and forgot to update the hardcoded location in &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.gitignore&lt;/code&gt;, causing it to be committed deep in the history. I noticed this right before pushing to the public GitHub repo. I’d have to use git to extract it from the commit history.&lt;/p&gt;
-
-&lt;p&gt;I’ve done this kind of excavation before, but it’s incredibly nerve-wracking and error prone. I asked Claude Code to help and it knocked it out.&lt;/p&gt;
-
-&lt;p&gt;Of course, there’s a lesson to be learned here that I should be doing my secrets management better, and I did update the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.gitignore&lt;/code&gt; to be more fool-proof, but regardless of that, it still saved me a lot of mental effort.&lt;/p&gt;
-
-&lt;h4 id=&quot;full-audits-for-reusable-code&quot;&gt;Full audits for reusable code&lt;/h4&gt;
-
-&lt;p&gt;I asked Claude Code a few times to do full audits of my project to find and extract duplicate code, especially in SwiftUI Views. You can be as hands-on or hands-off as you’d like. For me, I specifically instructed it to consider whether the code was functionally duplicated or not, i.e. whether it was expected that each instance of the duplicate code should be able to evolve independently. So treating Claude Code as a static analysis tool with a little extra smarts.&lt;/p&gt;
-
-&lt;p&gt;I’d review its results in GitHub Desktop as usual and commit only the extractions that made sense to me.&lt;/p&gt;
-
-&lt;h4 id=&quot;transliterating-code-between-programming-languages&quot;&gt;Transliterating code between programming languages&lt;/h4&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;&lt;a href=&quot;https://github.com/twocentstudios/vinylogue/commit/f4d9402&quot;&gt;f4d9402 - “use old color extraction algorithm”&lt;/a&gt;&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;I used Claude Code to port my &lt;a href=&quot;https://github.com/twocentstudios/vinylogue/blob/906c1ce86c8bdb926db6dcb0eada664b80fb8743/Vinylogue/Core/Infrastructure/ColorExtraction.swift&quot;&gt;dominant color algorithm&lt;/a&gt; from Objective-C to Swift line-by-line.&lt;/p&gt;
-
-&lt;p&gt;It’s only a couple hundred lines, but it would have been tedious and not particularly fun to do this by hand.&lt;/p&gt;
-
-&lt;h4 id=&quot;error-message-writing-and-mapping&quot;&gt;Error message writing and mapping&lt;/h4&gt;
-
-&lt;p&gt;Claude Code wrote a lot of decent error handling code out of the box. Of course, error handling code, both internal and user facing, deserves proper consideration. But having a scaffolding in place made it easier to iterate in the right direction.&lt;/p&gt;
-
-&lt;h4 id=&quot;organizing-images-in-a-github-release&quot;&gt;Organizing images in a GitHub release&lt;/h4&gt;
-
-&lt;p&gt;I like documenting my GitHub PRs, Issues, Releases, etc. with screenshots laid out in tables. I’ve done this manually for years, and I’ve never figured out a way to automate it.&lt;/p&gt;
-
-&lt;p&gt;When creating &lt;a href=&quot;https://github.com/twocentstudios/vinylogue/releases&quot;&gt;Releases&lt;/a&gt;, I realized Claude Code was very much able to pick the proper screenshots out of my project directory, upload them, and insert links into a properly formatted markdown table. This saved me 10-15 minutes at least of tedious clicking, dragging around, and formatting.&lt;/p&gt;
-
-&lt;h3 id=&quot;what-i-want-to-try-next-time&quot;&gt;What I want to try next time&lt;/h3&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;I want to give Claude Code a way to view simulator screenshots and/or video to allow it to iterate on its designs.&lt;/li&gt;
-  &lt;li&gt;Or at least experiment with UITests or snapshot tests.&lt;/li&gt;
-  &lt;li&gt;I want to get give Claude Code scripts to run for &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;xcodebuild&lt;/code&gt;, etc. so it’s more consistent and wastes less time when it forgets which simulators are available. The only downside is keeping these up to date when I update Xcode versions.&lt;/li&gt;
-  &lt;li&gt;I want to be more mindful of the the way it writes unit tests and come up with my own best practices, including which types of files I test.&lt;/li&gt;
-  &lt;li&gt;I want to try some version of TDD.&lt;/li&gt;
-  &lt;li&gt;I want to ask Claude Code to update some sort of append-only log each time it takes a wrong path and corrects its own mistake. Automating the collection of tips and tricks and ensuring we can incorporate those into long-term memory.&lt;/li&gt;
-  &lt;li&gt;I want to automate more App Store release process steps.&lt;/li&gt;
-  &lt;li&gt;I want to move my personal workflow stuff to my home directory &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLAUDE.md&lt;/code&gt;.&lt;/li&gt;
-  &lt;li&gt;I want to find more useful MCPs for iOS dev.&lt;/li&gt;
-  &lt;li&gt;I want to find a better way to manage files that aren’t in the xcodeproj e.g. markdown, images, etc.&lt;/li&gt;
-  &lt;li&gt;I want to find a source for up-to-date Apple platform docs that can be quickly referenced within Claude Code.&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h3 id=&quot;stray-observations-about-working-with-claude-code&quot;&gt;Stray observations about working with Claude Code&lt;/h3&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;I didn’t have CLAUDE.md file at first and didn’t understand context limit, clearing, or compacting.&lt;/li&gt;
-  &lt;li&gt;Pre-planning with a product requirements document didn’t really feel like it helped much. I’m pretty sure there’s a skill to this too and I’ll need to start up a lot of greenfield projects or features to learn what works.&lt;/li&gt;
-  &lt;li&gt;For the first day or two, I intentionally didn’t make any code changes or give code-level guidance so I could see what Claude Code’s tendencies were. For my own learning, I think this was useful so that I only give it specific instructions about the things I disagree with the base model on.&lt;/li&gt;
-  &lt;li&gt;To that end, my impression of Claude Sonnet 4 is that by default it writes iOS 16 style code.&lt;/li&gt;
-  &lt;li&gt;I added &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;xcodegen&lt;/code&gt; very early because editing &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;xcodeproj&lt;/code&gt; directly is error-prone and overall a nightmare.&lt;/li&gt;
-  &lt;li&gt;I used &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;swiftformat&lt;/code&gt; with my longstanding config file. Using a linting/formatting tool means you don’t need to fill up the context with notes about code style.&lt;/li&gt;
-  &lt;li&gt;However, Claude Code would sometimes trip up when applying diffs because after running swiftformat, the code structure in its context history would no longer match what was properly formatted in the file.&lt;/li&gt;
-  &lt;li&gt;My flow was to review Claude Code’s changes in GitHub Desktop, sometimes make my own changes in Xcode, stage files and write commit messages myself. I liked this flow because it enforced some discipline about me being the one responsible for the code I was committing.&lt;/li&gt;
-  &lt;li&gt;Out of the box, Claude Code wrote tons of tests. I mostly ignored these but my impression was that most of them were flawed and useless.&lt;/li&gt;
-  &lt;li&gt;Claude Code also tried to write UITests while it was still in the scaffolding phase and the UI was very far from being pixel perfect. I had to shut it down and ensure it never wrote UITests again via &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLAUDE.md&lt;/code&gt;.&lt;/li&gt;
-  &lt;li&gt;Claude Code did pretty well in building the project and fixing its own issues. To me, this is where Claude Code leapfrogs standard chat LLM interfaces in usefulness.&lt;/li&gt;
-  &lt;li&gt;Claude Code knew how to use &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;xcodebuild&lt;/code&gt; out of the box. But it was very inconsistent on which build flags, simulators, OS versions, etc. it picked.&lt;/li&gt;
-  &lt;li&gt;I slowly added to the project directory CLAUDE.md, mostly very targeted statements about the development flow and not much about the project contents.&lt;/li&gt;
-  &lt;li&gt;The Pro plan’s usage limit resets every 5 hours. During scaffolding I ran into this limit after about 60-90 minutes of usage. Later on, I’d run into the limit towards the end of the usage period or never.&lt;/li&gt;
-  &lt;li&gt;The Pro plan only allows usage of Sonnet, so I have not experimented with Opus yet.&lt;/li&gt;
-  &lt;li&gt;With its initial multi-sprint plan in place, Claude Code knocked out a functional prototype in about 3-4 hours of total compute time on the first day. This was mostly unguided work; I did not contribute much yet.&lt;/li&gt;
-  &lt;li&gt;I never gave Claude Code direct access to the iOS simulator. Therefore it was only indirectly useful for visual design work.&lt;/li&gt;
-  &lt;li&gt;Claude Code really wanted to implement dark mode, Dynamic Type, and full accessibility support.&lt;/li&gt;
-  &lt;li&gt;I enjoyed doing the visual design work so I took responsibility for that part of the work.&lt;/li&gt;
-  &lt;li&gt;After I did the visual design work for one screen, Claude Code did a decent job getting the other screens to 90-95% complete.&lt;/li&gt;
-  &lt;li&gt;My ambitions grew a lot over the first couple days working on the project as I became more familiar with Claude Code’s capabilities.&lt;/li&gt;
-  &lt;li&gt;It was almost overwhelming at times to decide what I wanted to do next.&lt;/li&gt;
-  &lt;li&gt;I intentionally didn’t attempt to have Claude Code work on different features in parallel. I was still in-the-loop enough that my manual testing was the blocker, and having multiple instances to review in my environment would have quickly overwhelmed me. As I gain experience, I think my appetite for parallelizing will grow. Also, I think parallel usage would probably necessitate the usage limits of the Max plan.&lt;/li&gt;
-  &lt;li&gt;After a couple days, I started using &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;/compact&lt;/code&gt; more intentionally, and with additional instructions so that I was more in control.&lt;/li&gt;
-  &lt;li&gt;Towards the end of development, tasks were mostly unrelated, so I was using &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;/clear&lt;/code&gt; more often than &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;/compact&lt;/code&gt;. Especially because my collection of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLAUDE.md&lt;/code&gt; files was much more robust.&lt;/li&gt;
-  &lt;li&gt;As I started using more frameworks and becoming more opinionated about the code quality, I started looking for more efficient ways to feed context into Claude Code. I tried &lt;a href=&quot;https://uithub.com&quot;&gt;uithub&lt;/a&gt;, &lt;a href=&quot;https://gitingest.com/&quot;&gt;gitingest&lt;/a&gt;, &lt;a href=&quot;https://context7.com/&quot;&gt;context7&lt;/a&gt;. But context is still so precious that a lot of the time I’d do my own work up front to find the exact markdown file I wanted it to read to understand how the library would solve the current problem we were working on.&lt;/li&gt;
-  &lt;li&gt;Moving Xcode’s DerivedData folder into the project directory is a weighty decision with pros and cons, but it certainly helped for giving Claude Code a easily discoverable location for Swift Package documentation and code.&lt;/li&gt;
-  &lt;li&gt;Refactoring is one of my favorite use cases for Claude Code. Being able to concretely see what a project-wide refactor looks like in a matter of minutes is incredible as a learning device. For example, if I manually did a big exploratory refactor related to an architecture change and it took a week of work, I’d be much more opposed to throwing away that work, even if it objectively made the codebase worse. Having Claude Code automate that work allows you to keep your objectivity, evaluate the new strategy as an impartial observer, and ruthlessly throw out the work with no hard feelings.&lt;/li&gt;
-  &lt;li&gt;Relatedly, the ability to stay at the macro-level of evaluating a codebase for 90% of the time while Claude Code handles the micro-level work feels like such a huge productively multiplier.&lt;/li&gt;
-  &lt;li&gt;I was naive at first thinking that Claude Code one-shotted the implementation of the legacy data migrator component. Even spot-checking this code during the refactoring phase would have at least put this work higher on my TODO list.&lt;/li&gt;
-  &lt;li&gt;Having a deep catalog of structurally pure, well-documented, and focused open source code to provide as template or reference code to Claude Code will be a huge multiplier going forward.&lt;/li&gt;
-  &lt;li&gt;I haven’t tried using &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ultrathink&lt;/code&gt; or other thinking modifiers in my prompts yet.&lt;/li&gt;
-  &lt;li&gt;I found it useful to have Claude Code’s scaffolding in place after the first day and iterate from there, especially since I didn’t start out with a target architecture in mind. But there’s a fine line; you can quickly find yourself drowning in slop before you get it under control.&lt;/li&gt;
-  &lt;li&gt;I didn’t use the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;--dangerously-skip-permissions&lt;/code&gt; mode. Most CLI tools I simply approved for the session as they were proposed since most are safe by nature (&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;find&lt;/code&gt;, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;grep&lt;/code&gt;, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;xcodebuild&lt;/code&gt;, etc.).&lt;/li&gt;
-  &lt;li&gt;I found it easier to do research using Perplexity or OpenAI o3 for particular tasks rather than mix this kind of work up with the Claude Code context. It was much more efficient to find the exact blog post or API with these GUI tools and then feed Claude Code the exact URL. The right tool for the right job.&lt;/li&gt;
-  &lt;li&gt;Claude Code is so adept at using CLI commands that I didn’t regularly end up using many MCPs. I imagine I will start to use more in the future as the ecosystem matures.&lt;/li&gt;
-  &lt;li&gt;At some point I had Claude Code audit the entire project and delete all of its useless comments. Now that I know its penchant for over-documenting (at least to my tastes), I can try to devise a succinct rule regarding inline docs to add to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLAUDE.md&lt;/code&gt;.&lt;/li&gt;
-&lt;/ul&gt;
-
-</description>
-        <pubDate>Sun, 22 Jun 2025 12:56:00 -0500</pubDate>
-        <link>https://twocentstudios.com/2025/06/22/vinylogue-swift-rewrite/</link>
-        <guid isPermaLink="true">https://twocentstudios.com/2025/06/22/vinylogue-swift-rewrite/</guid>
-        
-        <category>vinylogue</category>
-        
-        <category>apple</category>
-        
-        <category>ios</category>
         
         
       </item>

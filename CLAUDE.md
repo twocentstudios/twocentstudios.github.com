@@ -34,7 +34,20 @@ magick temp1.png temp2.png temp3.png +append -bordercolor "gray70" -border 25 -r
 rm temp1.png temp2.png temp3.png
 ```
 
-**Method 2: Using +smush (Simple but may lack visible separation)**
+**Method 2: Using splice + append (Recommended for reliable spacing)**
+```bash
+# Add spacing between images using splice, then append and remove leading edge
+magick image1.png image2.png image3.png image4.png -background gray70 -splice 25x0+0+0 +append -chop 25x0+0+0 -bordercolor gray70 -border 50 -resize 1500x1500\> -quality 85 output.jpg
+
+# This method:
+# - Adds a 25px gray70 left border to ALL images using -splice
+# - Appends them horizontally with +append
+# - Removes the leftmost 25px edge with -chop to avoid leading space
+# - Adds outer border and optimizes
+# - Produces consistent, visible spacing between all images
+```
+
+**Method 3: Using +smush (Simple but may lack visible separation)**
 ```bash
 # Combine images with exact spacing and outer border
 magick image1.png image2.png image3.png +smush 15 -bordercolor "gray70" -border 50 output.png
@@ -42,6 +55,7 @@ magick image1.png image2.png image3.png +smush 15 -bordercolor "gray70" -border 
 # Note: +smush for horizontal, -smush for vertical
 # Number specifies exact pixels between images (no doubling)
 # Use gray70 for subtle separation, gray20 for darker separation
+# WARNING: In practice, +smush may not produce visible spacing even with high pixel values
 ```
 
 #### Basic Image Operations
