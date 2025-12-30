@@ -6,7 +6,7 @@ image:
 tags: apple ios claudecode
 ---
 
-Closing the loop means giving giving Claude Code a way to view the output of its work. I'll be focusing on iOS app development workflows.
+Closing the loop means giving Claude Code a way to view the output of its work. I'll be focusing on iOS app development workflows.
 
 Step 1 of closing the loop: **building** a target so that Claude Code can see the errors and warnings. And doing so in a way that preserves the build cache (clean builds take a long time). This allows Claude Code to see its syntax errors and fix them before you review its work.
 
@@ -16,7 +16,7 @@ Step 3 of closing the loop: reading the **console & log output**. This allows Cl
 
 Step 4 of closing the loop: **controlling & viewing** the iOS simulator. This allows Claude Code to step through entire flows, evaluate visual designs, and generate its own logs.
 
-Step 5 of closing the loop: building, installing, launching, and logging **on device**. The allows you and Claude Code to work with you to test Apple Frameworks that are only available on device.
+Step 5 of closing the loop: building, installing, launching, and logging **on device**. This allows you and Claude Code to test Apple Frameworks that are only available on device.
 
 ![TODO: building, installing, launching on the simulator from Claude Code '/Users/ctrott/Desktop/Screenshot 2025-12-30 at 12.49.15.png']() (TODO: claude, also put the final image as the `image:` path in the front matter of this post.
 
@@ -28,7 +28,7 @@ This post is written for humans but can easily be adapted to a Skill or added to
 
 If you've always used a manual Xcode-based flow, trying to both understand in incorporate these steps into your workflow can be super intimidating. But it's easy to start with just the first step, and I actually recommend that. The best part about this workflow is you can seamlessly dip in and out of using Xcode and there's no switching cost (not even needing to do clean builds).
 
-The below CLI commands also share a lot of coverage with [XcodeBuildMCP](https://github.com/cameroncooke/XcodeBuildMCP), a more full-service MCP-based solution. I won't get into the pros and cons of MCPs vs CLIs (it's author has already [written about that](https://www.async-let.com/posts/my-take-on-the-mcp-verses-cli-debate/)).
+The below CLI commands also share a lot of coverage with [XcodeBuildMCP](https://github.com/cameroncooke/XcodeBuildMCP), a more full-service MCP-based solution. I won't get into the pros and cons of MCPs vs CLIs (its author has already [written about that](https://www.async-let.com/posts/my-take-on-the-mcp-verses-cli-debate/)).
 
 ## Step 1: Building
 
@@ -40,7 +40,7 @@ Allowing Claude Code to build after every proposed change is a requirement for a
 
 Moving DerivedData to a location inside your project folder is perhaps an unusual suggestion, but it has several benefits for an agentic workflow:
 
-- **Permissions**: you'll encounter fewer permissions dialogs when Claude is reading inside the the project folder that you're presumably running it in. Most devs expect DerivedData to be cleared regularly so it's safe.
+- **Permissions**: you'll encounter fewer permissions dialogs when Claude is reading inside the project folder that you're presumably running it in. Most devs expect DerivedData to be cleared regularly so it's safe.
 - **Git worktrees**: An advanced technique is to use [Git worktrees](TODO) to have independent copies of your repo. Colocating DerivedData ensures the separate repos don't interfere with each others build artifacts.
 - **Docs**: The DerivedData has a full copy of your Swift Packages, including any documentation. Claude Code can do fast greps to verify syntax or find examples. In my CLAUDE.md I have a direct link for each important package:
 
@@ -638,7 +638,7 @@ log show DerivedData/tmp/device-logs.logarchive --predicate 'subsystem == "com.t
 
 ### How to parameterize names, ids, etc. for these commands
 
-So far, I'm just been hardcoding these commands with my favorite simulator UDID and project path into my CLAUDE.md. When a new version of Xcode comes out I ask Claude to update all mentions of the UDID to the most recent simulator version and it only takes a minute. Hardcoding these values leaves the least room for hallucination. When running these commands dozens of times a day, you really want consistency.
+So far, I've just been hardcoding these commands with my favorite simulator UDID and project path into my CLAUDE.md. When a new version of Xcode comes out I ask Claude to update all mentions of the UDID to the most recent simulator version and it only takes a minute. Hardcoding these values leaves the least room for hallucination. When running these commands dozens of times a day, you really want consistency.
 
 Other ways to handle this would be:
 
