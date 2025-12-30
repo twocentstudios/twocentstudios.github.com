@@ -30,6 +30,8 @@ If you've always used a manual Xcode-based flow, trying to both understand and i
 
 The below CLI commands also share a lot of coverage with [XcodeBuildMCP](https://github.com/cameroncooke/XcodeBuildMCP), a more full-service MCP-based solution. I won't get into the pros and cons of MCPs vs CLIs (its author has already [written about that](https://www.async-let.com/posts/my-take-on-the-mcp-verses-cli-debate/)).
 
+I'm specifically targeting this post to Claude Code and Opus 4.5 based on my first-hand knowledge of their combined capabilities. Other harness and model pairs will work with most of the commands in this post. The command backgrounding feature in step 3 is the only potential snag for some harnesses.
+
 ## Step 1: Building
 
 Allowing Claude Code to build after every proposed change is a requirement for agentic workflows. Like it does for human developers, the compiler catches dumb syntax errors and, with Swift concurrency, even data races. The alternative is tabbing back over to Xcode, hitting cmd+b, waiting, copying and pasting error messages into the terminal; a massive waste of human time.
