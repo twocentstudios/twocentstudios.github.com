@@ -626,28 +626,42 @@ TaskOutput(task_id: "b8e2ca5")
 
 A downside of OSLog is that it requires `sudo` and Claude Code can't use sudo commands directly. There are presumably some ways to give Claude this capability in more a dangerous fashion. But a safer workaround for now is for you, the human, to run the below commands in another terminal tab. Claude can give you the full command to copy/paste into the other terminal.
 
+Another downside is that the process is slow and produces lots of logs.
+
 These commands will produce groups of files that Claude can read.
 
-Note that the log capture is of **everything on the device**, and can quickly balloon to gigabytes of storage, so you'll want to limit the time or size:
+Note that the log collect is of **everything on the device** in the past, and can quickly balloon to gigabytes of storage. The command to collect even the last 2 minutes of logs can take about 30 seconds to complete on Wi-Fi.
 
-- time-based filtering (`--last 2m`, `--start`, etc.) 
-- size-based limits (`--size`)
+Content filtering with `--predicate` is not supported: `Warning: --predicate is ignored when collecting from attached device`.
 
-Content filtering like `--predicate` is not supported. Claude will do this while reading/analyzing with `log show --predicate ...`
+Claude will handle filtering while reading/analyzing with `log show --predicate ...`.
+
+The most logical way to use this is to:
+
+1. have Claude build, install, and launch the app on your device (ensure it's unlocked), and have it note the start time.
+2. tap around and do the testing you need in order to generate the logs you want.
+3. have Claude give you the `sudo log collect` command with a start time a little before the launch time.
+4. run the `sudo log collect` command in a separate terminal window, enter your password, wait ~1m for it to finish.
+5. ask Claude to analyze the log archive.
 
 ```
 # Human user must run these commands in another terminal tab (Claude Code can't provide sudo password)
-# --device-name works
+
+# `--last` collects from N minutes before the command was run
 sudo log collect --device-name "CT's iPhone" --last 2m --output DerivedData/tmp/device-logs.logarchive
 
-# --device-udid does not work - `log: failed to create archive: Device not configured (6)`
-# sudo log collect --device-udid 12345678-9E7A-5814-8BBB-0123456789EAB --last 2m --output DerivedData/tmp/device-logs.logarchive
+# `--start` collects from the specified start time until the command was run
+sudo log collect --device-name "CT's iPhone" --start "2025-12-30 16:11:00" --output DerivedData/tmp/device-logs.logarchive
 ```
 
 ```
-# Then analyze with log show (Claude Code can do this)
+# Then analyze with log show (Claude can do this)
 log show DerivedData/tmp/device-logs.logarchive --predicate 'subsystem == "com.twocentstudios.train-timetable"'
 ```
+
+Note `--device-udid` does not work, use `--device-name instead` - `log: failed to create archive: Device not configured (6)`.
+
+Note `--size` does not (seem to) work either.
 
 ## Final thoughts
 
