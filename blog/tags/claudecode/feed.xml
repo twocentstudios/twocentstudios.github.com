@@ -5,8 +5,8 @@
     <description>A coding blog covering iOS, Swift, and other programming topics.</description>
     <link>https://twocentstudios.com/blog/tags/claudecode/index.html</link>
     <atom:link href="https://twocentstudios.com/blog/tags/claudecode/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Mon, 29 Dec 2025 23:43:03 -0600</pubDate>
-    <lastBuildDate>Mon, 29 Dec 2025 23:43:03 -0600</lastBuildDate>
+    <pubDate>Tue, 30 Dec 2025 01:44:07 -0600</pubDate>
+    <lastBuildDate>Tue, 30 Dec 2025 01:44:07 -0600</lastBuildDate>
     <generator>Jekyll v3.9.3</generator>
     
       <item>
@@ -128,7 +128,7 @@ xcodebuild -project train-timetable.xcodeproj -scheme &quot;train-timetable&quot
 &lt;ul&gt;
   &lt;li&gt;&lt;strong&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;-project&lt;/code&gt;&lt;/strong&gt;: path to your xcodeproj file. Use &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;-workspace&lt;/code&gt; if you use an xcworkspace file.&lt;/li&gt;
   &lt;li&gt;&lt;strong&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;-scheme&lt;/code&gt;&lt;/strong&gt;: scheme name we found above.&lt;/li&gt;
-  &lt;li&gt;&lt;strong&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;-destination&lt;/code&gt;&lt;/strong&gt;: for simulator, we use &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;&quot;platform=iphonesimulator,id=$UDID&quot;&lt;/code&gt; where &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;id&lt;/code&gt; is the UDID of our favorite simulator instance.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;-destination&lt;/code&gt;&lt;/strong&gt;: for simulator, we use &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;&quot;platform=iphonesimulator,id=$UDID&quot;&lt;/code&gt; where &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;id&lt;/code&gt; is the UDID of our favorite simulator instance. Note &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;platform=iOS Simulator&lt;/code&gt; has the same meaning and also works.&lt;/li&gt;
   &lt;li&gt;&lt;strong&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;-derivedDataPath&lt;/code&gt;&lt;/strong&gt;: this is super important if you’ve moved the DerivedData to the project folder. Without this, the Xcode instance will be using a different directory and you’ll have super slow (clean) builds each time.&lt;/li&gt;
   &lt;li&gt;&lt;strong&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;-configuration&lt;/code&gt;&lt;/strong&gt;: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Debug&lt;/code&gt; is the default, so you don’t usually need this flag. It’s better to be explicit though because this affects the folder where your app binary will be copied to (see step 2).&lt;/li&gt;
   &lt;li&gt;&lt;strong&gt;build&lt;/strong&gt;: the actual build command&lt;/li&gt;
@@ -613,17 +613,16 @@ CT&apos;s iPhone
 
 &lt;h3 id=&quot;build-for-device&quot;&gt;Build for device&lt;/h3&gt;
 
-&lt;p&gt;Build commands are the same as those for the simulator, except &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;platform=iphoneos&lt;/code&gt;/&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;platform=iOS&lt;/code&gt; instead of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;platform=iphonesimulator&lt;/code&gt;/&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;platform=iOS Simulator&lt;/code&gt;.&lt;/p&gt;
+&lt;p&gt;Build commands are the same as those for the simulator, except &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;platform=iOS&lt;/code&gt; instead of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;platform=iphonesimulator&lt;/code&gt;/&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;platform=iOS Simulator&lt;/code&gt;.&lt;/p&gt;
 
-&lt;p&gt;Use the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;name&lt;/code&gt; or &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;id&lt;/code&gt; of your target device from the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;list devices&lt;/code&gt; command.&lt;/p&gt;
+&lt;p&gt;Use the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;name&lt;/code&gt; of your target device from the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;list devices&lt;/code&gt; command.&lt;/p&gt;
 
 &lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;# Using device name
-xcodebuild -project train-timetable.xcodeproj -scheme &quot;train-timetable&quot; -destination &quot;platform=iphoneos,name=CT&apos;s iPhone&quot; -derivedDataPath DerivedData build 2&amp;gt;&amp;amp;1 | xcsift -w
-
-# Using device ID
-xcodebuild -project train-timetable.xcodeproj -scheme &quot;train-timetable&quot; -destination &quot;platform=iphoneos,id=E7E3E660-9E7A-5814-8BBB-F7D81A965CEB&quot; -derivedDataPath DerivedData build 2&amp;gt;&amp;amp;1 | xcsift -w
+xcodebuild -project train-timetable.xcodeproj -scheme &quot;train-timetable&quot; -destination &quot;platform=iOS,name=CT&apos;s iPhone&quot; -derivedDataPath DerivedData build 2&amp;gt;&amp;amp;1 | xcsift -w
 &lt;/code&gt;&lt;/pre&gt;
 &lt;/div&gt;
+
+&lt;p&gt;Note: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;platform=iphoneos&lt;/code&gt; does not work. &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;id&lt;/code&gt; instead of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;name&lt;/code&gt; does not work.&lt;/p&gt;
 
 &lt;h3 id=&quot;install-on-device&quot;&gt;Install on device&lt;/h3&gt;
 
@@ -670,30 +669,44 @@ TaskOutput(task_id: &quot;b8e2ca5&quot;)
 
 &lt;p&gt;A downside of OSLog is that it requires &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;sudo&lt;/code&gt; and Claude Code can’t use sudo commands directly. There are presumably some ways to give Claude this capability in more a dangerous fashion. But a safer workaround for now is for you, the human, to run the below commands in another terminal tab. Claude can give you the full command to copy/paste into the other terminal.&lt;/p&gt;
 
+&lt;p&gt;Another downside is that the process is slow and produces lots of logs.&lt;/p&gt;
+
 &lt;p&gt;These commands will produce groups of files that Claude can read.&lt;/p&gt;
 
-&lt;p&gt;Note that the log capture is of &lt;strong&gt;everything on the device&lt;/strong&gt;, and can quickly balloon to gigabytes of storage, so you’ll want to limit the time or size:&lt;/p&gt;
+&lt;p&gt;Note that the log collect is of &lt;strong&gt;everything on the device&lt;/strong&gt; in the past, and can quickly balloon to gigabytes of storage. The command to collect even the last 2 minutes of logs can take about 30 seconds to complete on Wi-Fi.&lt;/p&gt;
 
-&lt;ul&gt;
-  &lt;li&gt;time-based filtering (&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;--last 2m&lt;/code&gt;, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;--start&lt;/code&gt;, etc.)&lt;/li&gt;
-  &lt;li&gt;size-based limits (&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;--size&lt;/code&gt;)&lt;/li&gt;
-&lt;/ul&gt;
+&lt;p&gt;Content filtering with &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;--predicate&lt;/code&gt; is not supported: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Warning: --predicate is ignored when collecting from attached device&lt;/code&gt;.&lt;/p&gt;
 
-&lt;p&gt;Content filtering like &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;--predicate&lt;/code&gt; is not supported. Claude will do this while reading/analyzing with &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;log show --predicate ...&lt;/code&gt;&lt;/p&gt;
+&lt;p&gt;Claude will handle filtering while reading/analyzing with &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;log show --predicate ...&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;The most logical way to use this is to:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;have Claude build, install, and launch the app on your device (ensure it’s unlocked), and have it note the start time.&lt;/li&gt;
+  &lt;li&gt;tap around and do the testing you need in order to generate the logs you want.&lt;/li&gt;
+  &lt;li&gt;have Claude give you the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;sudo log collect&lt;/code&gt; command with a start time a little before the launch time.&lt;/li&gt;
+  &lt;li&gt;run the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;sudo log collect&lt;/code&gt; command in a separate terminal window, enter your password, wait ~1m for it to finish.&lt;/li&gt;
+  &lt;li&gt;ask Claude to analyze the log archive.&lt;/li&gt;
+&lt;/ol&gt;
 
 &lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;# Human user must run these commands in another terminal tab (Claude Code can&apos;t provide sudo password)
-# --device-name works
+
+# `--last` collects from N minutes before the command was run
 sudo log collect --device-name &quot;CT&apos;s iPhone&quot; --last 2m --output DerivedData/tmp/device-logs.logarchive
 
-# --device-udid does not work - `log: failed to create archive: Device not configured (6)`
-# sudo log collect --device-udid 12345678-9E7A-5814-8BBB-0123456789EAB --last 2m --output DerivedData/tmp/device-logs.logarchive
+# `--start` collects from the specified start time until the command was run
+sudo log collect --device-name &quot;CT&apos;s iPhone&quot; --start &quot;2025-12-30 16:11:00&quot; --output DerivedData/tmp/device-logs.logarchive
 &lt;/code&gt;&lt;/pre&gt;
 &lt;/div&gt;
 
-&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;# Then analyze with log show (Claude Code can do this)
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;# Then analyze with log show (Claude can do this)
 log show DerivedData/tmp/device-logs.logarchive --predicate &apos;subsystem == &quot;com.twocentstudios.train-timetable&quot;&apos;
 &lt;/code&gt;&lt;/pre&gt;
 &lt;/div&gt;
+
+&lt;p&gt;Note &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;--device-udid&lt;/code&gt; does not work, use &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;--device-name instead&lt;/code&gt; - &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;log: failed to create archive: Device not configured (6)&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;Note &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;--size&lt;/code&gt; does not (seem to) work either.&lt;/p&gt;
 
 &lt;h2 id=&quot;final-thoughts&quot;&gt;Final thoughts&lt;/h2&gt;
 

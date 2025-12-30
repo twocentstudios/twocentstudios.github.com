@@ -478,7 +478,7 @@ xcodebuild -project train-timetable.xcodeproj -scheme "train-timetable" -destina
 <ul>
   <li><strong><code class="language-plaintext highlighter-rouge">-project</code></strong>: path to your xcodeproj file. Use <code class="language-plaintext highlighter-rouge">-workspace</code> if you use an xcworkspace file.</li>
   <li><strong><code class="language-plaintext highlighter-rouge">-scheme</code></strong>: scheme name we found above.</li>
-  <li><strong><code class="language-plaintext highlighter-rouge">-destination</code></strong>: for simulator, we use <code class="language-plaintext highlighter-rouge">"platform=iphonesimulator,id=$UDID"</code> where <code class="language-plaintext highlighter-rouge">id</code> is the UDID of our favorite simulator instance.</li>
+  <li><strong><code class="language-plaintext highlighter-rouge">-destination</code></strong>: for simulator, we use <code class="language-plaintext highlighter-rouge">"platform=iphonesimulator,id=$UDID"</code> where <code class="language-plaintext highlighter-rouge">id</code> is the UDID of our favorite simulator instance. Note <code class="language-plaintext highlighter-rouge">platform=iOS Simulator</code> has the same meaning and also works.</li>
   <li><strong><code class="language-plaintext highlighter-rouge">-derivedDataPath</code></strong>: this is super important if you’ve moved the DerivedData to the project folder. Without this, the Xcode instance will be using a different directory and you’ll have super slow (clean) builds each time.</li>
   <li><strong><code class="language-plaintext highlighter-rouge">-configuration</code></strong>: <code class="language-plaintext highlighter-rouge">Debug</code> is the default, so you don’t usually need this flag. It’s better to be explicit though because this affects the folder where your app binary will be copied to (see step 2).</li>
   <li><strong>build</strong>: the actual build command</li>
@@ -963,17 +963,16 @@ CT's iPhone
 
 <h3 id="build-for-device">Build for device</h3>
 
-<p>Build commands are the same as those for the simulator, except <code class="language-plaintext highlighter-rouge">platform=iphoneos</code>/<code class="language-plaintext highlighter-rouge">platform=iOS</code> instead of <code class="language-plaintext highlighter-rouge">platform=iphonesimulator</code>/<code class="language-plaintext highlighter-rouge">platform=iOS Simulator</code>.</p>
+<p>Build commands are the same as those for the simulator, except <code class="language-plaintext highlighter-rouge">platform=iOS</code> instead of <code class="language-plaintext highlighter-rouge">platform=iphonesimulator</code>/<code class="language-plaintext highlighter-rouge">platform=iOS Simulator</code>.</p>
 
-<p>Use the <code class="language-plaintext highlighter-rouge">name</code> or <code class="language-plaintext highlighter-rouge">id</code> of your target device from the <code class="language-plaintext highlighter-rouge">list devices</code> command.</p>
+<p>Use the <code class="language-plaintext highlighter-rouge">name</code> of your target device from the <code class="language-plaintext highlighter-rouge">list devices</code> command.</p>
 
 <div class="language-plaintext highlighter-rouge"><pre class="highlight"><code># Using device name
-xcodebuild -project train-timetable.xcodeproj -scheme "train-timetable" -destination "platform=iphoneos,name=CT's iPhone" -derivedDataPath DerivedData build 2&gt;&amp;1 | xcsift -w
-
-# Using device ID
-xcodebuild -project train-timetable.xcodeproj -scheme "train-timetable" -destination "platform=iphoneos,id=E7E3E660-9E7A-5814-8BBB-F7D81A965CEB" -derivedDataPath DerivedData build 2&gt;&amp;1 | xcsift -w
+xcodebuild -project train-timetable.xcodeproj -scheme "train-timetable" -destination "platform=iOS,name=CT's iPhone" -derivedDataPath DerivedData build 2&gt;&amp;1 | xcsift -w
 </code></pre>
 </div>
+
+<p>Note: <code class="language-plaintext highlighter-rouge">platform=iphoneos</code> does not work. <code class="language-plaintext highlighter-rouge">id</code> instead of <code class="language-plaintext highlighter-rouge">name</code> does not work.</p>
 
 <h3 id="install-on-device">Install on device</h3>
 
@@ -1020,30 +1019,44 @@ TaskOutput(task_id: "b8e2ca5")
 
 <p>A downside of OSLog is that it requires <code class="language-plaintext highlighter-rouge">sudo</code> and Claude Code can’t use sudo commands directly. There are presumably some ways to give Claude this capability in more a dangerous fashion. But a safer workaround for now is for you, the human, to run the below commands in another terminal tab. Claude can give you the full command to copy/paste into the other terminal.</p>
 
+<p>Another downside is that the process is slow and produces lots of logs.</p>
+
 <p>These commands will produce groups of files that Claude can read.</p>
 
-<p>Note that the log capture is of <strong>everything on the device</strong>, and can quickly balloon to gigabytes of storage, so you’ll want to limit the time or size:</p>
+<p>Note that the log collect is of <strong>everything on the device</strong> in the past, and can quickly balloon to gigabytes of storage. The command to collect even the last 2 minutes of logs can take about 30 seconds to complete on Wi-Fi.</p>
 
-<ul>
-  <li>time-based filtering (<code class="language-plaintext highlighter-rouge">--last 2m</code>, <code class="language-plaintext highlighter-rouge">--start</code>, etc.)</li>
-  <li>size-based limits (<code class="language-plaintext highlighter-rouge">--size</code>)</li>
-</ul>
+<p>Content filtering with <code class="language-plaintext highlighter-rouge">--predicate</code> is not supported: <code class="language-plaintext highlighter-rouge">Warning: --predicate is ignored when collecting from attached device</code>.</p>
 
-<p>Content filtering like <code class="language-plaintext highlighter-rouge">--predicate</code> is not supported. Claude will do this while reading/analyzing with <code class="language-plaintext highlighter-rouge">log show --predicate ...</code></p>
+<p>Claude will handle filtering while reading/analyzing with <code class="language-plaintext highlighter-rouge">log show --predicate ...</code>.</p>
+
+<p>The most logical way to use this is to:</p>
+
+<ol>
+  <li>have Claude build, install, and launch the app on your device (ensure it’s unlocked), and have it note the start time.</li>
+  <li>tap around and do the testing you need in order to generate the logs you want.</li>
+  <li>have Claude give you the <code class="language-plaintext highlighter-rouge">sudo log collect</code> command with a start time a little before the launch time.</li>
+  <li>run the <code class="language-plaintext highlighter-rouge">sudo log collect</code> command in a separate terminal window, enter your password, wait ~1m for it to finish.</li>
+  <li>ask Claude to analyze the log archive.</li>
+</ol>
 
 <div class="language-plaintext highlighter-rouge"><pre class="highlight"><code># Human user must run these commands in another terminal tab (Claude Code can't provide sudo password)
-# --device-name works
+
+# `--last` collects from N minutes before the command was run
 sudo log collect --device-name "CT's iPhone" --last 2m --output DerivedData/tmp/device-logs.logarchive
 
-# --device-udid does not work - `log: failed to create archive: Device not configured (6)`
-# sudo log collect --device-udid 12345678-9E7A-5814-8BBB-0123456789EAB --last 2m --output DerivedData/tmp/device-logs.logarchive
+# `--start` collects from the specified start time until the command was run
+sudo log collect --device-name "CT's iPhone" --start "2025-12-30 16:11:00" --output DerivedData/tmp/device-logs.logarchive
 </code></pre>
 </div>
 
-<div class="language-plaintext highlighter-rouge"><pre class="highlight"><code># Then analyze with log show (Claude Code can do this)
+<div class="language-plaintext highlighter-rouge"><pre class="highlight"><code># Then analyze with log show (Claude can do this)
 log show DerivedData/tmp/device-logs.logarchive --predicate 'subsystem == "com.twocentstudios.train-timetable"'
 </code></pre>
 </div>
+
+<p>Note <code class="language-plaintext highlighter-rouge">--device-udid</code> does not work, use <code class="language-plaintext highlighter-rouge">--device-name instead</code> - <code class="language-plaintext highlighter-rouge">log: failed to create archive: Device not configured (6)</code>.</p>
+
+<p>Note <code class="language-plaintext highlighter-rouge">--size</code> does not (seem to) work either.</p>
 
 <h2 id="final-thoughts">Final thoughts</h2>
 
