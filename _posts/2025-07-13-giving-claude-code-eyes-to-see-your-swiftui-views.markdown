@@ -6,6 +6,8 @@ image: /images/cc-eyes-comparison-6.png
 tags: claudecode swiftui apple ios
 ---
 
+> **Update 2025/12/30**: I recommend using a simpler simulator-based flow instead of the techniques discussed in this post. See my newer post [Closing the Loop on iOS with Claude Code](/2025/12/27/closing-the-loop-on-ios-with-claude-code/).
+
 [Claude Code](https://claude.ai/claude-code) works best as a multi-shot agent, iterating on a task by making changes and checking whether its attempts match the target.
 
 Let's explore one way of giving Claude Code (henceforth "CC") a way to use its multimodal capabilities to view the results of the SwiftUI code: [Swift Snapshot Testing](https://github.com/pointfreeco/swift-snapshot-testing). We'll look into ways to enhance its image analysis capabilities with tool calling. And finally we'll see how well it does with the challenge of recreating a SwiftUI View from a reference image.
@@ -183,7 +185,9 @@ Below are a few other techniques, although I have not tried any of them enough t
 
 It's possible to get the full simulator output with XCTest, but more complicated to get access to the raw image. You can also simulate taps and perform navigation. But the tradeoff is that you have to set up the whole app environment even if you just want to see one view in isolation.
 
-### Simulator via XcodeBuildMCP
+### Simulator
+
+> **Update 2025/12/30**: See my newer post [Closing the Loop on iOS with Claude Code](/2025/12/27/closing-the-loop-on-ios-with-claude-code/) for how to set up a simulator-based flow with CLI commands.
 
 [XcodeBuildMCP](https://github.com/cameroncooke/XcodeBuildMCP) advertises simulator automation features:
 
