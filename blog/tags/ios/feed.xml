@@ -5,9 +5,761 @@
     <description>A coding blog covering iOS, Swift, and other programming topics.</description>
     <link>https://twocentstudios.com/blog/tags/ios/index.html</link>
     <atom:link href="https://twocentstudios.com/blog/tags/ios/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Fri, 26 Dec 2025 05:00:21 -0600</pubDate>
-    <lastBuildDate>Fri, 26 Dec 2025 05:00:21 -0600</lastBuildDate>
+    <pubDate>Mon, 29 Dec 2025 23:43:03 -0600</pubDate>
+    <lastBuildDate>Mon, 29 Dec 2025 23:43:03 -0600</lastBuildDate>
     <generator>Jekyll v3.9.3</generator>
+    
+      <item>
+        <title>Closing the Loop on iOS with Claude Code</title>
+        <description>&lt;p&gt;Closing the loop means giving Claude Code a way to view the output of its work. I’ll be focusing on iOS app development workflows.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Step 1&lt;/strong&gt; of closing the loop: &lt;strong&gt;building&lt;/strong&gt; a target so that Claude Code can see the errors and warnings. And doing so in a way that preserves the build cache (clean builds take a long time). This allows Claude Code to see its syntax errors and fix them before you review its work.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Step 2&lt;/strong&gt; of closing the loop: &lt;strong&gt;installing &amp;amp; launching&lt;/strong&gt; on the simulator. This saves you the step of opening Xcode and hitting build &amp;amp; run, letting you test each proposed code change right away.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Step 3&lt;/strong&gt; of closing the loop: reading the &lt;strong&gt;console &amp;amp; log output&lt;/strong&gt;. This allows Claude Code to proactively verify codepaths and reactively do debugging.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Step 4&lt;/strong&gt; of closing the loop: &lt;strong&gt;controlling &amp;amp; viewing&lt;/strong&gt; the iOS simulator. This allows Claude Code to step through entire flows, evaluate visual designs, and generate its own logs.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Step 5&lt;/strong&gt; of closing the loop: building, installing, launching, and logging &lt;strong&gt;on device&lt;/strong&gt;. This allows you and Claude Code to test Apple Frameworks that are absent or broken on the simulator.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/closing-loop-cc-hero.jpg&quot; width=&quot;&quot; height=&quot;500&quot; alt=&quot;Building, installing, launching on the simulator from Claude Code&quot; title=&quot;Building, installing, launching on the simulator from Claude Code&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Building, installing, launching on the simulator from Claude Code&lt;/div&gt;&lt;/div&gt;
+
+&lt;h3 id=&quot;disclaimers-before-we-start&quot;&gt;Disclaimers before we start&lt;/h3&gt;
+
+&lt;p&gt;Agentic tooling is changing rapidly with model and agent versions. I’ll cover each step as thoroughly as I can. The strategies in this post cover about a month of work in &lt;strong&gt;December 2025&lt;/strong&gt; with Claude &lt;strong&gt;Opus 4.5&lt;/strong&gt; inside Claude Code v2.0.76 (and several versions below). I used &lt;strong&gt;Xcode 26.1 and 26.2&lt;/strong&gt; on macOS 15.7.3 mostly developing for &lt;strong&gt;iOS 26&lt;/strong&gt;.&lt;/p&gt;
+
+&lt;p&gt;This post is written for humans but can easily be adapted to a Skill or added to your CLAUDE.md file. The command structure will change based on how your project and schemes are set up. I outline a few different strategies that are useful in different situations, but you may only want to use one workflow as your default, or completely ignore certain steps altogether.&lt;/p&gt;
+
+&lt;p&gt;If you’ve always used a manual Xcode-based flow, trying to both understand and incorporate these steps into your workflow can be intimidating. If you’ve never working with Xcode via the command line before, start with just the first step for a while. The best part about this workflow is you can seamlessly dip in and out of using Xcode and there’s no switching cost (not even needing to do clean builds).&lt;/p&gt;
+
+&lt;p&gt;The below CLI commands also share a lot of coverage with &lt;a href=&quot;https://github.com/cameroncooke/XcodeBuildMCP&quot;&gt;XcodeBuildMCP&lt;/a&gt;, a more full-service MCP-based solution. I won’t get into the pros and cons of MCPs vs CLIs (its author has already &lt;a href=&quot;https://www.async-let.com/posts/my-take-on-the-mcp-verses-cli-debate/&quot;&gt;written about that&lt;/a&gt;).&lt;/p&gt;
+
+&lt;p&gt;I’m specifically targeting this post to Claude Code and Opus 4.5 based on my first-hand knowledge of their combined capabilities. Other harness and model pairs will work with most of the commands in this post. The command backgrounding feature in step 3 is the only potential snag for some harnesses.&lt;/p&gt;
+
+&lt;h2 id=&quot;step-1-building&quot;&gt;Step 1: Building&lt;/h2&gt;
+
+&lt;p&gt;Allowing Claude Code to build after every proposed change is a requirement for agentic workflows. Like it does for human developers, the compiler catches dumb syntax errors and, with Swift concurrency, even data races. The alternative is tabbing back over to Xcode, hitting cmd+b, waiting, copying and pasting error messages into the terminal; a massive waste of human time.&lt;/p&gt;
+
+&lt;h3 id=&quot;prerequisites&quot;&gt;Prerequisites&lt;/h3&gt;
+
+&lt;h4 id=&quot;move-deriveddata-location-to-your-project-folder-optional&quot;&gt;Move DerivedData location to your project folder (optional)&lt;/h4&gt;
+
+&lt;p&gt;Moving DerivedData to a location inside your project folder is perhaps an unusual suggestion, but it has several benefits for an agentic workflow:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;strong&gt;Permissions&lt;/strong&gt;: you’ll encounter fewer permissions dialogs when Claude is reading inside the project folder that you’re presumably running it in. Most devs expect DerivedData to be cleared regularly so it’s safe.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Git worktrees&lt;/strong&gt;: An advanced technique is to use &lt;a href=&quot;https://git-scm.com/docs/git-worktree&quot;&gt;Git worktrees&lt;/a&gt; to have independent copies of your repo. Colocating DerivedData ensures the separate repos don’t interfere with each others build artifacts.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Docs&lt;/strong&gt;: The DerivedData has a full copy of your Swift Packages, including any documentation. Claude Code can do fast greps to verify syntax or find examples. In my CLAUDE.md I have a direct link for each important package:&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;div class=&quot;language-markdown highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;p&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;sb&quot;&gt;`DerivedData/train-timetable/SourcePackages/checkouts/swift-composable-architecture/Sources/ComposableArchitecture/Documentation.docc`&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;-&lt;/span&gt; When using Search/Grep/etc. tools, ignore anything in the /DerivedData folder by default unless specifically looking for build artifacts or code/docs for Swift Packages used by this project
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Before making this change, add &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;DerivedData/&lt;/code&gt; as a line in your &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.gitignore&lt;/code&gt; file if it’s not already there.&lt;/p&gt;
+
+&lt;p&gt;Find the setting in Xcode Settings -&amp;gt; Locations. Set Derived Data to “Relative” and Build Location to “Unique”. It will report &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;/DerivedData&lt;/code&gt; as the location.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/closing-loop-cc-deriveddata-settings.jpg&quot; width=&quot;&quot; height=&quot;300&quot; alt=&quot;DerivedData settings in Xcode&quot; title=&quot;DerivedData settings in Xcode&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;DerivedData settings in Xcode&lt;/div&gt;&lt;/div&gt;
+
+&lt;h4 id=&quot;document-project-file--scheme&quot;&gt;Document project file &amp;amp; scheme&lt;/h4&gt;
+
+&lt;p&gt;Build commands use your project/workspace file location and scheme name. Claude Code can find these pretty easily with tools but it’s faster to document them in CLAUDE.md.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/closing-loop-cc-scheme-selection.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Finding scheme names from Xcode&quot; title=&quot;Finding scheme names from Xcode&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Finding scheme names from Xcode&lt;/div&gt;&lt;/div&gt;
+
+&lt;h4 id=&quot;get-simulators&quot;&gt;Get simulators&lt;/h4&gt;
+
+&lt;p&gt;I’ll assume you’ve already downloaded the iOS simulators and iOS runtime versions you’d like to use in the Xcode interface.&lt;/p&gt;
+
+&lt;p&gt;The usual command you’ll use to find the simulator you want produces a very long list, so it’s reasonable to cache your favorite simulator’s UDID so each new Claude Code session doesn’t need do this from scratch each time. “Cache” meaning note it in your CLAUDE.md file, add it as an environment variable, etc.&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;# Get all available simulators
+xcrun simctl list devices available
+
+     -- iOS 26.1 --
+         iPhone 17 Pro (89F6D0BC-E855-4BF7-A400-9C19ED7A7350) (Shutdown)
+         iPhone 17 Pro Max (F1FA81FA-ED32-40C4-BD78-753254D685AC) (Shutdown)
+         iPhone Air (77702E5F-85F5-4997-BA14-BC8D8F639B84) (Shutdown)
+		 ...
+     -- iOS 26.2 --
+         iPhone 17 Pro (DB0531E0-B47E-42AC-9AAB-FEB76D3D563A) (Booted)
+         iPhone 17 Pro Max (0C54CF4B-8A45-450E-AB93-B800B97BD4DA) (Shutdown)
+         iPhone Air (83BECA5F-7894-4705-B198-3DCAE0C4778E) (Shutdown)
+         ...
+     -- ...
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;At first, you’ll probably start with a single threaded workflow, having one preferred simulator booted and in use at a time. The below command will output just the UDID for the latest iPhone Pro with the latest installed iOS version.&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;# Get the UDID of the latest iPhone Pro (non-max) model with the latest available iOS version 
+xcrun simctl list devices available | grep &quot;iPhone.*Pro (&quot; | tail -1 | grep -Eo &apos;[A-F0-9]{8}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{12}&apos;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Once you have more Claudes running in parallel, you’ll can ask each to find its own UDID by looking for a non-booted simulator before it starts building.&lt;/p&gt;
+
+&lt;p&gt;Note that even though some commands can be run with more vague identifiers like name, os, or “booted”, it’s much more reliable to select a UDID and use it across commands. For example: specifying &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;&quot;platform=iOS Simulator,name=iPhone 17 Pro&quot;&lt;/code&gt; in the build command will pick any simulator that matches, which could be any iOS version. For the build command it’s not as big of an issue, but to ensure predictable runs I recommend using UDIDs only.&lt;/p&gt;
+
+&lt;h4 id=&quot;install-xcsift&quot;&gt;Install xcsift&lt;/h4&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://github.com/ldomaradzki/xcsift&quot;&gt;xcsift&lt;/a&gt; is a companion parsing library for build output. You’ll be building &lt;em&gt;a lot&lt;/em&gt;, and you don’t want to fill up your context with hundreds of lines of “file.swift built”. xcsift solves this by producing just the actionable errors and warnings in json.&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;brew install xcsift
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;I add the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;-w&lt;/code&gt; flag to also include warnings in the output. I recommend browsing the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;xcsift&lt;/code&gt; docs to find other flags you might find useful for your project.&lt;/p&gt;
+
+&lt;h3 id=&quot;building&quot;&gt;Building&lt;/h3&gt;
+
+&lt;p&gt;OK, after all that setup, we should have all the info we need to assemble the actual build command.&lt;/p&gt;
+
+&lt;p&gt;Claude Code will be able to derive and customize the exact build command you need. I recommend doing a quick session with Claude - the goal being to produce a single, always-working command you can document somewhere and use automatically in each future session.&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;# Example: working build command for a specific simulator
+xcodebuild -project train-timetable.xcodeproj -scheme &quot;train-timetable&quot; -destination &quot;platform=iphonesimulator,id=DB0531E0-B47E-42AC-9AAB-FEB76D3D563A&quot; -derivedDataPath DerivedData -configuration Debug build 2&amp;gt;&amp;amp;1 | xcsift -w
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;strong&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;-project&lt;/code&gt;&lt;/strong&gt;: path to your xcodeproj file. Use &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;-workspace&lt;/code&gt; if you use an xcworkspace file.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;-scheme&lt;/code&gt;&lt;/strong&gt;: scheme name we found above.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;-destination&lt;/code&gt;&lt;/strong&gt;: for simulator, we use &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;&quot;platform=iphonesimulator,id=$UDID&quot;&lt;/code&gt; where &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;id&lt;/code&gt; is the UDID of our favorite simulator instance.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;-derivedDataPath&lt;/code&gt;&lt;/strong&gt;: this is super important if you’ve moved the DerivedData to the project folder. Without this, the Xcode instance will be using a different directory and you’ll have super slow (clean) builds each time.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;-configuration&lt;/code&gt;&lt;/strong&gt;: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Debug&lt;/code&gt; is the default, so you don’t usually need this flag. It’s better to be explicit though because this affects the folder where your app binary will be copied to (see step 2).&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;build&lt;/strong&gt;: the actual build command&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;2&amp;gt;&amp;amp;1 | xcsift -w&lt;/code&gt;&lt;/strong&gt;: combines stdout and stderr and pipes them both into &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;xcsift&lt;/code&gt; so it has access to all output. &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;-w&lt;/code&gt; tells &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;xcsift&lt;/code&gt; to also show build warnings, not just errors.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;It’s important to test your ideal build command to confirm:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;It doesn’t force a clean build each time.&lt;/li&gt;
+  &lt;li&gt;It produces a concise set of errors and warnings.&lt;/li&gt;
+  &lt;li&gt;It doesn’t interfere with builds via Xcode; you should be able to build/install/run from Xcode, use other SourceKit features, etc. and not clear the build cache.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;In my understanding for builds, the simulator UDID (or at least simulator name) does not affect the build artifacts or app binary. However, there’s a lot going on behind the scenes so for simplicity I recommend using the same simulator UDID across all build, install, &amp;amp; launch steps. You need to be careful if running multiple simulators from the same project folder (i.e. without git worktrees) because each &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;build&lt;/code&gt; command will overwrite the app binary regardless of whether you run the build command with different simulator UDIDs.&lt;/p&gt;
+
+&lt;h3 id=&quot;clearing-deriveddata&quot;&gt;Clearing DerivedData&lt;/h3&gt;
+
+&lt;p&gt;When left to its own devices (literally), sometimes Claude will get frustrated when a build is failing continuously and it can’t figure out how to fix things. It will sometimes try to remove the entire DerivedData folder. This is a bad idea because 1. clearing DerivedData usually doesn’t fix the underlying problem and 2. it will temporarily break Xcode’s ability to read your Swift packages and you’ll need to restart Xcode to get everything working again.&lt;/p&gt;
+
+&lt;p&gt;After I got my build commands more streamlined, Claude stopped doing this as much. But I still have decently strict permissions, so when it does happen, the session will usually block on any &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;rm&lt;/code&gt; command and I’ll get a chance to step in and reprimand it. If you run into this problem, you can dig deeper into a configuration-based solution and modify your permissions, add hooks, or add more to your CLAUDE.md. Just something to look out for.&lt;/p&gt;
+
+&lt;h2 id=&quot;step-2-installing--launching&quot;&gt;Step 2: Installing &amp;amp; Launching&lt;/h2&gt;
+
+&lt;p&gt;Building should streamline a lot of your Claude Code workflow. But I slept on the automated install &amp;amp; launch step for too long.&lt;/p&gt;
+
+&lt;p&gt;When properly set up with step 1, you should be able to wait for Claude Code to build its changes and return control to you. Then you can tab over to Xcode and hit “run without building” to handle the install &amp;amp; launch.&lt;/p&gt;
+
+&lt;p&gt;But when you’re doing build-&amp;gt;install-&amp;gt;launch dozens of times a day, it’s way more streamlined to check Claude’s session output then tab over to the simulator and tap through screens to test out the changes.&lt;/p&gt;
+
+&lt;h3 id=&quot;prerequisites-1&quot;&gt;Prerequisites&lt;/h3&gt;
+
+&lt;h4 id=&quot;document-the-app-binary-location-for-your-scheme&quot;&gt;Document the app binary location for your scheme&lt;/h4&gt;
+
+&lt;p&gt;Ask Claude to find the location of the app binary produced by the build command.&lt;/p&gt;
+
+&lt;p&gt;Since my setup has DerivedData in the project folder and a build directory inside it, that’s where my app binary is: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;DerivedData/Build/Products/Debug-iphonesimulator/Eki Bright.app&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;You’ll notice the folder: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Debug-iphonesimulator&lt;/code&gt;, which corresponds to our build configuration of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Debug&lt;/code&gt; from earlier and the platform &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;iphonesimulator&lt;/code&gt;. If you go off the beaten path and want to try out a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Release&lt;/code&gt; build for example, make sure to understand this relationship.&lt;/p&gt;
+
+&lt;p&gt;Also be cautious because you want to make sure the most recent build is what you’re installing and launching and looking at. And there’s nothing in the file name that will indicate that.&lt;/p&gt;
+
+&lt;h4 id=&quot;find-your-bundle-identifier&quot;&gt;Find your bundle identifier&lt;/h4&gt;
+
+&lt;p&gt;This will be in your Target’s general settings pane beside Bundle Identifier: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;com.twocentstudios.train-timetable&lt;/code&gt;&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/closing-loop-cc-bundle-id.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Bundle identifier in Xcode target settings&quot; title=&quot;Bundle identifier in Xcode target settings&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Bundle identifier in Xcode target settings&lt;/div&gt;&lt;/div&gt;
+
+&lt;h3 id=&quot;installing-the-app-on-the-simulator&quot;&gt;Installing the app on the simulator&lt;/h3&gt;
+
+&lt;p&gt;Installing is copying over the app binary into a specific simulator’s storage. &lt;strong&gt;This step depends on the build step having produced an app binary.&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;The parameters in the install command are:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;strong&gt;UDID&lt;/strong&gt;: for least headaches this should be the same simulator UDID you specified in the build command.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;path/to/My App.app&lt;/strong&gt;: the app binary location specified by your scheme.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;# Example: install a previously built app binary on the simulator by UDID
+xcrun simctl install DB0531E0-B47E-42AC-9AAB-FEB76D3D563A &quot;DerivedData/Build/Products/Debug-iphonesimulator/Eki Bright.app&quot;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;h3 id=&quot;launching-the-app-on-the-simulator&quot;&gt;Launching the app on the simulator&lt;/h3&gt;
+
+&lt;p&gt;Launching the equivalent of tapping your app’s icon in Springboard. It of course depends on the install step having copied over the app binary.&lt;/p&gt;
+
+&lt;p&gt;The parameters in the install command are:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;strong&gt;UDID&lt;/strong&gt;: the simulator UDID you specified in the build &amp;amp; install commands.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;bundle id&lt;/strong&gt;: apps are uniquely identified by bundle id after installation.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;# Example: launch a previously installed app binary by bundle id
+xcrun simctl launch DB0531E0-B47E-42AC-9AAB-FEB76D3D563A com.twocentstudios.train-timetable
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;h3 id=&quot;navigating-by-url-bonus&quot;&gt;Navigating by URL (bonus)&lt;/h3&gt;
+
+&lt;p&gt;Depending on your app’s navigation structure and pre-existing support for universal links or App Intents, you can save yourself even more time by having Claude automatically navigate the app to the tab, sheet, or navigation destination you’re currently testing.&lt;/p&gt;
+
+&lt;p&gt;The full set of caveats is beyond the scope of this post. In my experience, adding Universal Links support without some caution can lead to giving Claude access to data or flows that are impossible for normal app users to see. It may also add maintenance burden for initializers that are only used during debug. Regardless, jumping through a dozen screens automatically can save you hours of unnecessary manual screen-clicking labor.&lt;/p&gt;
+
+&lt;p&gt;The parameters for the openurl command are:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;strong&gt;UDID&lt;/strong&gt;: the simulator UDID you specified in the build &amp;amp; install commands.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;URL&lt;/strong&gt;: the deep link URL your app knows how to process.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;xcrun simctl openurl DB0531E0-B47E-42AC-9AAB-FEB76D3D563A &quot;train-timetable://tab?name=search&quot;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;In my testing, it’s safe to have Claude to run the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;openurl&lt;/code&gt; command &lt;em&gt;immediately&lt;/em&gt; after the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;install&lt;/code&gt; command (or even in the same line) without needing a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;sleep&lt;/code&gt; or otherwise waiting for the launch to complete.&lt;/p&gt;
+
+&lt;h2 id=&quot;step-3-reading-console--log-output&quot;&gt;Step 3: Reading Console &amp;amp; Log Output&lt;/h2&gt;
+
+&lt;p&gt;With Step 1, Claude has access to the compiler’s evaluation of its code changes. We can also give Claude access to the console and log outputs so it can evaluate the runtime results.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;There are two strategies&lt;/strong&gt;: console output via &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;print&lt;/code&gt; statements and log output via &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;OSLog&lt;/code&gt;/&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Logger&lt;/code&gt;. I use both depending on the situation.&lt;/p&gt;
+
+&lt;p&gt;Depending on the strategy, we’ll either amend the launch command from step 2 or prepend a CLI command.&lt;/p&gt;
+
+&lt;h3 id=&quot;blocking-vs-non-blocking&quot;&gt;Blocking vs. non-blocking&lt;/h3&gt;
+
+&lt;p&gt;Claude can do &lt;em&gt;blocking&lt;/em&gt; and &lt;em&gt;non-blocking&lt;/em&gt; for the console variant, and &lt;em&gt;non-blocking&lt;/em&gt;-only for the log output.&lt;/p&gt;
+
+&lt;p&gt;&lt;em&gt;Blocking&lt;/em&gt; means that the prompt input and Claude’s thinking will be suspended until you explicitly stop it or the default timeout (currently 10 minutes) triggers. It will print output from the command inline, but usually truncate portions.&lt;/p&gt;
+
+&lt;p&gt;&lt;em&gt;Non-blocking&lt;/em&gt; means Claude will use its background capability to keep the command alive and retain access to its output but immediately move the command to the background so that the prompt input is available.&lt;/p&gt;
+
+&lt;p&gt;I recommend the &lt;em&gt;blocking&lt;/em&gt; flow for when you want to add a few quick print statements to verify a limited (maybe less than 15 seconds) code execution flow that you, the human, are driving in the simulator and have Claude immediately evaluate the results inline. The amount of lines generated should be small, within 10s of lines.&lt;/p&gt;
+
+&lt;p&gt;I recommend &lt;em&gt;non-blocking&lt;/em&gt; for all other scenarios, including:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;when you want Claude to drive the simulator (discussed in step 4) while monitoring the output.&lt;/li&gt;
+  &lt;li&gt;when you want to use &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Logger&lt;/code&gt; instead of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;print&lt;/code&gt; logging, probably for more permanent logging code in your codebase.&lt;/li&gt;
+  &lt;li&gt;when you’re expecting to generate dozens or hundreds of lines of logs in a single run. In order to be smart about preserving the session context, you’ll want to write to a file and allow either a subagent to extract meaning from it, or have the primary agent use parsing tools to read only the relevant portions.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;--terminate-running-process&quot;&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;--terminate-running-process&lt;/code&gt;&lt;/h3&gt;
+
+&lt;p&gt;Adding the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;--terminate-running-process&lt;/code&gt; flag to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;launch&lt;/code&gt; ensures idempotency by terminating any existing instance of your app and ensuring the app is always cold launched with the console output available.&lt;/p&gt;
+
+&lt;p&gt;Adding the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;--terminate-running-process&lt;/code&gt; is super important to the logging flow since you may not be rebuilding and reinstalling between launches.&lt;/p&gt;
+
+&lt;p&gt;When you don’t terminate an existing process, the app instance will stay in memory on the simulator. By default, the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;launch&lt;/code&gt; command will &lt;strong&gt;not&lt;/strong&gt; relaunch the app if it’s already launched. This will happen silently. Critically, it will also &lt;strong&gt;not&lt;/strong&gt; read any console output and Claude will get very confused about why nothing is being logged and it will start thrashing and making very dumb changes, ranging from adding more print commands to clearing DerivedData.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;(This was my biggest roadblock in getting a reliable and robust debugging flow with Claude; please learn from my mistakes).&lt;/strong&gt;&lt;/p&gt;
+
+&lt;h3 id=&quot;launching-the-app-on-simulator-and-reading-the-output&quot;&gt;Launching the app on simulator and reading the output&lt;/h3&gt;
+
+&lt;p&gt;Replace the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;launch&lt;/code&gt; commands from step 2 with any of the below variants depending on your use case.&lt;/p&gt;
+
+&lt;h4 id=&quot;blocking-consoleprint-direct-when-you-know-output-volume-is-reasonable&quot;&gt;Blocking console/print direct (when you know output volume is reasonable)&lt;/h4&gt;
+
+&lt;p&gt;Relevant flags and parameters:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;strong&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;--console-pty&lt;/code&gt;&lt;/strong&gt;: produce console print output.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;--terminate-running-process&lt;/code&gt;&lt;/strong&gt;: as discussed above, ensure the command actually runs.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;UDID&lt;/strong&gt; - the simulator UDID you specified in the build &amp;amp; install commands.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;bundle id&lt;/strong&gt; - bundle id of the target that produces the app binary.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;# Example with simulator UDID and bundle id
+xcrun simctl launch --console-pty --terminate-running-process DB0531E0-B47E-42AC-9AAB-FEB76D3D563A com.twocentstudios.train-timetable
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Note: the flags &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;--stdout --stderr&lt;/code&gt; do not work. Don’t use them. Use &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;--console-pty&lt;/code&gt; instead.&lt;/p&gt;
+
+&lt;h4 id=&quot;blocking-consoleprint-to-file-safer-for-unknown-or-expected-heavy-output&quot;&gt;Blocking console/print to file (safer for unknown or expected heavy output)&lt;/h4&gt;
+
+&lt;p&gt;Relevant flags and parameters:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;strong&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;--console-pty&lt;/code&gt;&lt;/strong&gt;: produce console print output.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;--terminate-running-process&lt;/code&gt;&lt;/strong&gt;: as discussed above, ensure the command actually runs.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;UDID&lt;/strong&gt;: the simulator UDID you specified in the build &amp;amp; install commands.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;bundle id&lt;/strong&gt;: bundle id of the target that produces the app binary.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;output file path&lt;/strong&gt;: the plain text file console output will be written to. Note: I write to a tmp folder within DerivedData to ensure Claude has access to the result without triggering unnecessary permissions dialogs.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;2&amp;gt;&amp;amp;1&lt;/code&gt;&lt;/strong&gt;: ensure stdout &amp;amp; stderr both end up in the file.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;xcrun simctl launch --console-pty --terminate-running-process DB0531E0-B47E-42AC-9AAB-FEB76D3D563A com.twocentstudios.train-timetable &amp;gt; DerivedData/tmp/console.log 2&amp;gt;&amp;amp;1
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;h4 id=&quot;non-blocking-consoleprint&quot;&gt;Non-blocking console/print&lt;/h4&gt;
+
+&lt;p&gt;Non-blocking requires using Claude Code’s &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;run_in_background&lt;/code&gt; parameter on the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Bash&lt;/code&gt; tool. This will produce a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;task_id&lt;/code&gt; that Claude can later use to get the output (from an implicitly created text file) and kill the task.&lt;/p&gt;
+
+&lt;p&gt;After running the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Bash&lt;/code&gt; tool, the prompt will be unblocked and you can ask Claude to monitor the output or ask it do anything else you want.&lt;/p&gt;
+
+&lt;p&gt;The non-blocking flow requires a bit more ceremony; you’ll need to tell Claude when you’re done working with the simulator and it should analyze the results. It usually leaves the background task running (potentially writing log data to the output), so you’ll need to specifically tell it to stop.&lt;/p&gt;
+
+&lt;p&gt;The command itself is the same as the one from &lt;em&gt;Blocking console/print direct&lt;/em&gt;.&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;Bash(
+  command: &quot;xcrun simctl launch --console-pty --terminate-running-process DB0531E0-B47E-42AC-9AAB-FEB76D3D563A com.twocentstudios.train-timetable&quot;,
+  run_in_background: true
+)
+
+Command running in background with ID: b8e2ca5.
+
+# *wait for next user prompt*
+
+TaskOutput(task_id: &quot;b8e2ca5&quot;)
+KillShell(shell_id: &quot;b8e2ca5&quot;)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;h4 id=&quot;non-blocking-loggeroslog&quot;&gt;Non-blocking Logger/OSLog&lt;/h4&gt;
+
+&lt;p&gt;With only its training data, Claude knows how to use &lt;a href=&quot;https://developer.apple.com/documentation/os/logging&quot;&gt;Logging&lt;/a&gt; by importing the OSLog framework. OSLog has strengths and weaknesses compared to console/print logging. You may already be using it in your app. I consider it more of a long term solution you’d add to your codebase alongside each feature and keep it up to date with any changes.&lt;/p&gt;
+
+&lt;p&gt;Giving Claude access to these logs is different from the print/console flow we just discussed.&lt;/p&gt;
+
+&lt;p&gt;The root command is &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;xcrun simctl spawn&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;spawn log stream&lt;/code&gt; only captures logs emitted while it’s running (not before). If you want logs starting from launch, always run it before the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;launch&lt;/code&gt; command.&lt;/p&gt;
+
+&lt;p&gt;Blocking on &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;spawn log stream&lt;/code&gt; doesn’t make sense because you still need to launch the app. You should dispatch it directly to the background as non-blocking.&lt;/p&gt;
+
+&lt;p&gt;Relevant flags and parameters (Claude knows how to adjust these freely):&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;strong&gt;UDID&lt;/strong&gt; - the simulator UDID you specified in the build &amp;amp; install commands.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;--level&lt;/code&gt;&lt;/strong&gt;: matches the log level in your code; &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;debug&lt;/code&gt;, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;info&lt;/code&gt;, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;warning&lt;/code&gt;, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;error&lt;/code&gt;, etc.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;--predicate&lt;/code&gt;&lt;/strong&gt;: filters the firehose output the messages you’re interested in. Lots of options here depending on how you’ve defined &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Logger&lt;/code&gt;s and added log statements in your codebase.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;After &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;spawn log stream&lt;/code&gt; is dispatched to the background, you’ll need to launch the app with the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;launch&lt;/code&gt; command. You can choose a blocking or non-blocking &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;launch&lt;/code&gt; command.&lt;/p&gt;
+
+&lt;p&gt;Note that the raw &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;spawn log stream&lt;/code&gt; command is not actually monitoring the specific app process. You can start this early in your session, cast a wide net, and keep this running through your whole session, asking Claude to filter the relevant time periods from the output. I personally haven’t needed this flow though.&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;Bash(
+  command: &quot;xcrun simctl spawn DB0531E0-B47E-42AC-9AAB-FEB76D3D563A log stream --level=debug --predicate &apos;subsystem == &quot;com.twocentstudios.train-timetable&quot;&apos;)&quot;
+  run_in_background: true
+)
+
+Command running in background with ID: b8e2ca5.
+
+Bash(xcrun simctl launch --terminate-running-process DB0531E0-B47E-42AC-9AAB-FEB76D3D563A com.twocentstudios.train-timetable)
+
+# *blocking prompt until user escapes*
+
+TaskOutput(task_id: &quot;b8e2ca5&quot;)
+KillShell(shell_id: &quot;b8e2ca5&quot;)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;h4 id=&quot;non-blocking-consoleprint--loggeroslog&quot;&gt;Non-blocking console/print &amp;amp; Logger/OSLog&lt;/h4&gt;
+
+&lt;p&gt;You can combine everything above and give Claude access to both console/print output and Logger/OSLog output. The &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;launch&lt;/code&gt; command can be blocking or non-blocking, but the below example is non-blocking.&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;Bash(
+  command: &quot;xcrun simctl spawn DB0531E0-B47E-42AC-9AAB-FEB76D3D563A log stream --level=debug --predicate &apos;subsystem == &quot;com.twocentstudios.train-timetable&quot;&apos;)&quot;
+  run_in_background: true
+) 
+Command running in background with ID: b8e2ca5.
+
+Bash(
+  command: &quot;xcrun simctl launch --console-pty --terminate-running-process DB0531E0-B47E-42AC-9AAB-FEB76D3D563A com.twocentstudios.train-timetable&quot;,
+  run_in_background: true
+)
+Command running in background with ID: a792db1.
+
+# *wait for next user prompt*
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;h2 id=&quot;step-4-controlling--viewing-the-ios-simulator&quot;&gt;Step 4: Controlling &amp;amp; Viewing the iOS simulator&lt;/h2&gt;
+
+&lt;p&gt;Giving Claude eyes and virtual fingers to see and control the iOS simulator is where we start to reach the avant-garde. At the current (end of 2025) model &amp;amp; harness capabilities things start to go off the rails pretty quickly. I wouldn’t expect great results from Claude at tasks related to manipulating the simulator like a human, but in certain scenarios, the benefits outweigh the costs.&lt;/p&gt;
+
+&lt;h3 id=&quot;prerequisites-2&quot;&gt;Prerequisites&lt;/h3&gt;
+
+&lt;h4 id=&quot;axe&quot;&gt;AXe&lt;/h4&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;&lt;a href=&quot;https://github.com/cameroncooke/AXe&quot;&gt;AXe&lt;/a&gt; is a comprehensive CLI tool for interacting with iOS Simulators using Apple’s Accessibility APIs and HID (Human Interface Device) functionality.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Claude can use AXe to manipulate the simulator through taps, swipes, button presses, and keyboard typing.&lt;/p&gt;
+
+&lt;p&gt;Under the hood, AXe uses Facebook’s &lt;a href=&quot;https://github.com/facebook/idb&quot;&gt;idb&lt;/a&gt; CLI.&lt;/p&gt;
+
+&lt;p&gt;Install AXe with Homebrew.&lt;/p&gt;
+
+&lt;h4 id=&quot;image-magick-optional&quot;&gt;Image Magick (optional)&lt;/h4&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;&lt;a href=&quot;https://github.com/ImageMagick/ImageMagick&quot;&gt;ImageMagick&lt;/a&gt;® is a free and open-source software suite, used for editing and manipulating digital images.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Claude can use ImageMagick to do some post-processing on screenshots from the simulator.&lt;/p&gt;
+
+&lt;p&gt;Install ImageMagick with Homebrew.&lt;/p&gt;
+
+&lt;h4 id=&quot;ffmpeg-optional&quot;&gt;FFmpeg (optional)&lt;/h4&gt;
+
+&lt;p&gt;Claude can use the venerable &lt;a href=&quot;https://www.ffmpeg.org/&quot;&gt;FFmpeg&lt;/a&gt; CLI for advanced video manipulation use cases. You may not need it but there’s a good chance you already have it.&lt;/p&gt;
+
+&lt;h3 id=&quot;reading-from-the-simulator&quot;&gt;Reading from the simulator&lt;/h3&gt;
+
+&lt;p&gt;In order to navigate the simulator beyond the universal links &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;openurl&lt;/code&gt; use case we detailed above, Claude needs to be able to see the current state of the simulator.&lt;/p&gt;
+
+&lt;p&gt;There are 3 options for this:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;strong&gt;Accessibility info&lt;/strong&gt; - Claude can read a hierarchical text description of the current screen using accessibility info.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Screenshots&lt;/strong&gt; - Claude can take a screenshot of the simulator and use the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Read&lt;/code&gt; tool to access its multimodal capabilities.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Video&lt;/strong&gt; - Claude can record a short video capture of the simulator, slice it up into frames, and read a few to assess an animation.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h4 id=&quot;accessibility-info-via-describe-ui&quot;&gt;Accessibility info via &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;describe-ui&lt;/code&gt;&lt;/h4&gt;
+
+&lt;p&gt;The AXe command for getting the accessibility trace is:&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;axe describe-ui --udid SIMULATOR_UDID
+
+  ...
+      {
+        &quot;frame&quot;: {&quot;y&quot;: 82, &quot;x&quot;: 346, &quot;width&quot;: 36, &quot;height&quot;: 36},
+        &quot;AXLabel&quot;: &quot;閉じる&quot;,
+        &quot;type&quot;: &quot;Button&quot;
+      }
+  ...
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;The output is a big JSON array.&lt;/p&gt;
+
+&lt;p&gt;I thought Claude would be better at understanding and navigation with text information than image information, but in practice it almost always ignored my instructions in CLAUDE.md to use &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;describe-ui&lt;/code&gt; before the screenshot flow. Perhaps there’s something in the system prompt or it’s less efficient to hunt through all the text.&lt;/p&gt;
+
+&lt;p&gt;I also immediately ran into a &lt;a href=&quot;https://github.com/cameroncooke/AXe/issues/8&quot;&gt;reported issue&lt;/a&gt; in AXe and idb where &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;describe-ui&lt;/code&gt; does not print tab or toolbar info, perhaps only from iOS 26. This makes it very difficult to deterministically do any sort of navigation from the root in many apps.&lt;/p&gt;
+
+&lt;p&gt;All this is to say that, at the moment, it’s more reliable to use screenshots.&lt;/p&gt;
+
+&lt;h4 id=&quot;screenshots&quot;&gt;Screenshots&lt;/h4&gt;
+
+&lt;p&gt;Claude can use &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;simctl&lt;/code&gt; to get screenshots.&lt;/p&gt;
+
+&lt;p&gt;Like the other commands, I prefer to write to a tmp folder within DerivedData.&lt;/p&gt;
+
+&lt;p&gt;Screenshots for most simulators are taken at &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;3x&lt;/code&gt; scale, but input taps and swipes are at &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;1x&lt;/code&gt;. For the dual purposes of 1. reducing the amount of calculation required to translate screen position to next tap position and 2. reducing the amount of image data that needs to be sent to and processed by Claude, I automatically resize all screenshots to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;1x&lt;/code&gt; via &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;magick&lt;/code&gt;.&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;xcrun simctl io DB0531E0-B47E-42AC-9AAB-FEB76D3D563A screenshot DerivedData/tmp/screen.png &amp;amp;&amp;amp; magick DerivedData/tmp/screen.png -resize 33.333% DerivedData/tmp/screen_1x.png
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;h4 id=&quot;video&quot;&gt;Video&lt;/h4&gt;
+
+&lt;p&gt;Reading live or even recorded video is currently beyond Opus 4.5’s capabilities. I’m guessing this will be a supported flow sometime in 2026, but until then analyzing video output of the simulator is still at proof-of-concept maturity.&lt;/p&gt;
+
+&lt;p&gt;While I was debugging a tricky animation, I gave Claude some leash to test whether it could:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;start recording a short clip immediately before a tap.&lt;/li&gt;
+  &lt;li&gt;stop the recording after 2 seconds.&lt;/li&gt;
+  &lt;li&gt;use FFmpeg to grab 5 or 6 frames spaced out across the video.&lt;/li&gt;
+  &lt;li&gt;read the frames and analyze the motion.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;It sort of worked? Not really? If you have a use case, you can try experimenting more with this flow. For now I’d consider the actual animation analysis a human-only endeavor. But Claude can still help get the simulator staged up to the start screen.&lt;/p&gt;
+
+&lt;p&gt;I believe I used this AXe command as a Claude Code background task:&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;axe record-video --udid DB0531E0-B47E-42AC-9AAB-FEB76D3D563A --fps 30 --output DerivedData/tmp/recording.mp4
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;h3 id=&quot;manipulating-the-simulator-with-taps-and-swipes&quot;&gt;Manipulating the simulator with taps and swipes&lt;/h3&gt;
+
+&lt;p&gt;AXe has a variety of tap and gesture commands. Claude can tap on points or accessibility labels.&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;# Tap at logical coordinates (use frame center from describe-ui)&lt;/span&gt;
+axe tap -x 201 -y 297 --udid DB0531E0-B47E-42AC-9AAB-FEB76D3D563A --post-delay 0.5
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Without additional guidance, &lt;strong&gt;Claude gets confused about which scroll command maps to what logical direction&lt;/strong&gt;.&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;# Scroll (named by finger direction, not content direction)&lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;# scroll-up = finger UP = content UP = see content BELOW = triggers .onScrollDown&lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;# scroll-down = finger DOWN = content DOWN = see content ABOVE&lt;/span&gt;
+axe gesture scroll-down --udid DB0531E0-B47E-42AC-9AAB-FEB76D3D563A --post-delay 0.5
+axe gesture scroll-up --udid DB0531E0-B47E-42AC-9AAB-FEB76D3D563A --post-delay 0.5
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;It’s useful to note the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;swipe-from-left-edge&lt;/code&gt; gesture because it’s the quickest way for Claude to pop back a level in a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;NavigationStack&lt;/code&gt;.&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;# Edge swipes (for back navigation, etc.)&lt;/span&gt;
+axe gesture swipe-from-left-edge --udid DB0531E0-B47E-42AC-9AAB-FEB76D3D563A --post-delay 0.5
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;h3 id=&quot;strategies-for-increasing-tap-accuracy&quot;&gt;Strategies for increasing tap accuracy&lt;/h3&gt;
+
+&lt;p&gt;The most significant source of indeterministic behavior is in Claude’s ability to accurately measure of coordinates on screen. In other words, it can’t read an image and always find the center point of a button. This means there is plenty of opportunity for situations like:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Claude reads a screen and wants to tap a button.&lt;/li&gt;
+  &lt;li&gt;Claude makes a bad guess and taps above the button.&lt;/li&gt;
+  &lt;li&gt;Claude reads the screen again. There was no change.&lt;/li&gt;
+  &lt;li&gt;Claude makes another bad guess and taps below the button.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Claude’s only feedback about whether its tap was successful is based on its next screenshot. This can lead to situations where it gets irrecoverably lost while navigating your app:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Claude reads a screen and wants to tap a button.&lt;/li&gt;
+  &lt;li&gt;Claude makes a bad guess and taps above the button, hitting a completely different button.&lt;/li&gt;
+  &lt;li&gt;Claude reads the screen again.&lt;/li&gt;
+  &lt;li&gt;Claude sees it’s on a different screen than expected and becomes confused.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;I came up with an experimental flow to try to improve Claude’s accuracy, but:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;It slows down the entire process by 2x.&lt;/li&gt;
+  &lt;li&gt;By the time Claude realizes it needs to use the experimental flow, it’s already too far lost to recover.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Regardless, my flow, also using ImageMagick, is to make Claude draw a red circle on a screenshot in its targeted tap location before actually performing the tap:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Take screenshot and resize to 1x (so pixels = points):
+    &lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;xcrun simctl io DB0531E0-B47E-42AC-9AAB-FEB76D3D563A screenshot DerivedData/tmp/screen.png &lt;span class=&quot;o&quot;&gt;&amp;amp;&amp;amp;&lt;/span&gt; magick DerivedData/tmp/screen.png -resize 33.333% DerivedData/tmp/screen_1x.png
+&lt;/code&gt;&lt;/pre&gt;
+    &lt;/div&gt;
+  &lt;/li&gt;
+  &lt;li&gt;Read the 1x image and estimate target element center in points&lt;/li&gt;
+  &lt;li&gt;Verify guess by drawing a red box at those coordinates:
+    &lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;magick DerivedData/tmp/screen_1x.png -fill none -stroke red -strokewidth 2 -draw &lt;span class=&quot;s2&quot;&gt;&quot;rectangle &lt;/span&gt;&lt;span class=&quot;k&quot;&gt;$((&lt;/span&gt;X-30&lt;span class=&quot;k&quot;&gt;))&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;$((&lt;/span&gt;Y-30&lt;span class=&quot;k&quot;&gt;))&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt; &lt;/span&gt;&lt;span class=&quot;k&quot;&gt;$((&lt;/span&gt;X+30&lt;span class=&quot;k&quot;&gt;))&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;$((&lt;/span&gt;Y+30&lt;span class=&quot;k&quot;&gt;))&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt; DerivedData/tmp/screen_marked.png
+&lt;/code&gt;&lt;/pre&gt;
+    &lt;/div&gt;
+  &lt;/li&gt;
+  &lt;li&gt;Read marked image to check if box is on target&lt;/li&gt;
+  &lt;li&gt;If missed, adjust coordinates and repeat from step 3&lt;/li&gt;
+  &lt;li&gt;If correct, tap at the verified coordinates&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/closing-loop-cc-tap-accuracy.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Tap accuracy verification flow - original screenshot, marked target, and result after tap&quot; title=&quot;Tap accuracy verification flow - original screenshot, marked target, and result after tap&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Tap accuracy verification flow - original screenshot, marked target, and result after tap&lt;/div&gt;&lt;/div&gt;
+
+&lt;h3 id=&quot;putting-it-all-together&quot;&gt;Putting it all together&lt;/h3&gt;
+
+&lt;p&gt;So far in practice, I’ve used this capability alongside universal links to fix and verify simple visual bugs. I have Claude craft input to reproduce the error and find the screen where it occurs, take a “before” screenshot, implement the fix, build/install/launch, then find the same screen, verify the fix, and take an “after” screenshot.&lt;/p&gt;
+
+&lt;p&gt;It takes way longer for Claude to do than me, but it’s mostly tedious work, and I’m usually in another tab working on a plan with another Claude. When I come back and see the before and after screenshots alongside the code change, I can feel confident in Claude’s work.&lt;/p&gt;
+
+&lt;h2 id=&quot;step-5-building-installing-launching-reading-output-on-a-physical-device&quot;&gt;Step 5: Building, Installing, Launching, Reading Output on a Physical Device&lt;/h2&gt;
+
+&lt;p&gt;Finally, for those Apple SDKs that only work on device, for ensuring observed buggy behavior isn’t just a simulator quirk, or just to get a more realistic look at our apps in context, we can implement steps 1, 2, and 3 on a physical device. Unfortunately, as far as I can tell, there’s no way to control a physical device via CLI tool, so step 4 is out reach for now.&lt;/p&gt;
+
+&lt;p&gt;However, building, installing, launching, and logging can still save some time and annoyance during iterative debugging sessions. It’s especially useful to have Claude help analyze logs for (underdocumented) frameworks like Core Location that behave wildly different on a real device than on the simulator.&lt;/p&gt;
+
+&lt;p&gt;Below is a collection of tested CLI commands for doing all the above tasks on a physical device.&lt;/p&gt;
+
+&lt;p&gt;Note that in my testing all the relevant commands below work equally for devices on the same network and devices connected directly to your Mac via USB.&lt;/p&gt;
+
+&lt;h3 id=&quot;prerequisites-3&quot;&gt;Prerequisites&lt;/h3&gt;
+
+&lt;h4 id=&quot;get-devices&quot;&gt;Get devices&lt;/h4&gt;
+
+&lt;p&gt;The device &lt;strong&gt;Name&lt;/strong&gt; and &lt;strong&gt;Identifier&lt;/strong&gt; are both important for on-device debugging. &lt;strong&gt;State&lt;/strong&gt; will be &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;available&lt;/code&gt; when Wi-Fi debugging is available, and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;connected&lt;/code&gt; when directly connect via USB.&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;# Get all connected devices&lt;/span&gt;
+xcrun devicectl list devices
+
+Name          Hostname                      Identifier                             State                Model                                
+-----------   ---------------------------   ------------------------------------   ------------------   -------------------------------------
+CT&lt;span class=&quot;s1&quot;&gt;&apos;s iPhone   CTs-iPhone.coredevice.local   ABCDEF01-1111-5555-AAAA-F7D81A900001   connected (no DDI)   iPhone 14 Pro (iPhone15,2)           
+CT’s iPad     CTs-iPad.coredevice.local     ABCDEF01-2222-6666-BBBB-F44A19F00002   available            iPad Pro (11-inch) (iPad8,1)         
+CT’s iPad     CTs-iPad-1.coredevice.local   ABCDEF01-3333-7777-CCCC-D33889000003   unavailable          iPad mini (5th generation) (iPad11,1)
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Some example use cases for parsing out values in one go:&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;# Get the Identifier of the first accessible iPhone (WiFi or USB)
+xcrun devicectl list devices | grep &quot;iPhone&quot; | grep -E &quot;(available|connected)&quot; | head -1 | grep -Eo &apos;[A-F0-9]{8}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{12}&apos;
+
+ABCDEF01-1111-5555-AAAA-F7D81A900001
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;# Get the name of the first accessible iPhone (WiFi or USB)
+xcrun devicectl list devices | grep &quot;iPhone&quot; | grep -E &quot;(available|connected)&quot; | head -1 | awk -F&apos;  +&apos; &apos;{print $1}&apos;
+
+CT&apos;s iPhone
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;h3 id=&quot;build-for-device&quot;&gt;Build for device&lt;/h3&gt;
+
+&lt;p&gt;Build commands are the same as those for the simulator, except &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;platform=iphoneos&lt;/code&gt;/&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;platform=iOS&lt;/code&gt; instead of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;platform=iphonesimulator&lt;/code&gt;/&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;platform=iOS Simulator&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;Use the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;name&lt;/code&gt; or &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;id&lt;/code&gt; of your target device from the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;list devices&lt;/code&gt; command.&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;# Using device name
+xcodebuild -project train-timetable.xcodeproj -scheme &quot;train-timetable&quot; -destination &quot;platform=iphoneos,name=CT&apos;s iPhone&quot; -derivedDataPath DerivedData build 2&amp;gt;&amp;amp;1 | xcsift -w
+
+# Using device ID
+xcodebuild -project train-timetable.xcodeproj -scheme &quot;train-timetable&quot; -destination &quot;platform=iphoneos,id=E7E3E660-9E7A-5814-8BBB-F7D81A965CEB&quot; -derivedDataPath DerivedData build 2&amp;gt;&amp;amp;1 | xcsift -w
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;h3 id=&quot;install-on-device&quot;&gt;Install on device&lt;/h3&gt;
+
+&lt;p&gt;Install commands use &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;devicectl&lt;/code&gt; but are the similar to those for the simulator, except &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;--device&lt;/code&gt; should use the device ID, and the build product directory should use &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Debug-iphoneos&lt;/code&gt; instead of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Debug-iphonesimulator&lt;/code&gt;.&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;xcrun devicectl device install app --device E7E3E660-9E7A-5814-8BBB-F7D81A965CEB &quot;DerivedData/Build/Products/Debug-iphoneos/Eki Bright.app&quot;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;h3 id=&quot;launch-on-device&quot;&gt;Launch on device&lt;/h3&gt;
+
+&lt;p&gt;The vanilla launch command is below. I again recommend using &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;--terminate-existing&lt;/code&gt;, the device equivalent of the simulator’s &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;--terminate-running-process&lt;/code&gt;.&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;xcrun devicectl device process launch --device E7E3E660-9E7A-5814-8BBB-F7D81A965CEB --console --terminate-existing com.twocentstudios.train-timetable
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;h3 id=&quot;blocking-consoleprint-capture-on-device&quot;&gt;Blocking console/print capture on device&lt;/h3&gt;
+
+&lt;p&gt;For console/print capture, use the launch command above with the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;--console&lt;/code&gt; flag. It works over USB and Wi-Fi.&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;xcrun devicectl device process launch --device E7E3E660-9E7A-5814-8BBB-F7D81A965CEB --console --terminate-existing com.twocentstudios.train-timetable
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;h3 id=&quot;non-blocking-consoleprint-capture-on-device&quot;&gt;Non-blocking console/print capture on device&lt;/h3&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;# Use run_in_background: true on Bash tool
+# Works over USB and WiFi
+Bash(
+  command: &quot;xcrun devicectl device process launch --device E7E3E660-9E7A-5814-8BBB-F7D81A965CEB --console --terminate-existing com.twocentstudios.train-timetable&quot;,
+  run_in_background: true
+)
+
+Command running in background with ID: b8e2ca5.
+
+# *wait for next user prompt*
+
+TaskOutput(task_id: &quot;b8e2ca5&quot;)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;h3 id=&quot;loggeroslog-capture-on-device-requires-manual-sudo&quot;&gt;Logger/OSLog capture on device (requires manual sudo)&lt;/h3&gt;
+
+&lt;p&gt;A downside of OSLog is that it requires &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;sudo&lt;/code&gt; and Claude Code can’t use sudo commands directly. There are presumably some ways to give Claude this capability in more a dangerous fashion. But a safer workaround for now is for you, the human, to run the below commands in another terminal tab. Claude can give you the full command to copy/paste into the other terminal.&lt;/p&gt;
+
+&lt;p&gt;These commands will produce groups of files that Claude can read.&lt;/p&gt;
+
+&lt;p&gt;Note that the log capture is of &lt;strong&gt;everything on the device&lt;/strong&gt;, and can quickly balloon to gigabytes of storage, so you’ll want to limit the time or size:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;time-based filtering (&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;--last 2m&lt;/code&gt;, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;--start&lt;/code&gt;, etc.)&lt;/li&gt;
+  &lt;li&gt;size-based limits (&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;--size&lt;/code&gt;)&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Content filtering like &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;--predicate&lt;/code&gt; is not supported. Claude will do this while reading/analyzing with &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;log show --predicate ...&lt;/code&gt;&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;# Human user must run these commands in another terminal tab (Claude Code can&apos;t provide sudo password)
+# --device-name works
+sudo log collect --device-name &quot;CT&apos;s iPhone&quot; --last 2m --output DerivedData/tmp/device-logs.logarchive
+
+# --device-udid does not work - `log: failed to create archive: Device not configured (6)`
+# sudo log collect --device-udid 12345678-9E7A-5814-8BBB-0123456789EAB --last 2m --output DerivedData/tmp/device-logs.logarchive
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;# Then analyze with log show (Claude Code can do this)
+log show DerivedData/tmp/device-logs.logarchive --predicate &apos;subsystem == &quot;com.twocentstudios.train-timetable&quot;&apos;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;h2 id=&quot;final-thoughts&quot;&gt;Final thoughts&lt;/h2&gt;
+
+&lt;h3 id=&quot;how-to-parameterize-names-ids-etc-for-these-commands&quot;&gt;How to parameterize names, ids, etc. for these commands&lt;/h3&gt;
+
+&lt;p&gt;So far, I’ve just been hardcoding these commands with my favorite simulator UDID and project path into my CLAUDE.md. When a new version of Xcode comes out I ask Claude to update all mentions of the UDID to the most recent simulator version and it only takes a minute. Hardcoding these values leaves the least room for hallucination. When running these commands dozens of times a day, you really want consistency.&lt;/p&gt;
+
+&lt;p&gt;Other ways to handle this would be:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;set environment variables at some level.&lt;/li&gt;
+  &lt;li&gt;add a start hook to have Claude fill in the environment variables fresh for each session.&lt;/li&gt;
+  &lt;li&gt;set up another layer of orchestration that handles the pool of simulators and dispatches an ID to each new Claude instance that requests one.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;These are all beyond the scope of this post. If you work primarily on one project with others, you probably already have some tooling for specifying the Xcode version, etc.&lt;/p&gt;
+
+&lt;h3 id=&quot;why-not-include-traditional-testing&quot;&gt;Why not include traditional testing?&lt;/h3&gt;
+
+&lt;p&gt;Arguably, TDD was the original “closing the loop” in software development. TDD has never caught on in the iOS world.&lt;/p&gt;
+
+&lt;p&gt;I dabbled with an actual Swift Testing-based testing flow for another &lt;a href=&quot;/2025/12/25/shinkansen-live-developing-the-app-for-ios/#ocr-and-parsing-the-ticket-image&quot;&gt;recent project&lt;/a&gt;, and even wrote about another experimental system a few months ago in &lt;a href=&quot;/2025/07/13/giving-claude-code-eyes-to-see-your-swiftui-views/&quot;&gt;Giving Claude Code Eyes to See Your SwiftUI Views&lt;/a&gt; that used snapshot testing. What I found was although tests are great for verifying correct behavior over the long term, in the short term they are super slow on iOS:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Installing and launching requires instantiating a brand new simulator for each run (e.g. &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Clone 1&lt;/code&gt;), which takes a long time.&lt;/li&gt;
+  &lt;li&gt;All builds are clean builds (this could have just been a fluke in my setup at the time though).&lt;/li&gt;
+  &lt;li&gt;Swift Testing does not output failures in a way that Claude can read and iterate on (again, potentially solvable).&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Admittedly, I didn’t spend as much time debugging these flows. Hopefully someone else will fill in the blanks for testing and write this guide.&lt;/p&gt;
+
+&lt;h3 id=&quot;dont-sleep-on-simctl&quot;&gt;Don’t sleep on &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;simctl&lt;/code&gt;&lt;/h3&gt;
+
+&lt;p&gt;The &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;simctl&lt;/code&gt; CLI we’ve used throughout this post has a ton of other abilities that Claude can use to make our lives easier. This includes adding images to Photos, changing the system time, changing the system language, resetting privacy, resetting the keychain, and many more.&lt;/p&gt;
+
+&lt;p&gt;Ask Claude to configure your simulator on the fly instead of clicking through settings with your mouse.&lt;/p&gt;
+
+&lt;h3 id=&quot;what-does-the-future-hold&quot;&gt;What does the future hold?&lt;/h3&gt;
+
+&lt;p&gt;I’m honestly not sure how long the hard-won knowledge in this post will be relevant, given the pace of model &amp;amp; harness capabilities. Peter Steinberger &lt;a href=&quot;https://steipete.me/posts/2025/shipping-at-inference-speed&quot;&gt;already says&lt;/a&gt; Codex is good enough and doesn’t need any additional guidance about build commands or working with the simulator.&lt;/p&gt;
+
+&lt;p&gt;I can definitely see a world where Claude Code has a live feed of the simulator output it can process and react to at 60 fps, tapping and swiping with full accuracy. This is probably what’s missing in fully closing the development loop on iOS. Doing the same for a real device hopefully isn’t close behind.&lt;/p&gt;
+
+&lt;p&gt;At that point though, I’m not sure what else about development will have changed.&lt;/p&gt;
+
+&lt;h3 id=&quot;going-forward&quot;&gt;Going forward&lt;/h3&gt;
+
+&lt;p&gt;Most of the material in this guide has been slowly compiled over the month in my various CLAUDE.md files. It was great getting a chance to formalize it even if I can’t make a quickly installable Plugin or Skill to share (hopefully you understand why after reading the post). I’m looking forward to seeing how far I can take each of these steps in the near future.&lt;/p&gt;
+
+&lt;h3 id=&quot;corrections&quot;&gt;Corrections&lt;/h3&gt;
+
+&lt;p&gt;Please reach out if you find any corrections or can contribute any additional knowledge or edge cases.&lt;/p&gt;
+
+</description>
+        <pubDate>Sat, 27 Dec 2025 15:37:01 -0600</pubDate>
+        <link>https://twocentstudios.com/2025/12/27/closing-the-loop-on-ios-with-claude-code/</link>
+        <guid isPermaLink="true">https://twocentstudios.com/2025/12/27/closing-the-loop-on-ios-with-claude-code/</guid>
+        
+        <category>apple</category>
+        
+        <category>ios</category>
+        
+        <category>claudecode</category>
+        
+        
+      </item>
     
       <item>
         <title>Shinkansen Live - Developing the App for iOS</title>
@@ -3826,7 +4578,11 @@ Last Exception Backtrace:
     
       <item>
         <title>Giving Claude Code Eyes to See Your SwiftUI Views</title>
-        <description>&lt;p&gt;&lt;a href=&quot;https://claude.ai/claude-code&quot;&gt;Claude Code&lt;/a&gt; works best as a multi-shot agent, iterating on a task by making changes and checking whether its attempts match the target.&lt;/p&gt;
+        <description>&lt;blockquote&gt;
+  &lt;p&gt;&lt;strong&gt;Update 2025/12/30&lt;/strong&gt;: I recommend using a simpler simulator-based flow instead of the techniques discussed in this post. See my newer post &lt;a href=&quot;/2025/12/27/closing-the-loop-on-ios-with-claude-code/&quot;&gt;Closing the Loop on iOS with Claude Code&lt;/a&gt;.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://claude.ai/claude-code&quot;&gt;Claude Code&lt;/a&gt; works best as a multi-shot agent, iterating on a task by making changes and checking whether its attempts match the target.&lt;/p&gt;
 
 &lt;p&gt;Let’s explore one way of giving Claude Code (henceforth “CC”) a way to use its multimodal capabilities to view the results of the SwiftUI code: &lt;a href=&quot;https://github.com/pointfreeco/swift-snapshot-testing&quot;&gt;Swift Snapshot Testing&lt;/a&gt;. We’ll look into ways to enhance its image analysis capabilities with tool calling. And finally we’ll see how well it does with the challenge of recreating a SwiftUI View from a reference image.&lt;/p&gt;
 
@@ -4009,7 +4765,11 @@ magick compare reference.png snapshot.png diff_output.png
 
 &lt;p&gt;It’s possible to get the full simulator output with XCTest, but more complicated to get access to the raw image. You can also simulate taps and perform navigation. But the tradeoff is that you have to set up the whole app environment even if you just want to see one view in isolation.&lt;/p&gt;
 
-&lt;h3 id=&quot;simulator-via-xcodebuildmcp&quot;&gt;Simulator via XcodeBuildMCP&lt;/h3&gt;
+&lt;h3 id=&quot;simulator&quot;&gt;Simulator&lt;/h3&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;&lt;strong&gt;Update 2025/12/30&lt;/strong&gt;: See my newer post &lt;a href=&quot;/2025/12/27/closing-the-loop-on-ios-with-claude-code/&quot;&gt;Closing the Loop on iOS with Claude Code&lt;/a&gt; for how to set up a simulator-based flow with CLI commands.&lt;/p&gt;
+&lt;/blockquote&gt;
 
 &lt;p&gt;&lt;a href=&quot;https://github.com/cameroncooke/XcodeBuildMCP&quot;&gt;XcodeBuildMCP&lt;/a&gt; advertises simulator automation features:&lt;/p&gt;
 
@@ -4037,576 +4797,6 @@ magick compare reference.png snapshot.png diff_output.png
         <category>claudecode</category>
         
         <category>swiftui</category>
-        
-        <category>apple</category>
-        
-        <category>ios</category>
-        
-        
-      </item>
-    
-      <item>
-        <title>Rewriting a 12 Year Old Objective-C iOS App with Claude Code</title>
-        <description>&lt;p&gt;Last week, I rewrote my iOS app &lt;a href=&quot;https://itunes.apple.com/us/app/vinylogue-for-last.fm/id617471119?ls=1&amp;amp;mt=8&quot;&gt;Vinylogue&lt;/a&gt; to Swift and SwiftUI with the help of &lt;a href=&quot;https://www.anthropic.com/claude-code&quot;&gt;Claude Code&lt;/a&gt;. I originally created Vinylogue &lt;a href=&quot;/2013/04/03/the-making-of-vinylogue/&quot;&gt;back in 2013&lt;/a&gt; targeting iOS 6. Recently, I’ve been wanting to try out Claude Code, and I decided updating Vinylogue would be a good test project for it.&lt;/p&gt;
-
-&lt;p&gt;TL;DR: Using Claude Code made this rewrite super fun and productive and was absolutely worth the $20, even considering the time I spent learning the limitations of the tool and how it’s still relatively unoptimized for Apple platforms development.&lt;/p&gt;
-
-&lt;h2 id=&quot;table-of-contents&quot;&gt;Table of Contents&lt;/h2&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;Overview&lt;/li&gt;
-  &lt;li&gt;The goal of the rewrite&lt;/li&gt;
-  &lt;li&gt;A walkthrough of my daily accomplishments and phases of the rewrite&lt;/li&gt;
-  &lt;li&gt;Specifics of working with Claude Code including:
-    &lt;ul&gt;
-      &lt;li&gt;Lessons learned&lt;/li&gt;
-      &lt;li&gt;Genres of tasks I used it for&lt;/li&gt;
-      &lt;li&gt;What I want to try next time&lt;/li&gt;
-      &lt;li&gt;Lots of stray observations&lt;/li&gt;
-    &lt;/ul&gt;
-  &lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h2 id=&quot;overview&quot;&gt;Overview&lt;/h2&gt;
-
-&lt;p&gt;Vinylogue is an app that shows you and your friends’ last.fm album listening history for “this week in history”; i.e. if it’s the first week in June 2025, it shows the first week in June 2024, 2023, etc.&lt;/p&gt;
-
-&lt;p&gt;It has three main screens: a users list, the weekly albums list, and an album detail view. There’s also various screens for settings, onboarding, user list editing, etc.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/vinylogue-v2-main-screens.jpg&quot; width=&quot;&quot; height=&quot;500&quot; alt=&quot;Vinylogue v2.0 main screens: Users List, Weekly Albums, and Album Detail&quot; title=&quot;Vinylogue v2.0 main screens: Users List, Weekly Albums, and Album Detail&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Vinylogue v2.0 main screens: Users List, Weekly Albums, and Album Detail&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;If you happen to be an active &lt;a href=&quot;https://last.fm&quot;&gt;Last.fm&lt;/a&gt; user, give the app a spin by &lt;a href=&quot;https://itunes.apple.com/us/app/vinylogue-for-last.fm/id617471119?ls=1&amp;amp;mt=8&quot;&gt;downloading it from the App Store&lt;/a&gt;. And it’s been &lt;a href=&quot;https://github.com/twocentstudios/vinylogue&quot;&gt;open source on GitHub since v1.0&lt;/a&gt;.&lt;/p&gt;
-
-&lt;p&gt;Overall, the experience of rewriting the app was a lot of fun with Claude Code. Even with the learning curve and my non-optimal device environment, the amount of progress I made was exponentially higher than I could have alone. As much as I’ve considered rewriting the app in Swift over the years, I could never justify it; the app still worked well enough, has very few active users, and makes no money.&lt;/p&gt;
-
-&lt;p&gt;Using Claude Code to automate a lot of tedious work of porting the data models, dominant color algorithm, and data migration code left me with an unusual abundance of time and energy to focus on the parts I was interested in: ensuring the visual design matched exactly; improving caching and pre-caching behavior, improving the friend management UX, and reworking the chart year navigation.&lt;/p&gt;
-
-&lt;video src=&quot;/images/vinylogue-v2-dominant-color-demo.mp4&quot; controls=&quot;&quot; preload=&quot;none&quot; poster=&quot;/images/vinylogue-v2-dominant-color-demo-poster.jpg&quot; height=&quot;720&quot;&gt;&lt;/video&gt;
-
-&lt;video src=&quot;/images/vinylogue-v2-chart-year-navigation.mp4&quot; controls=&quot;&quot; preload=&quot;none&quot; poster=&quot;/images/vinylogue-v2-chart-year-navigation-poster.jpg&quot; height=&quot;720&quot;&gt;&lt;/video&gt;
-
-&lt;p&gt;I could have probably stopped at day 3 and had pretty close feature parity, but I was having so much fun challenging Claude that I started experimenting with more robust architectures. I migrated the entire codebase to the &lt;a href=&quot;https://www.pointfree.co&quot;&gt;Point-Free co.&lt;/a&gt; Modern Swift-UI architecture using &lt;a href=&quot;https://github.com/pointfreeco/swift-dependencies&quot;&gt;swift-dependencies&lt;/a&gt; and &lt;a href=&quot;https://github.com/pointfreeco/swift-sharing&quot;&gt;swift-sharing&lt;/a&gt; using their open source &lt;a href=&quot;https://github.com/pointfreeco/syncups&quot;&gt;SyncUps&lt;/a&gt; codebase as a template.&lt;/p&gt;
-
-&lt;p&gt;The SyncUps architecture unlocked the ability to have Claude follow a &lt;a href=&quot;https://blog.winsmith.de/english/ios/2020/04/14/xcuitest-screenshots.html&quot;&gt;blog post&lt;/a&gt; I found about using UITests to automatically generate screenshots for the App Store. A few years ago, App Store review started clamping down on use of copyrighted images in App Store screenshots, and I’d have to manually add a pixelation filter to each image before uploading. It was easier to work with Claude to incorporate the pixelation filter as an option in the app code than to do that work manually.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/vinylogue-v2-pixelated-weekly-chart.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Pixelated version of the weekly album chart view showing privacy-protected album covers&quot; title=&quot;Pixelated version of the weekly album chart view showing privacy-protected album covers&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Pixelated version of the weekly album chart view showing privacy-protected album covers&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;I got so carried away that I did plenty more refactorings to have Claude look for duplicate SwiftUI View code that could be extracted and reused across multiple screen-level Views. I had it make a few proposals for how it’d be best to reorganize the project’s folder structure. I never had to get into the weeds refactoring and burn brain cycles, so I almost always felt fresh to use my mental energy on the higher-level planning.&lt;/p&gt;
-
-&lt;p&gt;In the end, I’m actually much more proud of the cleanliness of the Vinylogue codebase than my other codebases I’ve worked on this year. It’s not that I couldn’t spend a few days pushing files around in those other codebases, but since I’m an indie dev, I’m not getting paid for that and it’s hard to justify doing that work when I could be doing marketing.&lt;/p&gt;
-
-&lt;p&gt;Over the past few months, I’ve been using the ChatGPT app with its less intrusive Xcode integration to do some selective coding work using o3 and o4-mini. Although Claude Sonnet is seemingly not as “smart” as several other frontier models, Claude Code unlocked a new level of usefulness for me due to:&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;Its ability to view the xcodebuild output and fix its own syntax errors.&lt;/li&gt;
-  &lt;li&gt;Its ability to plan, create its own TODO lists, and methodically execute on its plan.&lt;/li&gt;
-  &lt;li&gt;Its ability to quickly navigate around my codebase with various amounts of guidance by me.&lt;/li&gt;
-  &lt;li&gt;Its ability to incorporate documentation and other context.&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;The above abilities increased the scope of net-positive productive use cases for LLM-assisted coding. The amount, accuracy, and complexity of code that an LLM writes needs to be surprisingly high to justify me copying and pasting code from a chat interface or manually applying (often broken) diffs. When the time and effort cost for me, the developer, goes to zero for making changes, suddenly both 1-line changes and multi-file refactors with ample opportunity for syntax errors are both productive use-cases.&lt;/p&gt;
-
-&lt;p&gt;Those are my overall thoughts about the experience. Before I dig into the meat of this post, here are some quick stats about the rewrite:&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;&lt;strong&gt;$353&lt;/strong&gt; - theoretical spend on Claude Code if I had used the API&lt;/li&gt;
-  &lt;li&gt;&lt;strong&gt;$20&lt;/strong&gt; - actual spend on Anthropic Pro subscription&lt;/li&gt;
-  &lt;li&gt;&lt;strong&gt;+11,275 −8,249&lt;/strong&gt; - total lines changed in the &lt;a href=&quot;https://github.com/twocentstudios/vinylogue/pull/5&quot;&gt;v2.0 pull request&lt;/a&gt;&lt;/li&gt;
-  &lt;li&gt;&lt;strong&gt;5,609&lt;/strong&gt; - lines of Swift code (excluding tests)&lt;/li&gt;
-  &lt;li&gt;&lt;strong&gt;52&lt;/strong&gt; - Swift files (excluding tests)&lt;/li&gt;
-  &lt;li&gt;&lt;strong&gt;7&lt;/strong&gt; - calendar days of work from first commit to App Store submission&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/vinylogue-v2-vibemeter-spend.png&quot; width=&quot;&quot; height=&quot;300&quot; alt=&quot;Theoretical spend calculated via VibeMeter app&quot; title=&quot;Theoretical spend calculated via VibeMeter app&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Theoretical spend calculated via VibeMeter app&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;&lt;strong&gt;As a quick disclaimer&lt;/strong&gt;, LLMs and the developer tools space is moving so fast that a lot of these observations will be immediately dated. For reference, the app/tool versions I used in this post:&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;Claude Code v1.0.31&lt;/li&gt;
-  &lt;li&gt;Sonnet 4&lt;/li&gt;
-  &lt;li&gt;Xcode 16.5&lt;/li&gt;
-  &lt;li&gt;iOS 18.5&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h2 id=&quot;goal-of-the-rewrite&quot;&gt;Goal of the Rewrite&lt;/h2&gt;
-
-&lt;p&gt;In early 2013, I was in another period of indie dev between full-time jobs. I was churning through a few app ideas, learning a lot but biting off more than I could chew and not releasing anything. I got some inspiration after I started using an app called &lt;a href=&quot;https://timehop.com&quot;&gt;Timehop&lt;/a&gt;, the first service of its kind that aggregated your past social media activity in what Facebook would later popularize as “This Day in History”. I was an avid Last.fm user, and by that time Last.fm had already become a niche service, so I decided it would be fun to make a Timehop-for-Last.fm. I developed the “feature-complete” v1.1 app in 5 weeks.&lt;/p&gt;
-
-&lt;p&gt;I wrote a &lt;a href=&quot;/2013/04/03/the-making-of-vinylogue/&quot;&gt;very detailed blog post&lt;/a&gt; about the design and development of the app. The Timehop team found that post and hired me as an iOS contractor for a few months before I moved from Chicago to New York to join the team full-time.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/vinylogue-v1-main-screens.jpg&quot; width=&quot;&quot; height=&quot;500&quot; alt=&quot;Vinylogue v1.1 main screens: Users List, Weekly Albums, and Album Detail&quot; title=&quot;Vinylogue v1.1 main screens: Users List, Weekly Albums, and Album Detail&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Vinylogue v1.1 main screens: Users List, Weekly Albums, and Album Detail&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;The fact that this app got me my first &lt;em&gt;real&lt;/em&gt; iOS developer role makes Vinylogue significant and nostalgic for me.&lt;/p&gt;
-
-&lt;p&gt;I’ve done my best to make the few changes required over the years to ensure the app still works in modern iOS versions on modern devices. But the fact that’s it’s Objective-C with a very opinionated reactive architecture made it so the cost of developing new features was always too high.&lt;/p&gt;
-
-&lt;p&gt;Regardless, I’ve continued to check the app weekly and use it as a nice reminder to listen back to albums I haven’t revisited in a while.&lt;/p&gt;
-
-&lt;p&gt;Based on glowing reviews around the internet, I’ve been wanting to try Claude Code, but hesitated because:&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;The pay-per-token model felt unideal to me; I didn’t want to pay an unbounded amount to get burned learning a tool that in the end didn’t make me any more productive&lt;/li&gt;
-  &lt;li&gt;My current projects were not ideal for intensive LLM-assisted coding - I figured I probably wouldn’t learn how to use Claude Code effectively without a more greenfield project&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;Vinylogue popped into my head as a great test project: it was greenfield, but had a complete product spec, design spec, and reference codebase to draw from. There was no deadline, no external code-quality bar to hit, and if it wasn’t working out, I could give up any time and still have the same tried-and-true codebase around for the foreseeable future.&lt;/p&gt;
-
-&lt;p&gt;So &lt;strong&gt;the goal starting out&lt;/strong&gt; was:&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;learn Claude Code as a tool&lt;/li&gt;
-  &lt;li&gt;determine what kinds of tasks and projects Claude Code could be useful for&lt;/li&gt;
-  &lt;li&gt;update Vinylogue to modern Swift and SwiftUI while making a few small improvements&lt;/li&gt;
-  &lt;li&gt;leave the door open for new feature work in the future&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h2 id=&quot;project-daily-summary&quot;&gt;Project daily summary&lt;/h2&gt;
-
-&lt;p&gt;Below is a graph with the high-level breakdown of code changes over the week.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/vinylogue-v2-swift-lines-graph.png&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Lines of Swift code added and removed during the rewrite, grouped by 5-hour time blocks&quot; title=&quot;Lines of Swift code added and removed during the rewrite, grouped by 5-hour time blocks&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Lines of Swift code added and removed during the rewrite, grouped by 5-hour time blocks&lt;/div&gt;&lt;/div&gt;
-
-&lt;h3 id=&quot;day-1-scaffolding&quot;&gt;Day 1: Scaffolding&lt;/h3&gt;
-
-&lt;p&gt;&lt;a href=&quot;https://github.com/twocentstudios/vinylogue/tree/2c4843b4f8aec49e30f8c6c4230bdcb2cdf6fddc&quot;&gt;End of day 1 - commit 2c4843b&lt;/a&gt;&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/vinylogue-v2-day1-progress.jpg&quot; width=&quot;&quot; height=&quot;500&quot; alt=&quot;Screenshots of the app after day 1: basic scaffolding and initial SwiftUI implementation&quot; title=&quot;Screenshots of the app after day 1: basic scaffolding and initial SwiftUI implementation&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Screenshots of the app after day 1: basic scaffolding and initial SwiftUI implementation&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;As you can see from the above graph, Claude Code cranked out the foundation of the project on the first day. Due to the usage limitations of the Anthropic Pro subscription, I could only use it for about 1 hour every 5 hours. So even though the first day represented the most code written, it was only about 4 hours of usage total. I was doing work on other projects and eating and doing chores in the downtime.&lt;/p&gt;
-
-&lt;p&gt;My goal for the first day was simply to get a feel for Claude Code and see what it was capable of. I wanted to see what its tendencies were when it had little direction. I gave Claude Code &lt;a href=&quot;https://github.com/twocentstudios/vinylogue/blob/cb1ad8350870cf2c6643f4f90daeb0148b707ef7/Planning/PRD.md&quot;&gt;a spec that OpenAI’s o3 had written&lt;/a&gt; based on the Objective-C codebase and screenshots of the current version, but Claude basically threw that out and &lt;a href=&quot;https://github.com/twocentstudios/vinylogue/blob/9902e4f5d313c6ffb5f0fd6191979c78fdac87c4/Planning/PRD.md&quot;&gt;wrote its own spec&lt;/a&gt; before starting to crank through the &lt;a href=&quot;https://github.com/twocentstudios/vinylogue/blob/9902e4f5d313c6ffb5f0fd6191979c78fdac87c4/Planning/sprint-00.md&quot;&gt;8 sprints worth of TODOs&lt;/a&gt;. I was intentionally not providing any input on design or architecture. After it worked through a sprint, I’d give the code a once over, but mostly commit it to the working branch.&lt;/p&gt;
-
-&lt;p&gt;It felt very productive, but this was essentially just a more advanced version of scaffolding (something my friend Jens compared to Ruby on Rails’ scaffold command). Over the course of the week, this version of the code would be the clay I’d be molding and detailing to get to the final form.&lt;/p&gt;
-
-&lt;p&gt;Claude Code had defaulted to what I’d consider an iOS 16 SwiftUI architecture. It used a mix of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;@Environment&lt;/code&gt; and singletons for services, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;@StateObject&lt;/code&gt; with &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;@ObservableObject&lt;/code&gt; and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;@Published&lt;/code&gt; properties for ViewModel-ish objects. It had strewn about &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;UserDefaults&lt;/code&gt; calls and wasn’t particularly consistent about any other architecture decision. It ignored all my instructions about styling and tried to support dark mode, dynamic type, random accessibility attributes.&lt;/p&gt;
-
-&lt;p&gt;But it mostly worked! Especially convenient for me was the reams of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Codable&lt;/code&gt; objects, parsing, and API client code required to do the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;weekly chart list -&amp;gt; weekly chart -&amp;gt; list of albums&lt;/code&gt; data transformation from the Last.fm API. All that worked out of the box, even if I did spend some time later in the week optimizing the caching and pre-caching.&lt;/p&gt;
-
-&lt;p&gt;I learned a lot on this first day. And having so much of the foundational code out of the way without much mental energy expended increased my appetite for the scope of the rewrite.&lt;/p&gt;
-
-&lt;h3 id=&quot;day-2-styling--core-ux&quot;&gt;Day 2: Styling &amp;amp; Core UX&lt;/h3&gt;
-
-&lt;p&gt;&lt;a href=&quot;https://github.com/twocentstudios/vinylogue/tree/03d763a&quot;&gt;End of day 2 - commit 03d763a&lt;/a&gt;&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/vinylogue-v2-day2-progress.jpg&quot; width=&quot;&quot; height=&quot;500&quot; alt=&quot;Screenshots of the app after day 2: improved styling and core UX implementation&quot; title=&quot;Screenshots of the app after day 2: improved styling and core UX implementation&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Screenshots of the app after day 2: improved styling and core UX implementation&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;The second day was mostly about styling and cleanup and small bug fixes. After a couple tries, I gave up on having Claude Code try to faithfully recreate the styling 1-to-1. Without a feedback loop in place for it to view the visual results of its code, I suspect it was a fool’s errand. Instead, I spent a little time creating color and font helpers, then using them in the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;UsersListView&lt;/code&gt; to lay it out exactly as I wanted.&lt;/p&gt;
-
-&lt;p&gt;From there, Claude was mostly capable of using that view’s styling to get the auxiliary views like the settings view and edit friends view to 98% correct and using all the standardized helper functions.&lt;/p&gt;
-
-&lt;p&gt;The edit friends view in particular was more complicated than it used to be in v1.3.1, so I spent some time fixing some of Claude’s scaffolding bugs and deciding exactly how the UX should be.&lt;/p&gt;
-
-&lt;p&gt;I also had Claude Code do a Swift Concurrency audit and I helped it migrate the codebase to strict Swift 6 mode.&lt;/p&gt;
-
-&lt;h3 id=&quot;day-3-ui--ux-focus&quot;&gt;Day 3: UI &amp;amp; UX focus&lt;/h3&gt;
-
-&lt;p&gt;Day 3 I continued hand-polishing the UI for the most important screens. I implemented the overscroll year-navigation mechanism in a SwiftUI Preview, then had Claude Code help me copy it into the View and wire it up.&lt;/p&gt;
-
-&lt;p&gt;I was also finding new excuses to push the scope. I integrated &lt;a href=&quot;https://github.com/pointfreeco/swift-dependencies&quot;&gt;swift-dependencies&lt;/a&gt;, double-checked the loading and error states, and added haptic feedback.&lt;/p&gt;
-
-&lt;p&gt;This is the day that I &lt;em&gt;could&lt;/em&gt; have buckled in and focused on finishing up the v2 rewrite to be functionally equivalent to v1, including its warts. I could have left the code quality in a somewhat embarrassing state. But at this point I still had lots of energy and motivation. Stopping here would have felt like leaving too much low hanging fruit.&lt;/p&gt;
-
-&lt;h3 id=&quot;day-4-circling-back&quot;&gt;Day 4: Circling back&lt;/h3&gt;
-
-&lt;p&gt;I finally got around to matching the visual style of the v1 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;AlbumDetailView&lt;/code&gt;. This includes porting the &lt;a href=&quot;https://github.com/twocentstudios/vinylogue/blob/906c1ce86c8bdb926db6dcb0eada664b80fb8743/Vinylogue/Core/Infrastructure/ColorExtraction.swift&quot;&gt;custom dominant color algorithm&lt;/a&gt; from &lt;a href=&quot;https://github.com/twocentstudios/vinylogue/blob/5409d38a061770c0f84325ca7e0e7dccbe8d587f/vinylogue/UIImage%2BTCSImageRepresentativeColors.m&quot;&gt;v1&lt;/a&gt;. At first, Claude Code took a shortcut and used the average color CIFilter. I forced it to convert my Objective-C code line-by-line, and it did a great job besides using an erroneous color space value that took about 5-10 minutes to track down.&lt;/p&gt;
-
-&lt;p&gt;V1 did not have any sort of precaching system, so album images always appeared to load very slowly (mostly due to a limitation in the Last.fm API). On day 4 I added data and image precaching so that navigating between years would be seamless.&lt;/p&gt;
-
-&lt;p&gt;I finally tested the important v1 data migration code (for the current user and friends), and it turns out Claude had failed miserably. To be fair, the NSCoding implementation is not as straightforward as Codable, so it took some guidance from me, along with a test plist file, in order to get it working.&lt;/p&gt;
-
-&lt;h3 id=&quot;day-5-architecture-and-screenshot-automation&quot;&gt;Day 5: Architecture and screenshot automation&lt;/h3&gt;
-
-&lt;p&gt;Being an indie dev responsible for releasing apps and updates means lots of overhead in creating App Store screenshots and marketing info. I wanted to experiment with using UITests to generate screenshots, but a big blocker to this was ensuring I could inject mock data so that screenshots wouldn’t change each time I ran the process. This led to me finding my swift-dependencies implementation was unideal (read: working, but incorrect).&lt;/p&gt;
-
-&lt;p&gt;So I took on another side-quest of refactoring the app architecture, inspired by the &lt;a href=&quot;https://github.com/pointfreeco/syncups&quot;&gt;Point-Free co. SyncUps app&lt;/a&gt;. Feeding this codebase to Claude Code and having it make the first pass got me to about 80% refactored. Formalizing the rules and having it take another pass got it to 90%. Doing the final audit for the last few problem classes got it to 100%. It was kind of amazing to be able to stay at a high level of abstraction and see what a given architecture looks like for your codebase. I could have thrown this refactor out with no harm done, but it accomplished my goals and felt like it made the codebase more maintainable. Spending a little extra time formalizing my adapted architecture rules on a relatively simple codebase opens up the possibility of using this codebase as a template for refactoring my other, more messy codebases.&lt;/p&gt;
-
-&lt;p&gt;With the architecture refactoring complete, it was now possible to have Claude Code finish up the automated App Store screenshotting code. I used Perplexity to research all the prior art, found &lt;a href=&quot;https://blog.winsmith.de/english/ios/2020/04/14/xcuitest-screenshots.html&quot;&gt;this blog post&lt;/a&gt;, fed the blog post to Claude, and had it follow the blog post step-by-step to create a custom bash script, UITest, and modifications to my top-level &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;App&lt;/code&gt;.&lt;/p&gt;
-
-&lt;p&gt;I’d already considered automated screenshotting a stretch goal, but I wanted to push even further. I added a toggle-able pixelate filter to all the album images so I’d have a set of screenshots available for App Store use and external advertising, all without me needing to open Pixelamator. This was quick and straightforward now that the new architecture was in place and because NukeUI has a great image processing pipeline feature that can run CIFilters.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/vinylogue-v2-pixelated-comparison.jpg&quot; width=&quot;&quot; height=&quot;500&quot; alt=&quot;Comparison of non-pixelated and pixelated versions of the weekly album charts for App Store compliance&quot; title=&quot;Comparison of non-pixelated and pixelated versions of the weekly album charts for App Store compliance&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Comparison of non-pixelated and pixelated versions of the weekly album charts for App Store compliance&lt;/div&gt;&lt;/div&gt;
-
-&lt;h3 id=&quot;days-6--7-prepare-for-app-store&quot;&gt;Days 6 &amp;amp; 7: Prepare for App Store&lt;/h3&gt;
-
-&lt;p&gt;By day 6, the app was feeling super polished. I was a little worried about the migration from v1.0 still since you only get one shot at that, so I spent some more time manually testing it.&lt;/p&gt;
-
-&lt;p&gt;Since this app is open source, I cleaned up the project folder, rewrote the README, and prepared the marketing images.&lt;/p&gt;
-
-&lt;p&gt;Uploading to the App Store, I found that a few of the v1 xcodeproj settings had not been properly migrated to the xcodegen project.yml file. I needed to disable iPad support and force portrait orientation and add the non-exempt encryption plist setting. Claude Code could do all that with loose prompting; I never needed to look up the key names or dig into the xcodegen docs.&lt;/p&gt;
-
-&lt;p&gt;At the last minute, I found an issue with image caching that I’d missed (I thought I had disabled both data and image precaching for &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;DEBUG&lt;/code&gt; builds only, but in fact the image cache had been misconfigured the whole time).&lt;/p&gt;
-
-&lt;p&gt;Finally, I uploaded a build to the App Store, submitted it, and it was approved and released the next morning.&lt;/p&gt;
-
-&lt;p&gt;Claude Code helped me create a Release on GitHub by uploading images. It even looked through my old versions’ screenshots and created a Release for those versions too.&lt;/p&gt;
-
-&lt;h2 id=&quot;most-interesting-parts-of-v20&quot;&gt;Most interesting parts of v2.0&lt;/h2&gt;
-
-&lt;p&gt;The v2 Swift rewrite is intentionally nearly identical to the Objective-C v1. However, there are a few user-facing and under-the-hood parts I’d like to highlight.&lt;/p&gt;
-
-&lt;h3 id=&quot;overscroll-year-navigation-paradigm&quot;&gt;Overscroll year navigation paradigm&lt;/h3&gt;
-
-&lt;p&gt;The weekly album chart view in v1 had a unique left/right button/slider paradigm for navigating between years. Honestly, it was kind of strange, but I always liked how it gave the app some extra personality.&lt;/p&gt;
-
-&lt;video src=&quot;/images/vinylogue-v1-year-navigation.mp4&quot; controls=&quot;&quot; preload=&quot;none&quot; poster=&quot;/images/vinylogue-v1-year-navigation-poster.jpg&quot; height=&quot;720&quot;&gt;&lt;/video&gt;
-
-&lt;p&gt;In my original &lt;a href=&quot;/2013/04/03/the-making-of-vinylogue/&quot;&gt;blog post&lt;/a&gt;, I actually mentioned how my first sketches planned for year navigation to be at the top and bottom edges.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/vinylogue-wireframe.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Original notebook sketch showing the planned top/bottom year navigation design from 2013&quot; title=&quot;Original notebook sketch showing the planned top/bottom year navigation design from 2013&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Original notebook sketch showing the planned top/bottom year navigation design from 2013&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;At the time, I gave up on the top/bottom paradigm because it felt strange as section header/footer for years with few albums, and there was no concept of safe areas yet.&lt;/p&gt;
-
-&lt;p&gt;I decided to cash out some of my excess mental energy for v2 to try to update the year navigation paradigm, actually forgetting that the top and bottom buttons were what I’d originally planned over a decade ago.&lt;/p&gt;
-
-&lt;video src=&quot;/images/vinylogue-v2-chart-year-navigation.mp4&quot; controls=&quot;&quot; preload=&quot;none&quot; poster=&quot;/images/vinylogue-v2-chart-year-navigation-poster.jpg&quot; height=&quot;720&quot;&gt;&lt;/video&gt;
-
-&lt;p&gt;I think it turned out alright! It’s non-standard UX, but I feel like it’s unique in the same way the v1 implementation was.&lt;/p&gt;
-
-&lt;p&gt;I’ll note the standard Apple refresh control triggers the refresh immediately once you hit the overscroll threshold, but mine requires you to release above the threshold in order to trigger the navigation.&lt;/p&gt;
-
-&lt;h3 id=&quot;dominant-color-album-detail-animation&quot;&gt;Dominant color album detail animation&lt;/h3&gt;
-
-&lt;p&gt;I remember during v1 development that the album detail view animation was a happy accident due to the dominant color and album image loading being unoptimized.&lt;/p&gt;
-
-&lt;p&gt;I made sure to faithfully port the dominant color algorithm and set up the SwiftUI View so that the animation always triggers consistently, even though the more robust image precaching means that the image is pre-loaded 99% of the time.&lt;/p&gt;
-
-&lt;video src=&quot;/images/vinylogue-v2-dominant-color-demo.mp4&quot; controls=&quot;&quot; preload=&quot;none&quot; poster=&quot;/images/vinylogue-v2-dominant-color-demo-poster.jpg&quot; height=&quot;720&quot;&gt;&lt;/video&gt;
-
-&lt;p&gt;The last small piece was ensuring that the back button (missing in v1, but returning in v2) also changed its tint color to match the rest of the text on the screen. I accomplished this with a custom &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;PreferenceKey&lt;/code&gt;.&lt;/p&gt;
-
-&lt;h3 id=&quot;caching-and-pre-caching&quot;&gt;Caching and pre-caching&lt;/h3&gt;
-
-&lt;p&gt;As mentioned before, I never got around to optimizing the caching and pre-caching behavior of data and images in v1. The Last.fm API is unchanged in the last decade, but average internet speeds and disk sizes means that I don’t feel as hesitant to pre-cache data to ensure browsing your listening history is seamless.&lt;/p&gt;
-
-&lt;h3 id=&quot;legacy-data-migration&quot;&gt;Legacy data migration&lt;/h3&gt;
-
-&lt;p&gt;I hate when companies release an app major version update and put the icing on the cake by force logging you out. I know I don’t have many users, but I still feel obligated to treat them with respect and migrate the small amount of unique local data they’ve entrusted with the app.&lt;/p&gt;
-
-&lt;p&gt;Honestly, this data migration was one of the biggest discouraging factors in me not taking on this rewriting project in the past. I knew unraveling the NSCoding implementation would be a tedious, thankless task. Although Claude Code could not one-shot it, working with it made this task bearable, and I’m glad I did it.&lt;/p&gt;
-
-&lt;h3 id=&quot;vinyl-loading-spinner&quot;&gt;Vinyl loading spinner&lt;/h3&gt;
-
-&lt;p&gt;The vinyl loading spinner is a small flourish, and honestly not even that present anymore now that there’s much more precaching, but I’m still happy to have it scattered around the app.&lt;/p&gt;
-
-&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/vinylogue-v2-vinyl-loading-spinner.gif&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Vinyl loading spinner animation showing the rotating record effect&quot; title=&quot;Vinyl loading spinner animation showing the rotating record effect&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Vinyl loading spinner animation showing the rotating record effect&lt;/div&gt;&lt;/div&gt;
-
-&lt;h3 id=&quot;automated-app-store-screenshots&quot;&gt;Automated App Store screenshots&lt;/h3&gt;
-
-&lt;p&gt;Automating App Store screenshots was arguably unnecessary for an app with only 3 screens and no localization. But as a test for Claude Code, it was a resounding success. I’ll absolutely be referencing this implementation for my other apps in the near future.&lt;/p&gt;
-
-&lt;h3 id=&quot;under-the-hood&quot;&gt;Under the hood&lt;/h3&gt;
-
-&lt;p&gt;Finally, I got a chance to shore up my skills in implementing modern Swift concurrency, swift-sharing, and swift-dependencies in a low-stakes environment. I see this as a mirror to implementing ReactiveCocoa in v1 all those years ago, and then using that knowledge in production on the Timehop app.&lt;/p&gt;
-
-&lt;h2 id=&quot;working-with-claude-code&quot;&gt;Working with Claude Code&lt;/h2&gt;
-
-&lt;p&gt;I want to devote a section to braindumping all my impressions of Claude Code, both for readers and for future me. I imagine looking back on this in even a year will be nostalgic.&lt;/p&gt;
-
-&lt;h3 id=&quot;lessons-learned&quot;&gt;Lessons learned&lt;/h3&gt;
-
-&lt;p&gt;Note: most of these are general and some are specific to iOS and Apple Platforms development&lt;/p&gt;
-
-&lt;h4 id=&quot;ignore-all-lessons&quot;&gt;Ignore all lessons&lt;/h4&gt;
-
-&lt;p&gt;The first lesson is to ignore all lessons. Obviously this is tongue-in-cheek, but what I mean is that I’m glad I didn’t try to optimize my usage of Claude Code out of the gate. It was much better to use it with its defaults, push it hard to find its limits, then incorporate tips &amp;amp; tricks I’d found through osmosis &lt;em&gt;after&lt;/em&gt; I’d felt the pain those tips were meant to address.&lt;/p&gt;
-
-&lt;p&gt;Keep the below lessons in mind, but if you’re just getting started with Claude Code, don’t try to follow them all at once.&lt;/p&gt;
-
-&lt;h4 id=&quot;add-the---quiet-flag-to-xcodebuild-with-building-and-testing&quot;&gt;Add the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;--quiet&lt;/code&gt; flag to xcodebuild with building and testing&lt;/h4&gt;
-
-&lt;p&gt;Claude Code already knows about xcodebuild and most of its options. But if you let xcodebuild run without &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;--quiet&lt;/code&gt;, Claude Code will read all the useless output, quickly overflowing its context window, especially when the build fails.&lt;/p&gt;
-
-&lt;h4 id=&quot;compact-context-before-you-need-to&quot;&gt;Compact context before you need to&lt;/h4&gt;
-
-&lt;p&gt;Claude Code will show you in the bottom UI how close it is to filling up its context window. Once it hits that limit, it’ll automatically run &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;/compact&lt;/code&gt; for you regardless of where it’s at executing your latest instructions. This is fine when you’re getting started and learning. But it’s better to keep an eye on the context window usage and proactively either &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;/compact&lt;/code&gt; with additional instructions on what it should focus on during the compact, or even &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;/clear&lt;/code&gt; to start a new session with a known set of context (i.e. &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLAUDE.md&lt;/code&gt;).&lt;/p&gt;
-
-&lt;p&gt;Early in development, I was strategically compacting a lot. But once the project was more mature, I used &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;/clear&lt;/code&gt; much more liberally since I was hopping around the codebase and working on lots of different, smaller concerns.&lt;/p&gt;
-
-&lt;h4 id=&quot;use-the-project-root-claudemd-for-important-workflow-instructions&quot;&gt;Use the project root CLAUDE.md for important workflow instructions&lt;/h4&gt;
-
-&lt;p&gt;Since these instructions will get read in each time you &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;/compact&lt;/code&gt; or &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;/clear&lt;/code&gt; its good to have the most important instructions about your workflow in here. For me, this included which simulator and os version to use in &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;xcodebuild&lt;/code&gt;, always using the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;--quiet&lt;/code&gt; flag, always running &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;xcodegen&lt;/code&gt; if files were added, always building and testing before returning control back to me, etc.&lt;/p&gt;
-
-&lt;p&gt;In my code source root one folder down, I put another &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLAUDE.md&lt;/code&gt; that was more focused on the codebase itself. Later on, within each subfolder of the source, I had Claude Code generate its own short &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLAUDE.md&lt;/code&gt; files summarizing the important parts of the code that existed in those folders. For example, the &lt;a href=&quot;https://github.com/twocentstudios/vinylogue/blob/master/Vinylogue/Features/CLAUDE.md&quot;&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;/Features&lt;/code&gt;&lt;/a&gt; directory contains architecture rules about creating new Views and Stores that are only relevant when working in that parent folder.&lt;/p&gt;
-
-&lt;h4 id=&quot;use--to-point-claude-code-directly-to-files-youre-working-with&quot;&gt;Use &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;@&lt;/code&gt; to point Claude Code directly to files you’re working with&lt;/h4&gt;
-
-&lt;p&gt;This is a bit of a tradeoff, but if you already know the exact file you need Claude to work on, then just use &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;@&lt;/code&gt; to reference it. In the Claude Code UI, you’ll see the fuzzy file picker pop up. Of course, Claude Code can use bash tools to find any symbol references, but this takes it a couple extra steps and uses up a little bit of extra context. Hard to say whether the tradeoff is worth it, so experiment and see what works best for you.&lt;/p&gt;
-
-&lt;p&gt;Optionally, depending on the scope of your request, you can also ask Claude Code to spin up a subagent to find all the required files and symbol references and pass them back to the main agent. That keeps the main agent context’s clean while also unburdening you to need to do all the context gathering yourself.&lt;/p&gt;
-
-&lt;h4 id=&quot;learn-the-proper-usage-of-plan-mode&quot;&gt;Learn the proper usage of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;plan&lt;/code&gt; mode&lt;/h4&gt;
-
-&lt;p&gt;Shift+Tab toggles &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;plan&lt;/code&gt; mode (you’ll see it in the bottom UI). Although Claude Code defaults to doing a least a little planning for every request by creating a little TODO list before it dives into code, by entering &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;plan&lt;/code&gt; mode you can ensure it spends more time thinking and writing, then waiting for your approval before making &lt;em&gt;any&lt;/em&gt; code changes.&lt;/p&gt;
-
-&lt;p&gt;You’ll need to experiment yourself of when this extra step feels warranted. Maybe try overusing it at first until you start to instinctually understand when it feels like overkill.&lt;/p&gt;
-
-&lt;p&gt;I didn’t start using &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;plan&lt;/code&gt; mode until later in the development of v2. I found it useful, but mostly because I also understood the kinds of requests (both the inherent scope of the task &lt;em&gt;and&lt;/em&gt; the amount of context and explanation I gave for the task) that caused Claude Code to fail when it immediately jumped into coding.&lt;/p&gt;
-
-&lt;h4 id=&quot;warp-was-not-a-convenient-terminal-to-use-with-claude-code&quot;&gt;Warp was not a convenient terminal to use with Claude Code&lt;/h4&gt;
-
-&lt;p&gt;I started using &lt;a href=&quot;https://www.warp.dev&quot;&gt;Warp&lt;/a&gt; a few years back as my daily driver. I never really used its built in LLM features that much, but I liked its overall setup and usability for my limited purposes.&lt;/p&gt;
-
-&lt;p&gt;However, Warp was not particularly well suited as a driver for Claude Code. There were a lot of scrolling bugs and overall it just felt like the two were fighting each other. (Note: Warp just released their own coding agent as Warp v2.0).&lt;/p&gt;
-
-&lt;p&gt;I started using &lt;a href=&quot;https://ghostty.org&quot;&gt;Ghostty&lt;/a&gt; towards the end of development and its simplicity has worked well with Claude Code so far.&lt;/p&gt;
-
-&lt;h4 id=&quot;the-anthropic-pro-plans-limits-are-fine-for-starting-out&quot;&gt;The Anthropic Pro plan’s limits are fine for starting out&lt;/h4&gt;
-
-&lt;p&gt;As mentioned earlier, at the beginning of development, Claude Code was cranking so hard that I was burning through my 5-hour usage limits in 60-90 minutes.&lt;/p&gt;
-
-&lt;p&gt;This meant a lot of waiting at first, but overall, I don’t think this was a bad thing. Getting feedback on how hard I was pushing it gave me natural feedback about how to manage its context window (e.g. how &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;xcodebuild&lt;/code&gt; without &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;--quiet&lt;/code&gt; was overflowing the context window).&lt;/p&gt;
-
-&lt;p&gt;After the 2nd day, I either stopped hitting the usage limits or would only hit them near the end of a 5-hour window. Partially because I was working more on my own, partially because there was just less code for it to write or the scope of changes was smaller.&lt;/p&gt;
-
-&lt;p&gt;Eventually I may upgrade to Max, if only to test out the Opus model. But for now, I recommend the Pro tier as fine for beginners to learn the tool.&lt;/p&gt;
-
-&lt;h4 id=&quot;be-proactive-in-creating-feedback-loops-for-claude-code&quot;&gt;Be proactive in creating feedback loops for Claude Code&lt;/h4&gt;
-
-&lt;p&gt;One of Claude Code’s biggest strengths is its ability to use feedback loops to turn unsuccessful one-shot prompts into successful many-shot tasks with the help of tools. When Claude Code can make an attempt at solving a problem and see the results, it’s way more likely to be successful in accomplishing the original task without needing a human in the loop.&lt;/p&gt;
-
-&lt;p&gt;Claude Code’s ability to use &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;xcodebuild&lt;/code&gt; was a game-changer for me, turning an imperfect model into a workhorse. For multi-file refactors, it could usually get the project building again after 1 or 2 attempts without needing to bother me for its predictable mistakes like misspelling a function name or using some older syntax or forgetting to update a file.&lt;/p&gt;
-
-&lt;p&gt;Giving Claude Code (a natively probabilistic tool) the ability to use the Swift compiler (a natively deterministic tool) provides the best of both worlds.&lt;/p&gt;
-
-&lt;p&gt;I’ve yet to find a clean way to have Claude Code iterate on UI the way humans do with the iOS simulator and SwiftUI Previews. Automating the App Store screenshots with UITests may have been the first step in accomplishing that (or at least that’s one potential strategy).&lt;/p&gt;
-
-&lt;p&gt;The point is that connecting feedback loops for Claude – either on the input side or the output side – is remarkably powerful in leveling up the base model’s capabilities to accomplish your task.&lt;/p&gt;
-
-&lt;h4 id=&quot;be-proactive-in-finding-ways-to-serve-documentation-to-claude-code&quot;&gt;Be proactive in finding ways to serve documentation to Claude Code&lt;/h4&gt;
-
-&lt;p&gt;Speaking of the input side, later on in my development I automated a way for Claude Code to look up documentation for the Swift Packages I used by moving my derived data directory to the project folder and pointing it to the checkouts/sources folder of each key dependency I use where it could find the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.docc&lt;/code&gt; documentation bundle.&lt;/p&gt;
-
-&lt;p&gt;I added the following to the project source level CLAUDE.md:&lt;/p&gt;
-
-&lt;div class=&quot;language-markdown highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;gu&quot;&gt;## Swift Package Dependencies&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;
--&lt;/span&gt; &lt;span class=&quot;gs&quot;&gt;**Nuke**&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;  -&lt;/span&gt; Advanced image loading and caching framework with powerful performance optimizations
-&lt;span class=&quot;p&quot;&gt;  -&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;Documentation&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;](&lt;/span&gt;&lt;span class=&quot;sx&quot;&gt;DerivedData/Vinylogue/SourcePackages/checkouts/Nuke/Documentation/Nuke.docc/&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;gs&quot;&gt;**NukeUI**&lt;/span&gt; (part of Nuke)
-&lt;span class=&quot;p&quot;&gt;  -&lt;/span&gt; SwiftUI components for declarative image loading with LazyImage and FetchImage
-&lt;span class=&quot;p&quot;&gt;  -&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;Documentation&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;](&lt;/span&gt;&lt;span class=&quot;sx&quot;&gt;DerivedData/Vinylogue/SourcePackages/checkouts/Nuke/Documentation/NukeUI.docc/&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;gs&quot;&gt;**Sharing**&lt;/span&gt; (Point-Free)
-&lt;span class=&quot;p&quot;&gt;  -&lt;/span&gt; Type-safe shared state management library for global app state persistence
-&lt;span class=&quot;p&quot;&gt;  -&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;Documentation&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;](&lt;/span&gt;&lt;span class=&quot;sx&quot;&gt;DerivedData/Vinylogue/SourcePackages/checkouts/swift-sharing/Sources/Sharing/Documentation.docc/&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;gs&quot;&gt;**Dependencies**&lt;/span&gt; (Point-Free)
-&lt;span class=&quot;p&quot;&gt;  -&lt;/span&gt; Dependency injection framework for testable and modular Swift applications
-&lt;span class=&quot;p&quot;&gt;  -&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;Documentation&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;](&lt;/span&gt;&lt;span class=&quot;sx&quot;&gt;DerivedData/Vinylogue/SourcePackages/checkouts/swift-dependencies/Sources/Dependencies/Documentation.docc/&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-  
-&lt;span class=&quot;gu&quot;&gt;## Code Architecture Reference&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;
--&lt;/span&gt; Point-Free Co. SyncUps
-&lt;span class=&quot;p&quot;&gt;    -&lt;/span&gt; https://uithub.com/pointfreeco/syncups?accept=text/html&amp;amp;maxTokens=50000&amp;amp;ext=swift
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;I’m still trying to find a clever way to give Claude Code native access to the latest Apple Frameworks documentation. One option is &lt;a href=&quot;https://steipete.me/posts/llm-codes-transform-developer-docs&quot;&gt;llm.codes&lt;/a&gt;. I’ve also used the &lt;a href=&quot;https://www.diabrowser.com/&quot;&gt;Dia&lt;/a&gt; to automatically convert a loaded Apple docs page to markdown before copying it into the Claude Code prompt manually.&lt;/p&gt;
-
-&lt;h4 id=&quot;periodically-ask-claude-code-for-solicited-code-audits&quot;&gt;Periodically ask Claude Code for solicited code audits&lt;/h4&gt;
-
-&lt;p&gt;Claude Code will not proactively audit your code through any particular lens. It’s good to remember that you can ask it specifically to do a full walkthrough of your (small?) codebase looking for improvements. This could be a security audit, accessibility audit, code re-use audit, dynamic type audit, Swift concurrency audit, etc.&lt;/p&gt;
-
-&lt;p&gt;You can also ask it to do several audits in parallel through subagents. Or, have multiple subagents do the &lt;em&gt;same&lt;/em&gt; audit type and have the main agent gather the results.&lt;/p&gt;
-
-&lt;h4 id=&quot;periodically-have-claude-code-run--warn-long-function-bodies-and-fix-warnings&quot;&gt;Periodically have Claude Code run &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;-warn-long-function-bodies&lt;/code&gt; and fix warnings&lt;/h4&gt;
-
-&lt;p&gt;While developing with Swift, for as long as I can remember, there have been cases where I unintentionally introduce a stray statement that strains the Swift compiler on each build and I only notice it a couple days later when it’s too late.&lt;/p&gt;
-
-&lt;p&gt;Keeping the &lt;a href=&quot;https://github.com/fastred/Optimizing-Swift-Build-Times/blob/18f7052834d17040c66c848e28dcc9431c9d60fe/README.md#type-checking-of-functions-and-expressions&quot;&gt;-warn-long-function-bodies&lt;/a&gt; compiler flag on during development is one way to get notified about this early and often, but it can also be annoying due to the non-deterministic nature of build times.&lt;/p&gt;
-
-&lt;p&gt;It’s quick and easy to ask Claude Code to add this build flag with ~200ms as the threshold, build the project, check for warnings, and automatically fix them. Then have it clean up and revert the build flag once it’s done.&lt;/p&gt;
-
-&lt;h4 id=&quot;the-bar-for-automating-things-is-way-lower-with-claude-code&quot;&gt;The bar for automating things is way lower with Claude Code&lt;/h4&gt;
-
-&lt;p&gt;I consider it a personal failing, but I’ve always had an aversion to learning bash scripting. There’s lots of different rules of thumb about when you as a developer should dedicate time to automating a manual process. For me, that rule was basically never. It always felt like too much a burden to not only write, but to maintain automation when it inevitably breaks.&lt;/p&gt;
-
-&lt;p&gt;With Claude Code, my outlook on automation has completely changed. LLMs in general are just way better at writing one-file scripts than they are at writing sprawling applications. It’s simply much faster to ask Claude Code to bang off a script to automate a task. Even for one-off tasks.&lt;/p&gt;
-
-&lt;p&gt;The &lt;a href=&quot;https://github.com/twocentstudios/vinylogue/blob/906c1ce86c8bdb926db6dcb0eada664b80fb8743/generate-app-store-screenshots.zsh&quot;&gt;script&lt;/a&gt; Claude Code wrote to automate my App Store screenshots is just one example. I also had it write a one-off script to generate the graphs earlier in this blog post.&lt;/p&gt;
-
-&lt;h4 id=&quot;continue-using-your-existing-developer-tools-alongside-claude-code&quot;&gt;Continue using your existing developer tools alongside Claude Code&lt;/h4&gt;
-
-&lt;p&gt;See how well Claude Code works with your existing developer tools and workflow before introducing anything new.&lt;/p&gt;
-
-&lt;p&gt;I found keeping GitHub Desktop as my code review tool for Claude Code’s various excursions worked great. I could keep an eye on the git staging area and selectively commit files the same way I do when I’m developing on my own.&lt;/p&gt;
-
-&lt;p&gt;I used Perplexity, Google search, and the ChatGPT app to do various research and context gathering outside of Claude Code. Each felt like it covered certain limitations of Claude Code, whether it be the model or the UI.&lt;/p&gt;
-
-&lt;p&gt;And of course, using Xcode for my own editing, building, browsing, testing, and simulator running workflows was familiar (and predictably painful).&lt;/p&gt;
-
-&lt;p&gt;I’d say keep an awareness of friction points in your workflow and gradually address them one-by-one. I had plenty of time and mental energy to think about my tooling while Claude Code was doing the grunt work of refactoring and pushing files around for me.&lt;/p&gt;
-
-&lt;h3 id=&quot;the-kinds-of-tasks-i-used-claude-code-for&quot;&gt;The kinds of tasks I used Claude Code for&lt;/h3&gt;
-
-&lt;h4 id=&quot;scaffolding&quot;&gt;Scaffolding&lt;/h4&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;&lt;a href=&quot;https://github.com/twocentstudios/vinylogue/commit/bffa00c&quot;&gt;bffa00c - “lastfm client and tests”&lt;/a&gt;&lt;/li&gt;
-  &lt;li&gt;&lt;a href=&quot;https://github.com/twocentstudios/vinylogue/commit/88bbc1e&quot;&gt;88bbc1e - “onboarding and migration”&lt;/a&gt;&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;At the start of a new project or feature, you can use Claude Code as a way to get smarter scaffolding for a project. It’s dangerous though if you think of this code as shippable code instead of scaffolding. You really do have to maintain the discipline to continue to build off of the generated code, test it, polish it, iterate on it.&lt;/p&gt;
-
-&lt;p&gt;More concretely, Claude Code seems to be pretty great at creating &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Codable&lt;/code&gt; models, especially if you give it an example json file. Networking clients too since there’s presumably plenty of examples in its training data.&lt;/p&gt;
-
-&lt;h4 id=&quot;targeted-refactoring&quot;&gt;Targeted refactoring&lt;/h4&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;&lt;a href=&quot;https://github.com/twocentstudios/vinylogue/commit/2de5aa8&quot;&gt;2de5aa8 - “Refactor Album to UserChartAlbum”&lt;/a&gt;&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;One example of a targeted refactoring I did was at the very end of the project. I previously had an &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Album&lt;/code&gt; struct that was using lots of optionals to express different levels of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;loaded&lt;/code&gt;.&lt;/p&gt;
-
-&lt;p&gt;I did my own bit of planning up front to devise exactly how I wanted &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Album&lt;/code&gt; to be structured to express being partially and fully loaded. Along the way, I realized that &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Album&lt;/code&gt; was also being mutated with some specialization based on &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;WeeklyChart&lt;/code&gt; it was originally fetched with. So it wasn’t really independent &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Album&lt;/code&gt; whose information could be shared across years. This could have been a source of subtle bugs, especially with caching.&lt;/p&gt;
-
-&lt;p&gt;I gave Claude Code that revised structure, now &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;UserChartAlbum&lt;/code&gt;, and told it to refactor the codebase to use it. Of course, doing this kind of refactor is much safer with static typing and a compiler helping you out as a human, but Claude Code knocked this out in a couple minutes, also using the compiler to help itself.&lt;/p&gt;
-
-&lt;h4 id=&quot;pushing-code-around&quot;&gt;Pushing code around&lt;/h4&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;&lt;a href=&quot;https://github.com/twocentstudios/vinylogue/commit/32aef1b&quot;&gt;32aef1b - “don’t pass whole model”&lt;/a&gt;&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;Another type of refactoring is pushing variables and functions around between classes that sit at the boundaries of one another. Or extracting a class’s method into a pure static func.&lt;/p&gt;
-
-&lt;p&gt;I used this kind of refactor a lot for extracting SwiftUI Views. Also for migrating &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;@State&lt;/code&gt; vars from Views into &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;@Observable&lt;/code&gt; classes. These are particularly error prone to do as a human because the Swift compiler completely gives up on providing useful error messages when you’ve misspelled something in a View body.&lt;/p&gt;
-
-&lt;h4 id=&quot;deconstructing-swiftui-views-to-satisfy-the-swift-compiler&quot;&gt;Deconstructing SwiftUI Views to satisfy the Swift compiler&lt;/h4&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;&lt;a href=&quot;https://github.com/twocentstudios/vinylogue/commit/809625f&quot;&gt;809625f - “refactor WeeklyAlbumsView for compilation times”&lt;/a&gt;&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;There’s a natural tension when writing SwiftUI where &lt;em&gt;writing&lt;/em&gt; Views is generally easier when working inside one big View. But this makes both the compiler and the runtime unhappy (performance suffers). When iterating on the presentation and structure of Views, it’s disruptive to have to keep extracting variables and thinking up names for each sub View instance.&lt;/p&gt;
-
-&lt;p&gt;Claude Code is really great as a solution to this problem because both extracting and recombining Views is incredibly cheap.&lt;/p&gt;
-
-&lt;h4 id=&quot;following-architecture-rules&quot;&gt;Following architecture rules&lt;/h4&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;&lt;a href=&quot;https://github.com/twocentstudios/vinylogue/commit/2bf6da1&quot;&gt;2bf6da1 - “Migrate to point-free style”&lt;/a&gt;&lt;/li&gt;
-  &lt;li&gt;&lt;a href=&quot;https://github.com/twocentstudios/vinylogue/commit/bc3aa42&quot;&gt;bc3aa42 - “Migrate onboarding, settings, weekly albums, album detail”&lt;/a&gt;&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;After my big architecture refactor, I &lt;a href=&quot;https://github.com/twocentstudios/vinylogue/blob/906c1ce86c8bdb926db6dcb0eada664b80fb8743/Vinylogue/Features/CLAUDE.md#store-creation-and-navigation-rules&quot;&gt;created a set of rules&lt;/a&gt; in the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLAUDE.md&lt;/code&gt; file in the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Features&lt;/code&gt; subdirectory that holds my SwiftUI Views and Stores (&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Store&lt;/code&gt; being an alias for &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ViewModel&lt;/code&gt; or &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;@Observable&lt;/code&gt; class). For example, for sheet-based navigation:&lt;/p&gt;
-
-&lt;div class=&quot;language-markdown highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;gu&quot;&gt;### Sheet-Based Navigation&lt;/span&gt;
-&lt;span class=&quot;gs&quot;&gt;**Pattern**&lt;/span&gt;: Parent stores create optional child stores for modal presentations
-
-&lt;span class=&quot;gs&quot;&gt;**Rules**&lt;/span&gt;:
-&lt;span class=&quot;p&quot;&gt;1.&lt;/span&gt; &lt;span class=&quot;gs&quot;&gt;**Parent Store**&lt;/span&gt;: Creates optional child store property (&lt;span class=&quot;sb&quot;&gt;`var childStore: ChildStore?`&lt;/span&gt;)
-&lt;span class=&quot;p&quot;&gt;2.&lt;/span&gt; &lt;span class=&quot;gs&quot;&gt;**Parent Store**&lt;/span&gt;: Provides method to create child store (&lt;span class=&quot;sb&quot;&gt;`func showChild() { childStore = ChildStore() }`&lt;/span&gt;)
-&lt;span class=&quot;p&quot;&gt;3.&lt;/span&gt; &lt;span class=&quot;gs&quot;&gt;**Parent View**&lt;/span&gt;: Uses &lt;span class=&quot;sb&quot;&gt;`sheet(item: $store.childStore)`&lt;/span&gt; modifier
-&lt;span class=&quot;p&quot;&gt;4.&lt;/span&gt; &lt;span class=&quot;gs&quot;&gt;**Child View**&lt;/span&gt;: Accepts store as parameter (&lt;span class=&quot;sb&quot;&gt;`@Bindable var store: ChildStore`&lt;/span&gt;)
-&lt;span class=&quot;p&quot;&gt;5.&lt;/span&gt; &lt;span class=&quot;gs&quot;&gt;**Child Store**&lt;/span&gt;: Must conform to &lt;span class=&quot;sb&quot;&gt;`Identifiable`&lt;/span&gt; (class identity-based)
-&lt;span class=&quot;p&quot;&gt;6.&lt;/span&gt; &lt;span class=&quot;gs&quot;&gt;**Dependency Injection**&lt;/span&gt;: Use &lt;span class=&quot;sb&quot;&gt;`withDependencies(from: self)` only if parent has `@Dependency`&lt;/span&gt; vars
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;Whenever Claude Code starts work on a new screen in the future, it will read these rules and examples in the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLAUDE.md&lt;/code&gt; and follow them when structuring the new screen.&lt;/p&gt;
-
-&lt;h4 id=&quot;copying-over-styling&quot;&gt;Copying over styling&lt;/h4&gt;
-
-&lt;p&gt;My environment isn’t set up yet to give Claude Code all the tools it needs to properly iterate on a visual design. But after I created the exact visual design for a screen in SwiftUI, it had no problem copying over those design elements to other Views.&lt;/p&gt;
-
-&lt;h4 id=&quot;removing-a-secrets-file-in-git-history&quot;&gt;Removing a Secrets file in git history&lt;/h4&gt;
-
-&lt;p&gt;When doing a folder structure refactoring near the end of the project, I moved the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Secrets.swift&lt;/code&gt; file that has my Last.fm API key in plain text and forgot to update the hardcoded location in &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.gitignore&lt;/code&gt;, causing it to be committed deep in the history. I noticed this right before pushing to the public GitHub repo. I’d have to use git to extract it from the commit history.&lt;/p&gt;
-
-&lt;p&gt;I’ve done this kind of excavation before, but it’s incredibly nerve-wracking and error prone. I asked Claude Code to help and it knocked it out.&lt;/p&gt;
-
-&lt;p&gt;Of course, there’s a lesson to be learned here that I should be doing my secrets management better, and I did update the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.gitignore&lt;/code&gt; to be more fool-proof, but regardless of that, it still saved me a lot of mental effort.&lt;/p&gt;
-
-&lt;h4 id=&quot;full-audits-for-reusable-code&quot;&gt;Full audits for reusable code&lt;/h4&gt;
-
-&lt;p&gt;I asked Claude Code a few times to do full audits of my project to find and extract duplicate code, especially in SwiftUI Views. You can be as hands-on or hands-off as you’d like. For me, I specifically instructed it to consider whether the code was functionally duplicated or not, i.e. whether it was expected that each instance of the duplicate code should be able to evolve independently. So treating Claude Code as a static analysis tool with a little extra smarts.&lt;/p&gt;
-
-&lt;p&gt;I’d review its results in GitHub Desktop as usual and commit only the extractions that made sense to me.&lt;/p&gt;
-
-&lt;h4 id=&quot;transliterating-code-between-programming-languages&quot;&gt;Transliterating code between programming languages&lt;/h4&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;&lt;a href=&quot;https://github.com/twocentstudios/vinylogue/commit/f4d9402&quot;&gt;f4d9402 - “use old color extraction algorithm”&lt;/a&gt;&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;I used Claude Code to port my &lt;a href=&quot;https://github.com/twocentstudios/vinylogue/blob/906c1ce86c8bdb926db6dcb0eada664b80fb8743/Vinylogue/Core/Infrastructure/ColorExtraction.swift&quot;&gt;dominant color algorithm&lt;/a&gt; from Objective-C to Swift line-by-line.&lt;/p&gt;
-
-&lt;p&gt;It’s only a couple hundred lines, but it would have been tedious and not particularly fun to do this by hand.&lt;/p&gt;
-
-&lt;h4 id=&quot;error-message-writing-and-mapping&quot;&gt;Error message writing and mapping&lt;/h4&gt;
-
-&lt;p&gt;Claude Code wrote a lot of decent error handling code out of the box. Of course, error handling code, both internal and user facing, deserves proper consideration. But having a scaffolding in place made it easier to iterate in the right direction.&lt;/p&gt;
-
-&lt;h4 id=&quot;organizing-images-in-a-github-release&quot;&gt;Organizing images in a GitHub release&lt;/h4&gt;
-
-&lt;p&gt;I like documenting my GitHub PRs, Issues, Releases, etc. with screenshots laid out in tables. I’ve done this manually for years, and I’ve never figured out a way to automate it.&lt;/p&gt;
-
-&lt;p&gt;When creating &lt;a href=&quot;https://github.com/twocentstudios/vinylogue/releases&quot;&gt;Releases&lt;/a&gt;, I realized Claude Code was very much able to pick the proper screenshots out of my project directory, upload them, and insert links into a properly formatted markdown table. This saved me 10-15 minutes at least of tedious clicking, dragging around, and formatting.&lt;/p&gt;
-
-&lt;h3 id=&quot;what-i-want-to-try-next-time&quot;&gt;What I want to try next time&lt;/h3&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;I want to give Claude Code a way to view simulator screenshots and/or video to allow it to iterate on its designs.&lt;/li&gt;
-  &lt;li&gt;Or at least experiment with UITests or snapshot tests.&lt;/li&gt;
-  &lt;li&gt;I want to get give Claude Code scripts to run for &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;xcodebuild&lt;/code&gt;, etc. so it’s more consistent and wastes less time when it forgets which simulators are available. The only downside is keeping these up to date when I update Xcode versions.&lt;/li&gt;
-  &lt;li&gt;I want to be more mindful of the the way it writes unit tests and come up with my own best practices, including which types of files I test.&lt;/li&gt;
-  &lt;li&gt;I want to try some version of TDD.&lt;/li&gt;
-  &lt;li&gt;I want to ask Claude Code to update some sort of append-only log each time it takes a wrong path and corrects its own mistake. Automating the collection of tips and tricks and ensuring we can incorporate those into long-term memory.&lt;/li&gt;
-  &lt;li&gt;I want to automate more App Store release process steps.&lt;/li&gt;
-  &lt;li&gt;I want to move my personal workflow stuff to my home directory &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLAUDE.md&lt;/code&gt;.&lt;/li&gt;
-  &lt;li&gt;I want to find more useful MCPs for iOS dev.&lt;/li&gt;
-  &lt;li&gt;I want to find a better way to manage files that aren’t in the xcodeproj e.g. markdown, images, etc.&lt;/li&gt;
-  &lt;li&gt;I want to find a source for up-to-date Apple platform docs that can be quickly referenced within Claude Code.&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;h3 id=&quot;stray-observations-about-working-with-claude-code&quot;&gt;Stray observations about working with Claude Code&lt;/h3&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;I didn’t have CLAUDE.md file at first and didn’t understand context limit, clearing, or compacting.&lt;/li&gt;
-  &lt;li&gt;Pre-planning with a product requirements document didn’t really feel like it helped much. I’m pretty sure there’s a skill to this too and I’ll need to start up a lot of greenfield projects or features to learn what works.&lt;/li&gt;
-  &lt;li&gt;For the first day or two, I intentionally didn’t make any code changes or give code-level guidance so I could see what Claude Code’s tendencies were. For my own learning, I think this was useful so that I only give it specific instructions about the things I disagree with the base model on.&lt;/li&gt;
-  &lt;li&gt;To that end, my impression of Claude Sonnet 4 is that by default it writes iOS 16 style code.&lt;/li&gt;
-  &lt;li&gt;I added &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;xcodegen&lt;/code&gt; very early because editing &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;xcodeproj&lt;/code&gt; directly is error-prone and overall a nightmare.&lt;/li&gt;
-  &lt;li&gt;I used &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;swiftformat&lt;/code&gt; with my longstanding config file. Using a linting/formatting tool means you don’t need to fill up the context with notes about code style.&lt;/li&gt;
-  &lt;li&gt;However, Claude Code would sometimes trip up when applying diffs because after running swiftformat, the code structure in its context history would no longer match what was properly formatted in the file.&lt;/li&gt;
-  &lt;li&gt;My flow was to review Claude Code’s changes in GitHub Desktop, sometimes make my own changes in Xcode, stage files and write commit messages myself. I liked this flow because it enforced some discipline about me being the one responsible for the code I was committing.&lt;/li&gt;
-  &lt;li&gt;Out of the box, Claude Code wrote tons of tests. I mostly ignored these but my impression was that most of them were flawed and useless.&lt;/li&gt;
-  &lt;li&gt;Claude Code also tried to write UITests while it was still in the scaffolding phase and the UI was very far from being pixel perfect. I had to shut it down and ensure it never wrote UITests again via &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLAUDE.md&lt;/code&gt;.&lt;/li&gt;
-  &lt;li&gt;Claude Code did pretty well in building the project and fixing its own issues. To me, this is where Claude Code leapfrogs standard chat LLM interfaces in usefulness.&lt;/li&gt;
-  &lt;li&gt;Claude Code knew how to use &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;xcodebuild&lt;/code&gt; out of the box. But it was very inconsistent on which build flags, simulators, OS versions, etc. it picked.&lt;/li&gt;
-  &lt;li&gt;I slowly added to the project directory CLAUDE.md, mostly very targeted statements about the development flow and not much about the project contents.&lt;/li&gt;
-  &lt;li&gt;The Pro plan’s usage limit resets every 5 hours. During scaffolding I ran into this limit after about 60-90 minutes of usage. Later on, I’d run into the limit towards the end of the usage period or never.&lt;/li&gt;
-  &lt;li&gt;The Pro plan only allows usage of Sonnet, so I have not experimented with Opus yet.&lt;/li&gt;
-  &lt;li&gt;With its initial multi-sprint plan in place, Claude Code knocked out a functional prototype in about 3-4 hours of total compute time on the first day. This was mostly unguided work; I did not contribute much yet.&lt;/li&gt;
-  &lt;li&gt;I never gave Claude Code direct access to the iOS simulator. Therefore it was only indirectly useful for visual design work.&lt;/li&gt;
-  &lt;li&gt;Claude Code really wanted to implement dark mode, Dynamic Type, and full accessibility support.&lt;/li&gt;
-  &lt;li&gt;I enjoyed doing the visual design work so I took responsibility for that part of the work.&lt;/li&gt;
-  &lt;li&gt;After I did the visual design work for one screen, Claude Code did a decent job getting the other screens to 90-95% complete.&lt;/li&gt;
-  &lt;li&gt;My ambitions grew a lot over the first couple days working on the project as I became more familiar with Claude Code’s capabilities.&lt;/li&gt;
-  &lt;li&gt;It was almost overwhelming at times to decide what I wanted to do next.&lt;/li&gt;
-  &lt;li&gt;I intentionally didn’t attempt to have Claude Code work on different features in parallel. I was still in-the-loop enough that my manual testing was the blocker, and having multiple instances to review in my environment would have quickly overwhelmed me. As I gain experience, I think my appetite for parallelizing will grow. Also, I think parallel usage would probably necessitate the usage limits of the Max plan.&lt;/li&gt;
-  &lt;li&gt;After a couple days, I started using &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;/compact&lt;/code&gt; more intentionally, and with additional instructions so that I was more in control.&lt;/li&gt;
-  &lt;li&gt;Towards the end of development, tasks were mostly unrelated, so I was using &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;/clear&lt;/code&gt; more often than &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;/compact&lt;/code&gt;. Especially because my collection of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLAUDE.md&lt;/code&gt; files was much more robust.&lt;/li&gt;
-  &lt;li&gt;As I started using more frameworks and becoming more opinionated about the code quality, I started looking for more efficient ways to feed context into Claude Code. I tried &lt;a href=&quot;https://uithub.com&quot;&gt;uithub&lt;/a&gt;, &lt;a href=&quot;https://gitingest.com/&quot;&gt;gitingest&lt;/a&gt;, &lt;a href=&quot;https://context7.com/&quot;&gt;context7&lt;/a&gt;. But context is still so precious that a lot of the time I’d do my own work up front to find the exact markdown file I wanted it to read to understand how the library would solve the current problem we were working on.&lt;/li&gt;
-  &lt;li&gt;Moving Xcode’s DerivedData folder into the project directory is a weighty decision with pros and cons, but it certainly helped for giving Claude Code a easily discoverable location for Swift Package documentation and code.&lt;/li&gt;
-  &lt;li&gt;Refactoring is one of my favorite use cases for Claude Code. Being able to concretely see what a project-wide refactor looks like in a matter of minutes is incredible as a learning device. For example, if I manually did a big exploratory refactor related to an architecture change and it took a week of work, I’d be much more opposed to throwing away that work, even if it objectively made the codebase worse. Having Claude Code automate that work allows you to keep your objectivity, evaluate the new strategy as an impartial observer, and ruthlessly throw out the work with no hard feelings.&lt;/li&gt;
-  &lt;li&gt;Relatedly, the ability to stay at the macro-level of evaluating a codebase for 90% of the time while Claude Code handles the micro-level work feels like such a huge productively multiplier.&lt;/li&gt;
-  &lt;li&gt;I was naive at first thinking that Claude Code one-shotted the implementation of the legacy data migrator component. Even spot-checking this code during the refactoring phase would have at least put this work higher on my TODO list.&lt;/li&gt;
-  &lt;li&gt;Having a deep catalog of structurally pure, well-documented, and focused open source code to provide as template or reference code to Claude Code will be a huge multiplier going forward.&lt;/li&gt;
-  &lt;li&gt;I haven’t tried using &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ultrathink&lt;/code&gt; or other thinking modifiers in my prompts yet.&lt;/li&gt;
-  &lt;li&gt;I found it useful to have Claude Code’s scaffolding in place after the first day and iterate from there, especially since I didn’t start out with a target architecture in mind. But there’s a fine line; you can quickly find yourself drowning in slop before you get it under control.&lt;/li&gt;
-  &lt;li&gt;I didn’t use the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;--dangerously-skip-permissions&lt;/code&gt; mode. Most CLI tools I simply approved for the session as they were proposed since most are safe by nature (&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;find&lt;/code&gt;, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;grep&lt;/code&gt;, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;xcodebuild&lt;/code&gt;, etc.).&lt;/li&gt;
-  &lt;li&gt;I found it easier to do research using Perplexity or OpenAI o3 for particular tasks rather than mix this kind of work up with the Claude Code context. It was much more efficient to find the exact blog post or API with these GUI tools and then feed Claude Code the exact URL. The right tool for the right job.&lt;/li&gt;
-  &lt;li&gt;Claude Code is so adept at using CLI commands that I didn’t regularly end up using many MCPs. I imagine I will start to use more in the future as the ecosystem matures.&lt;/li&gt;
-  &lt;li&gt;At some point I had Claude Code audit the entire project and delete all of its useless comments. Now that I know its penchant for over-documenting (at least to my tastes), I can try to devise a succinct rule regarding inline docs to add to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLAUDE.md&lt;/code&gt;.&lt;/li&gt;
-&lt;/ul&gt;
-
-</description>
-        <pubDate>Sun, 22 Jun 2025 12:56:00 -0500</pubDate>
-        <link>https://twocentstudios.com/2025/06/22/vinylogue-swift-rewrite/</link>
-        <guid isPermaLink="true">https://twocentstudios.com/2025/06/22/vinylogue-swift-rewrite/</guid>
-        
-        <category>vinylogue</category>
         
         <category>apple</category>
         

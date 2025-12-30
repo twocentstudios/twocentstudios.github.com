@@ -5,9 +5,761 @@
     <description>A coding blog covering iOS, Swift, and other programming topics.</description>
     <link>https://twocentstudios.com/</link>
     <atom:link href="https://twocentstudios.com/feed.xml" rel="self" type="application/rss+xml"/>
-    <pubDate>Fri, 26 Dec 2025 05:00:21 -0600</pubDate>
-    <lastBuildDate>Fri, 26 Dec 2025 05:00:21 -0600</lastBuildDate>
+    <pubDate>Mon, 29 Dec 2025 23:43:03 -0600</pubDate>
+    <lastBuildDate>Mon, 29 Dec 2025 23:43:03 -0600</lastBuildDate>
     <generator>Jekyll v3.9.3</generator>
+    
+      <item>
+        <title>Closing the Loop on iOS with Claude Code</title>
+        <description>&lt;p&gt;Closing the loop means giving Claude Code a way to view the output of its work. I’ll be focusing on iOS app development workflows.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Step 1&lt;/strong&gt; of closing the loop: &lt;strong&gt;building&lt;/strong&gt; a target so that Claude Code can see the errors and warnings. And doing so in a way that preserves the build cache (clean builds take a long time). This allows Claude Code to see its syntax errors and fix them before you review its work.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Step 2&lt;/strong&gt; of closing the loop: &lt;strong&gt;installing &amp;amp; launching&lt;/strong&gt; on the simulator. This saves you the step of opening Xcode and hitting build &amp;amp; run, letting you test each proposed code change right away.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Step 3&lt;/strong&gt; of closing the loop: reading the &lt;strong&gt;console &amp;amp; log output&lt;/strong&gt;. This allows Claude Code to proactively verify codepaths and reactively do debugging.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Step 4&lt;/strong&gt; of closing the loop: &lt;strong&gt;controlling &amp;amp; viewing&lt;/strong&gt; the iOS simulator. This allows Claude Code to step through entire flows, evaluate visual designs, and generate its own logs.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Step 5&lt;/strong&gt; of closing the loop: building, installing, launching, and logging &lt;strong&gt;on device&lt;/strong&gt;. This allows you and Claude Code to test Apple Frameworks that are absent or broken on the simulator.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/closing-loop-cc-hero.jpg&quot; width=&quot;&quot; height=&quot;500&quot; alt=&quot;Building, installing, launching on the simulator from Claude Code&quot; title=&quot;Building, installing, launching on the simulator from Claude Code&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Building, installing, launching on the simulator from Claude Code&lt;/div&gt;&lt;/div&gt;
+
+&lt;h3 id=&quot;disclaimers-before-we-start&quot;&gt;Disclaimers before we start&lt;/h3&gt;
+
+&lt;p&gt;Agentic tooling is changing rapidly with model and agent versions. I’ll cover each step as thoroughly as I can. The strategies in this post cover about a month of work in &lt;strong&gt;December 2025&lt;/strong&gt; with Claude &lt;strong&gt;Opus 4.5&lt;/strong&gt; inside Claude Code v2.0.76 (and several versions below). I used &lt;strong&gt;Xcode 26.1 and 26.2&lt;/strong&gt; on macOS 15.7.3 mostly developing for &lt;strong&gt;iOS 26&lt;/strong&gt;.&lt;/p&gt;
+
+&lt;p&gt;This post is written for humans but can easily be adapted to a Skill or added to your CLAUDE.md file. The command structure will change based on how your project and schemes are set up. I outline a few different strategies that are useful in different situations, but you may only want to use one workflow as your default, or completely ignore certain steps altogether.&lt;/p&gt;
+
+&lt;p&gt;If you’ve always used a manual Xcode-based flow, trying to both understand and incorporate these steps into your workflow can be intimidating. If you’ve never working with Xcode via the command line before, start with just the first step for a while. The best part about this workflow is you can seamlessly dip in and out of using Xcode and there’s no switching cost (not even needing to do clean builds).&lt;/p&gt;
+
+&lt;p&gt;The below CLI commands also share a lot of coverage with &lt;a href=&quot;https://github.com/cameroncooke/XcodeBuildMCP&quot;&gt;XcodeBuildMCP&lt;/a&gt;, a more full-service MCP-based solution. I won’t get into the pros and cons of MCPs vs CLIs (its author has already &lt;a href=&quot;https://www.async-let.com/posts/my-take-on-the-mcp-verses-cli-debate/&quot;&gt;written about that&lt;/a&gt;).&lt;/p&gt;
+
+&lt;p&gt;I’m specifically targeting this post to Claude Code and Opus 4.5 based on my first-hand knowledge of their combined capabilities. Other harness and model pairs will work with most of the commands in this post. The command backgrounding feature in step 3 is the only potential snag for some harnesses.&lt;/p&gt;
+
+&lt;h2 id=&quot;step-1-building&quot;&gt;Step 1: Building&lt;/h2&gt;
+
+&lt;p&gt;Allowing Claude Code to build after every proposed change is a requirement for agentic workflows. Like it does for human developers, the compiler catches dumb syntax errors and, with Swift concurrency, even data races. The alternative is tabbing back over to Xcode, hitting cmd+b, waiting, copying and pasting error messages into the terminal; a massive waste of human time.&lt;/p&gt;
+
+&lt;h3 id=&quot;prerequisites&quot;&gt;Prerequisites&lt;/h3&gt;
+
+&lt;h4 id=&quot;move-deriveddata-location-to-your-project-folder-optional&quot;&gt;Move DerivedData location to your project folder (optional)&lt;/h4&gt;
+
+&lt;p&gt;Moving DerivedData to a location inside your project folder is perhaps an unusual suggestion, but it has several benefits for an agentic workflow:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;strong&gt;Permissions&lt;/strong&gt;: you’ll encounter fewer permissions dialogs when Claude is reading inside the project folder that you’re presumably running it in. Most devs expect DerivedData to be cleared regularly so it’s safe.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Git worktrees&lt;/strong&gt;: An advanced technique is to use &lt;a href=&quot;https://git-scm.com/docs/git-worktree&quot;&gt;Git worktrees&lt;/a&gt; to have independent copies of your repo. Colocating DerivedData ensures the separate repos don’t interfere with each others build artifacts.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Docs&lt;/strong&gt;: The DerivedData has a full copy of your Swift Packages, including any documentation. Claude Code can do fast greps to verify syntax or find examples. In my CLAUDE.md I have a direct link for each important package:&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;div class=&quot;language-markdown highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;p&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;sb&quot;&gt;`DerivedData/train-timetable/SourcePackages/checkouts/swift-composable-architecture/Sources/ComposableArchitecture/Documentation.docc`&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;-&lt;/span&gt; When using Search/Grep/etc. tools, ignore anything in the /DerivedData folder by default unless specifically looking for build artifacts or code/docs for Swift Packages used by this project
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Before making this change, add &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;DerivedData/&lt;/code&gt; as a line in your &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.gitignore&lt;/code&gt; file if it’s not already there.&lt;/p&gt;
+
+&lt;p&gt;Find the setting in Xcode Settings -&amp;gt; Locations. Set Derived Data to “Relative” and Build Location to “Unique”. It will report &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;/DerivedData&lt;/code&gt; as the location.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/closing-loop-cc-deriveddata-settings.jpg&quot; width=&quot;&quot; height=&quot;300&quot; alt=&quot;DerivedData settings in Xcode&quot; title=&quot;DerivedData settings in Xcode&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;DerivedData settings in Xcode&lt;/div&gt;&lt;/div&gt;
+
+&lt;h4 id=&quot;document-project-file--scheme&quot;&gt;Document project file &amp;amp; scheme&lt;/h4&gt;
+
+&lt;p&gt;Build commands use your project/workspace file location and scheme name. Claude Code can find these pretty easily with tools but it’s faster to document them in CLAUDE.md.&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/closing-loop-cc-scheme-selection.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Finding scheme names from Xcode&quot; title=&quot;Finding scheme names from Xcode&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Finding scheme names from Xcode&lt;/div&gt;&lt;/div&gt;
+
+&lt;h4 id=&quot;get-simulators&quot;&gt;Get simulators&lt;/h4&gt;
+
+&lt;p&gt;I’ll assume you’ve already downloaded the iOS simulators and iOS runtime versions you’d like to use in the Xcode interface.&lt;/p&gt;
+
+&lt;p&gt;The usual command you’ll use to find the simulator you want produces a very long list, so it’s reasonable to cache your favorite simulator’s UDID so each new Claude Code session doesn’t need do this from scratch each time. “Cache” meaning note it in your CLAUDE.md file, add it as an environment variable, etc.&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;# Get all available simulators
+xcrun simctl list devices available
+
+     -- iOS 26.1 --
+         iPhone 17 Pro (89F6D0BC-E855-4BF7-A400-9C19ED7A7350) (Shutdown)
+         iPhone 17 Pro Max (F1FA81FA-ED32-40C4-BD78-753254D685AC) (Shutdown)
+         iPhone Air (77702E5F-85F5-4997-BA14-BC8D8F639B84) (Shutdown)
+		 ...
+     -- iOS 26.2 --
+         iPhone 17 Pro (DB0531E0-B47E-42AC-9AAB-FEB76D3D563A) (Booted)
+         iPhone 17 Pro Max (0C54CF4B-8A45-450E-AB93-B800B97BD4DA) (Shutdown)
+         iPhone Air (83BECA5F-7894-4705-B198-3DCAE0C4778E) (Shutdown)
+         ...
+     -- ...
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;At first, you’ll probably start with a single threaded workflow, having one preferred simulator booted and in use at a time. The below command will output just the UDID for the latest iPhone Pro with the latest installed iOS version.&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;# Get the UDID of the latest iPhone Pro (non-max) model with the latest available iOS version 
+xcrun simctl list devices available | grep &quot;iPhone.*Pro (&quot; | tail -1 | grep -Eo &apos;[A-F0-9]{8}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{12}&apos;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Once you have more Claudes running in parallel, you’ll can ask each to find its own UDID by looking for a non-booted simulator before it starts building.&lt;/p&gt;
+
+&lt;p&gt;Note that even though some commands can be run with more vague identifiers like name, os, or “booted”, it’s much more reliable to select a UDID and use it across commands. For example: specifying &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;&quot;platform=iOS Simulator,name=iPhone 17 Pro&quot;&lt;/code&gt; in the build command will pick any simulator that matches, which could be any iOS version. For the build command it’s not as big of an issue, but to ensure predictable runs I recommend using UDIDs only.&lt;/p&gt;
+
+&lt;h4 id=&quot;install-xcsift&quot;&gt;Install xcsift&lt;/h4&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://github.com/ldomaradzki/xcsift&quot;&gt;xcsift&lt;/a&gt; is a companion parsing library for build output. You’ll be building &lt;em&gt;a lot&lt;/em&gt;, and you don’t want to fill up your context with hundreds of lines of “file.swift built”. xcsift solves this by producing just the actionable errors and warnings in json.&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;brew install xcsift
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;I add the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;-w&lt;/code&gt; flag to also include warnings in the output. I recommend browsing the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;xcsift&lt;/code&gt; docs to find other flags you might find useful for your project.&lt;/p&gt;
+
+&lt;h3 id=&quot;building&quot;&gt;Building&lt;/h3&gt;
+
+&lt;p&gt;OK, after all that setup, we should have all the info we need to assemble the actual build command.&lt;/p&gt;
+
+&lt;p&gt;Claude Code will be able to derive and customize the exact build command you need. I recommend doing a quick session with Claude - the goal being to produce a single, always-working command you can document somewhere and use automatically in each future session.&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;# Example: working build command for a specific simulator
+xcodebuild -project train-timetable.xcodeproj -scheme &quot;train-timetable&quot; -destination &quot;platform=iphonesimulator,id=DB0531E0-B47E-42AC-9AAB-FEB76D3D563A&quot; -derivedDataPath DerivedData -configuration Debug build 2&amp;gt;&amp;amp;1 | xcsift -w
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;strong&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;-project&lt;/code&gt;&lt;/strong&gt;: path to your xcodeproj file. Use &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;-workspace&lt;/code&gt; if you use an xcworkspace file.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;-scheme&lt;/code&gt;&lt;/strong&gt;: scheme name we found above.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;-destination&lt;/code&gt;&lt;/strong&gt;: for simulator, we use &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;&quot;platform=iphonesimulator,id=$UDID&quot;&lt;/code&gt; where &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;id&lt;/code&gt; is the UDID of our favorite simulator instance.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;-derivedDataPath&lt;/code&gt;&lt;/strong&gt;: this is super important if you’ve moved the DerivedData to the project folder. Without this, the Xcode instance will be using a different directory and you’ll have super slow (clean) builds each time.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;-configuration&lt;/code&gt;&lt;/strong&gt;: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Debug&lt;/code&gt; is the default, so you don’t usually need this flag. It’s better to be explicit though because this affects the folder where your app binary will be copied to (see step 2).&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;build&lt;/strong&gt;: the actual build command&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;2&amp;gt;&amp;amp;1 | xcsift -w&lt;/code&gt;&lt;/strong&gt;: combines stdout and stderr and pipes them both into &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;xcsift&lt;/code&gt; so it has access to all output. &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;-w&lt;/code&gt; tells &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;xcsift&lt;/code&gt; to also show build warnings, not just errors.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;It’s important to test your ideal build command to confirm:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;It doesn’t force a clean build each time.&lt;/li&gt;
+  &lt;li&gt;It produces a concise set of errors and warnings.&lt;/li&gt;
+  &lt;li&gt;It doesn’t interfere with builds via Xcode; you should be able to build/install/run from Xcode, use other SourceKit features, etc. and not clear the build cache.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;In my understanding for builds, the simulator UDID (or at least simulator name) does not affect the build artifacts or app binary. However, there’s a lot going on behind the scenes so for simplicity I recommend using the same simulator UDID across all build, install, &amp;amp; launch steps. You need to be careful if running multiple simulators from the same project folder (i.e. without git worktrees) because each &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;build&lt;/code&gt; command will overwrite the app binary regardless of whether you run the build command with different simulator UDIDs.&lt;/p&gt;
+
+&lt;h3 id=&quot;clearing-deriveddata&quot;&gt;Clearing DerivedData&lt;/h3&gt;
+
+&lt;p&gt;When left to its own devices (literally), sometimes Claude will get frustrated when a build is failing continuously and it can’t figure out how to fix things. It will sometimes try to remove the entire DerivedData folder. This is a bad idea because 1. clearing DerivedData usually doesn’t fix the underlying problem and 2. it will temporarily break Xcode’s ability to read your Swift packages and you’ll need to restart Xcode to get everything working again.&lt;/p&gt;
+
+&lt;p&gt;After I got my build commands more streamlined, Claude stopped doing this as much. But I still have decently strict permissions, so when it does happen, the session will usually block on any &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;rm&lt;/code&gt; command and I’ll get a chance to step in and reprimand it. If you run into this problem, you can dig deeper into a configuration-based solution and modify your permissions, add hooks, or add more to your CLAUDE.md. Just something to look out for.&lt;/p&gt;
+
+&lt;h2 id=&quot;step-2-installing--launching&quot;&gt;Step 2: Installing &amp;amp; Launching&lt;/h2&gt;
+
+&lt;p&gt;Building should streamline a lot of your Claude Code workflow. But I slept on the automated install &amp;amp; launch step for too long.&lt;/p&gt;
+
+&lt;p&gt;When properly set up with step 1, you should be able to wait for Claude Code to build its changes and return control to you. Then you can tab over to Xcode and hit “run without building” to handle the install &amp;amp; launch.&lt;/p&gt;
+
+&lt;p&gt;But when you’re doing build-&amp;gt;install-&amp;gt;launch dozens of times a day, it’s way more streamlined to check Claude’s session output then tab over to the simulator and tap through screens to test out the changes.&lt;/p&gt;
+
+&lt;h3 id=&quot;prerequisites-1&quot;&gt;Prerequisites&lt;/h3&gt;
+
+&lt;h4 id=&quot;document-the-app-binary-location-for-your-scheme&quot;&gt;Document the app binary location for your scheme&lt;/h4&gt;
+
+&lt;p&gt;Ask Claude to find the location of the app binary produced by the build command.&lt;/p&gt;
+
+&lt;p&gt;Since my setup has DerivedData in the project folder and a build directory inside it, that’s where my app binary is: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;DerivedData/Build/Products/Debug-iphonesimulator/Eki Bright.app&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;You’ll notice the folder: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Debug-iphonesimulator&lt;/code&gt;, which corresponds to our build configuration of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Debug&lt;/code&gt; from earlier and the platform &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;iphonesimulator&lt;/code&gt;. If you go off the beaten path and want to try out a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Release&lt;/code&gt; build for example, make sure to understand this relationship.&lt;/p&gt;
+
+&lt;p&gt;Also be cautious because you want to make sure the most recent build is what you’re installing and launching and looking at. And there’s nothing in the file name that will indicate that.&lt;/p&gt;
+
+&lt;h4 id=&quot;find-your-bundle-identifier&quot;&gt;Find your bundle identifier&lt;/h4&gt;
+
+&lt;p&gt;This will be in your Target’s general settings pane beside Bundle Identifier: &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;com.twocentstudios.train-timetable&lt;/code&gt;&lt;/p&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/closing-loop-cc-bundle-id.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Bundle identifier in Xcode target settings&quot; title=&quot;Bundle identifier in Xcode target settings&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Bundle identifier in Xcode target settings&lt;/div&gt;&lt;/div&gt;
+
+&lt;h3 id=&quot;installing-the-app-on-the-simulator&quot;&gt;Installing the app on the simulator&lt;/h3&gt;
+
+&lt;p&gt;Installing is copying over the app binary into a specific simulator’s storage. &lt;strong&gt;This step depends on the build step having produced an app binary.&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;The parameters in the install command are:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;strong&gt;UDID&lt;/strong&gt;: for least headaches this should be the same simulator UDID you specified in the build command.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;path/to/My App.app&lt;/strong&gt;: the app binary location specified by your scheme.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;# Example: install a previously built app binary on the simulator by UDID
+xcrun simctl install DB0531E0-B47E-42AC-9AAB-FEB76D3D563A &quot;DerivedData/Build/Products/Debug-iphonesimulator/Eki Bright.app&quot;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;h3 id=&quot;launching-the-app-on-the-simulator&quot;&gt;Launching the app on the simulator&lt;/h3&gt;
+
+&lt;p&gt;Launching the equivalent of tapping your app’s icon in Springboard. It of course depends on the install step having copied over the app binary.&lt;/p&gt;
+
+&lt;p&gt;The parameters in the install command are:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;strong&gt;UDID&lt;/strong&gt;: the simulator UDID you specified in the build &amp;amp; install commands.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;bundle id&lt;/strong&gt;: apps are uniquely identified by bundle id after installation.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;# Example: launch a previously installed app binary by bundle id
+xcrun simctl launch DB0531E0-B47E-42AC-9AAB-FEB76D3D563A com.twocentstudios.train-timetable
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;h3 id=&quot;navigating-by-url-bonus&quot;&gt;Navigating by URL (bonus)&lt;/h3&gt;
+
+&lt;p&gt;Depending on your app’s navigation structure and pre-existing support for universal links or App Intents, you can save yourself even more time by having Claude automatically navigate the app to the tab, sheet, or navigation destination you’re currently testing.&lt;/p&gt;
+
+&lt;p&gt;The full set of caveats is beyond the scope of this post. In my experience, adding Universal Links support without some caution can lead to giving Claude access to data or flows that are impossible for normal app users to see. It may also add maintenance burden for initializers that are only used during debug. Regardless, jumping through a dozen screens automatically can save you hours of unnecessary manual screen-clicking labor.&lt;/p&gt;
+
+&lt;p&gt;The parameters for the openurl command are:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;strong&gt;UDID&lt;/strong&gt;: the simulator UDID you specified in the build &amp;amp; install commands.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;URL&lt;/strong&gt;: the deep link URL your app knows how to process.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;xcrun simctl openurl DB0531E0-B47E-42AC-9AAB-FEB76D3D563A &quot;train-timetable://tab?name=search&quot;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;In my testing, it’s safe to have Claude to run the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;openurl&lt;/code&gt; command &lt;em&gt;immediately&lt;/em&gt; after the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;install&lt;/code&gt; command (or even in the same line) without needing a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;sleep&lt;/code&gt; or otherwise waiting for the launch to complete.&lt;/p&gt;
+
+&lt;h2 id=&quot;step-3-reading-console--log-output&quot;&gt;Step 3: Reading Console &amp;amp; Log Output&lt;/h2&gt;
+
+&lt;p&gt;With Step 1, Claude has access to the compiler’s evaluation of its code changes. We can also give Claude access to the console and log outputs so it can evaluate the runtime results.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;There are two strategies&lt;/strong&gt;: console output via &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;print&lt;/code&gt; statements and log output via &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;OSLog&lt;/code&gt;/&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Logger&lt;/code&gt;. I use both depending on the situation.&lt;/p&gt;
+
+&lt;p&gt;Depending on the strategy, we’ll either amend the launch command from step 2 or prepend a CLI command.&lt;/p&gt;
+
+&lt;h3 id=&quot;blocking-vs-non-blocking&quot;&gt;Blocking vs. non-blocking&lt;/h3&gt;
+
+&lt;p&gt;Claude can do &lt;em&gt;blocking&lt;/em&gt; and &lt;em&gt;non-blocking&lt;/em&gt; for the console variant, and &lt;em&gt;non-blocking&lt;/em&gt;-only for the log output.&lt;/p&gt;
+
+&lt;p&gt;&lt;em&gt;Blocking&lt;/em&gt; means that the prompt input and Claude’s thinking will be suspended until you explicitly stop it or the default timeout (currently 10 minutes) triggers. It will print output from the command inline, but usually truncate portions.&lt;/p&gt;
+
+&lt;p&gt;&lt;em&gt;Non-blocking&lt;/em&gt; means Claude will use its background capability to keep the command alive and retain access to its output but immediately move the command to the background so that the prompt input is available.&lt;/p&gt;
+
+&lt;p&gt;I recommend the &lt;em&gt;blocking&lt;/em&gt; flow for when you want to add a few quick print statements to verify a limited (maybe less than 15 seconds) code execution flow that you, the human, are driving in the simulator and have Claude immediately evaluate the results inline. The amount of lines generated should be small, within 10s of lines.&lt;/p&gt;
+
+&lt;p&gt;I recommend &lt;em&gt;non-blocking&lt;/em&gt; for all other scenarios, including:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;when you want Claude to drive the simulator (discussed in step 4) while monitoring the output.&lt;/li&gt;
+  &lt;li&gt;when you want to use &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Logger&lt;/code&gt; instead of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;print&lt;/code&gt; logging, probably for more permanent logging code in your codebase.&lt;/li&gt;
+  &lt;li&gt;when you’re expecting to generate dozens or hundreds of lines of logs in a single run. In order to be smart about preserving the session context, you’ll want to write to a file and allow either a subagent to extract meaning from it, or have the primary agent use parsing tools to read only the relevant portions.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;--terminate-running-process&quot;&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;--terminate-running-process&lt;/code&gt;&lt;/h3&gt;
+
+&lt;p&gt;Adding the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;--terminate-running-process&lt;/code&gt; flag to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;launch&lt;/code&gt; ensures idempotency by terminating any existing instance of your app and ensuring the app is always cold launched with the console output available.&lt;/p&gt;
+
+&lt;p&gt;Adding the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;--terminate-running-process&lt;/code&gt; is super important to the logging flow since you may not be rebuilding and reinstalling between launches.&lt;/p&gt;
+
+&lt;p&gt;When you don’t terminate an existing process, the app instance will stay in memory on the simulator. By default, the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;launch&lt;/code&gt; command will &lt;strong&gt;not&lt;/strong&gt; relaunch the app if it’s already launched. This will happen silently. Critically, it will also &lt;strong&gt;not&lt;/strong&gt; read any console output and Claude will get very confused about why nothing is being logged and it will start thrashing and making very dumb changes, ranging from adding more print commands to clearing DerivedData.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;(This was my biggest roadblock in getting a reliable and robust debugging flow with Claude; please learn from my mistakes).&lt;/strong&gt;&lt;/p&gt;
+
+&lt;h3 id=&quot;launching-the-app-on-simulator-and-reading-the-output&quot;&gt;Launching the app on simulator and reading the output&lt;/h3&gt;
+
+&lt;p&gt;Replace the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;launch&lt;/code&gt; commands from step 2 with any of the below variants depending on your use case.&lt;/p&gt;
+
+&lt;h4 id=&quot;blocking-consoleprint-direct-when-you-know-output-volume-is-reasonable&quot;&gt;Blocking console/print direct (when you know output volume is reasonable)&lt;/h4&gt;
+
+&lt;p&gt;Relevant flags and parameters:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;strong&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;--console-pty&lt;/code&gt;&lt;/strong&gt;: produce console print output.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;--terminate-running-process&lt;/code&gt;&lt;/strong&gt;: as discussed above, ensure the command actually runs.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;UDID&lt;/strong&gt; - the simulator UDID you specified in the build &amp;amp; install commands.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;bundle id&lt;/strong&gt; - bundle id of the target that produces the app binary.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;# Example with simulator UDID and bundle id
+xcrun simctl launch --console-pty --terminate-running-process DB0531E0-B47E-42AC-9AAB-FEB76D3D563A com.twocentstudios.train-timetable
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Note: the flags &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;--stdout --stderr&lt;/code&gt; do not work. Don’t use them. Use &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;--console-pty&lt;/code&gt; instead.&lt;/p&gt;
+
+&lt;h4 id=&quot;blocking-consoleprint-to-file-safer-for-unknown-or-expected-heavy-output&quot;&gt;Blocking console/print to file (safer for unknown or expected heavy output)&lt;/h4&gt;
+
+&lt;p&gt;Relevant flags and parameters:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;strong&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;--console-pty&lt;/code&gt;&lt;/strong&gt;: produce console print output.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;--terminate-running-process&lt;/code&gt;&lt;/strong&gt;: as discussed above, ensure the command actually runs.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;UDID&lt;/strong&gt;: the simulator UDID you specified in the build &amp;amp; install commands.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;bundle id&lt;/strong&gt;: bundle id of the target that produces the app binary.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;output file path&lt;/strong&gt;: the plain text file console output will be written to. Note: I write to a tmp folder within DerivedData to ensure Claude has access to the result without triggering unnecessary permissions dialogs.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;2&amp;gt;&amp;amp;1&lt;/code&gt;&lt;/strong&gt;: ensure stdout &amp;amp; stderr both end up in the file.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;xcrun simctl launch --console-pty --terminate-running-process DB0531E0-B47E-42AC-9AAB-FEB76D3D563A com.twocentstudios.train-timetable &amp;gt; DerivedData/tmp/console.log 2&amp;gt;&amp;amp;1
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;h4 id=&quot;non-blocking-consoleprint&quot;&gt;Non-blocking console/print&lt;/h4&gt;
+
+&lt;p&gt;Non-blocking requires using Claude Code’s &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;run_in_background&lt;/code&gt; parameter on the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Bash&lt;/code&gt; tool. This will produce a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;task_id&lt;/code&gt; that Claude can later use to get the output (from an implicitly created text file) and kill the task.&lt;/p&gt;
+
+&lt;p&gt;After running the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Bash&lt;/code&gt; tool, the prompt will be unblocked and you can ask Claude to monitor the output or ask it do anything else you want.&lt;/p&gt;
+
+&lt;p&gt;The non-blocking flow requires a bit more ceremony; you’ll need to tell Claude when you’re done working with the simulator and it should analyze the results. It usually leaves the background task running (potentially writing log data to the output), so you’ll need to specifically tell it to stop.&lt;/p&gt;
+
+&lt;p&gt;The command itself is the same as the one from &lt;em&gt;Blocking console/print direct&lt;/em&gt;.&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;Bash(
+  command: &quot;xcrun simctl launch --console-pty --terminate-running-process DB0531E0-B47E-42AC-9AAB-FEB76D3D563A com.twocentstudios.train-timetable&quot;,
+  run_in_background: true
+)
+
+Command running in background with ID: b8e2ca5.
+
+# *wait for next user prompt*
+
+TaskOutput(task_id: &quot;b8e2ca5&quot;)
+KillShell(shell_id: &quot;b8e2ca5&quot;)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;h4 id=&quot;non-blocking-loggeroslog&quot;&gt;Non-blocking Logger/OSLog&lt;/h4&gt;
+
+&lt;p&gt;With only its training data, Claude knows how to use &lt;a href=&quot;https://developer.apple.com/documentation/os/logging&quot;&gt;Logging&lt;/a&gt; by importing the OSLog framework. OSLog has strengths and weaknesses compared to console/print logging. You may already be using it in your app. I consider it more of a long term solution you’d add to your codebase alongside each feature and keep it up to date with any changes.&lt;/p&gt;
+
+&lt;p&gt;Giving Claude access to these logs is different from the print/console flow we just discussed.&lt;/p&gt;
+
+&lt;p&gt;The root command is &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;xcrun simctl spawn&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;spawn log stream&lt;/code&gt; only captures logs emitted while it’s running (not before). If you want logs starting from launch, always run it before the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;launch&lt;/code&gt; command.&lt;/p&gt;
+
+&lt;p&gt;Blocking on &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;spawn log stream&lt;/code&gt; doesn’t make sense because you still need to launch the app. You should dispatch it directly to the background as non-blocking.&lt;/p&gt;
+
+&lt;p&gt;Relevant flags and parameters (Claude knows how to adjust these freely):&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;strong&gt;UDID&lt;/strong&gt; - the simulator UDID you specified in the build &amp;amp; install commands.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;--level&lt;/code&gt;&lt;/strong&gt;: matches the log level in your code; &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;debug&lt;/code&gt;, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;info&lt;/code&gt;, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;warning&lt;/code&gt;, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;error&lt;/code&gt;, etc.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;--predicate&lt;/code&gt;&lt;/strong&gt;: filters the firehose output the messages you’re interested in. Lots of options here depending on how you’ve defined &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Logger&lt;/code&gt;s and added log statements in your codebase.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;After &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;spawn log stream&lt;/code&gt; is dispatched to the background, you’ll need to launch the app with the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;launch&lt;/code&gt; command. You can choose a blocking or non-blocking &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;launch&lt;/code&gt; command.&lt;/p&gt;
+
+&lt;p&gt;Note that the raw &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;spawn log stream&lt;/code&gt; command is not actually monitoring the specific app process. You can start this early in your session, cast a wide net, and keep this running through your whole session, asking Claude to filter the relevant time periods from the output. I personally haven’t needed this flow though.&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;Bash(
+  command: &quot;xcrun simctl spawn DB0531E0-B47E-42AC-9AAB-FEB76D3D563A log stream --level=debug --predicate &apos;subsystem == &quot;com.twocentstudios.train-timetable&quot;&apos;)&quot;
+  run_in_background: true
+)
+
+Command running in background with ID: b8e2ca5.
+
+Bash(xcrun simctl launch --terminate-running-process DB0531E0-B47E-42AC-9AAB-FEB76D3D563A com.twocentstudios.train-timetable)
+
+# *blocking prompt until user escapes*
+
+TaskOutput(task_id: &quot;b8e2ca5&quot;)
+KillShell(shell_id: &quot;b8e2ca5&quot;)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;h4 id=&quot;non-blocking-consoleprint--loggeroslog&quot;&gt;Non-blocking console/print &amp;amp; Logger/OSLog&lt;/h4&gt;
+
+&lt;p&gt;You can combine everything above and give Claude access to both console/print output and Logger/OSLog output. The &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;launch&lt;/code&gt; command can be blocking or non-blocking, but the below example is non-blocking.&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;Bash(
+  command: &quot;xcrun simctl spawn DB0531E0-B47E-42AC-9AAB-FEB76D3D563A log stream --level=debug --predicate &apos;subsystem == &quot;com.twocentstudios.train-timetable&quot;&apos;)&quot;
+  run_in_background: true
+) 
+Command running in background with ID: b8e2ca5.
+
+Bash(
+  command: &quot;xcrun simctl launch --console-pty --terminate-running-process DB0531E0-B47E-42AC-9AAB-FEB76D3D563A com.twocentstudios.train-timetable&quot;,
+  run_in_background: true
+)
+Command running in background with ID: a792db1.
+
+# *wait for next user prompt*
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;h2 id=&quot;step-4-controlling--viewing-the-ios-simulator&quot;&gt;Step 4: Controlling &amp;amp; Viewing the iOS simulator&lt;/h2&gt;
+
+&lt;p&gt;Giving Claude eyes and virtual fingers to see and control the iOS simulator is where we start to reach the avant-garde. At the current (end of 2025) model &amp;amp; harness capabilities things start to go off the rails pretty quickly. I wouldn’t expect great results from Claude at tasks related to manipulating the simulator like a human, but in certain scenarios, the benefits outweigh the costs.&lt;/p&gt;
+
+&lt;h3 id=&quot;prerequisites-2&quot;&gt;Prerequisites&lt;/h3&gt;
+
+&lt;h4 id=&quot;axe&quot;&gt;AXe&lt;/h4&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;&lt;a href=&quot;https://github.com/cameroncooke/AXe&quot;&gt;AXe&lt;/a&gt; is a comprehensive CLI tool for interacting with iOS Simulators using Apple’s Accessibility APIs and HID (Human Interface Device) functionality.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Claude can use AXe to manipulate the simulator through taps, swipes, button presses, and keyboard typing.&lt;/p&gt;
+
+&lt;p&gt;Under the hood, AXe uses Facebook’s &lt;a href=&quot;https://github.com/facebook/idb&quot;&gt;idb&lt;/a&gt; CLI.&lt;/p&gt;
+
+&lt;p&gt;Install AXe with Homebrew.&lt;/p&gt;
+
+&lt;h4 id=&quot;image-magick-optional&quot;&gt;Image Magick (optional)&lt;/h4&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;&lt;a href=&quot;https://github.com/ImageMagick/ImageMagick&quot;&gt;ImageMagick&lt;/a&gt;® is a free and open-source software suite, used for editing and manipulating digital images.&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;Claude can use ImageMagick to do some post-processing on screenshots from the simulator.&lt;/p&gt;
+
+&lt;p&gt;Install ImageMagick with Homebrew.&lt;/p&gt;
+
+&lt;h4 id=&quot;ffmpeg-optional&quot;&gt;FFmpeg (optional)&lt;/h4&gt;
+
+&lt;p&gt;Claude can use the venerable &lt;a href=&quot;https://www.ffmpeg.org/&quot;&gt;FFmpeg&lt;/a&gt; CLI for advanced video manipulation use cases. You may not need it but there’s a good chance you already have it.&lt;/p&gt;
+
+&lt;h3 id=&quot;reading-from-the-simulator&quot;&gt;Reading from the simulator&lt;/h3&gt;
+
+&lt;p&gt;In order to navigate the simulator beyond the universal links &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;openurl&lt;/code&gt; use case we detailed above, Claude needs to be able to see the current state of the simulator.&lt;/p&gt;
+
+&lt;p&gt;There are 3 options for this:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;&lt;strong&gt;Accessibility info&lt;/strong&gt; - Claude can read a hierarchical text description of the current screen using accessibility info.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Screenshots&lt;/strong&gt; - Claude can take a screenshot of the simulator and use the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Read&lt;/code&gt; tool to access its multimodal capabilities.&lt;/li&gt;
+  &lt;li&gt;&lt;strong&gt;Video&lt;/strong&gt; - Claude can record a short video capture of the simulator, slice it up into frames, and read a few to assess an animation.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h4 id=&quot;accessibility-info-via-describe-ui&quot;&gt;Accessibility info via &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;describe-ui&lt;/code&gt;&lt;/h4&gt;
+
+&lt;p&gt;The AXe command for getting the accessibility trace is:&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;axe describe-ui --udid SIMULATOR_UDID
+
+  ...
+      {
+        &quot;frame&quot;: {&quot;y&quot;: 82, &quot;x&quot;: 346, &quot;width&quot;: 36, &quot;height&quot;: 36},
+        &quot;AXLabel&quot;: &quot;閉じる&quot;,
+        &quot;type&quot;: &quot;Button&quot;
+      }
+  ...
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;The output is a big JSON array.&lt;/p&gt;
+
+&lt;p&gt;I thought Claude would be better at understanding and navigation with text information than image information, but in practice it almost always ignored my instructions in CLAUDE.md to use &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;describe-ui&lt;/code&gt; before the screenshot flow. Perhaps there’s something in the system prompt or it’s less efficient to hunt through all the text.&lt;/p&gt;
+
+&lt;p&gt;I also immediately ran into a &lt;a href=&quot;https://github.com/cameroncooke/AXe/issues/8&quot;&gt;reported issue&lt;/a&gt; in AXe and idb where &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;describe-ui&lt;/code&gt; does not print tab or toolbar info, perhaps only from iOS 26. This makes it very difficult to deterministically do any sort of navigation from the root in many apps.&lt;/p&gt;
+
+&lt;p&gt;All this is to say that, at the moment, it’s more reliable to use screenshots.&lt;/p&gt;
+
+&lt;h4 id=&quot;screenshots&quot;&gt;Screenshots&lt;/h4&gt;
+
+&lt;p&gt;Claude can use &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;simctl&lt;/code&gt; to get screenshots.&lt;/p&gt;
+
+&lt;p&gt;Like the other commands, I prefer to write to a tmp folder within DerivedData.&lt;/p&gt;
+
+&lt;p&gt;Screenshots for most simulators are taken at &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;3x&lt;/code&gt; scale, but input taps and swipes are at &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;1x&lt;/code&gt;. For the dual purposes of 1. reducing the amount of calculation required to translate screen position to next tap position and 2. reducing the amount of image data that needs to be sent to and processed by Claude, I automatically resize all screenshots to &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;1x&lt;/code&gt; via &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;magick&lt;/code&gt;.&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;xcrun simctl io DB0531E0-B47E-42AC-9AAB-FEB76D3D563A screenshot DerivedData/tmp/screen.png &amp;amp;&amp;amp; magick DerivedData/tmp/screen.png -resize 33.333% DerivedData/tmp/screen_1x.png
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;h4 id=&quot;video&quot;&gt;Video&lt;/h4&gt;
+
+&lt;p&gt;Reading live or even recorded video is currently beyond Opus 4.5’s capabilities. I’m guessing this will be a supported flow sometime in 2026, but until then analyzing video output of the simulator is still at proof-of-concept maturity.&lt;/p&gt;
+
+&lt;p&gt;While I was debugging a tricky animation, I gave Claude some leash to test whether it could:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;start recording a short clip immediately before a tap.&lt;/li&gt;
+  &lt;li&gt;stop the recording after 2 seconds.&lt;/li&gt;
+  &lt;li&gt;use FFmpeg to grab 5 or 6 frames spaced out across the video.&lt;/li&gt;
+  &lt;li&gt;read the frames and analyze the motion.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;It sort of worked? Not really? If you have a use case, you can try experimenting more with this flow. For now I’d consider the actual animation analysis a human-only endeavor. But Claude can still help get the simulator staged up to the start screen.&lt;/p&gt;
+
+&lt;p&gt;I believe I used this AXe command as a Claude Code background task:&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;axe record-video --udid DB0531E0-B47E-42AC-9AAB-FEB76D3D563A --fps 30 --output DerivedData/tmp/recording.mp4
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;h3 id=&quot;manipulating-the-simulator-with-taps-and-swipes&quot;&gt;Manipulating the simulator with taps and swipes&lt;/h3&gt;
+
+&lt;p&gt;AXe has a variety of tap and gesture commands. Claude can tap on points or accessibility labels.&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;# Tap at logical coordinates (use frame center from describe-ui)&lt;/span&gt;
+axe tap -x 201 -y 297 --udid DB0531E0-B47E-42AC-9AAB-FEB76D3D563A --post-delay 0.5
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Without additional guidance, &lt;strong&gt;Claude gets confused about which scroll command maps to what logical direction&lt;/strong&gt;.&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;# Scroll (named by finger direction, not content direction)&lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;# scroll-up = finger UP = content UP = see content BELOW = triggers .onScrollDown&lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;# scroll-down = finger DOWN = content DOWN = see content ABOVE&lt;/span&gt;
+axe gesture scroll-down --udid DB0531E0-B47E-42AC-9AAB-FEB76D3D563A --post-delay 0.5
+axe gesture scroll-up --udid DB0531E0-B47E-42AC-9AAB-FEB76D3D563A --post-delay 0.5
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;It’s useful to note the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;swipe-from-left-edge&lt;/code&gt; gesture because it’s the quickest way for Claude to pop back a level in a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;NavigationStack&lt;/code&gt;.&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;# Edge swipes (for back navigation, etc.)&lt;/span&gt;
+axe gesture swipe-from-left-edge --udid DB0531E0-B47E-42AC-9AAB-FEB76D3D563A --post-delay 0.5
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;h3 id=&quot;strategies-for-increasing-tap-accuracy&quot;&gt;Strategies for increasing tap accuracy&lt;/h3&gt;
+
+&lt;p&gt;The most significant source of indeterministic behavior is in Claude’s ability to accurately measure of coordinates on screen. In other words, it can’t read an image and always find the center point of a button. This means there is plenty of opportunity for situations like:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Claude reads a screen and wants to tap a button.&lt;/li&gt;
+  &lt;li&gt;Claude makes a bad guess and taps above the button.&lt;/li&gt;
+  &lt;li&gt;Claude reads the screen again. There was no change.&lt;/li&gt;
+  &lt;li&gt;Claude makes another bad guess and taps below the button.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Claude’s only feedback about whether its tap was successful is based on its next screenshot. This can lead to situations where it gets irrecoverably lost while navigating your app:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Claude reads a screen and wants to tap a button.&lt;/li&gt;
+  &lt;li&gt;Claude makes a bad guess and taps above the button, hitting a completely different button.&lt;/li&gt;
+  &lt;li&gt;Claude reads the screen again.&lt;/li&gt;
+  &lt;li&gt;Claude sees it’s on a different screen than expected and becomes confused.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;I came up with an experimental flow to try to improve Claude’s accuracy, but:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;It slows down the entire process by 2x.&lt;/li&gt;
+  &lt;li&gt;By the time Claude realizes it needs to use the experimental flow, it’s already too far lost to recover.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Regardless, my flow, also using ImageMagick, is to make Claude draw a red circle on a screenshot in its targeted tap location before actually performing the tap:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Take screenshot and resize to 1x (so pixels = points):
+    &lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;xcrun simctl io DB0531E0-B47E-42AC-9AAB-FEB76D3D563A screenshot DerivedData/tmp/screen.png &lt;span class=&quot;o&quot;&gt;&amp;amp;&amp;amp;&lt;/span&gt; magick DerivedData/tmp/screen.png -resize 33.333% DerivedData/tmp/screen_1x.png
+&lt;/code&gt;&lt;/pre&gt;
+    &lt;/div&gt;
+  &lt;/li&gt;
+  &lt;li&gt;Read the 1x image and estimate target element center in points&lt;/li&gt;
+  &lt;li&gt;Verify guess by drawing a red box at those coordinates:
+    &lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;magick DerivedData/tmp/screen_1x.png -fill none -stroke red -strokewidth 2 -draw &lt;span class=&quot;s2&quot;&gt;&quot;rectangle &lt;/span&gt;&lt;span class=&quot;k&quot;&gt;$((&lt;/span&gt;X-30&lt;span class=&quot;k&quot;&gt;))&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;$((&lt;/span&gt;Y-30&lt;span class=&quot;k&quot;&gt;))&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt; &lt;/span&gt;&lt;span class=&quot;k&quot;&gt;$((&lt;/span&gt;X+30&lt;span class=&quot;k&quot;&gt;))&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;$((&lt;/span&gt;Y+30&lt;span class=&quot;k&quot;&gt;))&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt; DerivedData/tmp/screen_marked.png
+&lt;/code&gt;&lt;/pre&gt;
+    &lt;/div&gt;
+  &lt;/li&gt;
+  &lt;li&gt;Read marked image to check if box is on target&lt;/li&gt;
+  &lt;li&gt;If missed, adjust coordinates and repeat from step 3&lt;/li&gt;
+  &lt;li&gt;If correct, tap at the verified coordinates&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;div class=&quot;caption-wrapper&quot;&gt;&lt;img class=&quot;caption&quot; src=&quot;/images/closing-loop-cc-tap-accuracy.jpg&quot; width=&quot;&quot; height=&quot;400&quot; alt=&quot;Tap accuracy verification flow - original screenshot, marked target, and result after tap&quot; title=&quot;Tap accuracy verification flow - original screenshot, marked target, and result after tap&quot; /&gt;&lt;div class=&quot;caption-text&quot;&gt;Tap accuracy verification flow - original screenshot, marked target, and result after tap&lt;/div&gt;&lt;/div&gt;
+
+&lt;h3 id=&quot;putting-it-all-together&quot;&gt;Putting it all together&lt;/h3&gt;
+
+&lt;p&gt;So far in practice, I’ve used this capability alongside universal links to fix and verify simple visual bugs. I have Claude craft input to reproduce the error and find the screen where it occurs, take a “before” screenshot, implement the fix, build/install/launch, then find the same screen, verify the fix, and take an “after” screenshot.&lt;/p&gt;
+
+&lt;p&gt;It takes way longer for Claude to do than me, but it’s mostly tedious work, and I’m usually in another tab working on a plan with another Claude. When I come back and see the before and after screenshots alongside the code change, I can feel confident in Claude’s work.&lt;/p&gt;
+
+&lt;h2 id=&quot;step-5-building-installing-launching-reading-output-on-a-physical-device&quot;&gt;Step 5: Building, Installing, Launching, Reading Output on a Physical Device&lt;/h2&gt;
+
+&lt;p&gt;Finally, for those Apple SDKs that only work on device, for ensuring observed buggy behavior isn’t just a simulator quirk, or just to get a more realistic look at our apps in context, we can implement steps 1, 2, and 3 on a physical device. Unfortunately, as far as I can tell, there’s no way to control a physical device via CLI tool, so step 4 is out reach for now.&lt;/p&gt;
+
+&lt;p&gt;However, building, installing, launching, and logging can still save some time and annoyance during iterative debugging sessions. It’s especially useful to have Claude help analyze logs for (underdocumented) frameworks like Core Location that behave wildly different on a real device than on the simulator.&lt;/p&gt;
+
+&lt;p&gt;Below is a collection of tested CLI commands for doing all the above tasks on a physical device.&lt;/p&gt;
+
+&lt;p&gt;Note that in my testing all the relevant commands below work equally for devices on the same network and devices connected directly to your Mac via USB.&lt;/p&gt;
+
+&lt;h3 id=&quot;prerequisites-3&quot;&gt;Prerequisites&lt;/h3&gt;
+
+&lt;h4 id=&quot;get-devices&quot;&gt;Get devices&lt;/h4&gt;
+
+&lt;p&gt;The device &lt;strong&gt;Name&lt;/strong&gt; and &lt;strong&gt;Identifier&lt;/strong&gt; are both important for on-device debugging. &lt;strong&gt;State&lt;/strong&gt; will be &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;available&lt;/code&gt; when Wi-Fi debugging is available, and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;connected&lt;/code&gt; when directly connect via USB.&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;# Get all connected devices&lt;/span&gt;
+xcrun devicectl list devices
+
+Name          Hostname                      Identifier                             State                Model                                
+-----------   ---------------------------   ------------------------------------   ------------------   -------------------------------------
+CT&lt;span class=&quot;s1&quot;&gt;&apos;s iPhone   CTs-iPhone.coredevice.local   ABCDEF01-1111-5555-AAAA-F7D81A900001   connected (no DDI)   iPhone 14 Pro (iPhone15,2)           
+CT’s iPad     CTs-iPad.coredevice.local     ABCDEF01-2222-6666-BBBB-F44A19F00002   available            iPad Pro (11-inch) (iPad8,1)         
+CT’s iPad     CTs-iPad-1.coredevice.local   ABCDEF01-3333-7777-CCCC-D33889000003   unavailable          iPad mini (5th generation) (iPad11,1)
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Some example use cases for parsing out values in one go:&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;# Get the Identifier of the first accessible iPhone (WiFi or USB)
+xcrun devicectl list devices | grep &quot;iPhone&quot; | grep -E &quot;(available|connected)&quot; | head -1 | grep -Eo &apos;[A-F0-9]{8}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{12}&apos;
+
+ABCDEF01-1111-5555-AAAA-F7D81A900001
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;# Get the name of the first accessible iPhone (WiFi or USB)
+xcrun devicectl list devices | grep &quot;iPhone&quot; | grep -E &quot;(available|connected)&quot; | head -1 | awk -F&apos;  +&apos; &apos;{print $1}&apos;
+
+CT&apos;s iPhone
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;h3 id=&quot;build-for-device&quot;&gt;Build for device&lt;/h3&gt;
+
+&lt;p&gt;Build commands are the same as those for the simulator, except &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;platform=iphoneos&lt;/code&gt;/&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;platform=iOS&lt;/code&gt; instead of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;platform=iphonesimulator&lt;/code&gt;/&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;platform=iOS Simulator&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;Use the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;name&lt;/code&gt; or &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;id&lt;/code&gt; of your target device from the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;list devices&lt;/code&gt; command.&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;# Using device name
+xcodebuild -project train-timetable.xcodeproj -scheme &quot;train-timetable&quot; -destination &quot;platform=iphoneos,name=CT&apos;s iPhone&quot; -derivedDataPath DerivedData build 2&amp;gt;&amp;amp;1 | xcsift -w
+
+# Using device ID
+xcodebuild -project train-timetable.xcodeproj -scheme &quot;train-timetable&quot; -destination &quot;platform=iphoneos,id=E7E3E660-9E7A-5814-8BBB-F7D81A965CEB&quot; -derivedDataPath DerivedData build 2&amp;gt;&amp;amp;1 | xcsift -w
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;h3 id=&quot;install-on-device&quot;&gt;Install on device&lt;/h3&gt;
+
+&lt;p&gt;Install commands use &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;devicectl&lt;/code&gt; but are the similar to those for the simulator, except &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;--device&lt;/code&gt; should use the device ID, and the build product directory should use &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Debug-iphoneos&lt;/code&gt; instead of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Debug-iphonesimulator&lt;/code&gt;.&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;xcrun devicectl device install app --device E7E3E660-9E7A-5814-8BBB-F7D81A965CEB &quot;DerivedData/Build/Products/Debug-iphoneos/Eki Bright.app&quot;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;h3 id=&quot;launch-on-device&quot;&gt;Launch on device&lt;/h3&gt;
+
+&lt;p&gt;The vanilla launch command is below. I again recommend using &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;--terminate-existing&lt;/code&gt;, the device equivalent of the simulator’s &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;--terminate-running-process&lt;/code&gt;.&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;xcrun devicectl device process launch --device E7E3E660-9E7A-5814-8BBB-F7D81A965CEB --console --terminate-existing com.twocentstudios.train-timetable
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;h3 id=&quot;blocking-consoleprint-capture-on-device&quot;&gt;Blocking console/print capture on device&lt;/h3&gt;
+
+&lt;p&gt;For console/print capture, use the launch command above with the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;--console&lt;/code&gt; flag. It works over USB and Wi-Fi.&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;xcrun devicectl device process launch --device E7E3E660-9E7A-5814-8BBB-F7D81A965CEB --console --terminate-existing com.twocentstudios.train-timetable
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;h3 id=&quot;non-blocking-consoleprint-capture-on-device&quot;&gt;Non-blocking console/print capture on device&lt;/h3&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;# Use run_in_background: true on Bash tool
+# Works over USB and WiFi
+Bash(
+  command: &quot;xcrun devicectl device process launch --device E7E3E660-9E7A-5814-8BBB-F7D81A965CEB --console --terminate-existing com.twocentstudios.train-timetable&quot;,
+  run_in_background: true
+)
+
+Command running in background with ID: b8e2ca5.
+
+# *wait for next user prompt*
+
+TaskOutput(task_id: &quot;b8e2ca5&quot;)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;h3 id=&quot;loggeroslog-capture-on-device-requires-manual-sudo&quot;&gt;Logger/OSLog capture on device (requires manual sudo)&lt;/h3&gt;
+
+&lt;p&gt;A downside of OSLog is that it requires &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;sudo&lt;/code&gt; and Claude Code can’t use sudo commands directly. There are presumably some ways to give Claude this capability in more a dangerous fashion. But a safer workaround for now is for you, the human, to run the below commands in another terminal tab. Claude can give you the full command to copy/paste into the other terminal.&lt;/p&gt;
+
+&lt;p&gt;These commands will produce groups of files that Claude can read.&lt;/p&gt;
+
+&lt;p&gt;Note that the log capture is of &lt;strong&gt;everything on the device&lt;/strong&gt;, and can quickly balloon to gigabytes of storage, so you’ll want to limit the time or size:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;time-based filtering (&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;--last 2m&lt;/code&gt;, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;--start&lt;/code&gt;, etc.)&lt;/li&gt;
+  &lt;li&gt;size-based limits (&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;--size&lt;/code&gt;)&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Content filtering like &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;--predicate&lt;/code&gt; is not supported. Claude will do this while reading/analyzing with &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;log show --predicate ...&lt;/code&gt;&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;# Human user must run these commands in another terminal tab (Claude Code can&apos;t provide sudo password)
+# --device-name works
+sudo log collect --device-name &quot;CT&apos;s iPhone&quot; --last 2m --output DerivedData/tmp/device-logs.logarchive
+
+# --device-udid does not work - `log: failed to create archive: Device not configured (6)`
+# sudo log collect --device-udid 12345678-9E7A-5814-8BBB-0123456789EAB --last 2m --output DerivedData/tmp/device-logs.logarchive
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;# Then analyze with log show (Claude Code can do this)
+log show DerivedData/tmp/device-logs.logarchive --predicate &apos;subsystem == &quot;com.twocentstudios.train-timetable&quot;&apos;
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;h2 id=&quot;final-thoughts&quot;&gt;Final thoughts&lt;/h2&gt;
+
+&lt;h3 id=&quot;how-to-parameterize-names-ids-etc-for-these-commands&quot;&gt;How to parameterize names, ids, etc. for these commands&lt;/h3&gt;
+
+&lt;p&gt;So far, I’ve just been hardcoding these commands with my favorite simulator UDID and project path into my CLAUDE.md. When a new version of Xcode comes out I ask Claude to update all mentions of the UDID to the most recent simulator version and it only takes a minute. Hardcoding these values leaves the least room for hallucination. When running these commands dozens of times a day, you really want consistency.&lt;/p&gt;
+
+&lt;p&gt;Other ways to handle this would be:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;set environment variables at some level.&lt;/li&gt;
+  &lt;li&gt;add a start hook to have Claude fill in the environment variables fresh for each session.&lt;/li&gt;
+  &lt;li&gt;set up another layer of orchestration that handles the pool of simulators and dispatches an ID to each new Claude instance that requests one.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;These are all beyond the scope of this post. If you work primarily on one project with others, you probably already have some tooling for specifying the Xcode version, etc.&lt;/p&gt;
+
+&lt;h3 id=&quot;why-not-include-traditional-testing&quot;&gt;Why not include traditional testing?&lt;/h3&gt;
+
+&lt;p&gt;Arguably, TDD was the original “closing the loop” in software development. TDD has never caught on in the iOS world.&lt;/p&gt;
+
+&lt;p&gt;I dabbled with an actual Swift Testing-based testing flow for another &lt;a href=&quot;/2025/12/25/shinkansen-live-developing-the-app-for-ios/#ocr-and-parsing-the-ticket-image&quot;&gt;recent project&lt;/a&gt;, and even wrote about another experimental system a few months ago in &lt;a href=&quot;/2025/07/13/giving-claude-code-eyes-to-see-your-swiftui-views/&quot;&gt;Giving Claude Code Eyes to See Your SwiftUI Views&lt;/a&gt; that used snapshot testing. What I found was although tests are great for verifying correct behavior over the long term, in the short term they are super slow on iOS:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Installing and launching requires instantiating a brand new simulator for each run (e.g. &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Clone 1&lt;/code&gt;), which takes a long time.&lt;/li&gt;
+  &lt;li&gt;All builds are clean builds (this could have just been a fluke in my setup at the time though).&lt;/li&gt;
+  &lt;li&gt;Swift Testing does not output failures in a way that Claude can read and iterate on (again, potentially solvable).&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Admittedly, I didn’t spend as much time debugging these flows. Hopefully someone else will fill in the blanks for testing and write this guide.&lt;/p&gt;
+
+&lt;h3 id=&quot;dont-sleep-on-simctl&quot;&gt;Don’t sleep on &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;simctl&lt;/code&gt;&lt;/h3&gt;
+
+&lt;p&gt;The &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;simctl&lt;/code&gt; CLI we’ve used throughout this post has a ton of other abilities that Claude can use to make our lives easier. This includes adding images to Photos, changing the system time, changing the system language, resetting privacy, resetting the keychain, and many more.&lt;/p&gt;
+
+&lt;p&gt;Ask Claude to configure your simulator on the fly instead of clicking through settings with your mouse.&lt;/p&gt;
+
+&lt;h3 id=&quot;what-does-the-future-hold&quot;&gt;What does the future hold?&lt;/h3&gt;
+
+&lt;p&gt;I’m honestly not sure how long the hard-won knowledge in this post will be relevant, given the pace of model &amp;amp; harness capabilities. Peter Steinberger &lt;a href=&quot;https://steipete.me/posts/2025/shipping-at-inference-speed&quot;&gt;already says&lt;/a&gt; Codex is good enough and doesn’t need any additional guidance about build commands or working with the simulator.&lt;/p&gt;
+
+&lt;p&gt;I can definitely see a world where Claude Code has a live feed of the simulator output it can process and react to at 60 fps, tapping and swiping with full accuracy. This is probably what’s missing in fully closing the development loop on iOS. Doing the same for a real device hopefully isn’t close behind.&lt;/p&gt;
+
+&lt;p&gt;At that point though, I’m not sure what else about development will have changed.&lt;/p&gt;
+
+&lt;h3 id=&quot;going-forward&quot;&gt;Going forward&lt;/h3&gt;
+
+&lt;p&gt;Most of the material in this guide has been slowly compiled over the month in my various CLAUDE.md files. It was great getting a chance to formalize it even if I can’t make a quickly installable Plugin or Skill to share (hopefully you understand why after reading the post). I’m looking forward to seeing how far I can take each of these steps in the near future.&lt;/p&gt;
+
+&lt;h3 id=&quot;corrections&quot;&gt;Corrections&lt;/h3&gt;
+
+&lt;p&gt;Please reach out if you find any corrections or can contribute any additional knowledge or edge cases.&lt;/p&gt;
+
+</description>
+        <pubDate>Sat, 27 Dec 2025 15:37:01 -0600</pubDate>
+        <link>https://twocentstudios.com/2025/12/27/closing-the-loop-on-ios-with-claude-code/</link>
+        <guid isPermaLink="true">https://twocentstudios.com/2025/12/27/closing-the-loop-on-ios-with-claude-code/</guid>
+        
+        <category>apple</category>
+        
+        <category>ios</category>
+        
+        <category>claudecode</category>
+        
+        
+      </item>
     
       <item>
         <title>Shinkansen Live - Developing the App for iOS</title>
@@ -2917,501 +3669,6 @@ deploy: ## Deploy main.py, secrets.py, and bm8563_rtc.py to M5Paper (full deploy
         <category>sqlite</category>
         
         <category>debugging</category>
-        
-        
-      </item>
-    
-      <item>
-        <title>3 Swift Concurrency Challenges from the Last 2 Weeks</title>
-        <description>&lt;p&gt;I started my Apple platforms development journey a year before &lt;a href=&quot;https://developer.apple.com/documentation/dispatch&quot;&gt;Grand Central Dispatch&lt;/a&gt; was released with iOS 4. I’ve lived through codebase migrations to &lt;a href=&quot;https://nshipster.com/nsoperation/&quot;&gt;NSOperation&lt;/a&gt;. Then through the slew of FRP frameworks (of which I consider a concurrency solution): &lt;a href=&quot;https://github.com/ReactiveCocoa/ReactiveCocoa&quot;&gt;ReactiveCocoa&lt;/a&gt;, &lt;a href=&quot;https://github.com/ReactiveCocoa/ReactiveSwift&quot;&gt;ReactiveSwift&lt;/a&gt;, &lt;a href=&quot;https://github.com/ReactiveX/RxSwift&quot;&gt;RxSwift&lt;/a&gt;, and finally &lt;a href=&quot;https://developer.apple.com/documentation/combine&quot;&gt;Combine&lt;/a&gt;.&lt;/p&gt;
-
-&lt;p&gt;My strategy for learning all these paradigms was best described as osmosis while encountering and solving real problems in codebases. Of course, you have to spend time setting breakpoints and patiently stepping through with a debugger to see where all the thread hops are happening. Eventually, I reached the point where I could read code and predict which threads each section would run on. I had 80% of the operators memorized and knew exactly where in the docs to look for the remaining 20%.&lt;/p&gt;
-
-&lt;p&gt;Years in, that kind of confidence has eluded me so far with Swift Concurrency. I cannot yet read a snippet of code and predict what the call stack will look like. I haven’t memorized enough of the syntax to formulate solutions in my head and write it fluently. I don’t have a go-to location in the docs to find the primitive at the tip of my tongue.&lt;/p&gt;
-
-&lt;p&gt;I ask myself, why is my Swift Concurrency upskilling story so different?&lt;/p&gt;
-
-&lt;p&gt;Is the difference that GCD, NSOperation, and the reactive frameworks basically came out of the gate fully baked? Their paradigms may have merits and demerits, but after their first releases, anything new was additive or syntactic sugar. They were born as ugly as they’d always be.&lt;/p&gt;
-
-&lt;p&gt;Is it that my confidence was actually unearned and I never &lt;em&gt;really&lt;/em&gt; understood what was happening in my code? The kind of bugs that Swift Concurrency aims to solve are often so rare that you can go a whole career without being able to recognize the symptoms.&lt;/p&gt;
-
-&lt;p&gt;Is it that Swift Concurrency promises a higher level of abstraction (isolation domains instead of threads), but is so leaky that the programmer now has to understand both the abstraction and the paradigm it’s abstracting?&lt;/p&gt;
-
-&lt;p&gt;With that preface, I want to look at a few examples of Swift Concurrency challenges I’ve encountered recently. Let’s see if these shed any light on why I’m finding it so hard to develop intuition.&lt;/p&gt;
-
-&lt;p&gt;Unlike most of my posts (I hope), these examples are unsolved problems with likely broken code.&lt;/p&gt;
-
-&lt;h2 id=&quot;1-unnotificationcenter&quot;&gt;1. UNNotificationCenter&lt;/h2&gt;
-
-&lt;p&gt;I implemented push notifications in &lt;a href=&quot;/2025/07/25/reintroducing-technicolor-binge-watch-with-friends-over-space-and-time/&quot;&gt;Technicolor&lt;/a&gt;. I already had an overall architecture I was happy with, but elegantly massaging push notification support into it took some effort. I finally ended up with an implementation I thought I understood that still properly handled the multiple delegate callback points across &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;UIApplicationDelegate&lt;/code&gt; via &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;@UIApplicationDelegateAdaptor&lt;/code&gt; and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;UNNotificationCenter&lt;/code&gt;.&lt;/p&gt;
-
-&lt;p&gt;Besides the push token registration and user permissions, the key functionality of my push notifications wrapper client is to open the screen of the app that corresponds with the type of push notification the user tapped.&lt;/p&gt;
-
-&lt;p&gt;As far as I can tell, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;UNNotificationCenter&lt;/code&gt; has no documented concurrency story. Each developer that sets out to use the framework has to derive what thread each delegate method is called on through trial and error on a real device in production by tapping production push notifications. We haven’t even started talking about Swift Concurrency yet.&lt;/p&gt;
-
-&lt;p&gt;To bring &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;User Notifications&lt;/code&gt; framework into the concurrency world, each developer needs to start from zero, with zero guarantees and zero support from Apple.&lt;/p&gt;
-
-&lt;p&gt;So I started with this (simplified) implementation:&lt;/p&gt;
-
-&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;// Version 1&lt;/span&gt;
-&lt;span class=&quot;kd&quot;&gt;final&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;PushNotificationDelegateProxy&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;NSObject&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;UNUserNotificationCenterDelegate&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;@unchecked&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Sendable&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;kd&quot;&gt;private&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;notificationTapHandler&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;((&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;PushNotificationPayload&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Void&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)?&lt;/span&gt;
-
-    &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;setNotificationTapHandler&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;_&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;handler&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;@escaping&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;PushNotificationPayload&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Void&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-        &lt;span class=&quot;n&quot;&gt;notificationTapHandler&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;handler&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-
-    &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;userNotificationCenter&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;_&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;center&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;UNUserNotificationCenter&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;didReceive&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;response&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;UNNotificationResponse&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;as&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ync&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;userInfo&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;response&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;notification&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;request&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;content&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;userInfo&lt;/span&gt;
-
-        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;payload&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// Decode payload&lt;/span&gt;
-        &lt;span class=&quot;nf&quot;&gt;notificationTapHandler&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;payload&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-
-&lt;span class=&quot;kd&quot;&gt;@MainActor&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;@Observable&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;final&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;PushNotificationSettingsStore&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Identifiable&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;kd&quot;&gt;@ObservationIgnored&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;@Dependency(\.pushNotificationClient)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;pushNotificationClient&lt;/span&gt;
-
-    &lt;span class=&quot;nf&quot;&gt;init&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-        &lt;span class=&quot;n&quot;&gt;pushNotificationClient&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;setDelegate&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
-
-        &lt;span class=&quot;nf&quot;&gt;conditionallyRegisterForRemoteNotifications&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
-
-        &lt;span class=&quot;c1&quot;&gt;// Set the notification tap handler&lt;/span&gt;
-        &lt;span class=&quot;n&quot;&gt;pushNotificationClient&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;setNotificationTapHandler&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;weak&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;payload&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt;
-            &lt;span class=&quot;kt&quot;&gt;Task&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;@MainActor&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt;
-                &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;actions&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;notificationReceived&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;payload&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-            &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;In my initial understanding, no matter what thread &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;userNotificationCenter(didReceive:)&lt;/code&gt; called the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;notificationTapHandler&lt;/code&gt; closure, inside it the closure &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;notificationReceived(payload)&lt;/code&gt; would be called on the main thread and could do any UI operations it needed to.&lt;/p&gt;
-
-&lt;p&gt;From what I remember, I confirmed this as working during debug on device. When I was running in production on TestFlight it crashed when I opened a push notification.&lt;/p&gt;
-
-&lt;p&gt;Still unsure as to why (was it that &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;@MainActor&lt;/code&gt;-isolated &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;self&lt;/code&gt; was captured inside a non-isolated closure), I added some code that, although inelegant, would surely fix the problem:&lt;/p&gt;
-
-&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;// Version 2&lt;/span&gt;
-&lt;span class=&quot;kd&quot;&gt;final&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;PushNotificationDelegateProxy&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;NSObject&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;UNUserNotificationCenterDelegate&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;@unchecked&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Sendable&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;kd&quot;&gt;private&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;notificationTapHandler&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;((&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;PushNotificationPayload&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Void&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)?&lt;/span&gt;
-
-    &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;setNotificationTapHandler&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;_&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;handler&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;@escaping&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;PushNotificationPayload&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Void&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-        &lt;span class=&quot;n&quot;&gt;notificationTapHandler&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;handler&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-
-    &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;userNotificationCenter&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;_&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;center&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;UNUserNotificationCenter&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;didReceive&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;response&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;UNNotificationResponse&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;as&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ync&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;userInfo&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;response&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;notification&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;request&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;content&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;userInfo&lt;/span&gt;
-
-        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;payload&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// Decode payload&lt;/span&gt;
-        &lt;span class=&quot;n&quot;&gt;await&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;MainActor&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;run&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-            &lt;span class=&quot;nf&quot;&gt;notificationTapHandler&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;payload&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;Just sprinkle in &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;MainActor.run&lt;/code&gt; everywhere, right? Just like back in the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;DispatchQueue.main&lt;/code&gt; days.&lt;/p&gt;
-
-&lt;p&gt;This also crashed (every time) in production, with the following stack trace:&lt;/p&gt;
-
-&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;Triggered by Thread:  5
-
-Last Exception Backtrace:
-0   CoreFoundation                	0x184a5721c __exceptionPreprocess + 164 (NSException.m:249)
-1   libobjc.A.dylib               	0x181ef1abc objc_exception_throw + 88 (objc-exception.mm:356)
-2   Foundation                    	0x183d55670 -[NSAssertionHandler handleFailureInMethod:object:file:lineNumber:description:] + 288 (NSException.m:252)
-3   UIKitCore                     	0x1883ad4e8 -[UIApplication _performBlockAfterCATransactionCommitSynchronizes:] + 276 (UIApplication.m:3408)
-4   UIKitCore                     	0x1883bdecc -[UIApplication _updateStateRestorationArchiveForBackgroundEvent:saveState:exitIfCouldNotRestoreState:updateSnapshot:windowScene:] + 528 (UIApplication.m:12129)
-5   UIKitCore                     	0x1883be278 -[UIApplication _updateSnapshotAndStateRestorationWithAction:windowScene:] + 144 (UIApplication.m:12174)
-6   technicolortv                 	0x1027d6670 @objc closure #1 in PushNotificationDelegateProxy.userNotificationCenter(_:didReceive:) + 80 (/&amp;lt;compiler-generated&amp;gt;:0)
-// ...
-12  libswift_Concurrency.dylib    	0x190521241 completeTaskWithClosure(swift::AsyncContext*, swift::SwiftError*) + 1 (Task.cpp:537)
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;State restoration somehow got triggered off the main thread? How? I guess I could understand if the problem were that &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;notificationTapHandler&lt;/code&gt; is unsafe to be passed between isolation domains. But that’s not what the crash is saying is it?&lt;/p&gt;
-
-&lt;p&gt;Let’s push the isolation annotations even further:&lt;/p&gt;
-
-&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;extension&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;UNUserNotificationCenter&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;@retroactive&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;@unchecked&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Sendable&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{}&lt;/span&gt;
-&lt;span class=&quot;kd&quot;&gt;extension&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;UNNotificationResponse&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;@retroactive&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;@unchecked&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Sendable&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{}&lt;/span&gt;
-
-&lt;span class=&quot;kd&quot;&gt;final&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;PushNotificationDelegateProxy&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;NSObject&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;UNUserNotificationCenterDelegate&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;@unchecked&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Sendable&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;kd&quot;&gt;private&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;notificationTapHandler&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kd&quot;&gt;@MainActor&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;PushNotificationPayload&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Void&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)?&lt;/span&gt;
-
-    &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;setNotificationTapHandler&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;_&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;handler&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;@escaping&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;@MainActor&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;PushNotificationPayload&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Void&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-        &lt;span class=&quot;n&quot;&gt;notificationTapHandler&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;handler&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-
-    &lt;span class=&quot;kd&quot;&gt;@MainActor&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;userNotificationCenter&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;_&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;center&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;UNUserNotificationCenter&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;didReceive&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;response&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;UNNotificationResponse&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;as&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ync&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;userInfo&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;response&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;notification&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;request&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;content&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;userInfo&lt;/span&gt;
-
-        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;payload&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// Decode payload&lt;/span&gt;
-        &lt;span class=&quot;nf&quot;&gt;notificationTapHandler&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;payload&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;Let’s try to force &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;userNotificationCenter(didReceive:)&lt;/code&gt; to be called on the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;@MainActor&lt;/code&gt; by lying to the compiler in a bunch of places about sendability.&lt;/p&gt;
-
-&lt;p&gt;As far as I can tell, this no longer crashes although I haven’t had time to thoroughly test it (since it requires multiple deployments to Test Flight and review cycles to extensively QA).&lt;/p&gt;
-
-&lt;p&gt;From this whole weeks-long process, I’ve learned essentially nothing about the proper usage of Swift Concurrency, my mental model is less well-formed than it used to be, and I still have a lingering problem that I cannot practically devote enough time to comprehensively solve right now.&lt;/p&gt;
-
-&lt;p&gt;Presumably no one at Apple is working on the User Notifications framework anymore. Nothing is being added to it. No one is giving it concurrency support. No one &lt;em&gt;has&lt;/em&gt; (over the past decade) or &lt;em&gt;will&lt;/em&gt; document its concurrency story. The best we have is a &lt;a href=&quot;https://stackoverflow.com/questions/73750724/how-can-usernotificationcenter-didreceive-cause-a-crash-even-with-nothing-in&quot;&gt;Stack Overflow post&lt;/a&gt; with no unanimous best practice and no solution.&lt;/p&gt;
-
-&lt;p&gt;&lt;strong&gt;Update 2025/08/18&lt;/strong&gt;&lt;/p&gt;
-
-&lt;p&gt;&lt;a href=&quot;https://mastodon.social/@auramagi/&quot;&gt;Mike Apurin&lt;/a&gt; solved the underlying issue (the fix is the same). From the stack trace, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;completeTaskWithClosure(swift::AsyncContext*, swift::SwiftError*)&lt;/code&gt; is the closure automatically created and called by Swift at the end of the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;async&lt;/code&gt; version of the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;userNotificationCenter(_:didReceive:)&lt;/code&gt; function. Although it’s not documented, the crash leads me to believe this closure must be called on the main thread.&lt;/p&gt;
-
-&lt;p&gt;We have no direct control over what actor the closure runs on; it’s presumably whatever actor the function is isolated to. This means that we can only:&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;Add &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;@MainActor&lt;/code&gt; to the Delegate class.&lt;/li&gt;
-  &lt;li&gt;Add &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;@MainActor&lt;/code&gt; to the function. (the fix we used in the post)&lt;/li&gt;
-  &lt;li&gt;Use the non-async version of the function, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;userNotificationCenter(_:didReceive:withCompletionHandler:)&lt;/code&gt; and wrap the completion handler in a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;MainActor.run&lt;/code&gt; closure.&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;&lt;strong&gt;Update 2025/11/18&lt;/strong&gt;&lt;/p&gt;
-
-&lt;p&gt;Tiziano Coroneo alerted me to a new Swift 6.2 feature that helps address this problem called &lt;a href=&quot;https://github.com/swiftlang/swift-evolution/blob/main/proposals/0470-isolated-conformances.md&quot;&gt;isolated conformances&lt;/a&gt; (further explained by &lt;a href=&quot;https://www.hackingwithswift.com/articles/277/whats-new-in-swift-6-2#:~:text=Global%2Dactor%20isolated%20conformances&quot;&gt;Hacking with Swift&lt;/a&gt;.&lt;/p&gt;
-
-&lt;p&gt;Tiziano says his declaration now looks like this:&lt;/p&gt;
-
-&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;final&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;UserNotificationManager&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;NSObject&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;@MainActor&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;UNUserNotificationCenterDelegate&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;My fix is similar but a little more involved since it involves wrapping my class for use with the Swift Dependencies library. I’ll try to document it fully in a future post.&lt;/p&gt;
-
-&lt;h2 id=&quot;2-cmmotionactivitymanager&quot;&gt;2. CMMotionActivityManager&lt;/h2&gt;
-
-&lt;p&gt;&lt;a href=&quot;https://developer.apple.com/documentation/coremotion&quot;&gt;Core Motion&lt;/a&gt; is another neglected framework that not many iOS devs have the pleasure of integrating. It seems to have mostly been “modernized” around iOS 7 when &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;NSOperation&lt;/code&gt; had a small popularity bump. Also when the API best practices for getting permission from the device user were still being tweaked.&lt;/p&gt;
-
-&lt;p&gt;For a current project, I’m using &lt;a href=&quot;https://developer.apple.com/documentation/coremotion/cmmotionactivitymanager&quot;&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CMMotionActivityManager&lt;/code&gt;&lt;/a&gt;. It’s a slightly higher-level data source for predicting whether the device is held by a user walking, cycling, driving, standing still, etc. It has two primary APIs:&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;Request historical data for a time range (up to 1 week ago): &lt;a href=&quot;https://developer.apple.com/documentation/coremotion/cmmotionactivitymanager/queryactivitystarting(from:to:to:withhandler:)&quot;&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;queryActivityStarting(from:to:to:)&lt;/code&gt;&lt;/a&gt;&lt;/li&gt;
-  &lt;li&gt;Get live streaming data while the app is in the foreground: &lt;a href=&quot;https://developer.apple.com/documentation/coremotion/cmmotionactivitymanager/startactivityupdates(to:withhandler:)&quot;&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;startActivityUpdates(to:)&lt;/code&gt;&lt;/a&gt;&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;queryActivityStarting&lt;/code&gt; returns once to the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;OperationQueue&lt;/code&gt; specified in the parameters. &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;startActivityUpdates&lt;/code&gt; keeps returning values until &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;stopActivityUpdates()&lt;/code&gt; is called.&lt;/p&gt;
-
-&lt;p&gt;I thought each of these would be relatively straightforward to wrap into a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;withCheckedContinuation&lt;/code&gt; and &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;AsyncStream&lt;/code&gt;, respectively.&lt;/p&gt;
-
-&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;// Version 1: queryActivityStarting&lt;/span&gt;
-&lt;span class=&quot;kt&quot;&gt;Task&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;@MainActor&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;weak&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;guard&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;self&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;else&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-
-    &lt;span class=&quot;c1&quot;&gt;// Check motion history for timeout&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;timeout&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;await&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;withCheckedContinuation&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;continuation&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt;
-        &lt;span class=&quot;n&quot;&gt;activityManager&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;queryActivityStarting&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
-            &lt;span class=&quot;nv&quot;&gt;from&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;startDate&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
-            &lt;span class=&quot;nv&quot;&gt;to&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;endDate&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
-            &lt;span class=&quot;nv&quot;&gt;to&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;OperationQueue&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;main&lt;/span&gt;
-        &lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;activities&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;error&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt;
-            &lt;span class=&quot;k&quot;&gt;guard&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;activities&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;error&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;nil&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;else&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-                &lt;span class=&quot;n&quot;&gt;continuation&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;resume&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;returning&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;nil&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-                &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt;
-            &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-            
-            &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;value&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// do work here to calculate timeout...&lt;/span&gt;
-            &lt;span class=&quot;n&quot;&gt;continuation&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;resume&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;returning&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;value&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-    
-    &lt;span class=&quot;c1&quot;&gt;// ...&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;My strategy recently has been the same as the Swift team’s: isolate everything on the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;@MainActor&lt;/code&gt; unless there’s a reason not to. So that’s what I did in this case. However, is it correct to await with a &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;MainActor&lt;/code&gt;-isolated &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Task&lt;/code&gt; while also having the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;queryActivityStarting&lt;/code&gt; function return on &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;OperationQueue.main&lt;/code&gt;?&lt;/p&gt;
-
-&lt;p&gt;It seemed like it was working fine in debug, but then when I was field testing I was observing what seemed to be deadlocks and the continuation never completing.&lt;/p&gt;
-
-&lt;p&gt;So I’m already having trouble reliably reproducing the bug. I’m not even sure whether the bug is related to concurrency or whether &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;queryActivityStarting&lt;/code&gt; just doesn’t respond the way I’d expect. After all, there’s a note in the docs that could be interpreted a number of ways:&lt;/p&gt;
-
-&lt;blockquote&gt;
-  &lt;p&gt;This method runs asynchronously, returning immediately and delivering the results to the specified handler block. &lt;strong&gt;A delay of up to several minutes in reported activities is expected.&lt;/strong&gt;&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;p&gt;In the end, I created this extension that forces &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;@MainActor&lt;/code&gt; at the function level and includes a timeout just in case. It seems to work so far.&lt;/p&gt;
-
-&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;extension&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;CMMotionActivityManager&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;kd&quot;&gt;@MainActor&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;activities&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;from&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;start&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Date&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;to&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;end&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Date&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;timeout&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;TimeInterval&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;as&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ync&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;throws&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;CMMotionActivity&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]?&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;try&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;await&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;withThrowingTaskGroup&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;of&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;CMMotionActivity&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]?&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;group&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt;
-            &lt;span class=&quot;n&quot;&gt;group&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;addTask&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-                &lt;span class=&quot;k&quot;&gt;try&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;await&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;withCheckedThrowingContinuation&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;continuation&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt;
-                    &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;queryActivityStarting&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;from&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;start&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;to&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;end&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;to&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;main&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;activities&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;error&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt;
-                        &lt;span class=&quot;k&quot;&gt;switch&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;activities&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;error&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-                        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;err&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?):&lt;/span&gt;
-                            &lt;span class=&quot;n&quot;&gt;continuation&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;resume&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;throwing&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;err&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-                        &lt;span class=&quot;k&quot;&gt;case&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;list&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?,&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;nil&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;):&lt;/span&gt;
-                            &lt;span class=&quot;n&quot;&gt;continuation&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;resume&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;returning&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;list&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-                        &lt;span class=&quot;k&quot;&gt;default&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
-                            &lt;span class=&quot;n&quot;&gt;continuation&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;resume&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;returning&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[])&lt;/span&gt;
-                        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-                    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-                &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-            &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-
-            &lt;span class=&quot;n&quot;&gt;group&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;addTask&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-                &lt;span class=&quot;k&quot;&gt;try&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;await&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Task&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;sleep&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;for&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;seconds&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;timeout&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;
-                &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;nil&lt;/span&gt;
-            &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-
-            &lt;span class=&quot;k&quot;&gt;guard&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;result&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;try&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;await&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;group&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;next&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;else&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-                &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;nil&lt;/span&gt;
-            &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-
-            &lt;span class=&quot;n&quot;&gt;group&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;cancelAll&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
-            &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;result&lt;/span&gt;
-        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-
-    &lt;span class=&quot;kd&quot;&gt;@MainActor&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;activityUpdates&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;AsyncStream&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;CMMotionActivity&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-        &lt;span class=&quot;kt&quot;&gt;AsyncStream&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;continuation&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt;
-            &lt;span class=&quot;nf&quot;&gt;startActivityUpdates&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;to&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;main&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;activity&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt;
-                &lt;span class=&quot;k&quot;&gt;guard&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;activity&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;else&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-                    &lt;span class=&quot;n&quot;&gt;continuation&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;finish&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
-                    &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt;
-                &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-                &lt;span class=&quot;n&quot;&gt;continuation&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;yield&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;activity&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-            &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-
-            &lt;span class=&quot;n&quot;&gt;continuation&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;onTermination&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;@Sendable&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;_&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt;
-                &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;stopActivityUpdates&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
-            &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;Again, I feel as if I’ve learned nothing. I have potentially worse intuition than I started with, and I may have to return to this problem again after I’ve released to production.&lt;/p&gt;
-
-&lt;h2 id=&quot;3-actor-reentrancy&quot;&gt;3. Actor Reentrancy&lt;/h2&gt;
-
-&lt;p&gt;I’ve been working on a meatier problem within &lt;a href=&quot;/2025/06/03/eki-live-announcement/&quot;&gt;Eki Live&lt;/a&gt; for a couple months.&lt;/p&gt;
-
-&lt;p&gt;I have the following pipeline:&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;Core Location produces &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLLocation&lt;/code&gt; values up to 1 per second.&lt;/li&gt;
-  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLLocation&lt;/code&gt;s are passed to an &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;actor RailwayTracker&lt;/code&gt; which processes them using various info from a database and incorporates that data into the actor long-term state.&lt;/li&gt;
-  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;RailwayTracker&lt;/code&gt; returns a value that is displayed in the UI via SwiftUI and can also update a LiveActivity.&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;Essentially:&lt;/p&gt;
-
-&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;CLLocationManagerDelegate -&amp;gt; RailwayTracker -&amp;gt; ContentView
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;The actual architecture is a bit more complex due to the relationship between instances of classes doing each part of the work. But the overall pipeline design has always felt precarious due to the underlying assumptions that:&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;Core Location will never produce &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLLocation&lt;/code&gt; values faster than RailwayTracker can process them.&lt;/li&gt;
-  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;RailwayTracker&lt;/code&gt; will always process inputs in order, serially.&lt;/li&gt;
-  &lt;li&gt;SwiftUI will receive outputs from &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;RailwayTracker&lt;/code&gt; no faster than it can display them.&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;In practice, I was probably breaking at least the first constraint during testing, since I could simulate &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLLocation&lt;/code&gt;s being produced at 20x real-time speed in a separate macOS app I was using to iterate on the algorithm within &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;RailwayTracker&lt;/code&gt;.&lt;/p&gt;
-
-&lt;p&gt;Here is a very simplified version of the shape of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;RailwayTracker&lt;/code&gt;:&lt;/p&gt;
-
-&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;RailwayTrackerResult&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;location&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Location&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;value&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Int&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-
-&lt;span class=&quot;n&quot;&gt;actor&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;RailwayTracker&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;kd&quot;&gt;private&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;railwayDatabase&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;any&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;DatabaseReader&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)?&lt;/span&gt;
-    
-    &lt;span class=&quot;kd&quot;&gt;private&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;runningValues&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Location&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Int&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[:]&lt;/span&gt;
-
-    &lt;span class=&quot;nf&quot;&gt;init&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;railwayDatabase&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;any&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;DatabaseReader&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)?)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;railwayDatabase&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;railwayDatabase&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-
-    &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;process&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;_&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;input&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Location&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;as&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ync&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;RailwayTrackerResult&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-        &lt;span class=&quot;c1&quot;&gt;// lots of database reads&lt;/span&gt;
-        &lt;span class=&quot;c1&quot;&gt;// lots of reads from `runningValues`&lt;/span&gt;
-        &lt;span class=&quot;c1&quot;&gt;// lots of updates to `runningValues`&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;RailwayTrackerResult&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;location&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;input&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;value&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;someCalculatedValue&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-
-    &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;reset&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-        &lt;span class=&quot;n&quot;&gt;runningValues&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[:]&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;When originally designing &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;RailwayTracker&lt;/code&gt;, an &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;actor&lt;/code&gt; seemed like the obvious choice. I wanted a separate isolation for its internal state and I knew it’d be doing enough heavy work that it wasn’t feasible to do on the main actor.&lt;/p&gt;
-
-&lt;p&gt;However, I misinterpreted the behavior of &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;actor&lt;/code&gt;, thinking that an actor &lt;em&gt;also&lt;/em&gt; ensured that an instance’s functions would need to complete before they could be called again. In practice, &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;actor&lt;/code&gt;s don’t do anything to prevent &lt;a href=&quot;https://mjtsai.com/blog/2024/07/29/actor-reentrancy-in-swift/&quot;&gt;reentrancy&lt;/a&gt;. Meaning that the input locations could be being processed out-of-order by the actor with the database operations being interleaved and there being all kinds of chaos and unspecified behavior.&lt;/p&gt;
-
-&lt;p&gt;While doing some new work on the project, I wanted to take another stab at hardening the entire pipeline using Swift Concurrency.&lt;/p&gt;
-
-&lt;p&gt;I researched the current state of the Apple officially-sanctioned &lt;a href=&quot;https://github.com/apple/swift-async-algorithms&quot;&gt;swift-async-algorithms&lt;/a&gt; package. It seemed to be in committee-hell with no real forward progress in the last 2+ years. There’s less than half of the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Combine&lt;/code&gt; operator API implemented. There’s something called an &lt;a href=&quot;https://github.com/apple/swift-async-algorithms/blob/main/Sources/AsyncAlgorithms/AsyncAlgorithms.docc/Guides/Channel.md&quot;&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;AsyncChannel&lt;/code&gt;&lt;/a&gt;. Would that be a good primitive to base my pipeline on?&lt;/p&gt;
-
-&lt;p&gt;I decided on my specification:&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;CLLocations should never be dropped.&lt;/li&gt;
-  &lt;li&gt;CLLocations should always be fully processed one-by-one in the order they arrive.&lt;/li&gt;
-  &lt;li&gt;Pipeline output results should be delivered to one “subscriber” (mixing metaphors here), but I may need multiple in the near future.&lt;/li&gt;
-&lt;/ul&gt;
-
-&lt;p&gt;I ended up with a generic wrapper abstraction called &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;SerialProcessor&lt;/code&gt;:&lt;/p&gt;
-
-&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;final&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;SerialProcessor&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Input&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Sendable&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Output&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Sendable&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;kd&quot;&gt;typealias&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Process&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;@Sendable&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Input&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;as&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ync&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Output&lt;/span&gt;
-
-    &lt;span class=&quot;c1&quot;&gt;// Inbound (sync) and outbound (single-consumer) pipes&lt;/span&gt;
-    &lt;span class=&quot;kd&quot;&gt;private&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;inPair&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;stream&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;AsyncStream&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Input&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;continuation&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;AsyncStream&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Input&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Continuation&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-    &lt;span class=&quot;kd&quot;&gt;private&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;outPair&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;stream&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;AsyncStream&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Output&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;continuation&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;AsyncStream&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Output&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Continuation&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-
-    &lt;span class=&quot;kd&quot;&gt;private&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;worker&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Task&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Void&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Never&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;
-    &lt;span class=&quot;kd&quot;&gt;private&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;process&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Process&lt;/span&gt;
-
-    &lt;span class=&quot;c1&quot;&gt;/// Single-consumer stream of `Output`.&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;results&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;AsyncStream&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Output&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;outPair&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;stream&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-
-    &lt;span class=&quot;nf&quot;&gt;init&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
-        &lt;span class=&quot;nv&quot;&gt;inputBuffering&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;AsyncStream&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Input&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Continuation&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;BufferingPolicy&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;unbounded&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
-        &lt;span class=&quot;nv&quot;&gt;outputBuffering&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;AsyncStream&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Output&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;Continuation&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;BufferingPolicy&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;unbounded&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
-        &lt;span class=&quot;nv&quot;&gt;process&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;@escaping&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Process&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;process&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;process&lt;/span&gt;
-
-        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;inPair&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;AsyncStream&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;makeStream&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;of&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Input&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;bufferingPolicy&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;inputBuffering&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;outPair&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;AsyncStream&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;makeStream&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;of&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Output&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;bufferingPolicy&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;outputBuffering&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;inPair&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;inPair&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;outPair&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;outPair&lt;/span&gt;
-
-        &lt;span class=&quot;n&quot;&gt;worker&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Task&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-            &lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;await&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;input&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;inPair&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;stream&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-                &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;output&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;await&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;process&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;input&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-                &lt;span class=&quot;n&quot;&gt;outPair&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;continuation&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;yield&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;output&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-            &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-            &lt;span class=&quot;n&quot;&gt;outPair&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;continuation&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;finish&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
-        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-
-    &lt;span class=&quot;kd&quot;&gt;deinit&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-        &lt;span class=&quot;nf&quot;&gt;finish&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-
-    &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;submit&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;_&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;input&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;Input&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-        &lt;span class=&quot;n&quot;&gt;inPair&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;continuation&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;yield&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;input&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-
-    &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;finish&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-        &lt;span class=&quot;n&quot;&gt;inPair&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;continuation&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;finish&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
-        &lt;span class=&quot;n&quot;&gt;worker&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;cancel&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;I couldn’t use &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;AsyncChannel&lt;/code&gt; for the input side because its &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;send&lt;/code&gt; function is &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;async&lt;/code&gt; and therefore requires an async context. I don’t have that inside the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLLocationManagerDelegate&lt;/code&gt; callback function that delivers &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLLocation&lt;/code&gt;s and creating a new &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Task&lt;/code&gt; for each new &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;CLLocation&lt;/code&gt; would break the serial ordering guarantee.&lt;/p&gt;
-
-&lt;p&gt;In the non-realtime system implementation, usage looks like this:&lt;/p&gt;
-
-&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;// Set up the processing&lt;/span&gt;
-&lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;railwayTracker&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;RailwayTracker&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;railwayDatabase&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;database&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;serialProcessor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;SerialProcessor&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
-    &lt;span class=&quot;nv&quot;&gt;inputBuffering&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;unbounded&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
-    &lt;span class=&quot;nv&quot;&gt;outputBuffering&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;unbounded&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
-    &lt;span class=&quot;nv&quot;&gt;process&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;@Sendable&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;input&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt;
-        &lt;span class=&quot;n&quot;&gt;await&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;railwayTracker&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;process&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;input&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-
-&lt;span class=&quot;c1&quot;&gt;// Queue all locations immediately for processing&lt;/span&gt;
-&lt;span class=&quot;c1&quot;&gt;// This is in a `Task` so it will run after `serialProcessor.results` is set up&lt;/span&gt;
-&lt;span class=&quot;kt&quot;&gt;Task&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;location&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;locations&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-        &lt;span class=&quot;n&quot;&gt;serialProcessor&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;submit&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;location&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-
-&lt;span class=&quot;c1&quot;&gt;// Cache the results as they arrive&lt;/span&gt;
-&lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;await&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;result&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;serialProcessor&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;results&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;n&quot;&gt;resultsCache&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;result&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;location&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;id&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;result&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;In the realtime system version, I believe the implementation will look something like this (although I’m not at this point in the project yet):&lt;/p&gt;
-
-&lt;div class=&quot;language-swift highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;// Set up the processing global&lt;/span&gt;
-&lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;railwayTracker&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;RailwayTracker&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;railwayDatabase&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;database&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;serialProcessor&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;SerialProcessor&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
-    &lt;span class=&quot;nv&quot;&gt;inputBuffering&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;unbounded&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
-    &lt;span class=&quot;nv&quot;&gt;outputBuffering&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;bufferingNewest&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// for UI, drop late values&lt;/span&gt;
-    &lt;span class=&quot;nv&quot;&gt;process&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;@Sendable&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;input&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt;
-        &lt;span class=&quot;n&quot;&gt;await&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;railwayTracker&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;process&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;input&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-
-&lt;span class=&quot;c1&quot;&gt;// Where we receive new locations from the system&lt;/span&gt;
-&lt;span class=&quot;kd&quot;&gt;extension&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;LocationManagerDelegate&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;@preconcurrency&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;CLLocationManagerDelegate&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;locationManager&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;_&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;manager&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;CLLocationManager&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;didUpdateLocations&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;locations&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;CLLocation&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;])&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    	&lt;span class=&quot;c1&quot;&gt;// Get the shared `serialProcessor` from somewhere global then...&lt;/span&gt;
-    	&lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;location&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;locations&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-            &lt;span class=&quot;n&quot;&gt;serialProcessor&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;submit&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;location&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-
-&lt;span class=&quot;c1&quot;&gt;// In some View Model...&lt;/span&gt;
-&lt;span class=&quot;kd&quot;&gt;@MainActor&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;@Observable&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;final&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;ContentViewModel&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;kd&quot;&gt;@ObservationIgnored&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;serialProcessor&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;SerialProcessor&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;CLLocation&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;RailwayTrackerResult&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;
-    &lt;span class=&quot;kd&quot;&gt;private(set)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;latestResult&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;RailwayTrackerResult&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;?&lt;/span&gt;
-    
-    &lt;span class=&quot;kd&quot;&gt;func&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;task&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;as&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ync&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;await&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;result&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;serialProcessor&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;results&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-            &lt;span class=&quot;n&quot;&gt;latestResult&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;result&lt;/span&gt;
-        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-    
-    &lt;span class=&quot;c1&quot;&gt;// ...&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;
-&lt;/div&gt;
-
-&lt;p&gt;In my testing of the non-realtime setup, the system seemed to work correctly. It buffers inputs as expected, and even drops outputs if I use &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.bufferingNewest(1)&lt;/code&gt;.&lt;/p&gt;
-
-&lt;p&gt;I’m still actively working on this problem (and should be doing so right now instead of writing this post).&lt;/p&gt;
-
-&lt;p&gt;There are other libraries like &lt;a href=&quot;https://github.com/sideeffect-io/AsyncExtensions&quot;&gt;AsyncExtensions&lt;/a&gt; that build on the Swift primitives. However, getting my head around the shape of the problems they can solve and what I can accomplish with the primitives has been tough.&lt;/p&gt;
-
-&lt;h2 id=&quot;final-thoughts-and-complaints&quot;&gt;Final thoughts and complaints&lt;/h2&gt;
-
-&lt;p&gt;Swift Concurrency is just such a bummer. We still need to know about lower-level primitives like locks and mutexes and threads. We still need to have working knowledge of past solutions like Grand Central Dispatch in order to interact with our own and Apple’s legacy APIs. Unlike previous solutions, there are fewer primitives for managing serial vs. concurrent processing. It adds a new abstraction layer and several new concepts (isolation, actors, structured/unstructured) that probably will make sense eventually but don’t right now. It adds a dozen new keywords with more essential ones arriving with each new point update. It’s difficult or impossible to find sanctioned sample code that provides a glimpse into what a “best practice” could be. We’re still not safe from runtime crashes.&lt;/p&gt;
-
-&lt;p&gt;I could keep going but I’m tired of complaining. I just want to have the confidence to write my features without having to budget multiple days of field testing and debugging time and reading the Swift forums.&lt;/p&gt;
-
-</description>
-        <pubDate>Tue, 12 Aug 2025 06:38:00 -0500</pubDate>
-        <link>https://twocentstudios.com/2025/08/12/3-swift-concurrency-challenges-from-the-last-2-weeks/</link>
-        <guid isPermaLink="true">https://twocentstudios.com/2025/08/12/3-swift-concurrency-challenges-from-the-last-2-weeks/</guid>
-        
-        <category>apple</category>
-        
-        <category>ios</category>
-        
-        <category>swift</category>
-        
-        <category>concurrency</category>
         
         
       </item>
