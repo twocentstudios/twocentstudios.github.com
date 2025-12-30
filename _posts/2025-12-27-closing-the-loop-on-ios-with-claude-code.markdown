@@ -41,7 +41,7 @@ Allowing Claude Code to build after every proposed change is a requirement for a
 Moving DerivedData to a location inside your project folder is perhaps an unusual suggestion, but it has several benefits for an agentic workflow:
 
 - **Permissions**: you'll encounter fewer permissions dialogs when Claude is reading inside the project folder that you're presumably running it in. Most devs expect DerivedData to be cleared regularly so it's safe.
-- **Git worktrees**: An advanced technique is to use [Git worktrees](TODO) to have independent copies of your repo. Colocating DerivedData ensures the separate repos don't interfere with each others build artifacts.
+- **Git worktrees**: An advanced technique is to use [Git worktrees](https://git-scm.com/docs/git-worktree) to have independent copies of your repo. Colocating DerivedData ensures the separate repos don't interfere with each others build artifacts.
 - **Docs**: The DerivedData has a full copy of your Swift Packages, including any documentation. Claude Code can do fast greps to verify syntax or find examples. In my CLAUDE.md I have a direct link for each important package:
 
 ```markdown
@@ -95,7 +95,7 @@ Note that some commands can be run with more vague identifiers like name and os,
 
 #### Install xcsift
 
-[xcsift](TODO) is a companion parsing library for build output. You'll be building *a lot*, and you don't want to fill up your context with hundreds of lines of "file.swift built". xcsift solves this by producing just the actionable errors and warnings in json.
+[xcsift](https://github.com/ldomaradzki/xcsift) is a companion parsing library for build output. You'll be building *a lot*, and you don't want to fill up your context with hundreds of lines of "file.swift built". xcsift solves this by producing just the actionable errors and warnings in json.
 
 ```
 brew install xcsift
