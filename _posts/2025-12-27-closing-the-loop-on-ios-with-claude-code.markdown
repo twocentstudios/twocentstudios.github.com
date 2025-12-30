@@ -120,7 +120,7 @@ xcodebuild -project train-timetable.xcodeproj -scheme "train-timetable" -destina
 
 - **`-project`**: path to your xcodeproj file. Use `-workspace` if you use an xcworkspace file.
 - **`-scheme`**: scheme name we found above.
-- **`-destination`**: for simulator, we use `"platform=iphonesimulator,id=$UDID"` where `id` is the UDID of our favorite simulator instance.
+- **`-destination`**: for simulator, we use `"platform=iphonesimulator,id=$UDID"` where `id` is the UDID of our favorite simulator instance. Note `platform=iOS Simulator` has the same meaning and also works.
 - **`-derivedDataPath`**: this is super important if you've moved the DerivedData to the project folder. Without this, the Xcode instance will be using a different directory and you'll have super slow (clean) builds each time.
 - **`-configuration`**: `Debug` is the default, so you don't usually need this flag. It's better to be explicit though because this affects the folder where your app binary will be copied to (see step 2).
 - **build**: the actual build command
@@ -570,17 +570,16 @@ CT's iPhone
 
 ### Build for device
 
-Build commands are the same as those for the simulator, except `platform=iphoneos`/`platform=iOS` instead of `platform=iphonesimulator`/`platform=iOS Simulator`.
+Build commands are the same as those for the simulator, except `platform=iOS` instead of `platform=iphonesimulator`/`platform=iOS Simulator`.
 
-Use the `name` or `id` of your target device from the `list devices` command.
+Use the `name` of your target device from the `list devices` command.
 
 ```
 # Using device name
-xcodebuild -project train-timetable.xcodeproj -scheme "train-timetable" -destination "platform=iphoneos,name=CT's iPhone" -derivedDataPath DerivedData build 2>&1 | xcsift -w
-
-# Using device ID
-xcodebuild -project train-timetable.xcodeproj -scheme "train-timetable" -destination "platform=iphoneos,id=E7E3E660-9E7A-5814-8BBB-F7D81A965CEB" -derivedDataPath DerivedData build 2>&1 | xcsift -w
+xcodebuild -project train-timetable.xcodeproj -scheme "train-timetable" -destination "platform=iOS,name=CT's iPhone" -derivedDataPath DerivedData build 2>&1 | xcsift -w
 ```
+
+Note: `platform=iphoneos` does not work. `id` instead of `name` does not work.
 
 ### Install on device
 
