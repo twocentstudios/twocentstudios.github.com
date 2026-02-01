@@ -6,6 +6,8 @@ image:
 tags: apple design ios
 ---
 
+## The print design era
+
 There was a time when iOS **app design** wasn't all that far off from **print design**.
 
 For the first couple years of the iPhone SDK (2008-2011):
@@ -32,6 +34,8 @@ It wasn't until the iPhone 6 in 2014 that designers (and developers) could no lo
 
 And if varying screen widths weren't enough, the iPhone X in 2017 broke the assumption that the screen was even a simple rectangle. The notch, rounded corners, and the home indicator meant designers could no longer treat the canvas as a predictable bordered frame.
 
+## The complexity catches up
+
 I'll skip to present day to say that we're long past the point that most app designers can, with a good conscience, keep a print design mindset when doing visual design for mobile.
 
 The complexity grew, and luckily for iOS developers, the tooling provided by Apple to rein in that complexity has slowly caught up:
@@ -48,6 +52,8 @@ The complexity grew, and luckily for iOS developers, the tooling provided by App
 {% caption_img /images/print-design-hig-dynamic-type-sizes.jpg HIG Dynamic Type defines seven non-accessibility size categories with semantic text styles %}
 
 However, there's a similar time lag (measured in years) between SDK support and true developer tooling support that exists between developer tooling support and designer tooling support for all these features. There probably always will be. Users will adopt them and demand them faster than our tools will support them.
+
+## The mindset shift
 
 But going back to print design.
 
@@ -72,6 +78,8 @@ The designers were now channeling their intrinsic motivation and eye for detail 
 The inter-department friction would melt away. We'd ship faster even though we were supporting more design variables than ever before. After all, designers were taking on more of the work I'd previously been doing turning screen after lifeless screen into constraints and states and conditionals. I had more brain bandwidth to double check their assumptions, cover more edge cases, explore architectures that would keep the code from rotting, experiment with animations, and still have time to pair with them on polish. And even more-so, develop abstractions to make this work faster and easier in the future.
 
 When you make the foundational work easy, you have more time left for whimsy. Which is more fun for both the app makers and the app users.
+
+## Making the shift
 
 So how can a designer with a print mindset adopt an app design mindset?
 
