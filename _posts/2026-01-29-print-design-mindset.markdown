@@ -2,8 +2,8 @@
 layout: post
 title: "Print Design Mindset to App Design Mindset"
 date: 2026-01-29 20:26:08
-image:
-tags: apple design ios
+image: /images/print-design-iphones-early-era-320pt.jpg
+tags: apple design ios commentary
 ---
 
 ## The print design era
